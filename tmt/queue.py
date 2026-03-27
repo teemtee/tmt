@@ -69,15 +69,25 @@ class Task(abc.ABC, Generic[TaskResultT]):
                 f" with '{type(other).__name__}'."
             )
 
+        # Both tasks do not care about their order, they shall remain
+        # in the order in which they are now.
         if self.order is None and other.order is None:
             return False
 
+        # Other task cares about its order while this one does not, that
+        # puts this task after the other automatically, no matter what
+        # the other `order` value is.
         if self.order is None and other.order is not None:
             return True
 
+        # This task cares about its order while the other does not, that
+        # puts the other task after this one automatically, no matter
+        # what this tasks's `order` is.
         if self.order is not None and other.order is None:
             return False
 
+        # Both tasks care about their order, therefore their ordering
+        # shall put the one with lower `order` first.
         if self.order is not None and other.order is not None:
             return self.order > other.order
 
