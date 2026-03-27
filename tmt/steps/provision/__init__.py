@@ -364,7 +364,11 @@ class Provision(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'guests.yaml', 'inventory.yaml'}
+        return {
+            *super()._preserved_workdir_members,
+            f'guests{tmt.utils.STATE_FILENAME_SUFFIX}',
+            'inventory.yaml',
+        }
 
     @property
     def is_multihost(self) -> bool:
@@ -389,9 +393,7 @@ class Provision(tmt.steps.Step):
 
         super().load()
         try:
-            raw_guest_data: dict[str, dict[str, Any]] = tmt.utils.yaml_to_dict(
-                self.read(Path('guests.yaml'))
-            )
+            raw_guest_data: dict[str, dict[str, Any]] = self.read_state('guests')
 
             self._guest_data = {
                 name: SerializableContainer.unserialize(guest_data, self._logger)
@@ -412,7 +414,7 @@ class Provision(tmt.steps.Step):
                 guest.name: guest.save().to_serialized() for guest in self.ready_guests
             }
 
-            self.write(Path('guests.yaml'), tmt.utils.to_yaml(raw_guest_data))
+            self.write_state('guests', raw_guest_data)
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
 
