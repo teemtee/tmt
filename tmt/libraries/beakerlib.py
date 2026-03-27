@@ -69,6 +69,7 @@ class BeakerLib(Library):
 
     #: Cache of already fetched libraries. The keys are the absolute paths of
     #: the local library path that is ultimately used
+    # TODO: find a better home for this, either under the run/plan/discover/plugin
     _library_cache: ClassVar[dict[Path, "BeakerLib"]] = {}
 
     def __post_init__(self) -> None:
@@ -302,6 +303,7 @@ class BeakerLibFromUrl(BeakerLib):
     #: Cache of git cloned repos. The keys are the absolute paths of the git
     #: clones already processed, and the values are the libraries that did the
     #: git clone
+    # TODO: find a better home for this, either under the run/plan/discover/plugin
     _git_clone_cache: ClassVar[dict[Path, "BeakerLib"]] = {}
 
     @classmethod

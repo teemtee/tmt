@@ -593,6 +593,15 @@ class Discover(tmt.steps.Step):
         # Test will be (re)discovered in other phases/steps
         self.extract_tests_later: bool = False
 
+    def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
+        from tmt.libraries.beakerlib import BeakerLib, BeakerLibFromUrl
+
+        super()._workdir_cleanup(path)
+        # TODO: for now we are cleaning up the whole library cache, probably
+        #  another class should own it instead.
+        BeakerLib._library_cache.clear()
+        BeakerLibFromUrl._git_clone_cache.clear()
+
     @property
     def loaded_from_recipe(self) -> bool:
         """
