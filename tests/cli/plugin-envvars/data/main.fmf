@@ -1,0 +1,10 @@
+provision:
+  how: local
+
+execute:
+  script: /bin/true
+
+report:
+  - how: html
+    absolute-paths: false
+    display-guest: auto
