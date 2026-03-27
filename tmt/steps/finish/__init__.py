@@ -137,6 +137,8 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
 
                 guest_copies.append(guest_copy)
 
+            self._queue.reset()
+
             for phase in self.phases(classes=(Action, FinishPlugin)):
                 if isinstance(phase, Action):
                     self._queue.enqueue_action(phase=phase)

@@ -1228,6 +1228,8 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
         # Clean up possible old results
         execute_phases[0]._results.clear()
 
+        self._queue.reset()
+
         for phase in self.phases(classes=(Action, ExecutePlugin)):
             if isinstance(phase, Action):
                 self._queue.enqueue_action(phase=phase)
