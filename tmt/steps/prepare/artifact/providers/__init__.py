@@ -192,9 +192,6 @@ class ArtifactProvider(ABC):
     * **Repository providers** (e.g. ``copr.repository``): implement
       :py:meth:`get_repositories`. After installation, :py:meth:`enumerate_artifacts`
       queries the package manager and populates :py:attr:`_artifacts`.
-
-    .. TODO: Refactor into two distinct abstract base classes to make the
-       required interface explicit at the type level.
     """
 
     #: Identifier of this artifact provider. It is valid and unique
@@ -206,10 +203,8 @@ class ArtifactProvider(ABC):
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
-    #: Artifacts enumerated from this provider's repositories via
-    #: :py:meth:`enumerate_artifacts`. Populated only for repository providers
-    #: after their repositories are installed on the guest.
-    #: Not used by download providers (which override :py:attr:`artifacts` directly).
+    #: All artifacts known to this provider. Populated by
+    #: :py:meth:`_download_artifact` and/or :py:meth:`enumerate_artifacts`.
     _artifacts: list[ArtifactInfo]
 
     def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
