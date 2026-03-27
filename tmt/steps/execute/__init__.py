@@ -28,7 +28,7 @@ from tmt.result import (
     ResultInterpret,
     ResultOutcome,
 )
-from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
+from tmt.steps import Action, ActionTask, PluginTask, Step
 from tmt.steps.context.abort import AbortContext, AbortStep
 from tmt.steps.context.pidfile import PidFileContext
 from tmt.steps.context.reboot import RebootContext
@@ -1018,7 +1018,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         raise NotImplementedError
 
 
-class Execute(tmt.steps.Step):
+class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
     """
     Run tests using the specified executor
     """
@@ -1222,19 +1222,17 @@ class Execute(tmt.steps.Step):
             raise tmt.utils.ExecuteError("No guests available for execution.")
 
         # Execute the tests, store results
-        queue: PhaseQueue[ExecuteStepData, None] = PhaseQueue(
-            'execute', self._logger.descend(logger_name=f'{self}.queue')
-        )
-
         execute_phases = self.phases(classes=(ExecutePlugin,))
         assert len(execute_phases) == 1
 
         # Clean up possible old results
         execute_phases[0]._results.clear()
 
+        self._queue.reset()
+
         for phase in self.phases(classes=(Action, ExecutePlugin)):
             if isinstance(phase, Action):
-                queue.enqueue_action(phase=phase)
+                self._queue.enqueue_action(phase=phase)
 
             elif isinstance(phase, ExecutePlugin):
                 for discover_phase_name, guests in phase.tasks:
@@ -1243,11 +1241,11 @@ class Execute(tmt.steps.Step):
                     # let it "see" all tests, or test in different discover phase.
                     phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(phase))
                     phase_copy.discover_phase = discover_phase_name
-                    queue.enqueue_plugin(phase=phase_copy, guests=guests)
+                    self._queue.enqueue_plugin(phase=phase_copy, guests=guests)
 
         failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []
 
-        for outcome in queue.run():
+        for outcome in self._queue.run():
             if outcome.exc:
                 outcome.logger.fail(str(outcome.exc))
 

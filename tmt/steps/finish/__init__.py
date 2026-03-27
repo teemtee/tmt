@@ -12,7 +12,6 @@ from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
     Action,
     Method,
-    PhaseQueue,
     PluginOutcome,
     PluginTask,
     PullTask,
@@ -52,7 +51,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, PluginOutcome]):
         return PluginOutcome()
 
 
-class Finish(tmt.steps.Step):
+class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
     """
     Perform the finishing tasks
 
@@ -138,16 +137,14 @@ class Finish(tmt.steps.Step):
 
                 guest_copies.append(guest_copy)
 
-            queue: PhaseQueue[FinishStepData, PluginOutcome] = PhaseQueue(
-                'finish', self._logger.descend(logger_name=f'{self}.queue')
-            )
+            self._queue.reset()
 
             for phase in self.phases(classes=(Action, FinishPlugin)):
                 if isinstance(phase, Action):
-                    queue.enqueue_action(phase=phase)
+                    self._queue.enqueue_action(phase=phase)
 
                 elif phase.enabled_by_when:
-                    queue.enqueue_plugin(
+                    self._queue.enqueue_plugin(
                         phase=phase,  # type: ignore[arg-type]
                         guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
                     )
@@ -168,7 +165,7 @@ class Finish(tmt.steps.Step):
                     for result in results
                 )
 
-            for outcome in queue.run():
+            for outcome in self._queue.run():
                 if not isinstance(outcome.phase, FinishPlugin):
                     continue
 
@@ -195,7 +192,7 @@ class Finish(tmt.steps.Step):
                     )
 
                     # Do not let the queue continue.
-                    queue.stop()
+                    self._queue.stop()
 
                     break
 
@@ -214,7 +211,7 @@ class Finish(tmt.steps.Step):
                 # Do not let the queue continue if there was an exception,
                 # or when there are negative results.
                 if _is_failed():
-                    queue.stop()
+                    self._queue.stop()
 
                     break
 
