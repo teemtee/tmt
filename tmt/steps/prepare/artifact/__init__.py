@@ -1,8 +1,11 @@
-from typing import ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, cast
+
+import fmf.utils
 
 import tmt.base.core
 import tmt.steps
 import tmt.utils
+from tmt.base.core import DependencySimple
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
@@ -14,6 +17,64 @@ from tmt.steps.prepare.artifact.providers import (
     Repository,
 )
 from tmt.utils import Environment, Path
+
+if TYPE_CHECKING:
+    import tmt.steps.prepare
+
+#: Name of the shared repository created by the artifact plugin.
+ARTIFACT_SHARED_REPO_NAME: Final[str] = 'tmt-artifact-shared'
+
+#: Filename of the artifact metadata file written by the artifact plugin.
+ARTIFACT_METADATA_FILENAME: Final[str] = 'artifacts.yaml'
+
+#: Name of the auto-injected verify-installation phase.
+VERIFY_PHASE_NAME: Final[str] = 'verify-artifact-packages'
+
+#: Summary of the auto-injected verify-installation phase.
+VERIFY_PHASE_SUMMARY: Final[str] = 'Verify packages were installed from artifact repositories'
+
+
+def inject_verify_phase(
+    prepare_step: 'tmt.steps.prepare.Prepare', where: list[str]
+) -> 'PreparePlugin[Any]':
+    """
+    Inject a verify-installation phase into the prepare step.
+
+    Creates a verify-installation phase with empty verify mapping that will
+    be populated by artifact phases later. This function should be called
+    from the prepare step when auto-verification is requested.
+
+    .. note::
+
+        This function is a workaround until #4729 and #4731 land. Once the
+        infrastructure supports dynamic phase injection into running steps,
+        PrepareArtifact should call ``self.step.add_phase()`` directly during
+        its ``go()`` method instead of relying on this external injection.
+
+    :param prepare_step: The prepare step to inject the phase into.
+    :param where: List of guests/roles where the phase should run.
+    :returns: The injected verify-installation phase plugin.
+    """
+    # Runtime import to avoid circular dependency
+    from tmt.steps.prepare.verify_installation import PrepareVerifyInstallationData
+
+    verify_data = PrepareVerifyInstallationData(
+        name=VERIFY_PHASE_NAME,
+        how='verify-installation',
+        summary=VERIFY_PHASE_SUMMARY,
+        order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
+        where=where,
+        verify={},  # Empty mapping - will be populated by artifact phases
+    )
+
+    verify_phase: PreparePlugin[Any] = cast(
+        PreparePlugin[Any],
+        PreparePlugin.delegate(prepare_step, data=verify_data),
+    )
+
+    prepare_step._phases.append(verify_phase)
+
+    return verify_phase
 
 
 @container
@@ -34,6 +95,17 @@ class PrepareArtifactData(PrepareStepData):
         help="""
             Default priority for created artifact repositories. Lower values mean
             higher priority in package managers.
+            """,
+    )
+
+    auto_verify: bool = field(
+        default=True,
+        option='--auto-verify/--no-auto-verify',
+        is_flag=True,
+        help="""
+            Automatically verify that packages from require/recommend that are
+            present in the artifact metadata were installed from the artifact
+            repository. Enabled by default.
             """,
     )
 
@@ -169,8 +241,25 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     # Shared repository configuration
     SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
-    SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
-    ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
+    SHARED_REPO_NAME: ClassVar[str] = ARTIFACT_SHARED_REPO_NAME
+    ARTIFACTS_METADATA_FILENAME: ClassVar[str] = ARTIFACT_METADATA_FILENAME
+
+    #: Pre-registered verify-installation phase, set by
+    #: :py:func:`inject_verify_phase` or the prepare step. Populated with the
+    #: package→repo mapping during :py:meth:`go`.
+    #:
+    #: TODO: After #4729/#4731, this should be replaced by creating and
+    #: injecting the verify phase directly in go() via self.step.add_phase().
+    _future_verify: Optional['PreparePlugin[Any]']
+
+    def __init__(
+        self,
+        *,
+        future_verify: Optional['PreparePlugin[Any]'] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        self._future_verify = future_verify
 
     def go(
         self,
@@ -268,6 +357,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Persist artifact metadata to YAML
         self._save_artifacts_metadata(providers)
 
+        # Populate the future verify phase with package mappings
+        self._populate_verify_from_providers(providers, guest)
+
         # Report configuration summary
         logger.info(
             f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
@@ -275,6 +367,89 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         return outcome
+
+    def _populate_verify_from_providers(
+        self, providers: list[ArtifactProvider], guest: Guest
+    ) -> None:
+        """
+        Populate the pre-registered verify phase with the package→repo mapping.
+
+        TODO: After #4729/#4731, this should create and inject the verify phase
+        directly using ``self.step.add_phase()`` instead of populating a
+        pre-registered phase via ``_future_verify``.
+
+        Computes the intersection of artifact package names and package names
+        collected from test require/recommend (filtered to those enabled on *guest*)
+        and explicit prepare install phases, then updates :py:attr:`_future_verify`
+        with ``{package: ARTIFACT_SHARED_REPO_NAME}`` entries for each package in
+        the intersection.
+
+        Called from :py:meth:`go` after providers have been initialized and artifacts
+        are known. Each artifact phase contributes only its own providers' packages.
+        Different artifact phases run sequentially in the queue so no cross-phase race
+        is possible.
+        """
+        if self._future_verify is None:
+            return
+
+        from typing import cast
+
+        # @provides_method erases PrepareInstall's type to PluginClass; the pyright
+        # suppression covers the resulting reportUnknownVariableType on the import and
+        # reportUnknownArgumentType on its use as a classes= argument.  The cast is
+        # needed by Pyright but redundant for mypy (hence type: ignore[redundant-cast]).
+        from tmt.steps.prepare.install import (
+            PrepareInstall,  # pyright: ignore[reportUnknownVariableType]
+        )
+
+        pkg_names: set[str] = set()
+
+        # Collect simple package names from test require/recommend, restricted to
+        # tests that are actually enabled on this guest to avoid cross-guest pollution.
+        for test_origin in self.step.plan.discover.tests(enabled=True):
+            test = test_origin.test
+            if not test.enabled_on_guest(guest):
+                continue
+            for dep in (*test.require, *test.recommend):
+                if isinstance(dep, DependencySimple):
+                    pkg_names.add(str(dep))
+
+        # Collect packages explicitly listed in prepare install phases.
+        _install_phases = cast(  # type: ignore[redundant-cast]
+            list[Any],
+            self.step.phases(
+                classes=PrepareInstall,  # pyright: ignore[reportUnknownArgumentType]
+            ),
+        )
+        for install_phase in _install_phases:
+            for pkg in install_phase.data.package:
+                pkg_names.add(str(pkg))
+
+        # Artifact package names from providers in THIS phase only
+        artifact_pkg_names: set[str] = {
+            artifact.version.name for provider in providers for artifact in provider.artifacts
+        }
+
+        intersection = artifact_pkg_names & pkg_names
+        if not intersection:
+            self.debug('No overlap between artifact packages and test requirements.')
+            return
+
+        self.debug(
+            f"Auto-verifying {fmf.utils.listed(sorted(intersection), 'package')} "
+            f"against '{ARTIFACT_SHARED_REPO_NAME}'."
+        )
+
+        uncovered = pkg_names - artifact_pkg_names
+        if uncovered:
+            self.debug(
+                f"{fmf.utils.listed(sorted(uncovered), 'package')} "
+                f"from require/recommend/install not provided by this artifact phase."
+            )
+
+        self._future_verify.data.verify.update(
+            dict.fromkeys(intersection, ARTIFACT_SHARED_REPO_NAME)
+        )
 
     def essential_requires(self) -> list[tmt.base.core.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts

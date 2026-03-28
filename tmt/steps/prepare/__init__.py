@@ -370,6 +370,57 @@ class Prepare(tmt.steps.Step):
             missing='skip',
         )
 
+        # Auto-inject a verify-installation phase when:
+        # - at least one artifact phase has verify=True, and
+        # - no explicit verify-installation phase was configured by the user.
+        #
+        # TODO: This is a temporary workaround until #4729 and #4731 land.
+        # 1. The prepare step will expose its queue as a step-level attribute
+        # 2. The queue will support resorting after adding new tasks
+        # 3. PrepareArtifact should inject the verify phase itself during go()
+        #    (similar to how PrepareDistgit creates future install phases)
+        #
+        # The proper flow after infrastructure changes:
+        #   - PrepareArtifact.go() downloads artifacts
+        #   - PrepareArtifact.go() calls self.step.add_phase() to inject verify
+        #   - The queue is re-sorted to place verify at correct order
+        #   - Verify phase runs after all artifact phases complete
+        #
+        # For now, we pre-create the verify phase here and let artifact phases
+        # populate it via _future_verify reference.
+        from tmt.steps.prepare.artifact import (
+            PrepareArtifact,
+            inject_verify_phase,
+        )
+        from tmt.steps.prepare.verify_installation import PrepareVerifyInstallation
+
+        artifact_phases_with_verify = [
+            phase
+            for phase in self._phases
+            if isinstance(phase, PrepareArtifact) and phase.data.auto_verify
+        ]
+        has_verify_phase = any(
+            isinstance(phase, PrepareVerifyInstallation) for phase in self._phases
+        )
+
+        if artifact_phases_with_verify and not has_verify_phase:
+            # Mirror the where= scope of the artifact phases: if any artifact
+            # phase runs on all guests (empty where), verify should too;
+            # otherwise restrict to the union of their guest/role targets.
+            if any(not phase.data.where for phase in artifact_phases_with_verify):
+                verify_where: list[str] = []
+            else:
+                verify_where = list(
+                    {dest for phase in artifact_phases_with_verify for dest in phase.data.where}
+                )
+
+            # Inject the verify phase via artifact plugin
+            future_verify = inject_verify_phase(self, verify_where)
+
+            # Give each artifact phase a reference so go() can populate the verify dict
+            for phase in artifact_phases_with_verify:
+                phase._future_verify = future_verify
+
         # Prepare guests (including workdir sync)
         guest_copies: list[Guest] = []
 

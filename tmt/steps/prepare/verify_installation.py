@@ -71,17 +71,19 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         if self.is_dry_run:
             return outcome
 
-        if not self.data.verify:
+        expected_origins: dict[str, str] = dict(self.data.verify)
+
+        if not expected_origins:
             self.verbose('No packages to verify.')
             return outcome
 
         self.info(
-            fmf.utils.listed(list(self.data.verify.keys()), 'package'),
+            fmf.utils.listed(list(expected_origins.keys()), 'package'),
             color='green',
         )
 
         try:
-            package_origins = guest.package_manager.get_package_origin(self.data.verify.keys())
+            package_origins = guest.package_manager.get_package_origin(expected_origins.keys())
         except (NotImplementedError, tmt.utils.GeneralError) as err:
             error: Exception = (
                 tmt.utils.PrepareError(
@@ -103,7 +105,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         failed_packages: list[str] = []
-        for package, expected_repo in self.data.verify.items():
+        for package, expected_repo in expected_origins.items():
             actual_origin = package_origins[package]
 
             if actual_origin == expected_repo:
