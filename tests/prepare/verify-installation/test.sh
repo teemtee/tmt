@@ -14,8 +14,8 @@ rlJournalStart
 
         rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
 
-        # centpkg is built in Fedora koji - use Fedora release tag for both distros
-        get_koji_build_id "centpkg" "f\${fedora_release}"
+        # diffstat is built in Fedora koji - use Fedora release tag for both distros
+        get_koji_build_id "diffstat" "f\${fedora_release}"
 
         if rlIsFedora; then
             rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy Fedora test data"
@@ -35,7 +35,7 @@ rlJournalStart
             provision -h \$PROVISION_HOW --image \$image" \
             0 "Run verification test with correct repos"
 
-        rlAssertGrep "pass .* / centpkg" $rlRun_LOG
+        rlAssertGrep "pass .* / diffstat" $rlRun_LOG
         rlAssertGrep "All packages verified successfully." $rlRun_LOG
         rlAssertNotGrep "Package source verification failed for:" $rlRun_LOG
         rlAssertGrep "1 test passed" $rlRun_LOG
@@ -48,7 +48,7 @@ rlJournalStart
             2 "Verification should fail with wrong repo"
 
         rlAssertGrep "2 packages" $rlRun_LOG
-        rlAssertGrep "fail .* / centpkg" $rlRun_LOG
+        rlAssertGrep "fail .* / diffstat" $rlRun_LOG
         rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG
