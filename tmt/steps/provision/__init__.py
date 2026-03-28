@@ -1,4 +1,5 @@
 import functools
+import threading
 from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
@@ -357,6 +358,19 @@ class Provision(tmt.steps.Step):
 
         self.guests = []
         self._guest_data: dict[str, tmt.guest.GuestData] = {}
+
+        # ADDED: Centralized, thread-safe tracking of released guests
+        self._released_guests: set[str] = set()
+        self._released_guests_lock = threading.Lock()
+
+    # ADDED: Helper methods for thread-safe state tracking
+    def mark_guest_released(self, guest_name: str) -> None:
+        with self._released_guests_lock:
+            self._released_guests.add(guest_name)
+
+    def is_guest_released(self, guest_name: str) -> bool:
+        with self._released_guests_lock:
+            return guest_name in self._released_guests
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
