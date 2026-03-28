@@ -1,0 +1,118 @@
+run:
+    root: /path/to/fmf_root
+    remove: false
+    environment:
+        RUN_ENV: run_value
+    context: {}
+plans:
+  - name: /plans/local
+    summary: A local plan
+    enabled: true
+    order: 50
+    link:
+      - relates: https://something.org/related
+    environment:
+        PLAN_ENV: plan_value
+    discover:
+        enabled: true
+        phases:
+          - name: discover-fmf
+            how: fmf
+          - name: discover-shell
+            how: shell
+            tests:
+              - name: /shell-test
+                test: /bin/true
+        tests:
+          - name: /discover-fmf/tests/first
+            discover-phase: discover-fmf
+            test: ./test.sh
+            path: /discover-fmf/tests
+            summary: First test
+            enabled: true
+            order: 50
+            framework: beakerlib
+            manual: false
+            tty: false
+            duration: 5m
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 1
+            require:
+              - url: https://github.com/beakerlib/test
+                name: /very/deep/file
+                type: library
+            environment:
+                TEST_ENV: test_value
+            result: respect
+          - name: /discover-fmf/tests/second
+            discover-phase: discover-fmf
+            test: echo SECOND_TEST
+            path: /discover-fmf/tests
+            summary: Second test
+            enabled: true
+            order: 50
+            framework: shell
+            manual: false
+            tty: false
+            duration: 5m
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 2
+            result: respect
+            check:
+              - how: dmesg
+                enabled: true
+                result: info
+                failure-pattern:
+                  - 'Call Trace:'
+                  - \ssegfault\s
+          - name: /discover-shell/shell-test
+            discover-phase: discover-shell
+            test: /bin/true
+            path: /discover-shell/tests
+            enabled: true
+            order: 50
+            framework: shell
+            manual: false
+            tty: false
+            duration: 1h
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 3
+            result: respect
+    provision:
+        enabled: true
+        phases:
+          - how: container
+            environment:
+                PROVISION_ENV: provision_value
+            name: default-0
+    prepare:
+        enabled: true
+        phases:
+          - how: shell
+            script: echo "Prepare phase"
+            name: default-0
+    execute:
+        enabled: true
+        phases:
+          - name: Execute phase
+            how: tmt
+        results-path: plans/local/execute/results.yaml
+    report:
+        enabled: true
+        phases:
+          - name: default-0
+            how: display
+    finish:
+        enabled: true
+        phases:
+          - how: shell
+            script: echo "Finish phase"
+            name: default-0
+    cleanup:
+        enabled: true
+        phases:
+          - name: default-0
+            how: tmt
