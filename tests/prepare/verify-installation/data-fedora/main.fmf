@@ -15,22 +15,16 @@
     prepare+:
       - how: verify-installation
         verify:
-            make: tmt-artifact-shared
-            make-devel: tmt-artifact-shared
-            diffutils: fedora
+            diffstat: tmt-artifact-shared
 
 /plan/failure:
     prepare+:
       - how: verify-installation
         verify:
-            make: tmt-artifact-shared
-            make-devel: SOME_NON_EXISTENT_REPO
-            diffutils: fedora
+            diffstat: SOME_NON_EXISTENT_REPO
             random-non-existent-package: some-repo
 
 /test:
     test: /bin/true
     require:
-      - make
-      - make-devel
-      - diffutils
+      - diffstat

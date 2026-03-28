@@ -7,26 +7,26 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
+        . ../artifact/lib/common.sh || exit 1
+
+        setup_distro_environment
+        rlRun "image=\$TEST_IMAGE_PREFIX/\$image_name"
+
+        rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
+
+        # diffstat is built in Fedora koji - use Fedora release tag for both distros
+        get_koji_build_id "diffstat" "f\${fedora_release}"
+
         if rlIsFedora; then
-            . ../artifact/lib/common.sh || exit 1
-
-            setup_distro_environment
-            rlRun "image=\$TEST_IMAGE_PREFIX/\$image_name"
-
-            rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
-
-            # Fetch the latest koji build ID for make dynamically
-            get_koji_build_id "make" "f\${fedora_release}"
-
-            # Copy plan data and substitute the dynamic build ID
-            rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy test data"
-            rlRun "sed -i 's/KOJI_BUILD_ID/${KOJI_BUILD_ID}/g' \$data_dir/main.fmf" 0 "Substitute koji build ID"
-            rlRun "pushd \$data_dir"
+            rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy Fedora test data"
+        elif rlIsCentOS; then
+            # EPEL is enabled via prepare step in data-centos/main.fmf
+            rlRun "cp -r data-centos/. \$data_dir/" 0 "Copy CentOS test data"
         else
-            build_container_image "centos/stream10/upstream:latest"
-            rlRun "image=\$TEST_IMAGE_PREFIX/centos/stream10/upstream:latest"
-            rlRun "pushd data-centos"
+            rlDie "Unsupported distribution, must be Fedora or CentOS"
         fi
+        rlRun "sed -i 's/KOJI_BUILD_ID/${KOJI_BUILD_ID}/g' \$data_dir/main.fmf" 0 "Substitute koji build ID"
+        rlRun "pushd \$data_dir"
     rlPhaseEnd
 
     rlPhaseStartTest "Test successful verification"
@@ -35,16 +35,7 @@ rlJournalStart
             provision -h \$PROVISION_HOW --image \$image" \
             0 "Run verification test with correct repos"
 
-        # make and diffutils are available in both Fedora and CentOS
-        rlAssertGrep "pass .* / make" $rlRun_LOG
-        rlAssertGrep "pass .* / diffutils" $rlRun_LOG
-
-        if rlIsFedora; then
-            rlAssertGrep "pass .* / make-devel" $rlRun_LOG
-        else
-            rlAssertGrep "pass .* / centpkg" $rlRun_LOG
-        fi
-
+        rlAssertGrep "pass .* / diffstat" $rlRun_LOG
         rlAssertGrep "All packages verified successfully." $rlRun_LOG
         rlAssertNotGrep "Package source verification failed for:" $rlRun_LOG
         rlAssertGrep "1 test passed" $rlRun_LOG
@@ -56,20 +47,9 @@ rlJournalStart
             provision -h \$PROVISION_HOW --image \$image" \
             2 "Verification should fail with wrong repo"
 
-        # diffutils passes on both distros in the failure plan
-        rlAssertGrep "pass .* / diffutils" $rlRun_LOG
-
-        rlAssertGrep "4 packages" $rlRun_LOG
-        if rlIsFedora; then
-            rlAssertGrep "pass .* / make" $rlRun_LOG
-            rlAssertGrep "fail .* / make-devel" $rlRun_LOG
-            rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
-        else
-            rlAssertGrep "pass .* / centpkg" $rlRun_LOG
-            rlAssertGrep "fail .* / make" $rlRun_LOG
-            rlAssertGrep "actual 'baseos'" $rlRun_LOG
-        fi
-
+        rlAssertGrep "2 packages" $rlRun_LOG
+        rlAssertGrep "fail .* / diffstat" $rlRun_LOG
+        rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG
         rlAssertGrep "random-non-existent-package.*not installed" $rlRun_LOG
@@ -78,11 +58,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        if rlIsFedora; then
-            rlRun "rm -rf \$run \$data_dir" 0 "Removing run and data directories"
-        else
-            rlRun "rm -rf \$run" 0 "Removing run directory"
-        fi
+        rlRun "rm -rf \$run \$data_dir" 0 "Removing run and data directories"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

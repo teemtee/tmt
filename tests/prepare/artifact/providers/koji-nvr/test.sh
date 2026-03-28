@@ -13,7 +13,7 @@ rlJournalStart
         setup_distro_environment
 
         # Get koji NVR for make
-        get_koji_nvr "make" "f${fedora_release}"
+        get_koji_nvr "make" "f${release}"
     rlPhaseEnd
 
     rlPhaseStartTest "Test koji.nvr provider"

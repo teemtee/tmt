@@ -6,6 +6,9 @@ tag+:
   - provision-only
   - provision-container
 
+require:
+  - koji
+
 adjust:
   - when: distro != centos and distro != fedora
     enabled: false
