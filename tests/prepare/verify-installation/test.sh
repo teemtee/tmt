@@ -9,26 +9,20 @@ rlJournalStart
 
         . ../artifact/lib/common.sh || exit 1
 
+        setup_distro_environment
+
+        rlRun "image=$TEST_IMAGE_PREFIX/$image_name"
+
         rlRun "data_dir=$(mktemp -d)" 0 "Create temp data directory"
+        rlRun "cp -r data/. $data_dir/" 0 "Copy test data"
 
-        if rlIsFedora; then
-            setup_distro_environment
-            rlRun "image=$TEST_IMAGE_PREFIX/$image_name"
-            get_koji_build_id "centpkg" "f${fedora_release}"
-            rlRun "cp -r data-fedora/. $data_dir/" 0 "Copy test data"
-        else
-            setup_centos_environment
-            rlRun "image=$TEST_IMAGE_PREFIX/$image_name"
-            get_koji_build_id "centpkg" "$epel_tag"
-            rlRun "cp -r data-centos/. $data_dir/" 0 "Copy test data"
-        fi
-
+        get_koji_build_id "centpkg" "$koji_tag"
         rlRun "sed -i 's/KOJI_BUILD_ID/${KOJI_BUILD_ID}/g' $data_dir/main.fmf" 0 "Substitute koji build ID"
         rlRun "pushd $data_dir"
     rlPhaseEnd
 
     rlPhaseStartTest "Test successful verification"
-        rlRun -s "tmt run -i $run/success --scratch -vvv --all \
+        rlRun -s "tmt -c distro=$distro run -i $run/success --scratch -vvv --all \
             plan --name /plan/success \
             provision -h $PROVISION_HOW --image $image" \
             0 "Run verification test with correct repos"
@@ -41,7 +35,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test verification failure"
-        rlRun -s "tmt run -i $run/failure --scratch -vvv --all \
+        rlRun -s "tmt -c distro=$distro run -i $run/failure --scratch -vvv --all \
             plan --name /plan/failure \
             provision -h $PROVISION_HOW --image $image" \
             2 "Verification should fail with wrong repo"

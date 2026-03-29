@@ -12,7 +12,7 @@ rlJournalStart
         setup_distro_environment
 
         # Get koji build ID for make using common function
-        get_koji_build_id "make" "f${fedora_release}"
+        get_koji_build_id "make" "$koji_tag"
     rlPhaseEnd
 
     rlPhaseStartTest "Test artifact installation on Fedora"

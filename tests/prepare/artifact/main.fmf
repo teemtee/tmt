@@ -13,3 +13,8 @@ adjust:
   - when: distro != fedora
     enabled: false
     because: Need to dynamically handle centos/brew/epel artifacts somehow also
+  # FIXME: docker-ce.repo does not support Fedora 44+, pick a stable
+  # repository-file source available on all Fedora releases and remove this gate.
+  - when: distro ~> fedora-43
+    enabled: false
+    because: docker-ce.repo does not support Fedora 44+
