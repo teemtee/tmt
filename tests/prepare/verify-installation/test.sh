@@ -19,8 +19,7 @@ rlJournalStart
         else
             setup_centos_environment
             rlRun "image=$TEST_IMAGE_PREFIX/$image_name"
-            tag="epel${centos_release}$([ "${centos_release}" -ge 10 ] && echo '.x')"
-            get_koji_build_id "centpkg" "$tag"
+            get_koji_build_id "centpkg" "$epel_tag"
             rlRun "cp -r data-centos/. $data_dir/" 0 "Copy test data"
         fi
 
