@@ -1,5 +1,7 @@
 from typing import ClassVar, Optional
 
+import fmf.utils
+
 import tmt.base.core
 import tmt.steps
 import tmt.utils
@@ -12,6 +14,11 @@ from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
     ArtifactProvider,
     Repository,
+)
+from tmt.steps.prepare.install import PrepareInstall  # pyright: ignore[reportUnknownVariableType]
+from tmt.steps.prepare.verify_installation import (
+    PrepareVerifyInstallation,  # pyright: ignore[reportUnknownVariableType]
+    PrepareVerifyInstallationData,
 )
 from tmt.utils import Environment, Path
 
@@ -34,6 +41,17 @@ class PrepareArtifactData(PrepareStepData):
         help="""
             Default priority for created artifact repositories. Lower values mean
             higher priority in package managers.
+            """,
+    )
+
+    verify: bool = field(
+        default=True,
+        option='--verify/--no-verify',
+        is_flag=True,
+        help="""
+            Verify that packages from install phases that are present in the
+            artifact metadata were installed from the provider artifact
+            repository. Enabled by default.
             """,
     )
 
@@ -172,6 +190,14 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
     ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
 
+    #: Name of the auto-injected verify-installation phase.
+    VERIFY_PHASE_NAME: ClassVar[str] = 'verify-artifact-packages'
+
+    #: Summary of the auto-injected verify-installation phase.
+    VERIFY_PHASE_SUMMARY: ClassVar[str] = (
+        'Verify packages were installed from artifact repositories'
+    )
+
     def go(
         self,
         *,
@@ -272,6 +298,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Persist artifact metadata to YAML
         self._save_artifacts_metadata(providers)
 
+        # --- Verify phase injection (if enabled) ---
+        if self.data.verify:
+            self._inject_verify_phase(providers, guest)
+
         # Report configuration summary
         logger.info(
             f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
@@ -279,6 +309,75 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         return outcome
+
+    def _inject_verify_phase(self, providers: list[ArtifactProvider], guest: Guest) -> None:
+        """
+        Inject a verify-installation phase for packages from these providers.
+
+        If a verify phase already exists for the same where= group, merge
+        the packages into it. Otherwise, create and add a new phase.
+        """
+        # Collect packages explicitly listed in prepare install phases
+        # that are enabled for this guest.
+        pkg_names: set[str] = set()
+        _install_phases = self.step.phases(classes=PrepareInstall)  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
+        for install_phase in _install_phases:  # pyright: ignore[reportUnknownVariableType]
+            if not install_phase.enabled_on_guest(guest):  # pyright: ignore[reportUnknownMemberType]
+                continue
+            for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+                pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
+
+        # Build package → origin repo mapping from all providers.
+        # Repository providers (copr.repository, repository-file, repository-url) have
+        # artifact.location set to repository.name via enumerate_artifacts().
+        # Download providers (koji.build, copr.build) contribute artifacts to the shared
+        # repo, so their packages must be verified against SHARED_REPO_NAME.
+        pkg_to_repo: dict[str, str] = {}
+        for provider in providers:
+            if provider.get_repositories():
+                # Repository provider: location is the repo name set by enumerate_artifacts().
+                for artifact in provider.artifacts:
+                    pkg_to_repo[artifact.version.name] = artifact.location
+            else:
+                # Download provider: packages land in the shared repo.
+                for artifact in provider.artifacts:
+                    pkg_to_repo[artifact.version.name] = self.SHARED_REPO_NAME
+
+        # Only verify packages that are both required and from a known artifact.
+        pkgs_to_verify = {pkg: repo for pkg, repo in pkg_to_repo.items() if pkg in pkg_names}
+
+        if not pkgs_to_verify:
+            self.debug('No overlap between artifact packages and install phases.')
+            return
+
+        self.debug(f"Verifying {fmf.utils.listed(sorted(pkgs_to_verify), 'package')}.")
+
+        # Look for an existing verify phase for this where= group.
+        existing_verify: Optional[PrepareVerifyInstallation] = next(  # pyright: ignore[reportUnknownVariableType]
+            (
+                phase
+                for phase in self.step.phases(PrepareVerifyInstallation)  # pyright: ignore[reportUnknownArgumentType,reportUnknownVariableType]
+                if phase.data.name == self.VERIFY_PHASE_NAME  # pyright: ignore[reportUnknownMemberType]
+                and set(phase.data.where) == set(self.data.where)  # pyright: ignore[reportUnknownArgumentType,reportUnknownMemberType]
+            ),
+            None,
+        )
+
+        if existing_verify is not None:
+            # Merge into existing verify phase.
+            existing_verify.data.verify.update(pkgs_to_verify)  # pyright: ignore[reportUnknownMemberType]
+        else:
+            # Create and add a new verify phase.
+            verify_data = PrepareVerifyInstallationData(
+                name=self.VERIFY_PHASE_NAME,
+                how='verify-installation',
+                summary=self.VERIFY_PHASE_SUMMARY,
+                order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
+                where=list(self.data.where),
+                verify=pkgs_to_verify,
+            )
+            verify_phase = PreparePlugin.delegate(self.step, data=verify_data)  # pyright: ignore[reportUnknownVariableType]
+            self.step.add_phase(verify_phase)  # pyright: ignore[reportUnknownArgumentType]
 
     def essential_requires(self) -> list[tmt.base.core.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts
