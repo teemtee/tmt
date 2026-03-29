@@ -12,8 +12,6 @@
 #
 # Usage: setup_distro_environment
 #
-# TODO: Add CentOS/RHEL support when needed
-#
 setup_distro_environment() {
     if ! rlIsFedora; then
         rlDie "Test requires Fedora"
@@ -21,6 +19,24 @@ setup_distro_environment() {
 
     fedora_release="${1:-43}"
     image_name="fedora/${fedora_release}:latest"
+    build_container_image "$image_name"
+}
+
+# Setup CentOS test environment
+#
+# Sets the following global variables:
+#   centos_release - The CentOS Stream release version (e.g., "10")
+#   image_name - The container image name (e.g., "centos/stream10/upstream:latest")
+#
+# Usage: setup_centos_environment
+#
+setup_centos_environment() {
+    if ! rlIsCentOS; then
+        rlDie "Test requires CentOS"
+    fi
+
+    centos_release=$(rlGetDistroRelease)
+    image_name="centos/stream${centos_release}/upstream:latest"
     build_container_image "$image_name"
 }
 
