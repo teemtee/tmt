@@ -27,6 +27,7 @@ setup_distro_environment() {
 #
 # Sets the following global variables:
 #   centos_release - The CentOS Stream release version (e.g., "10")
+#   epel_tag - The EPEL koji tag (e.g., "epel10.3" or "epel9")
 #   image_name - The container image name (e.g., "centos/stream10/upstream:latest")
 #
 # Usage: setup_centos_environment
@@ -39,6 +40,11 @@ setup_centos_environment() {
     centos_release=$(rlGetDistroRelease)
     image_name="centos/stream${centos_release}/upstream:latest"
     build_container_image "$image_name"
+
+    # For CentOS 10+, packages are tagged under epelX.Y (e.g., epel10.3).
+    # For CentOS 9 and earlier, the plain epelX tag is used (e.g., epel9).
+    epel_tag=$(koji list-tags 2>/dev/null | grep -E "^epel${centos_release}\.[0-9]+$" | sort -V | tail -1)
+    epel_tag="${epel_tag:-epel${centos_release}}"
 }
 
 # Get koji build ID from package name (fetch latest for tag)
