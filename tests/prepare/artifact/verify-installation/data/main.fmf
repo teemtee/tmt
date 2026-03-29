@@ -1,0 +1,31 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+      - how: artifact
+        provide:
+          # DUMMY_KOJI_BUILD_ID placeholder - replace with actual koji build ID
+          # Example: koji.build:2761810
+          - koji.build:DUMMY_KOJI_BUILD_ID
+    execute:
+        how: tmt
+
+/plan/verify:
+    summary: Verify injection of verify-installation phase when verify=true (default)
+
+/plan/no-verify:
+    summary: Verify verify=false suppresses verify-installation phase injection
+    prepare:
+      - how: artifact
+        provide:
+          - koji.build:DUMMY_KOJI_BUILD_ID
+        verify: false
+
+/test:
+    test: /bin/true
+    duration: 5m
+    summary: Verify verify-installation injection behaviour
+    require:
+      - make

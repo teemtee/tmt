@@ -1,0 +1,4 @@
+summary: Test verify-installation injection
+description: |
+    Test that the verify-installation phase is injected
+    when verify=true (default) and suppressed when verify=false.
