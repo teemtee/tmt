@@ -2,3 +2,10 @@ summary: Test repository-file artifact provider
 description: |
     Test repository-file artifact provider which configures external
     package repositories from .repo files or URLs.
+
+# FIXME: docker-ce.repo does not support Fedora 44+, pick a stable
+# repository-file source available on all Fedora releases and remove this gate.
+adjust+:
+  - when: distro ~> fedora-43
+    enabled: false
+    because: docker-ce.repo does not support Fedora 44+
