@@ -13,6 +13,7 @@ from urllib.parse import urljoin
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
+from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
@@ -68,6 +69,7 @@ ProviderT = TypeVar(
 )  # Generic type for artifact provider subclasses
 
 
+@container
 class KojiArtifactProvider(ArtifactProvider):
     """
     Provider for downloading artifacts from Koji builds.
@@ -82,8 +84,10 @@ class KojiArtifactProvider(ArtifactProvider):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_id, repository_priority, logger)
+    _session: "ClientSession" = simple_field(init=False)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
         self._session = self._initialize_session()
 
     @cached_property
@@ -153,7 +157,11 @@ class KojiArtifactProvider(ArtifactProvider):
         """Create a build provider instance if build_id is available."""
         if self.build_id is None:
             return None
-        return build_cls(f"{prefix}:{self.build_id}", self.repository_priority, self.logger)
+        return build_cls(
+            f"{prefix}:{self.build_id}",
+            repository_priority=self.repository_priority,
+            logger=self.logger,
+        )
 
     @cached_property
     def build_provider(self) -> Optional['KojiBuild']:

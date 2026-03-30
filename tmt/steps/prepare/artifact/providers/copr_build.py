@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
+from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
@@ -61,6 +62,7 @@ def import_copr(logger: tmt.log.Logger) -> None:
 
 
 @provides_artifact_provider("copr.build")
+@container
 class CoprBuildArtifactProvider(ArtifactProvider):
     """
     Provider for downloading artifacts from Copr builds.
@@ -78,8 +80,12 @@ class CoprBuildArtifactProvider(ArtifactProvider):
               - copr.build:1784470:fedora-32-x86_64
     """
 
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_id, repository_priority, logger)
+    _session: 'Client' = simple_field(init=False)
+    build_id: int = simple_field(init=False)
+    chroot: str = simple_field(init=False)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
         self._session = self._initialize_session()
         try:
             build_id_str, chroot = self.id.split(":", 1)
