@@ -10,7 +10,7 @@ rlJournalStart
         rlRun "pushd data"
         rlRun "run=$(mktemp -d)" 0 "Create run directory"
 
-        setup_distro_environment 44
+        setup_distro_environment
     rlPhaseEnd
 
     rlPhaseStartTest "Test copr-repository provider with command-line override"
