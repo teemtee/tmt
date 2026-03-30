@@ -187,9 +187,9 @@ jobs:
     tmt_plan: /plans/provision/virtual
 
   - <<: *provision
+    <<: *image-mode
     identifier: provision-virtual-image-mode
     tmt_plan: /plans/provision/virtual
-    <<: *image-mode
 
   # Test internal plugins
   - <<: *test-base
