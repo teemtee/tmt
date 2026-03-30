@@ -62,7 +62,6 @@ import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, wrap_text
 from ruamel.yaml import YAML
-from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
 from urllib3.response import HTTPResponse
@@ -3524,6 +3523,8 @@ def _yaml(
 
     # We use the safe mode as default in order to use CParser from ruamel.yaml.clib
     yaml_type = yaml_type or "safe"
+    # Note that we cannot mix yaml_type loader and dumper because roundtrip data is not
+    # serializable to safe.
     yaml = YAML(typ=yaml_type)
 
     # Setting `mapping` and `offset` may lead to a subpar-looking YAML
@@ -3594,7 +3595,9 @@ def _sanitize_yaml_tree(value: Any, sort_keys: bool) -> Any:
     if isinstance(value, MutableMapping):
         if sort_keys:
             # Sort the data https://stackoverflow.com/a/40227545
-            sorted_value = CommentedMap()
+            # TODO: This needs to be CommentedMap if using roundtrip, but it is incompatible with
+            #  safe yaml mode.
+            sorted_value = {}
 
             for key in sorted(value):
                 sorted_value[key] = value[key]
