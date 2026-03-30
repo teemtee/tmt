@@ -520,7 +520,7 @@ class Queue(list[TaskT]):
 
             new_order = [task.name for task in self]
 
-            if current_order != new_order:
+            if current_order != new_order and self.is_running:
                 self.show_tasks(
                     f'{self.name} queue: reordering after task {task.name}', self._logger
                 )

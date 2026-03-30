@@ -121,21 +121,6 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
             return
 
         if self.plan.provision.ready_guests:
-            # Prepare guests
-            guest_copies: list[Guest] = []
-
-            for guest in self.plan.provision.ready_guests:
-                # Create a guest copy and change its parent so that the
-                # operations inside finish plugins on the guest use the
-                # finish step config rather than provision step config.
-                guest_copy = copy.copy(guest)
-                guest_copy.inject_logger(
-                    guest._logger.clone().apply_verbosity_options(**self._cli_options)
-                )
-                guest_copy.parent = self
-
-                guest_copies.append(guest_copy)
-
             self._queue.reset()
 
             for phase in self.phases(classes=(Action, FinishPlugin)):
