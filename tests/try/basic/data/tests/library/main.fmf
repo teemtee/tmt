@@ -1,0 +1,11 @@
+# Same as /tests/libraries/local/data with the original library(example/tree)
+test: ./test.sh
+framework: beakerlib
+require:
+  - library(example/file)
+
+# Do not run this on all plans so we can save the git cloning overhead
+enabled: false
+adjust:
+  - when: with-library is defined and with-library == true
+    enabled: true

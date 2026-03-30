@@ -1,0 +1,8 @@
+provision:
+    how: local
+discover:
+    how: fmf
+execute:
+    how: tmt
+context:
+    with-library: true
