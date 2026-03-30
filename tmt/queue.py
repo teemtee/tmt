@@ -508,6 +508,11 @@ class Queue(list[TaskT]):
 
             new_order = [task.name for task in self]
 
+            if current_order != new_order:
+                self.show_tasks(
+                    f'{self.name} queue: reordering after task {task.name}', self._logger
+                )
+
             return current_order != new_order
 
     def run(self) -> Iterator[TaskT]:
