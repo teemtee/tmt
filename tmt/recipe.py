@@ -276,15 +276,10 @@ class _RecipeStep(SpecBasedContainer[_RawRecipeStep, _RawRecipeStep], Serializab
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeStep':
-        try:
-            step_data = step.data
-        except tmt.utils.SpecificationError:
-            # Do not save invalid phases
-            step_data = []
-
+        enabled = bool(step.enabled)
         return _RecipeStep(
-            enabled=bool(step.enabled),
-            phases=[phase.to_minimal_spec() for phase in step_data],
+            enabled=enabled,
+            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
         )
 
     # ignore[override]: does not match the signature on purpose, we need to pass logger
@@ -334,16 +329,11 @@ class _RecipeDiscoverStep(_RecipeStep):
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeDiscoverStep':
-        try:
-            step_data = step.data
-        except tmt.utils.SpecificationError:
-            # Do not save invalid phases
-            step_data = []
-
         assert isinstance(step, Discover)
+        enabled = bool(step.enabled)
         return _RecipeDiscoverStep(
-            enabled=bool(step.enabled),
-            phases=[phase.to_minimal_spec() for phase in step_data],
+            enabled=enabled,
+            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
             tests=[_RecipeTest.from_test_origin(test_origin) for test_origin in step.tests()],
         )
 
@@ -374,16 +364,20 @@ class _RecipeExecuteStep(_RecipeStep):
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeExecuteStep':
-        try:
-            step_data = step.data
-        except tmt.utils.SpecificationError:
-            # Do not save invalid phases
-            step_data = []
+        enabled = bool(step.enabled)
         return _RecipeExecuteStep(
-            enabled=bool(step.enabled),
-            phases=[phase.to_minimal_spec() for phase in step_data],
+            enabled=enabled,
+            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
             results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
         )
+
+    def to_fmf_spec(self) -> list[_RawStepData]:
+        spec = super().to_fmf_spec()
+        # Return the default execute phase if no phases were provided.
+        # This is needed so that the plan is discovered correctly.
+        if not spec:
+            return [_RawStepData(how='tmt')]
+        return spec
 
 
 @container

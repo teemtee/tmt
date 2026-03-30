@@ -20,6 +20,7 @@ rlJournalStart
         rlAssertGrep "pass /discover-shell/shell-test" $rlRun_LOG
         rlAssertGrep "summary: 3 tests executed" $rlRun_LOG
         rlAssertGrep "script: echo \"Finish phase\"" $rlRun_LOG
+        rlAssertGrep "total: 3 tests passed" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Test recipe loading with remote repository"
@@ -27,10 +28,11 @@ rlJournalStart
         rlAssertGrep "summary: 1 test selected" $rlRun_LOG
         rlAssertGrep "pass /tests/one" $rlRun_LOG
         rlAssertGrep "summary: 1 test executed" $rlRun_LOG
+        rlAssertGrep "total: 1 test passed" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Test recipe loading of imported plan"
-        rlRun -s "tmt run -vvv --scratch --id $run --recipe import.yaml discover"
+        rlRun -s "tmt run -vvv --scratch --id $run --recipe import.yaml"
         rlAssertGrep "summary: 2 tests selected" $rlRun_LOG
     rlPhaseEnd
 
