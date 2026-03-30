@@ -2,11 +2,16 @@
 RPM-specific version type shared across package managers and artifact providers.
 """
 
+import re
 from typing import Any
 
 from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.package_managers import Version
+
+NEVRA_PATTERN = re.compile(
+    r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
+)
 
 
 @container(frozen=True)
@@ -62,3 +67,27 @@ class RpmVersion(Version):
         name, version, release = parts
 
         return cls(name=name, version=version, release=release, arch=arch, epoch=0)
+
+    @classmethod
+    def from_nevra(cls, nevra: str) -> Self:
+        """
+        Version constructed from a NEVRA string as returned by ``dnf repoquery``.
+
+        Example usage:
+
+        .. code-block:: python
+
+            version_info = RpmVersion.from_nevra("curl-0:8.11.1-7.fc42.x86_64")
+            version_info = RpmVersion.from_nevra("curl-8.11.1-7.fc42.x86_64")
+        """
+        match = NEVRA_PATTERN.match(nevra)
+        if not match:
+            raise ValueError(f"Cannot parse NEVRA '{nevra}'.")
+
+        return cls(
+            name=match.group('name'),
+            epoch=int(match.group('epoch') or 0),
+            version=match.group('version'),
+            release=match.group('release'),
+            arch=match.group('arch'),
+        )
