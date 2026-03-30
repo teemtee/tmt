@@ -47,7 +47,7 @@ DEFAULT_LOG_PATTERNS: list[Pattern[str]] = [
 ]
 
 
-def yaml_to_dict(data: str, yaml_type: Optional[tmt.utils.YamlTypType] = None) -> dict[str, Any]:
+def yaml_to_dict(data: str, yaml_type: tmt.utils.YamlTypType = "safe") -> dict[str, Any]:
     d: dict[str, Any] = _yaml_to_dict(data, yaml_type=yaml_type)
 
     return d
