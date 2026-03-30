@@ -586,6 +586,8 @@ class Queue(list[TaskT]):
 
                 return
 
+        self.is_running = False
+
     def stop(self) -> Iterable[TaskT]:
         """
         Stop crunching the queue tasks.
