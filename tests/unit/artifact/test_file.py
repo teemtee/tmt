@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tmt.steps.prepare.artifact.providers import RpmVersion
+from tmt.package_managers._rpm import RpmVersion
 from tmt.utils import Path
 
 
