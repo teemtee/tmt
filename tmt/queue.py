@@ -434,7 +434,7 @@ class Queue(list[TaskT]):
 
         For example, for a queue with three tasks, none invoked yet, the
         head task number would be ``1``. After invoking the first task,
-        the head task number would be ``1``.
+        the head task number would be ``2``.
 
         :returns: task number of the first task in the queue, or
             ``None`` if the queue is empty.
