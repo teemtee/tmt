@@ -464,13 +464,13 @@ class Queue(list[TaskT]):
 
         return self._invoked_tasks + len(self)
 
-    def _show_tasks(self, label: str) -> None:
-        self._logger.info(label, color='cyan')
+    def show_tasks(self, label: str, logger: Logger) -> None:
+        logger.info(label, color='cyan')
 
         if not self:
             return
 
-        task_logger = self._logger.descend()
+        task_logger = logger.descend()
 
         # Narrow type: this shall no longer be undefined as we
         # do have at least one item in the queue.
@@ -483,9 +483,12 @@ class Queue(list[TaskT]):
                 color='cyan',
             )
 
-    def enqueue_task(self, task: TaskT) -> None:
+    def enqueue_task(self, task: TaskT) -> bool:
         """
-        Put new task into a queue
+        Put new task into a queue.
+
+        :returns: ``True`` if the queue was reordered because of the new
+            task, ``False`` otherwise.
         """
 
         # While `append()` is thread-safe and atomic, sorting certainly
@@ -505,8 +508,7 @@ class Queue(list[TaskT]):
 
             new_order = [task.name for task in self]
 
-            if current_order != new_order:
-                self._show_tasks(f'{self.name} queue: reordering after task {task.name}')
+            return current_order != new_order
 
     def run(self) -> Iterator[TaskT]:
         """
@@ -516,7 +518,7 @@ class Queue(list[TaskT]):
         instance of this class is yielded.
         """
 
-        self._show_tasks(f'queued {self.name} tasks')
+        self.show_tasks(f'queued {self.name} tasks', self._logger)
 
         # `self` test does not need to be protected by a lock: nothing
         # except the `pop()` below removes tasks from the queue, so if

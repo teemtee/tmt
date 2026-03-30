@@ -18,7 +18,7 @@ rlJournalStart
     rlPhaseStartTest "Last step"
         rlRun -s "$tmt login -c true"
         rlAssertGrep "interactive" "$rlRun_LOG"
-        rlRun "grep '^    finish$' -A4 '$rlRun_LOG' | grep -i interactive"
+        rlRun "grep '^    finish$' -A5 '$rlRun_LOG' | grep -i interactive"
     rlPhaseEnd
 
     for step in discover provision prepare execute report finish; do
@@ -26,11 +26,11 @@ rlJournalStart
             rlRun -s "$tmt login -c true -s $step"
 
             if [ "$step" = "provision" ]; then
-                rlRun "grep '^    $step$' -A13 '$rlRun_LOG' | grep -i interactive"
+                rlRun "grep '^    $step$' -A15 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "prepare" ]; then
-                rlRun "grep '^    $step$' -A17 '$rlRun_LOG' | grep -i interactive"
+                rlRun "grep '^    $step$' -A18 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "execute" ]; then
-                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i interactive"
+                rlRun "grep '^    $step$' -A10 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "discover" ]; then
                 rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'Login not possible in discover step'"
             else
