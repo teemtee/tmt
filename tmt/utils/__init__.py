@@ -3503,7 +3503,7 @@ _YAML_REPRESENTERS: dict[Any, Callable[[Representer, Any], Any]] = {
 
 def _yaml(
     *,
-    yaml_type: Optional[YamlTypType] = None,
+    yaml_type: YamlTypType = "safe",
     width: Optional[int] = None,
     start: bool = False,
 ) -> YAML:
@@ -3522,7 +3522,6 @@ def _yaml(
     """
 
     # We use the safe mode as default in order to use CParser from ruamel.yaml.clib
-    yaml_type = yaml_type or "safe"
     # Note that we cannot mix yaml_type loader and dumper because roundtrip data is not
     # serializable to safe.
     yaml = YAML(typ=yaml_type)
@@ -3632,7 +3631,7 @@ def _sanitize_yaml_tree(value: Any, sort_keys: bool) -> Any:
 def to_yaml(
     data: Any,
     *,
-    yaml_type: Optional[YamlTypType] = None,
+    yaml_type: YamlTypType = "safe",
     width: Optional[int] = None,
     sort: bool = False,
     start: bool = False,
@@ -3662,7 +3661,7 @@ def to_yaml(
     return output.getvalue()
 
 
-def from_yaml(data: str, *, yaml_type: Optional[YamlTypType] = None) -> Any:
+def from_yaml(data: str, *, yaml_type: YamlTypType = "safe") -> Any:
     """
     Convert a YAML content into the corresponding Python data structures.
 
@@ -3679,7 +3678,7 @@ def from_yaml(data: str, *, yaml_type: Optional[YamlTypType] = None) -> Any:
         raise GeneralError('Invalid YAML syntax.') from error
 
 
-def yaml_to_dict(data: str, *, yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
+def yaml_to_dict(data: str, *, yaml_type: YamlTypType = "safe") -> dict[Any, Any]:
     """
     Convert a YAML content into a Python dictionary.
 
@@ -3705,7 +3704,7 @@ def yaml_to_dict(data: str, *, yaml_type: Optional[YamlTypType] = None) -> dict[
     return loaded_data
 
 
-def yaml_to_list(data: str, *, yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
+def yaml_to_list(data: str, *, yaml_type: YamlTypType = 'safe') -> list[Any]:
     """
     Convert a YAML content into a Python list.
 
