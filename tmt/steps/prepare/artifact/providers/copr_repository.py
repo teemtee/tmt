@@ -6,7 +6,6 @@ import re
 from re import Pattern
 from typing import Optional
 
-import tmt.log
 import tmt.utils
 from tmt._compat.typing import Self
 from tmt.container import container
@@ -48,6 +47,7 @@ class CoprRepo:
 
 
 @provides_artifact_provider('copr.repository')
+@container
 class CoprRepositoryProvider(ArtifactProvider):
     """
     Provider for enabling Copr repositories and making their packages available.
@@ -65,13 +65,7 @@ class CoprRepositoryProvider(ArtifactProvider):
               - copr.repository:@teemtee/stable
     """
 
-    copr_repo: str  # Parsed Copr repository name (e.g. 'packit/packit-dev')
-    repository: Optional[Repository]
-
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_id, repository_priority, logger)
-        self.copr_repo = self.id
-        self.repository = None
+    repository: Optional[Repository] = None
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
@@ -112,9 +106,9 @@ class CoprRepositoryProvider(ArtifactProvider):
         Enable the Copr repository on the guest and retrieve the resulting
         ``.repo`` file content.
         """
-        guest.package_manager.enable_copr(self.copr_repo)
+        guest.package_manager.enable_copr(self.id)
 
-        repo = CoprRepo.from_id(self.copr_repo)
+        repo = CoprRepo.from_id(self.id)
         owner = f'group_{repo.name}' if repo.is_group else repo.name
         # TODO: Replace hardcoded hub URL by passing it from PrepareArtifacts to providers.
         repo_filename = f"_copr:copr.fedorainfracloud.org:{owner}:{repo.project}.repo"
@@ -128,5 +122,5 @@ class CoprRepositoryProvider(ArtifactProvider):
                 f"Failed to read '{repo_filename}' from the guest."
             ) from error
 
-        self.repository = Repository.from_content(output.stdout or '', self.copr_repo, self.logger)
+        self.repository = Repository.from_content(output.stdout or '', self.id, self.logger)
         return []

@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import tmt.log
 import tmt.utils
+from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
@@ -24,6 +25,7 @@ _REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
 
 @provides_artifact_provider('repository-file')
+@container
 class RepositoryFileProvider(ArtifactProvider):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
@@ -40,10 +42,7 @@ class RepositoryFileProvider(ArtifactProvider):
     :raises GeneralError: If the .repo file URL is invalid.
     """
 
-    repository: Repository
-
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_id, repository_priority, logger)
+    repository: Repository = simple_field(init=False)
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:

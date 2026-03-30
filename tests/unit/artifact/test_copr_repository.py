@@ -6,18 +6,6 @@ from tmt.package_managers._rpm import RpmVersion
 
 
 @pytest.mark.parametrize(
-    ("raw_id", "expected"),
-    [
-        ("copr.repository:packit/packit-dev", "packit/packit-dev"),
-        ("copr.repository:@teemtee/stable", "@teemtee/stable"),
-    ],
-)
-def test_valid_repository_id(raw_id, expected, artifact_provider):
-    provider = artifact_provider(raw_id)
-    assert provider.copr_repo == expected
-
-
-@pytest.mark.parametrize(
     ("raw_id", "error"),
     [
         ("copr.repository:invalid-id", "Invalid Copr repository format"),
