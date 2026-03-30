@@ -536,7 +536,7 @@ class Repository:
     @property
     def filename(self) -> str:
         """The name of the .repo file (e.g., 'my-repo.repo')."""
-        return f"{tmt.utils.sanitize_name(self.name)}.repo"
+        return f"{tmt.utils.sanitize_name(self.name, allow_slash=False)}.repo"
 
 
 _PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider]] = PluginRegistry(
