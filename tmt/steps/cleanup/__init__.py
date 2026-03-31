@@ -140,7 +140,7 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
                 self._queue.enqueue_plugin(
                     phase=phase,
                     guests=[
-                        guest for guest in self._guest_copies if phase.enabled_on_guest(guest)
+                        guest for guest in self._steppified_guests if phase.enabled_on_guest(guest)
                     ],
                 )
 
