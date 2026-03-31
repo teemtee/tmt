@@ -1,11 +1,14 @@
 import abc
 import copy
+import functools
+import threading
 from collections.abc import Iterable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar
 
 from tmt._compat.typing import ParamSpec
 from tmt.log import Logger
+from tmt.utils import GeneralError
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Self
@@ -18,6 +21,7 @@ TaskResultT = TypeVar('TaskResultT')
 TaskT = TypeVar('TaskT', bound='Task')  # type: ignore[type-arg]
 
 
+@functools.total_ordering
 class Task(abc.ABC, Generic[TaskResultT]):
     """
     A base class for queueable actions.
@@ -34,6 +38,12 @@ class Task(abc.ABC, Generic[TaskResultT]):
     #: A logger to use for logging events related to the outcome.
     logger: Logger
 
+    #: Order of this task. Follow the semantics of the
+    #: :tmt:story:`/spec/test/order` key, the lower the number, the
+    #: earlier the task runs. Tasks with ``order`` left unset will be
+    #: invoked last, in no guaranteed order.
+    order: Optional[int] = None
+
     #: Result returned by the task when executed.
     result: Optional[TaskResultT] = None
 
@@ -48,6 +58,49 @@ class Task(abc.ABC, Generic[TaskResultT]):
 
     def __init__(self, logger: Logger) -> None:
         self.logger = logger
+
+    # Magic methods to support queue sorting: sort tasks by their `order`,
+    # `order=None` means "undefined" and comes last. `@total_ordering`
+    # should fill in the blanks.
+    def __gt__(self, other: Any) -> bool:
+        if not isinstance(other, Task):
+            raise GeneralError(
+                f"Cannot compare task of type '{self.__class__.__name__}'"
+                f" with '{type(other).__name__}'."
+            )
+
+        # Both tasks do not care about their order, they shall remain
+        # in the order in which they are now.
+        if self.order is None and other.order is None:
+            return False
+
+        # Other task cares about its order while this one does not, that
+        # puts this task after the other automatically, no matter what
+        # the other `order` value is.
+        if self.order is None and other.order is not None:
+            return True
+
+        # This task cares about its order while the other does not, that
+        # puts the other task after this one automatically, no matter
+        # what this tasks's `order` is.
+        if self.order is not None and other.order is None:
+            return False
+
+        # Both tasks care about their order, therefore their ordering
+        # shall put the one with lower `order` first.
+        if self.order is not None and other.order is not None:
+            return self.order > other.order
+
+        raise NotImplementedError
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Task):
+            raise GeneralError(
+                f"Cannot compare task of type '{self.__class__.__name__}'"
+                f" with '{type(other).__name__}'."
+            )
+
+        return self.order == other.order
 
     @property
     @abc.abstractmethod
@@ -354,6 +407,13 @@ class Queue(list[TaskT]):
     #: otherwise, :py:meth:`run` will quit.
     _keep_running: bool
 
+    #: Number of tasks that were already invoked.
+    _invoked_tasks: int
+
+    #: Lock protecting modifications of the queue, i.e. the list of
+    #: tasks.
+    _queue_lock: threading.Lock
+
     def __init__(self, name: str, logger: Logger) -> None:
         super().__init__()
 
@@ -361,18 +421,99 @@ class Queue(list[TaskT]):
         self._keep_running = True
         self._logger = logger
 
-    def enqueue_task(self, task: TaskT) -> None:
+        self._invoked_tasks = 0
+        self._queue_lock = threading.Lock()
+
+    # We only need to track the head and tail to properly calculate the
+    # task queue number dynamically. Adding task number to each task
+    # would require re-defining it whenever the queue get reordered.
+    @property
+    def _head_task_number(self) -> Optional[int]:
         """
-        Put new task into a queue
+        Task number of the task currently at the beginning of the queue.
+
+        For example, for a queue with three tasks, none invoked yet, the
+        head task number would be ``1``. After invoking the first task,
+        the head task number would be ``2``.
+
+        :returns: task number of the first task in the queue, or
+            ``None`` if the queue is empty.
         """
 
-        self.append(task)
+        if not self:
+            return None
 
-        self._logger.info(
-            f'queued {self.name} task #{len(self)}',
-            task.name,
-            color='cyan',
-        )
+        return self._invoked_tasks + 1
+
+    @property
+    def _tail_task_number(self) -> Optional[int]:
+        """
+        Task number of the last task in the queue.
+
+        For example, for a queue with three tasks, none invoked yet, the
+        tail task number would be ``3``. After invoking the first task,
+        the tail task would still be ``3``. If new task is added, the
+        tail task number would be ``4``.
+
+        :returns: task number of the last task in the queue, or
+            ``None`` if the queue is empty.
+        """
+
+        if not self:
+            return None
+
+        return self._invoked_tasks + len(self)
+
+    def show_tasks(self, label: str, logger: Logger) -> None:
+        logger.info(label, color='cyan')
+
+        if not self:
+            return
+
+        task_logger = logger.descend()
+
+        # Narrow type: this shall no longer be undefined as we
+        # do have at least one item in the queue.
+        assert self._head_task_number is not None
+
+        for task_number, task in enumerate(self, start=self._head_task_number):
+            task_logger.info(
+                f'#{task_number}',
+                task.name,
+                color='cyan',
+            )
+
+    def enqueue_task(self, task: TaskT) -> bool:
+        """
+        Put new task into a queue.
+
+        :returns: ``True`` if the queue was reordered because of the new
+            task, ``False`` otherwise.
+        """
+
+        # While `append()` is thread-safe and atomic, sorting certainly
+        # isn't.
+        with self._queue_lock:
+            self.append(task)
+
+            self._logger.debug(
+                f'{self.name} queue: added task',
+                task.name,
+            )
+
+            # Reorder the remaining tasks.
+            current_order = [task.name for task in self]
+
+            self.sort()
+
+            new_order = [task.name for task in self]
+
+            if current_order != new_order:
+                self.show_tasks(
+                    f'{self.name} queue: reordering after task {task.name}', self._logger
+                )
+
+            return current_order != new_order
 
     def run(self) -> Iterator[TaskT]:
         """
@@ -382,16 +523,28 @@ class Queue(list[TaskT]):
         instance of this class is yielded.
         """
 
-        task_count = len(self)
+        self.show_tasks(f'queued {self.name} tasks', self._logger)
 
+        # `self` test does not need to be protected by a lock: nothing
+        # except the `pop()` below removes tasks from the queue, so if
+        # the queue is empty, it will remain empty, and if it has tasks,
+        # it will remain having at least the same amount of tasks.
+        #
+        # `pop()` must be protected, because it must not collide with
+        # 1. addition of tasks - that would be fine, both `append()`
+        # and `pop()` are atomic - but also 2. sorting of the queue
+        # after addition, which is not atomic.
         while self:
-            task_index = task_count - len(self)
-            task = self.pop(0)
+            with self._queue_lock:
+                task_number = self._head_task_number
+                task = self.pop(0)
+
+                self._invoked_tasks += 1
 
             self._logger.info('')
 
             self._logger.info(
-                f'{self.name} task #{task_index + 1}',
+                f'{self.name} task #{task_number}',
                 task.name,
                 color='cyan',
             )

@@ -42,9 +42,9 @@ rlJournalStart
     rlPhaseStartTest "Prepare"
         rlRun -s "tmt -vvv run --scratch --id $run discover provision prepare plan -n plans"
 
-        rlRun "grep '^        queued prepare task #1: essential-requires on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
-        rlRun "grep '^        queued prepare task #2: default-0 on client-1 (client) and client-2 (client)' $rlRun_LOG"
-        rlRun "grep '^        queued prepare task #3: default-1 on server (server)' $rlRun_LOG"
+        rlRun "grep '^            #1: essential-requires on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
+        rlRun "grep '^            #2: default-0 on client-1 (client) and client-2 (client)' $rlRun_LOG"
+        rlRun "grep '^            #3: default-1 on server (server)' $rlRun_LOG"
 
         rlRun "grep '^        prepare task #1: essential-requires on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
         rlRun "grep '^\\[client-1 (client)\\]         how: install' $rlRun_LOG"
@@ -90,9 +90,9 @@ rlJournalStart
 
         rlRun "grep 'summary: 7 tests executed' $rlRun_LOG"
 
-        rlRun "grep '^        queued execute task #1: server-setup on server (server)' $rlRun_LOG"
-        rlRun "grep '^        queued execute task #2: tests on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
-        rlRun "grep '^        queued execute task #3: teardown on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
+        rlRun "grep '^            #1: server-setup on server (server)' $rlRun_LOG"
+        rlRun "grep '^            #2: tests on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
+        rlRun "grep '^            #3: teardown on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
 
         rlRun "grep '^        execute task #1: server-setup on server (server)' $rlRun_LOG"
         rlRun "grep '^                ..:..:.. pass /server-setup/tests/A (on server (server)) \\[1/1\\]' $rlRun_LOG"

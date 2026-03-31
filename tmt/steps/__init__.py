@@ -3294,6 +3294,7 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
         super().__init__(logger)
 
         self.phase = phase
+        self.order = phase.order
 
     @property
     def name(self) -> str:
@@ -3322,6 +3323,7 @@ class PluginTask(
         super().__init__(guests, logger)
 
         self.phase = phase
+        self.order = phase.order
 
     @property
     def phase_name(self) -> str:
@@ -3350,18 +3352,20 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
     Queue class for running phases on guests
     """
 
-    def enqueue_action(self, *, phase: Action) -> None:
-        self.enqueue_task(ActionTask(phase, phase._logger))
+    def enqueue_action(self, *, phase: Action) -> bool:
+        return self.enqueue_task(ActionTask(phase, phase._logger))
 
     def enqueue_plugin(
         self, *, phase: Plugin[StepDataT, PluginReturnValueT], guests: list['Guest']
-    ) -> None:
+    ) -> bool:
         if not guests:
             raise tmt.utils.MetadataError(
                 f'No guests queued for phase "{phase}". A typo in "where" key?'
             )
 
-        self.enqueue_task(PluginTask(phase, guests, phase._logger))
+        task = PluginTask(phase, guests, phase._logger)
+
+        return self.enqueue_task(task)
 
 
 class PushTask(tmt.queue.MultiGuestTask[None]):
