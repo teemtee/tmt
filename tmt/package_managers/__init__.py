@@ -506,17 +506,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         :param repository: The repository to query.
         :returns: A list of versions available in the repository.
         """
-        from tmt.package_managers._rpm import RpmVersion
-
-        script = self.engine.list_packages(repository)
-        output = self.guest.execute(script)
-        stdout = output.stdout
-
-        if stdout is None:
-            raise GeneralError("Repository query provided no output")
-
-        stripped_lines = (line.strip() for line in stdout.strip().splitlines())
-        return [RpmVersion.from_nevra(line) for line in stripped_lines if line]
+        raise NotImplementedError
 
     def get_package_origin(self, packages: Iterable[str]) -> 'dict[str, PackageOrigin]':
         """
