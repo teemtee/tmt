@@ -418,11 +418,19 @@ class Queue(list[TaskT]):
         super().__init__()
 
         self.name = name
-        self._keep_running = True
         self._logger = logger
-
-        self._invoked_tasks = 0
         self._queue_lock = threading.Lock()
+
+        self.reset()
+
+    def reset(self) -> None:
+        """
+        Reset queue content and properties as if it was just created.
+        """
+
+        self[:] = []
+        self._keep_running = True
+        self._invoked_tasks = 0
 
     # We only need to track the head and tail to properly calculate the
     # task queue number dynamically. Adding task number to each task

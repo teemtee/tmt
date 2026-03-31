@@ -1378,6 +1378,25 @@ class Step(
         prune_directory(self.workdir, preserved_members, self._logger)
 
 
+# TODO: one day this class will be integrated into `Step`. For now, not
+# all steps use queue, not all steps return meaningful results, and turning
+# `Step` into a generic over step data and plugin outcome makes quite a
+# noisy patches full of changes not related to queues.
+class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
+    """
+    Common parent of all steps that use queue to run phases in parallel.
+    """
+
+    _queue: 'PhaseQueue[StepDataT, PluginReturnValueT]'
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+        self._queue = PhaseQueue(
+            self.step_name, self._logger.descend(logger_name=f'{self.step_name}.queue')
+        )
+
+
 class Method:
     """
     Step implementation method
