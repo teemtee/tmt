@@ -24,3 +24,4 @@
 - [ ] Use the bulk edit in the [milestone view](https://github.com/orgs/teemtee/projects/1/views/19) to set the milestone for all issues and pull requests included in the sprint
 - [ ] Close the corresponding [release milestone](https://github.com/teemtee/tmt/milestones)
 - [ ] Once the non development [copr build](https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/builds/) is completed, run the [publish-images](https://github.com/teemtee/tmt/actions/workflows/publish-images.yml) workflow to build fresh container image.
+- [ ] Announce the release on the #tmt channels, highlight interesting changes
