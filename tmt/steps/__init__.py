@@ -1403,23 +1403,26 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
         )
 
     @functools.cached_property
-    def _guest_copies(self) -> list['Guest']:
-        # Create a guest copy and change its parent so that the operations
-        # inside this step's phases on the guest use this step's config
-        # rather than provision step config.
+    def _steppified_guests(self) -> list['Guest']:
+        """
+        Ready guests with setup and logger switched to this step.
 
-        guest_copies: list[Guest] = []
+        Returned guests will behave as if they use this step's
+        setup and logging rather than the setup and logging of their
+        original step, ``provision``.
+        """
 
-        for guest in self.plan.provision.ready_guests:
-            guest_copy = copy.copy(guest)
-            guest_copy.inject_logger(
-                guest._logger.clone().apply_verbosity_options(**self._cli_options)
-            )
-            guest_copy.parent = self
+        def _copy_guest(guest: 'Guest') -> 'Guest':
+            logger = guest._logger
 
-            guest_copies.append(guest_copy)
+            guest = copy.copy(guest)
+            guest.inject_logger(logger.clone().apply_verbosity_options(**self._cli_options))
 
-        return guest_copies
+            guest.parent = self
+
+            return guest
+
+        return [_copy_guest(guest) for guest in self.plan.provision.ready_guests]
 
     def add_phase(self, phase: Phase) -> None:
         """
@@ -1447,7 +1450,7 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
                 self._queue.enqueue_plugin(
                     phase=phase,  # type: ignore[arg-type]
                     guests=[
-                        guest for guest in self._guest_copies if phase.enabled_on_guest(guest)
+                        guest for guest in self._steppified_guests if phase.enabled_on_guest(guest)
                     ],
                 )
 
