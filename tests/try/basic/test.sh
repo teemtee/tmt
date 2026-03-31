@@ -44,6 +44,8 @@ rlJournalStart
         rlRun -s "./rerun.exp"
         rlAssertGrep "Let's try.*/plans/rerun" $rlRun_LOG
         rlAssertGrep "pass /tests/library" $rlRun_LOG
+        # Make sure `/tests/library` does not fail on second run
+        rlAssertNotGrep "fail /tests/library" $rlRun_LOG
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
