@@ -61,6 +61,7 @@ from tmt.package_managers import (
 from tmt.utils import (
     Command,
     Environment,
+    EnvVarValue,
     GeneralError,
     OnProcessEndCallback,
     OnProcessStartCallback,
@@ -69,9 +70,6 @@ from tmt.utils import (
     ShellScript,
     configure_constant,
     effective_workdir_root,
-)
-from tmt.utils import (
-    EnvVarValue as EnvVarValue,
 )
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
@@ -2210,6 +2208,12 @@ class Guest(
 
             if isinstance(self.parent, tmt.steps.Step):
                 environment.update(self.parent.plan)
+
+            # TODO: this was owned by plan, but at wrong position, and it will
+            # be owned by plan again once the dust of environment untangling
+            # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
+            # more.
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
 
         else:
             # Create a copy of given environment - this prevents any
