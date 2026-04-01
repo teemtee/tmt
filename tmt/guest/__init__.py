@@ -2374,6 +2374,25 @@ class Guest(
 
         raise NotImplementedError
 
+    def download(self, url: str, destination: Path) -> None:
+        """
+        Download a file from a URL to a path on the guest.
+
+        :param url: URL to download from.
+        :param destination: path on the guest to save the file to.
+        :raises GeneralError: if the download fails.
+        """
+
+        try:
+            self.execute(
+                ShellScript(f"curl -L --fail -o {quote(str(destination))} {quote(url)}"),
+                silent=True,
+            )
+        except tmt.utils.RunError as error:
+            raise tmt.utils.GeneralError(
+                f"Failed to download '{url}' to '{destination}'."
+            ) from error
+
     @abc.abstractmethod
     def stop(self) -> None:
         """

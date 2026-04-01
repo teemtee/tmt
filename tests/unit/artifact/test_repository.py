@@ -231,23 +231,10 @@ def test_url_no_path(root_logger):
 
 
 @pytest.fixture
-def mock_repo_file_fetch():
-    with patch(
-        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
-    ) as mock_retry_session:
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = VALID_REPO_CONTENT
-        mock_response.raise_for_status.return_value = None
-        mock_session.get.return_value = mock_response
-        mock_retry_session.return_value.__enter__.return_value = mock_session
-        yield mock_session
-
-
-@pytest.fixture
 def mock_guest_and_pm(mock_package_manager):
     mock_guest = MagicMock()
     mock_guest.package_manager = mock_package_manager
+    mock_guest.execute.return_value.stdout = VALID_REPO_CONTENT
     return mock_guest, mock_package_manager
 
 
@@ -260,7 +247,7 @@ def test_id_extraction(artifact_provider):
     assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
 
 
-def test_artifacts_before_fetch(mock_repo_file_fetch, artifact_provider):
+def test_artifacts_before_fetch(artifact_provider):
     """Test that repository provider artifacts returns empty list"""
 
     provider = artifact_provider("repository-file:https://example.com/test.repo")
@@ -270,7 +257,7 @@ def test_artifacts_before_fetch(mock_repo_file_fetch, artifact_provider):
     assert provider.artifacts == []
 
 
-def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath):
+def test_fetch_contents(mock_guest_and_pm, artifact_provider, tmppath):
     """Test that fetch_contents is a no-op for repository providers"""
 
     mock_guest, _ = mock_guest_and_pm
@@ -291,9 +278,7 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, artifact_provid
     assert len(artifacts) == 0
 
 
-def test_contribute_to_shared_repo(
-    mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath
-):
+def test_contribute_to_shared_repo(mock_guest_and_pm, artifact_provider, tmppath):
     """Test that contribute_to_shared_repo does nothing for repository providers"""
 
     mock_guest, mock_package_manager = mock_guest_and_pm
@@ -316,7 +301,7 @@ def test_contribute_to_shared_repo(
     assert provider.artifacts == []
 
 
-def test_get_repositories(mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath):
+def test_get_repositories(mock_guest_and_pm, artifact_provider, tmppath):
     """Test that get_repositories returns the initialized repository"""
 
     mock_guest, _ = mock_guest_and_pm
