@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+# Try selected plan, rerun it and quit
+
+set timeout 600
+spawn tmt try -p /plans/rerun
+expect "What do we do next?"
+send -- "t\r"
+expect "What do we do next?"
+send -- "q\r"
+expect eof

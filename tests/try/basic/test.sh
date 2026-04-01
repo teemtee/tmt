@@ -40,6 +40,15 @@ rlJournalStart
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Local Plan (rerun)"
+        rlRun -s "./rerun.exp"
+        rlAssertGrep "Let's try.*/plans/rerun" $rlRun_LOG
+        rlAssertGrep "pass /tests/library" $rlRun_LOG
+        # Make sure `/tests/library` does not fail on second run
+        rlAssertNotGrep "fail /tests/library" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartTest "Epel"
         rlRun -s "./epel.exp"
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
