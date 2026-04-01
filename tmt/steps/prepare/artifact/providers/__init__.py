@@ -12,7 +12,7 @@ from typing import Any, Optional
 import tmt.log
 import tmt.utils
 from tmt._compat.typing import TypeAlias
-from tmt.container import container
+from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.package_managers import Repository, Version
 from tmt.plugins import PluginRegistry
@@ -69,6 +69,7 @@ class ArtifactInfo:
 ArtifactProviderId: TypeAlias = str
 
 
+@container
 class ArtifactProvider(ABC):
     """
     Base class for artifact providers.
@@ -80,23 +81,29 @@ class ArtifactProvider(ABC):
     * downloading a single given artifact.
     """
 
-    #: Identifier of this artifact provider. It is valid and unique
-    #: in the domain of this provider. ``koji.build:12345``. URL for a
-    #: repository, and so on.
-    id: ArtifactProviderId
+    #: Original full provider id given
+    raw_id: str
 
     #: Repository priority for providers that create repositories.
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        self.repository_priority = repository_priority
-        self.logger = logger
-        self.raw_id = raw_id
-        # Sanitize the provider ID to use as a directory name
-        self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
+    logger: tmt.log.Logger
 
-        self.id = self._extract_provider_id(raw_id)
+    #: Identifier of this artifact provider. It is valid and unique
+    #: in the domain of this provider. ``koji.build:12345``. URL for a
+    #: repository, and so on.
+    id: ArtifactProviderId = simple_field(init=False)
+
+    def __post_init__(self) -> None:
+        self.id = self._extract_provider_id(self.raw_id)
+
+    @cached_property
+    def sanitized_id(self) -> str:
+        """
+        Sanitized provider ID to use as a directory name
+        """
+        return tmt.utils.sanitize_name(self.raw_id, allow_slash=False)
 
     @classmethod
     @abstractmethod

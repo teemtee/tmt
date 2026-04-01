@@ -5,8 +5,8 @@ from functools import cached_property
 from shlex import quote
 from typing import ClassVar, Optional
 
-import tmt.log
 import tmt.utils
+from tmt.container import container, simple_field
 from tmt.guest import Guest, TransferOptions
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
@@ -20,6 +20,7 @@ from tmt.utils import ShellScript
 
 
 @provides_artifact_provider("file")
+@container
 class PackageAsFileArtifactProvider(ArtifactProvider):
     """
     Provider for preparing artifacts from local or remote package files.
@@ -47,9 +48,12 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
 
     SUPPORTED_PREFIX: ClassVar[str] = "file"
 
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_id, repository_priority, logger)
-        source = raw_id[len(f"{self.SUPPORTED_PREFIX}:") :]
+    _source: str = simple_field(init=False)
+    _is_url: bool = simple_field(init=False)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        source = self.raw_id[len(f"{self.SUPPORTED_PREFIX}:") :]
         parsed = urllib.parse.urlparse(source)
         self._source = source
         self._is_url = parsed.scheme in ("http", "https")
