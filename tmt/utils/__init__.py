@@ -83,7 +83,7 @@ if TYPE_CHECKING:
     import tmt.utils.themes
     from tmt._compat.typing import ParamSpec, Self, TypeAlias
     from tmt.guest import GuestLog
-    from tmt.hardware import Size
+    from tmt.hardware.constraints import Size
 
 
 def sanitize_string(text: str) -> str:

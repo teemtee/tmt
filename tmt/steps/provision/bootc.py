@@ -17,7 +17,7 @@ from tmt.utils import Path
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
-    from tmt.hardware import Size
+    from tmt.hardware.constraints import Size
 
 DEFAULT_TMP_PATH = "/var/tmp/tmt"  # noqa: S108
 
