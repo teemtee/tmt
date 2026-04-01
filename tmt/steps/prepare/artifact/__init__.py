@@ -265,6 +265,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             guest.package_manager.install_repository(repo)
             logger.debug(f"Installed repository '{repo.name}'.")
 
+        # Enumerate artifacts from installed repositories.
+        for provider in providers:
+            provider.enumerate_artifacts(guest)
+
         # Persist artifact metadata to YAML
         self._save_artifacts_metadata(providers)
 

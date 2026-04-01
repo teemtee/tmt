@@ -2,9 +2,9 @@
 Abstract base class for artifact providers.
 """
 
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
-from functools import cached_property
 from re import Pattern
 from shlex import quote
 from typing import Any, Optional
@@ -15,8 +15,13 @@ from tmt._compat.typing import TypeAlias
 from tmt.container import container
 from tmt.guest import Guest
 from tmt.package_managers import Repository, Version
+from tmt.package_managers._rpm import RpmVersion
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path, ShellScript
+
+NEVRA_PATTERN = re.compile(
+    r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
+)
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -73,11 +78,15 @@ class ArtifactProvider(ABC):
     """
     Base class for artifact providers.
 
-    Each provider must implement:
+    Two provider patterns exist:
 
-    * parsing and validating the artifact ID,
-    * listing available artifacts,
-    * downloading a single given artifact.
+    * **Download providers** (e.g. ``koji.build``): override :py:attr:`artifacts`
+      as a ``@cached_property``, implement :py:meth:`_download_artifact` and
+      :py:meth:`contribute_to_shared_repo`. Do not use :py:attr:`_artifacts`.
+
+    * **Repository providers** (e.g. ``copr.repository``): implement
+      :py:meth:`get_repositories`. After installation, :py:meth:`enumerate_artifacts`
+      queries the package manager and populates :py:attr:`_artifacts`.
     """
 
     #: Identifier of this artifact provider. It is valid and unique
@@ -89,6 +98,10 @@ class ArtifactProvider(ABC):
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
+    #: All artifacts known to this provider. Populated by
+    #: :py:meth:`_download_artifact` and/or :py:meth:`enumerate_artifacts`.
+    _artifacts: list[ArtifactInfo]
+
     def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
         self.repository_priority = repository_priority
         self.logger = logger
@@ -97,6 +110,7 @@ class ArtifactProvider(ABC):
         self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
 
         self.id = self._extract_provider_id(raw_id)
+        self._artifacts = []
 
     @classmethod
     @abstractmethod
@@ -111,20 +125,15 @@ class ArtifactProvider(ABC):
 
         raise NotImplementedError
 
-    @cached_property
-    @abstractmethod
+    @property
     def artifacts(self) -> Sequence[ArtifactInfo]:
         """
         Collect all artifacts available from this provider.
 
-        The method is left for derived classes to implement with respect
-        to the actual artifact provider they implement. The list of
-        artifacts will be cached, and is treated as read-only.
-
         :returns: a list of provided artifacts.
         """
 
-        raise NotImplementedError
+        return self._artifacts
 
     @abstractmethod
     def _download_artifact(
@@ -219,6 +228,48 @@ class ArtifactProvider(ABC):
         Return a list of :py:class:`Repository` that this provider manages.
         """
         return []
+
+    def enumerate_artifacts(
+        self, guest: Guest
+    ) -> None:  # TODO: refactor this once the NEVRA parsing is centralized.
+        """
+        Enumerate artifacts from repositories returned by :py:meth:`get_repositories`
+        and populate :py:attr:`_artifacts`. Call this after repositories are installed.
+
+        For repository providers only. Does not include artifacts contributed to
+        the shared repository — those are handled by :py:meth:`contribute_to_shared_repo`.
+        """
+        for repository in self.get_repositories():
+            try:
+                nevras = guest.package_manager.list_packages(repository)
+            except tmt.utils.RunError as error:
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Failed to enumerate packages from repository '{repository.name}'.",
+                    logger=self.logger,
+                )
+                continue
+            count = 0
+            for nevra in nevras:
+                nevra = nevra.strip()
+                if not nevra:
+                    continue
+                try:
+                    self._artifacts.append(
+                        ArtifactInfo(
+                            version=RpmVersion.from_nevra(nevra),
+                            provider=self,
+                            location=repository.name,
+                        )
+                    )
+                    count += 1
+                except ValueError as error:
+                    tmt.utils.show_exception_as_warning(
+                        exception=error,
+                        message=f"Could not parse NEVRA '{nevra}'.",
+                        logger=self.logger,
+                    )
+            self.logger.debug(f"Enumerated {count} packages from repository '{repository.name}'.")
 
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation
