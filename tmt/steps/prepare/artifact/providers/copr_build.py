@@ -19,7 +19,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
-    DownloadError,
     provides_artifact_provider,
 )
 from tmt.utils import ShellScript
@@ -135,20 +134,6 @@ class CoprBuildArtifactProvider(ArtifactProvider):
                 f"Provider id '{raw_id}' is invalid, how did we get here?"
             ) from error
         return value
-
-    def _download_artifact(
-        self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
-    ) -> None:
-        try:
-            # Destination directory is guaranteed to exist, download the artifact
-            guest.execute(
-                tmt.utils.ShellScript(
-                    f"curl -L --fail -o {quote(str(destination))} {quote(artifact.location)}"
-                ),
-                silent=True,
-            )
-        except Exception as error:
-            raise DownloadError(f"Failed to download '{artifact}'.") from error
 
     @cached_property
     def result_url(self) -> str:
