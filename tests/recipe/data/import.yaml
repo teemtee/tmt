@@ -31,8 +31,6 @@ plans:
         TMT_VERSION: version
         TMT_TREE: /run_path/plans/import/tree
         TMT_PLAN_DATA: /run_path/plans/import/data
-        TMT_PLAN_ENVIRONMENT_FILE:
-            /run_path/plans/import/data/variables.env
         TMT_PLAN_SOURCE_SCRIPT:
             /run_path/plans/import/data/plan-source-script.sh
     discover:

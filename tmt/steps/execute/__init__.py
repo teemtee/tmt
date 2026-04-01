@@ -346,6 +346,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             environment.update(
                 self.guest.environment,
                 self.test.environment,
+                self.guest.plan_environment,
                 self.phase.parent.plan.environment,
             )
 
@@ -362,6 +363,12 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
 
         else:
             environment = self._environment
+
+        # TODO: this was owned by plan, but at wrong position, and it will
+        # be owned by plan again once the dust of environment untangling
+        # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
+        # more.
+        environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.guest.plan_environment_path)
 
         environment.update(
             # Add variables from invocation contexts
