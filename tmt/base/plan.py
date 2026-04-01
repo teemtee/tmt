@@ -511,7 +511,6 @@ class Plan(
         Contains all environment variables collected from multiple
         sources (in the following order):
 
-        * :ref:`plan environment file <step-variables>`,
         * plan's ``environment`` and ``environment-file`` keys,
         * importing plan's environment,
         * ``--environment`` and ``--environment-file`` options,
