@@ -15,7 +15,6 @@ from tmt._compat.typing import TypeAlias
 from tmt.container import container
 from tmt.guest import Guest
 from tmt.package_managers import Repository, Version
-from tmt.package_managers._rpm import RpmVersion
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path, ShellScript
 
