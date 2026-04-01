@@ -3387,6 +3387,7 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
         return self.enqueue_task(task)
 
 
+@container
 class PushTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir push to a guest
@@ -3397,9 +3398,13 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
         return f'push to {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        if guest.is_released:
+            logger.debug(f"Skipping push to released guest '{guest.name}'")
+            return
         guest.push()
 
 
+@container
 class PullTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir pull from a guest
@@ -3419,6 +3424,9 @@ class PullTask(tmt.queue.MultiGuestTask[None]):
         return f'pull from {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        if guest.is_released:
+            logger.debug(f"Skipping pull from released guest '{guest.name}'")
+            return
         guest.pull(source=self.source)
 
 

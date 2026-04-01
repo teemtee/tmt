@@ -1745,6 +1745,21 @@ class Guest(
 
         return self.workdir
 
+    @property
+    def is_released(self) -> bool:
+        """
+        Check if guest was released early, safely querying the central provision step.
+
+        Returns:
+            bool: True if guest has been released and should be skipped for operations.
+                  False for active guests or when provision step is unavailable.
+        """
+        # The tmt runner guest (GuestLocal) parent is Run, not Step, so it lacks .plan
+        parent_plan = getattr(self.parent, 'plan', None)
+        if parent_plan is None:
+            return False
+        return bool(parent_plan.provision.is_guest_released(self.name))
+
     def _random_name(self, prefix: str = '', length: int = 16) -> str:
         """
         Generate a random name

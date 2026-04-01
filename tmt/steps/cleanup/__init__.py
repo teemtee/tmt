@@ -134,6 +134,8 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
         guest_copies: list[Guest] = []
 
         for guest in self.plan.provision.guests:
+            if guest.is_released:
+                continue
             # Create a guest copy and change its parent so that the
             # operations inside cleanup plugins on the guest use the
             # cleanup step config rather than provision step config.
