@@ -1832,6 +1832,10 @@ class Guest(
 
     @functools.cached_property
     def plan_environment_path(self) -> Path:
+        """
+        A path to the :ref:`plan environment file <step-variables>` file.
+        """
+
         parent = cast('Provision', self.parent)
 
         path = parent.plan.data_directory / f'{PLAN_ENVIRONMENT_FILENAME}-{self.safe_name}'
@@ -1843,6 +1847,10 @@ class Guest(
 
     @property
     def plan_environment(self) -> Environment:
+        """
+        Environment sourced from the :ref:`plan environment file <step-variables>`.
+        """
+
         if self.plan_environment_path.exists() and self.plan_environment_path.stat().st_size > 0:
             return tmt.utils.Environment.from_file(
                 filename=self.plan_environment_path.name,
