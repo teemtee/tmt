@@ -58,6 +58,7 @@ from tmt.package_managers import (
 )
 from tmt.utils import (
     Command,
+    Environment,
     GeneralError,
     OnProcessEndCallback,
     OnProcessStartCallback,
@@ -66,6 +67,9 @@ from tmt.utils import (
     ShellScript,
     configure_constant,
     effective_workdir_root,
+)
+from tmt.utils import (
+    EnvVarValue as EnvVarValue,
 )
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
@@ -77,6 +81,9 @@ if TYPE_CHECKING:
 
 
 T = TypeVar('T')
+
+#: Name of the :ref:`plan environment file <step-variables>`.
+PLAN_ENVIRONMENT_FILENAME = 'variables.env'
 
 #: How many seconds to wait for a connection to succeed after guest boot.
 #: This is the default value tmt would use unless told otherwise.
@@ -1822,6 +1829,28 @@ class Guest(
             if self.facts.is_ostree
             else tmt.steps.scripts.DEFAULT_SCRIPTS_DEST_DIR
         )
+
+    @functools.cached_property
+    def plan_environment_path(self) -> Path:
+        parent = cast('Provision', self.parent)
+
+        path = parent.plan.data_directory / f'{PLAN_ENVIRONMENT_FILENAME}-{self.safe_name}'
+        path.touch(exist_ok=True)
+
+        self.debug(f"Create the environment file '{path}'.", level=2)
+
+        return path
+
+    @property
+    def plan_environment(self) -> Environment:
+        if self.plan_environment_path.exists() and self.plan_environment_path.stat().st_size > 0:
+            return tmt.utils.Environment.from_file(
+                filename=self.plan_environment_path.name,
+                root=self.plan_environment_path.parent,
+                logger=self._logger,
+            )
+
+        return Environment()
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
