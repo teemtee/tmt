@@ -99,7 +99,7 @@ def fixture_mocked_queue(
     return [step, step._queue, plugin]
 
 
-def test_add_phase_addeed_to_queue(
+def test_add_phase_added_to_queue(
     mocked_queue: tuple[tmt.steps.StepWithQueue, tmt.queue.Queue, tmt.steps.Plugin],
 ) -> None:
     step, queue, plugin = mocked_queue
