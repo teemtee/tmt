@@ -35,7 +35,8 @@ if TYPE_CHECKING:
 UNITS = pint.UnitRegistry()
 
 # The default formatting should use unit symbols rather than full names.
-UNITS.default_format = '~'
+# reportDeprecated: in some Pint versions, this method is deprecated.
+UNITS.default_format = '~'  # type: ignore[reportDeprecated,unused-ignore]
 
 
 class Operator(enum.Enum):
@@ -491,7 +492,7 @@ class Constraint(BaseConstraint):
     operator_handler: OperatorHandlerType
 
     # Constraint value.
-    value: ConstraintValue  # Subclasses will specialize further
+    value: Any  # Subclasses will specialize further
 
     # Stored for possible inspection by more advanced processing.
     raw_value: str
