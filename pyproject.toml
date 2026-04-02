@@ -286,9 +286,6 @@ ignore = [
     "tmt/queue.py",
     "tmt/utils/__init__.py",
     "tmt/utils/structured_field.py",
-    # pyright does not pick up pint's _typing.py or something :/
-    "tmt/hardware/__init__.py",
-    "tmt/hardware/constraints.py",
 ]
 
 pythonVersion = "3.9"
