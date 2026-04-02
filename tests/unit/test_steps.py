@@ -100,9 +100,7 @@ def fixture_mocked_queue(
 
 
 def test_add_phase_addeed_to_queue(
-    mocked_queue: tuple[
-        tmt.steps.StepWithQueue, tmt.queue.Queue, tmt.steps.Plugin, tmt.steps.Action
-    ],
+    mocked_queue: tuple[tmt.steps.StepWithQueue, tmt.queue.Queue, tmt.steps.Plugin],
 ) -> None:
     step, queue, plugin = mocked_queue
 
