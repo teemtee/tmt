@@ -10,6 +10,7 @@ import tmt.log
 import tmt.utils
 from tmt.container import container, simple_field
 from tmt.guest import Guest
+from tmt.package_managers import YUM_REPOS_DIR
 from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -83,8 +84,13 @@ class RepositoryFileProvider(ArtifactProvider):
             self.repository = Repository.from_file_path(file_path=parsed_path, logger=self.logger)
         else:
             repo_filename = parsed_path.name
-            remote_path = Path(f"/etc/yum.repos.d/{repo_filename}")
-            guest.download(self.id, remote_path)
+            remote_path = YUM_REPOS_DIR / repo_filename
+            try:
+                guest.download(self.id, remote_path)
+            except tmt.utils.GeneralError as error:
+                raise PrepareError(
+                    f"Failed to download repository file '{self.id}' to the guest."
+                ) from error
             try:
                 output = guest.execute(tmt.utils.Command("cat", remote_path))
             except tmt.utils.RunError as error:

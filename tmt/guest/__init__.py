@@ -2398,7 +2398,10 @@ class Guest(
 
         try:
             self.execute(
-                ShellScript(f"curl -L --fail -o {quote(str(destination))} {quote(url)}"),
+                ShellScript(
+                    f"{self.facts.sudo_prefix} curl -L --fail"
+                    f" -o {quote(str(destination))} {quote(url)}"
+                ),
                 silent=True,
             )
         except tmt.utils.RunError as error:
