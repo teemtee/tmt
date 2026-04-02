@@ -5,15 +5,31 @@ run:
         RUN_ENV: run_value
     context: {}
 plans:
-  - name: /plans/insert
-    summary: A plan with inserted steps
+  - name: /plans/local
+    summary: A local plan
     enabled: true
     order: 50
+    link:
+      - relates: https://something.org/related
     environment:
         PLAN_ENV: plan_value
     discover:
         enabled: true
         phases:
+          - name: discover-fmf
+            how: fmf
+            order: 50
+            url-content-type: git
+            dist-git-source: false
+            dist-git-download-only: false
+            dist-git-install-builddeps: false
+            modified-only: false
+            dist-git-init: false
+            dist-git-remove-fmf-root: false
+            dist-git-merge: false
+            sync-repo: false
+            fmf-id: false
+            prune: false
           - name: discover-shell
             how: shell
             order: 50
@@ -31,11 +47,50 @@ plans:
                 tty: false
                 duration: 1h
                 result: respect
-          - name: default-0
-            how: fmf
-            order: 50
-            url-content-type: git
         tests:
+          - name: /discover-fmf/tests/first
+            discover-phase: discover-fmf
+            test: ./test.sh
+            path: /discover-fmf/tests
+            summary: First test
+            enabled: true
+            order: 50
+            framework: beakerlib
+            manual: false
+            tty: false
+            duration: 5m
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 1
+            require:
+              - url: https://github.com/beakerlib/test
+                name: /very/deep/file
+                type: library
+            environment:
+                TEST_ENV: test_value
+            result: respect
+          - name: /discover-fmf/tests/second
+            discover-phase: discover-fmf
+            test: echo SECOND_TEST
+            path: /discover-fmf/tests
+            summary: Second test
+            enabled: true
+            order: 50
+            framework: shell
+            manual: false
+            tty: false
+            duration: 5m
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 2
+            result: respect
+            check:
+              - how: dmesg
+                enabled: true
+                result: info
+                failure-pattern:
+                  - 'Call Trace:'
+                  - \ssegfault\s
           - name: /discover-shell/shell-test
             discover-phase: discover-shell
             test: /bin/true
@@ -48,51 +103,8 @@ plans:
             duration: 1h
             restart-max-count: 1
             restart-with-reboot: false
-            serial-number: 1
-            result: respect
-          - name: /default-0/tests/first
-            discover-phase: default-0
-            test: ./test.sh
-            path: /default-0/tests
-            summary: First test
-            enabled: true
-            order: 50
-            framework: beakerlib
-            manual: false
-            tty: false
-            duration: 5m
-            restart-max-count: 1
-            restart-with-reboot: false
-            serial-number: 2
-            require:
-              - url: https://github.com/beakerlib/test
-                name: /very/deep/file
-                type: library
-            environment:
-                TEST_ENV: test_value
-            result: respect
-          - name: /default-0/tests/second
-            discover-phase: default-0
-            test: echo SECOND_TEST
-            path: /default-0/tests
-            summary: Second test
-            enabled: true
-            order: 50
-            framework: shell
-            manual: false
-            tty: false
-            duration: 5m
-            restart-max-count: 1
-            restart-with-reboot: false
             serial-number: 3
             result: respect
-            check:
-              - how: dmesg
-                enabled: true
-                result: info
-                failure-pattern:
-                  - 'Call Trace:'
-                  - \ssegfault\s
     provision:
         enabled: true
         phases:
@@ -114,10 +126,12 @@ plans:
           - name: default-0
             how: shell
             order: 50
+            script:
+              - echo "Prepare phase"
     execute:
         enabled: true
         phases:
-          - name: default-0
+          - name: Execute phase
             how: tmt
             order: 50
             duration: 1h
@@ -126,7 +140,7 @@ plans:
             interactive: false
             restraint-compatible: false
             no-progress-bar: false
-        results-path: plans/insert/execute/results.yaml
+        results-path: plans/local/execute/results.yaml
     report:
         enabled: true
         phases:
@@ -140,6 +154,8 @@ plans:
           - name: default-0
             how: shell
             order: 50
+            script:
+              - echo "Finish phase"
     cleanup:
         enabled: true
         phases:
