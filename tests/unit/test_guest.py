@@ -156,6 +156,11 @@ def test_execute_no_connection_closed(
 
     monkeypatch.setattr(
         guest,
+        '_prepare_environment',
+        MagicMock(return_value=Environment()),
+    )
+    monkeypatch.setattr(
+        guest,
         '_run_guest_command',
         MagicMock(return_value=CommandOutput(stdout=stdout, stderr=None)),
     )
