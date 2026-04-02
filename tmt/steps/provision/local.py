@@ -132,10 +132,7 @@ class GuestLocal(tmt.Guest):
         sourced_files = sourced_files or []
 
         # Prepare the environment (plan/cli variables override)
-        environment = tmt.utils.Environment()
-        environment.update(env or {})
-        if self.parent:
-            environment.update(self.parent.plan.environment)
+        environment = self._prepare_environment(env)
 
         if tty:
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
