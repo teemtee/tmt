@@ -4,9 +4,9 @@ import pytest
 
 import tmt.utils
 from tests.unit.test_hardware import FULL_HARDWARE_REQUIREMENTS, OR_HARDWARE_REQUIREMENTS
-from tmt.hardware import (
+from tmt.hardware.constraints import Operator
+from tmt.hardware.requirements import (
     Hardware,
-    Operator,
     _parse_cpu,
     _parse_device,
     _parse_disk,

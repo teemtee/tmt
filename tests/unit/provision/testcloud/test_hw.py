@@ -7,7 +7,8 @@ import pytest
 from testcloud.domain_configuration import DomainConfiguration, TPMConfiguration
 
 from tests.unit import MATCH, assert_log
-from tmt.hardware import TPM_VERSION_ALLOWED_OPERATORS, Hardware, Operator
+from tmt.hardware.constraints import Operator
+from tmt.hardware.requirements import TPM_VERSION_ALLOWED_OPERATORS, Hardware
 from tmt.log import Logger
 from tmt.steps.provision.testcloud import (
     TPM_VERSION_ALLOWED_OPERATORS as virtual_TPM_VERSION_ALLOWED_OPERATORS,  # noqa: N811
