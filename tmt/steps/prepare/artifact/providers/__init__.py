@@ -15,7 +15,6 @@ from tmt._compat.typing import TypeAlias
 from tmt.container import container
 from tmt.guest import Guest
 from tmt.package_managers import Repository, Version
-from tmt.package_managers._rpm import RpmVersion
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path, ShellScript
 
@@ -110,7 +109,7 @@ class ArtifactProvider(ABC):
         self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
 
         self.id = self._extract_provider_id(raw_id)
-        self._artifacts = []
+        self._artifacts: list[ArtifactInfo] = []
 
     @classmethod
     @abstractmethod
@@ -229,9 +228,7 @@ class ArtifactProvider(ABC):
         """
         return []
 
-    def enumerate_artifacts(
-        self, guest: Guest
-    ) -> None:  # TODO: refactor this once the NEVRA parsing is centralized.
+    def enumerate_artifacts(self, guest: Guest) -> None:
         """
         Enumerate artifacts from repositories returned by :py:meth:`get_repositories`
         and populate :py:attr:`_artifacts`. Call this after repositories are installed.
@@ -241,7 +238,7 @@ class ArtifactProvider(ABC):
         """
         for repository in self.get_repositories():
             try:
-                nevras = guest.package_manager.list_packages(repository)
+                packages = guest.package_manager.list_packages(repository)
             except tmt.utils.RunError as error:
                 tmt.utils.show_exception_as_warning(
                     exception=error,
@@ -249,27 +246,17 @@ class ArtifactProvider(ABC):
                     logger=self.logger,
                 )
                 continue
-            count = 0
-            for nevra in nevras:
-                nevra = nevra.strip()
-                if not nevra:
-                    continue
-                try:
-                    self._artifacts.append(
-                        ArtifactInfo(
-                            version=RpmVersion.from_nevra(nevra),
-                            provider=self,
-                            location=repository.name,
-                        )
+            for rpm_version in packages:
+                self._artifacts.append(
+                    ArtifactInfo(
+                        version=rpm_version,
+                        provider=self,
+                        location=repository.name,
                     )
-                    count += 1
-                except ValueError as error:
-                    tmt.utils.show_exception_as_warning(
-                        exception=error,
-                        message=f"Could not parse NEVRA '{nevra}'.",
-                        logger=self.logger,
-                    )
-            self.logger.debug(f"Enumerated {count} packages from repository '{repository.name}'.")
+                )
+            self.logger.debug(
+                f"Enumerated {len(packages)} packages from repository '{repository.name}'."
+            )
 
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation
