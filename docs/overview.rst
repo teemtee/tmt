@@ -651,6 +651,9 @@ TMT_PLAN_ENVIRONMENT_FILE
     **not** allowed, use ``TMT_PLAN_SOURCE_SCRIPT`` instead to include
     other bash commands.
 
+    Note that this is not shared between guests of the given plan, each
+    guest has its own dedicated file.
+
     Example of the file content::
 
         COUNT=1
