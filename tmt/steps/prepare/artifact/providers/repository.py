@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 import tmt.log
 import tmt.utils
-from tmt.guest import Guest
+from tmt.guest import DownloadError, Guest
 from tmt.package_managers import YUM_REPOS_DIR
 from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
@@ -88,7 +88,7 @@ class RepositoryFileProvider(ArtifactProvider):
             remote_path = YUM_REPOS_DIR / repo_filename
             try:
                 guest.download(self.id, remote_path)
-            except tmt.utils.GeneralError as error:
+            except DownloadError as error:
                 raise PrepareError(
                     f"Failed to download repository file '{self.id}' to the guest."
                 ) from error

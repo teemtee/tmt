@@ -459,6 +459,12 @@ SoftRebootModes = Literal[RebootMode.SOFT, RebootMode.SYSTEMD_SOFT]
 HardRebootModes = Literal[RebootMode.HARD]
 
 
+class DownloadError(tmt.utils.GeneralError):
+    """
+    Raised when download fails.
+    """
+
+
 class RebootModeNotSupportedError(ProvisionError):
     """A requested reboot mode is not supported by the guest"""
 
@@ -2392,9 +2398,7 @@ class Guest(
                 silent=True,
             )
         except tmt.utils.RunError as error:
-            raise tmt.utils.GeneralError(
-                f"Failed to download '{url}' to '{destination}'."
-            ) from error
+            raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
 
     @abc.abstractmethod
     def stop(self) -> None:
