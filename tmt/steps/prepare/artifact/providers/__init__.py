@@ -14,7 +14,7 @@ import tmt.log
 import tmt.utils
 from tmt._compat.typing import TypeAlias
 from tmt.container import container, simple_field
-from tmt.guest import Guest
+from tmt.guest import DownloadError, Guest
 from tmt.package_managers import Repository, Version
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path, ShellScript
@@ -25,12 +25,6 @@ NEVRA_PATTERN = re.compile(
 
 #: Name of the shared repository that download providers contribute RPMs into.
 SHARED_REPO_NAME: str = 'tmt-artifact-shared'
-
-
-class DownloadError(tmt.utils.GeneralError):
-    """
-    Raised when download fails.
-    """
 
 
 class UnsupportedOperationError(RuntimeError):
