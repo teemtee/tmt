@@ -16,11 +16,11 @@ def setup(app: "Sphinx") -> None:
     # This is a meta extension that gathers all of the individual extensions
     # in the ext folder.
     app.setup_extension("linkcheck_cache")
-    app.setup_extension("sphinx_apidoc")
-    app.setup_extension("generate_lint_checks")
-    app.setup_extension("generate_hardware_matrix")
-    app.setup_extension("generate_test_runner_guest_matrix")
-    app.setup_extension("generate_template_extensions")
-    app.setup_extension("generate_plugins")
+    # app.setup_extension("sphinx_apidoc")
+    # app.setup_extension("generate_lint_checks")
+    # app.setup_extension("generate_hardware_matrix")
+    # app.setup_extension("generate_test_runner_guest_matrix")
+    # app.setup_extension("generate_template_extensions")
+    # app.setup_extension("generate_plugins")
     app.setup_extension("generate_release_notes")
     app.setup_extension("tmt_domain")
