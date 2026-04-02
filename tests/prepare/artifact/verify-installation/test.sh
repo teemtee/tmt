@@ -1,5 +1,4 @@
 #!/bin/bash
-# Test verify-installation injection behaviour for artifact plugin
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../../images.sh || exit 1
 . ../lib/common.sh || exit 1
@@ -14,21 +13,13 @@ rlJournalStart
 
         # Get koji build ID for make
         get_koji_build_id "make" "f${fedora_release}"
-
-        # Create a substituted copy of the data dir for plan-based tests
-        rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
-        rlRun "cp -r . $data_dir/" 0 "Copy test data"
-        rlRun "sed -i 's/DUMMY_KOJI_BUILD_ID/${KOJI_BUILD_ID}/g' $data_dir/main.fmf" \
-            0 "Substitute koji build ID"
-
-        # Switch to data_dir for all subsequent tests
-        rlRun "cd $data_dir"
     rlPhaseEnd
 
     rlPhaseStartTest "Test verify-installation phase injection (verify=true)"
         rlRun -s "tmt run -i $run --scratch -vvv --all \
             plan --name /plan/verify \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" \
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
+            prepare --how artifact --provide koji.build:${KOJI_BUILD_ID}" \
             0 "Verify should pass with verify=true (default)"
 
         rlAssertGrep "verify-artifact-packages" $rlRun_LOG
@@ -39,14 +30,15 @@ rlJournalStart
     rlPhaseStartTest "Test verify=false suppresses verify-installation phase"
         rlRun -s "tmt run -i $run --scratch -vvv --all \
             plan --name /plan/no-verify \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" \
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
+            prepare --how artifact --provide koji.build:${KOJI_BUILD_ID} --no-verify" \
             0 "No-verify should succeed without verify phase"
 
         rlAssertNotGrep "verify-artifact-packages" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm -rf $run $data_dir"
+        rlRun "rm -rf $run"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

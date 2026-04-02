@@ -298,7 +298,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Persist artifact metadata to YAML
         self._save_artifacts_metadata(providers)
 
-        # --- Verify phase injection (if enabled) ---
+        # Verify phase injection
         if self.data.verify:
             self._inject_verify_phase(providers, guest)
 
@@ -328,10 +328,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
         # Build package → origin repo mapping from all providers.
-        # Repository providers (copr.repository, repository-file, repository-url) have
-        # artifact.location set to repository.name via enumerate_artifacts().
-        # Download providers (koji.build, copr.build) contribute artifacts to the shared
-        # repo, so their packages must be verified against SHARED_REPO_NAME.
+        # FIXME: ``artifact.location`` is overloaded: a download URL for download
+        # providers and a repo name for repository providers. We use
+        # ``provider.get_repositories()`` as a proxy until ``ArtifactInfo`` gains
+        # a dedicated ``verification_repo`` field. See https://github.com/teemtee/tmt/issues/4714.
         pkg_to_repo: dict[str, str] = {}
         for provider in providers:
             if provider.get_repositories():
