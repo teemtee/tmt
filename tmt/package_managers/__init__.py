@@ -24,6 +24,10 @@ if TYPE_CHECKING:
     PackageOrigin: TypeAlias = Union[str, 'SpecialPackageOrigin']
 
 
+#: Directory where DNF/YUM repository files are stored.
+YUM_REPOS_DIR = Path("/etc/yum.repos.d")
+
+
 @container(frozen=True)
 class Version:
     """

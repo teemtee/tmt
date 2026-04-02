@@ -11,6 +11,7 @@ import tmt.utils
 from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.guest import Guest
+from tmt.package_managers import YUM_REPOS_DIR
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -120,9 +121,7 @@ class CoprRepositoryProvider(ArtifactProvider):
         repo_filename = f"_copr:copr.fedorainfracloud.org:{owner}:{repo.project}.repo"
 
         try:
-            output = guest.execute(
-                tmt.utils.Command("cat", Path(f"/etc/yum.repos.d/{repo_filename}"))
-            )
+            output = guest.execute(tmt.utils.Command("cat", YUM_REPOS_DIR / repo_filename))
         except tmt.utils.RunError as error:
             raise tmt.utils.PrepareError(
                 f"Failed to read '{repo_filename}' from the guest."
