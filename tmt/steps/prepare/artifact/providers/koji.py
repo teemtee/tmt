@@ -19,7 +19,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
-    DownloadError,
     provides_artifact_provider,
 )
 from tmt.utils import ShellScript
@@ -169,27 +168,6 @@ class KojiArtifactProvider(ArtifactProvider):
                 f"Provider id '{raw_id}' is invalid, how did we get here?"
             ) from exc
         return value
-
-    def _download_artifact(
-        self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
-    ) -> None:
-        """
-        Download the specified artifact to the given destination on the guest.
-
-        :param artifact: The artifact to download
-        :param guest: The guest where the artifact should be downloaded
-        :param destination: The destination path on the guest
-        """
-        try:
-            # Destination directory is guaranteed to exist, download the artifact
-            guest.execute(
-                tmt.utils.ShellScript(
-                    f"curl -L --fail -o {quote(str(destination))} {quote(artifact.location)}"
-                ),
-                silent=True,
-            )
-        except Exception as error:
-            raise DownloadError(f"Failed to download '{artifact}'.") from error
 
     def contribute_to_shared_repo(
         self,

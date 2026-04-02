@@ -105,12 +105,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
     ) -> None:
         try:
             if self._is_url:  # Remote file, download it
-                guest.execute(
-                    tmt.utils.ShellScript(
-                        f"curl -L --fail -o {quote(str(destination))} {quote(artifact.location)}"
-                    ),
-                    silent=True,
-                )
+                guest.download(artifact.location, destination)
             else:  # Local file, push it to the guest
                 # When pushing a single file, use recursive=False. The default recursive=True
                 # treats the source as a directory (appending "/."), which only works for

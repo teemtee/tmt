@@ -459,6 +459,12 @@ SoftRebootModes = Literal[RebootMode.SOFT, RebootMode.SYSTEMD_SOFT]
 HardRebootModes = Literal[RebootMode.HARD]
 
 
+class DownloadError(tmt.utils.GeneralError):
+    """
+    Raised when download fails.
+    """
+
+
 class RebootModeNotSupportedError(ProvisionError):
     """A requested reboot mode is not supported by the guest"""
 
@@ -2373,6 +2379,26 @@ class Guest(
         """
 
         raise NotImplementedError
+
+    def download(self, url: str, destination: Path) -> None:
+        """
+        Download a file from a URL to a path on the guest.
+
+        :param url: URL to download from.
+        :param destination: path on the guest to save the file to.
+        :raises GeneralError: if the download fails.
+        """
+
+        try:
+            self.execute(
+                ShellScript(
+                    f"{self.facts.sudo_prefix} curl -L --fail"
+                    f" -o {quote(str(destination))} {quote(url)}"
+                ),
+                silent=True,
+            )
+        except tmt.utils.RunError as error:
+            raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
 
     @abc.abstractmethod
     def stop(self) -> None:

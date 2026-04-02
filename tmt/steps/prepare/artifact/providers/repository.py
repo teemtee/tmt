@@ -8,7 +8,8 @@ from urllib.parse import urlparse
 
 import tmt.log
 import tmt.utils
-from tmt.guest import Guest
+from tmt.guest import DownloadError, Guest
+from tmt.package_managers import YUM_REPOS_DIR
 from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -76,18 +77,28 @@ class RepositoryFileProvider(ArtifactProvider):
         self.logger.info(f"Initializing repository provider with URL: {self.id}")
 
         parsed = urlparse(self.id)
+        parsed_path = Path(parsed.path)
         if parsed.scheme == 'file':
             # Read .repo file from the local (controller) filesystem.
-            self.logger.info(f"Reading repository file from local path: {parsed.path}")
-            self.logger.debug(
-                f"Absolute path of the repository file: '{Path(parsed.path).resolve()}'"
-            )
-            self.repository = Repository.from_file_path(
-                file_path=Path(parsed.path), logger=self.logger
-            )
+            self.logger.info(f"Reading repository file from local path: {parsed_path}")
+            self.logger.debug(f"Absolute path of the repository file: '{parsed_path.resolve()}'")
+            self.repository = Repository.from_file_path(file_path=parsed_path, logger=self.logger)
         else:
-            # TODO: This should not be using Repository.from_url
-            self.repository = Repository.from_url(url=self.id, logger=self.logger)
+            repo_filename = parsed_path.name
+            remote_path = YUM_REPOS_DIR / repo_filename
+            try:
+                guest.download(self.id, remote_path)
+            except DownloadError as error:
+                raise PrepareError(
+                    f"Failed to download repository file '{self.id}' to the guest."
+                ) from error
+            try:
+                output = guest.execute(tmt.utils.Command("cat", remote_path))
+            except tmt.utils.RunError as error:
+                raise PrepareError(f"Failed to read '{repo_filename}' from the guest.") from error
+            self.repository = Repository.from_content(
+                output.stdout or '', repo_filename.removesuffix('.repo'), self.logger
+            )
 
         self.logger.info(
             f"Repository initialized: {self.repository.name} "
