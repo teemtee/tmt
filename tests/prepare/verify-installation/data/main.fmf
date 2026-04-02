@@ -7,29 +7,31 @@
         how: fmf
         test: /test
     prepare:
-      - how: feature
-        epel: enabled
+      - how: artifact
+        provide:
+          - koji.build:KOJI_BUILD_ID
+
+    adjust+:
+      - when: distro == centos
+        prepare+:
+          - how: feature
+            epel: enabled
+            order: 40
 
 /plan/success:
     prepare+:
       - how: verify-installation
         verify:
-            make: baseos
-            diffutils: "<unknown>"
-            centpkg: epel
+            centpkg: tmt-artifact-shared
 
 /plan/failure:
     prepare+:
       - how: verify-installation
         verify:
-            make: SOME_NON_EXISTENT_REPO
-            diffutils: "<unknown>"
-            centpkg: epel
+            centpkg: SOME_NON_EXISTENT_REPO
             random-non-existent-package: some-repo
 
 /test:
     test: /bin/true
     require:
-      - make
-      - diffutils
       - centpkg

@@ -3,29 +3,41 @@
 
 # Setup distro test environment
 #
-# This function checks the distro, sets up the release version
-# and image_name variables, and builds the container image.
+# This function checks the distro, sets up the release version,
+# image_name, and koji_tag variables, and builds the container image.
 #
 # Sets the following global variables:
-#   fedora_release - The Fedora release version (e.g., "43")
+#   release - The distro release version (e.g., "43" for Fedora, "10" for CentOS)
 #   image_name - The container image name (e.g., "fedora/43:latest")
+#   koji_tag - The koji tag for querying builds (e.g., "f43" for Fedora, "epel10" for CentOS)
 #
 # Usage: setup_distro_environment
 #
-# TODO: Add CentOS/RHEL support when needed
-#
 setup_distro_environment() {
-    if ! rlIsFedora; then
-        rlDie "Test requires Fedora"
+    if rlIsFedora; then
+        release=$(rlGetDistroRelease)
+        koji_tag="f${release}"
+        distro="fedora-${release}"
+        # FIXME: Rawhide reports numeric release identifiers (e.g., "45") but versioned
+        # container targets (fedora/45/*) don't exist yet. Mapping fedora/45 to rawhide
+        # as a workaround until https://github.com/teemtee/tmt/pull/4775 is merged.
+        if grep -qi "rawhide" /etc/os-release; then
+            image_name="fedora/rawhide:latest"
+        else
+            image_name="fedora/${release}:latest"
+        fi
+    elif rlIsCentOS; then
+        release=$(rlGetDistroRelease)
+        image_name="centos/stream${release}/upstream:latest"
+        koji_tag="epel${release}"
+        distro="centos-stream-${release}"
+    else
+        rlDie "Test requires Fedora or CentOS"
     fi
-
-    # TODO: Temporary hardcoded release - should be taken from function input
-    fedora_release=43
-    image_name="fedora/${fedora_release}:latest"
     build_container_image "$image_name"
 }
 
-# Get koji build ID from package name (fetch latest for tag)
+# Get koji build ID from package name (fetch latest for tag, with inheritance)
 #
 # Usage:
 #   get_koji_build_id "make" "f43"
@@ -44,14 +56,17 @@ setup_distro_environment() {
 # in the KOJI_BUILD_ID global variable (not printed to stdout) to
 # avoid capturing rlRun output when using command substitution.
 #
+# The --inherit flag is used to also search parent tags (e.g., epel10.3
+# inherits from epel10), ensuring builds inherited from parent tags are found.
+#
 get_koji_build_id() {
     local package="$1"
     local tag="$2"
     unset KOJI_BUILD_ID  # Clear any previous value
 
-    # Get the latest tagged build for the package
+    # Get the latest tagged build for the package (including inherited tags)
     # Output format: "make-4.4.1-10.fc42    f42    releng"
-    rlRun -s "koji list-tagged --latest $tag $package" 0 "Get the latest $package build"
+    rlRun -s "koji list-tagged --latest --inherit $tag $package" 0 "Get the latest $package build (with inheritance)"
 
     # The NVR should be the first word in the last line
     if [[ ! "$(tail -1 $rlRun_LOG)" =~ ^([^[:space:]]+) ]]; then
