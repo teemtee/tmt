@@ -89,6 +89,10 @@ rlJournalStart
                 rlRun "distro=fedora-43"
                 rlRun "package_manager=dnf5"
 
+            elif is_fedora_44 "$image"; then
+                rlRun "distro=fedora-44"
+                rlRun "package_manager=dnf5"
+
             elif is_centos_stream_9 "$image"; then
                 rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"
@@ -308,16 +312,7 @@ rlJournalStart
                     rlAssertGrep "stderr: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
                 fi
 
-            elif is_fedora_coreos "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_rawhide "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_eln "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_43 "$image"; then
+            elif is_fedora "$image"; then
                 rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
@@ -356,16 +351,7 @@ rlJournalStart
                     rlAssertGrep "stderr: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
                 fi
 
-            elif is_fedora_coreos "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_rawhide "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_eln "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_43 "$image"; then
+            elif is_fedora "$image"; then
                 rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
@@ -404,16 +390,7 @@ rlJournalStart
                     rlAssertGrep "stderr: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
                 fi
 
-            elif is_fedora_coreos "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_rawhide "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_eln "$image"; then
-                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_43 "$image"; then
+            elif is_fedora "$image"; then
                 rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
