@@ -427,10 +427,11 @@ class Result(BaseResult):
         :returns: :py:class:`ResultOutcome` instance with the interpreted result
         """
 
+        # Process only relevant checks
+        checks = [check for check in self.check if check.name == check_name]
+
         # Reduce all check outcomes into a single worst outcome
-        reduced_outcome = ResultOutcome.reduce(
-            [check.result for check in self.check if check.name == check_name]
-        )
+        reduced_outcome = ResultOutcome.reduce([check.result for check in checks])
 
         # Now let's handle the interpretation
         interpret = interpret_checks[check_name]
@@ -443,6 +444,8 @@ class Result(BaseResult):
         elif interpret == CheckResultInterpret.INFO:
             interpreted_outcome = ResultOutcome.INFO
             self.note.append(f"check '{check_name}' is informational")
+            for check in checks:
+                check.result = ResultOutcome.INFO
 
         elif interpret == CheckResultInterpret.XFAIL:
             if reduced_outcome == ResultOutcome.PASS:
@@ -452,6 +455,13 @@ class Result(BaseResult):
             if reduced_outcome == ResultOutcome.FAIL:
                 interpreted_outcome = ResultOutcome.PASS
                 self.note.append(f"check '{check_name}' failed as expected")
+
+            for check in checks:
+                if check.result == ResultOutcome.PASS:
+                    check.result = ResultOutcome.FAIL
+
+                elif check.result == ResultOutcome.FAIL:
+                    check.result = ResultOutcome.PASS
 
         return interpreted_outcome
 
