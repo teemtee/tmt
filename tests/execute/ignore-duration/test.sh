@@ -25,17 +25,13 @@ rlJournalStart
         export TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION=1
         rlRun "tmt run -vv plan -n /no-option"
         rlRun "tmt run -vv plan -n /via-plan-true"
-        # ENV should win over CLI or file values, but to be consistent with
-        # reporportal/polarion plugin envar is weaker than plan.fmf
-        rlRun "tmt run -vv plan -n /via-plan-false" "2"
+        rlRun "tmt run -vv plan -n /via-plan-false"
     rlPhaseEnd
 
     rlPhaseStartTest "With IGNORE_DURATION=0"
         export TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION=0
         rlRun "tmt run -vv plan -n /no-option" "2"
-        # ENV should win over CLI or file values, but to be consistent with
-        # reporportal/polarion plugin envar is weaker than plan.fmf
-        rlRun "tmt run -vv plan -n /via-plan-true"
+        rlRun "tmt run -vv plan -n /via-plan-true" "2"
         rlRun "tmt run -vv plan -n /via-plan-false" "2"
     rlPhaseEnd
 
