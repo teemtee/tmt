@@ -1,0 +1,20 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    execute:
+        how: tmt
+
+    /verify:
+        summary: Verify injection of verify-installation phase when verify=true (default)
+
+    /no-verify:
+        summary: Verify verify=false suppresses verify-installation phase injection
+
+/test:
+    test: /bin/true
+    duration: 5m
+    summary: Verify verify-installation injection behaviour
+    require:
+      - make
