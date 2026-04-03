@@ -5,7 +5,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "run=$(mktemp -d)" 0 "Create run directory"
+        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
         . ../artifact/lib/common.sh || exit 1
 

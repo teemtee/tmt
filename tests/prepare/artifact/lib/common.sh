@@ -18,7 +18,7 @@ setup_distro_environment() {
         release=$(rlGetDistroRelease)
         koji_tag="f${release}"
         distro="fedora-${release}"
-        # FIXME: Rawhide reports numeric release identifiers (e.g., "45") but versioned
+        # TODO: Rawhide reports numeric release identifiers (e.g., "45") but versioned
         # container targets (fedora/45/*) don't exist yet. Mapping fedora/45 to rawhide
         # as a workaround until https://github.com/teemtee/tmt/pull/4775 is merged.
         if grep -qi "rawhide" /etc/os-release; then

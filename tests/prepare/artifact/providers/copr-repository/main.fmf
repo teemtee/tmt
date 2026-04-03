@@ -7,6 +7,6 @@ description: |
 # tmt-owned COPR project with auto-branching so the gate can be removed.
 # See https://github.com/teemtee/tmt/issues/4776
 adjust+:
-  - when: distro ~< fedora-43
+  - when: distro < fedora-43
     enabled: false
     because: mariobl/pyspread COPR only has chroots for Fedora 43+

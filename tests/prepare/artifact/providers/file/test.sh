@@ -11,8 +11,8 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
-        rlRun "run=$(mktemp -d)" 0 "Create run directory"
-        rlRun "rpm_dir=$(mktemp -d)" 0 "Create local RPM directory"
+        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "rpm_dir=\$(mktemp -d)" 0 "Create local RPM directory"
 
         setup_distro_environment
 
@@ -34,7 +34,7 @@ rlJournalStart
         LOCAL_RPM=$(ls $rpm_dir/figlet*.rpm)
         rlAssertExists "$LOCAL_RPM"
 
-        rlRun "multi_rpm_dir=$(mktemp -d)" 0 "Create directory for multiple RPMs"
+        rlRun "multi_rpm_dir=\$(mktemp -d)" 0 "Create directory for multiple RPMs"
         # Use $release (set by setup_distro_environment) to ensure packages
         rlRun "dnf download --forcearch=$ARCH --releasever=$release --destdir=$multi_rpm_dir boxes fortune-mod" 0 "Download boxes and fortune-mod RPMs using dnf"
     rlPhaseEnd
