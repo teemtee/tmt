@@ -10,6 +10,7 @@ from packaging.version import Version
 
 import tmt.guest
 import tmt.hardware
+import tmt.hardware.constraints
 import tmt.utils
 from tmt.hardware import Hardware
 from tmt.log import Logger
@@ -31,15 +32,15 @@ _constraint_value_pattern_inputs = (
     ]
     + [
         (f'{operator.value} 10', (operator.value, '10'))
-        for operator in tmt.hardware.INPUTABLE_OPERATORS
+        for operator in tmt.hardware.constraints.INPUTABLE_OPERATORS
     ]
     + [
         (f'{operator.value} 10 GiB', (operator.value, '10 GiB'))
-        for operator in tmt.hardware.INPUTABLE_OPERATORS
+        for operator in tmt.hardware.constraints.INPUTABLE_OPERATORS
     ]
     + [
         (f'{operator.value}10GiB', (operator.value, '10GiB'))
-        for operator in tmt.hardware.INPUTABLE_OPERATORS
+        for operator in tmt.hardware.constraints.INPUTABLE_OPERATORS
     ]
 )
 
@@ -53,7 +54,7 @@ _constraint_value_pattern_inputs = (
     ],
 )
 def test_constraint_value_pattern(value: str, expected: tuple[Any, Any]) -> None:
-    match = tmt.hardware.CONSTRAINT_VALUE_PATTERN.match(value)
+    match = tmt.hardware.constraints.CONSTRAINT_VALUE_PATTERN.match(value)
 
     assert match is not None
     assert match.groups() == expected
@@ -75,7 +76,7 @@ _constraint_name_pattern_input = [
     ],
 )
 def test_constraint_name_pattern(value: str, expected: tuple[Any, Any]) -> None:
-    match = tmt.hardware.CONSTRAINT_NAME_PATTERN.match(value)
+    match = tmt.hardware.constraints.CONSTRAINT_NAME_PATTERN.match(value)
 
     assert match is not None
     assert match.groups() == expected
@@ -128,7 +129,7 @@ _constraint_components_pattern_input = [
     ],
 )
 def test_constraint_components_pattern(value: str, expected: tuple[Any, Any]) -> None:
-    match = tmt.hardware.CONSTRAINT_COMPONENTS_PATTERN.match(value)
+    match = tmt.hardware.constraints.CONSTRAINT_COMPONENTS_PATTERN.match(value)
 
     assert match is not None
     assert match.groups() == expected
@@ -180,7 +181,10 @@ def test_normalize_hardware(root_logger) -> None:
     ],
 )
 def test_normalize_invalid_hardware(
-    spec: tmt.hardware.Spec, expected_exc: type[Exception], expected_message: str, root_logger
+    spec: tmt.hardware.constraints.Spec,
+    expected_exc: type[Exception],
+    expected_message: str,
+    root_logger,
 ) -> None:
     with pytest.raises(expected_exc, match=expected_message):
         tmt.guest.normalize_hardware('', spec, root_logger)
@@ -441,15 +445,15 @@ def test_report_support(
 @pytest.mark.parametrize(
     ('operator', 'left', 'right', 'expected'),
     [
-        (tmt.hardware.not_contains, ['foo'], 'foo', False),
-        (tmt.hardware.not_contains, ['foo', 'bar'], 'foo', False),
-        (tmt.hardware.not_contains, ['foo'], 'bar', True),
-        (tmt.hardware.not_contains_exclusive, ['foo'], 'foo', False),
-        (tmt.hardware.not_contains_exclusive, ['foo', 'bar'], 'foo', True),
-        (tmt.hardware.not_contains_exclusive, ['foo'], 'bar', True),
+        (tmt.hardware.constraints.not_contains, ['foo'], 'foo', False),
+        (tmt.hardware.constraints.not_contains, ['foo', 'bar'], 'foo', False),
+        (tmt.hardware.constraints.not_contains, ['foo'], 'bar', True),
+        (tmt.hardware.constraints.not_contains_exclusive, ['foo'], 'foo', False),
+        (tmt.hardware.constraints.not_contains_exclusive, ['foo', 'bar'], 'foo', True),
+        (tmt.hardware.constraints.not_contains_exclusive, ['foo'], 'bar', True),
     ],
 )
 def test_operators(
-    operator: tmt.hardware.OperatorHandlerType, left: Any, right: Any, expected: bool
+    operator: tmt.hardware.constraints.OperatorHandlerType, left: Any, right: Any, expected: bool
 ) -> None:
     assert operator(left, right) is expected

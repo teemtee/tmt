@@ -17,6 +17,7 @@ import packaging.version
 import tmt.config
 import tmt.guest
 import tmt.hardware
+import tmt.hardware.constraints
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
@@ -900,13 +901,13 @@ def _transform_system_vendor_name(
 
 
 def constraint_to_beaker_filter(
-    constraint: tmt.hardware.BaseConstraint, logger: tmt.log.Logger
+    constraint: tmt.hardware.constraints.BaseConstraint, logger: tmt.log.Logger
 ) -> BeakerizedConstraint:
     """
     Convert a hardware constraint into a Mrack-compatible filter
     """
 
-    if isinstance(constraint, tmt.hardware.And):
+    if isinstance(constraint, tmt.hardware.constraints.And):
         return MrackHWAndGroup(
             children=[
                 constraint_to_beaker_filter(child_constraint, logger)
@@ -914,7 +915,7 @@ def constraint_to_beaker_filter(
             ]
         )
 
-    if isinstance(constraint, tmt.hardware.Or):
+    if isinstance(constraint, tmt.hardware.constraints.Or):
         return MrackHWOrGroup(
             children=[
                 constraint_to_beaker_filter(child_constraint, logger)
@@ -1012,14 +1013,16 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
 
             return {'hostRequires': transformed}
 
-        def _requires_panic_watchdog(self, constraint: tmt.hardware.BaseConstraint) -> bool:
+        def _requires_panic_watchdog(
+            self, constraint: tmt.hardware.constraints.BaseConstraint
+        ) -> bool:
             """
             Check if any of the constraints are beaker panic-watchdog with the value True
             """
             if isinstance(constraint, tmt.hardware.FlagConstraint):
                 return constraint.name == 'beaker.panic_watchdog' and constraint.value
 
-            if isinstance(constraint, (tmt.hardware.And, tmt.hardware.Or)):
+            if isinstance(constraint, (tmt.hardware.constraints.And, tmt.hardware.constraints.Or)):
                 return any(
                     self._requires_panic_watchdog(child) for child in constraint.constraints
                 )
