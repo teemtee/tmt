@@ -22,6 +22,94 @@ tmp:
 	mkdir -p $(TMP)/.fmf
 
 ##
+## Development
+##
+
+# Distro-specific lists and targets:
+#
+# * _deps/$_OS_ID + $_DEPS_CORE_$_OS_ID - minimal dependencies for various development-focused targets
+# * _build-deps/$_OS_ID - build dependencies to allow tmt packaging
+# * _develop/$_OS_ID + $_DEPS_DEVELOP_$_OS_ID - development dependencies for local development
+
+_DEPS_CORE_FEDORA := \
+    hatch \
+    uv \
+    python3-devel \
+    python3-hatch-vcs \
+    rpm-build \
+    clang \
+    beakerlib
+
+_DEPS_DEVELOP_FEDORA := \
+    expect \
+    gcc \
+    git \
+    python3-nitrate \
+    libvirt-devel \
+    krb5-devel \
+    libpq-devel \
+    python3-devel \
+    jq \
+    podman \
+    buildah \
+    /usr/bin/python3.9 \
+    pre-commit
+
+# Note: interestingly, `hatch` is not shipped by Ubuntu, but `hatch` plugins are.
+# Manual `hatch` installation probably does not the packaged plugin, leaving it
+# in for now until we get better coverage.
+_DEPS_CORE_UBUNTU := \
+    python3-dev \
+    python3-hatch-vcs \
+    clang
+
+_DEPS_DEVELOP_UBUNTU := \
+    expect \
+    gcc \
+    git \
+    libvirt-dev \
+    libkrb5-dev \
+    libpq-dev \
+    python3-dev \
+    jq \
+    podman \
+    buildah \
+    python3.9 \
+    pre-commit
+
+_OS_ID   := $(shell sh -c '. /etc/os-release 2>/dev/null && echo $$ID')
+
+# Fedora
+_deps/fedora:
+	sudo dnf install -y $(_DEPS_CORE_FEDORA)
+
+_build-deps/fedora: _deps tarball ver2spec
+	rpmbuild --define '_topdir $(TMP)' -br packaging/rpm/tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
+
+_develop/fedora: _deps/fedora
+	sudo dnf install -y $(_DEPS_DEVELOP_FEDORA)
+
+# Ubuntu
+_deps/ubuntu:
+	sudo apt-get install -y $(_DEPS_CORE_UBUNTU)
+
+	@if [ "$$(which hatch)" = "" ]; then \
+	    echo ""; \
+	    echo "$(ccred)Hatch executable not detected. Ubuntu does not package hatch executable,$(ccend)"; \
+	    echo "$(ccred)install it manually, please: https://hatch.pypa.io/latest/install/$(ccend)"; \
+	fi
+
+# TODO: a placeholder, not packaging yet
+_build-deps/ubuntu: _deps
+
+_develop/ubuntu: _deps/ubuntu
+	sudo apt-get install -y $(_DEPS_DEVELOP_UBUNTU)
+
+_deps: _deps/$(_OS_ID)
+develop: _develop/$(_OS_ID)  ## Install development requirements
+build-deps: _build-deps/$(_OS_ID)  ## Install build dependencies
+
+##
 ## Run the tests
 ##
 test: tmp  ## Run the test suite
@@ -65,12 +153,6 @@ rpm: tarball ver2spec  ## Build RPMs
 
 srpm: tarball ver2spec  ## Build SRPM
 	rpmbuild --define '_topdir $(TMP)' -bs packaging/rpm/tmt.spec
-
-_deps:  # Minimal dependencies (common for 'deps' and 'develop' targets)
-	sudo dnf install -y hatch uv python3-devel python3-hatch-vcs rpm-build clang beakerlib
-
-build-deps: _deps tarball ver2spec  ## Install build dependencies
-	rpmbuild --define '_topdir $(TMP)' -br packaging/rpm/tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
 
@@ -297,15 +379,14 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/1
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/bootc\:latest:
 	$(call build-test-container-image,$@,fedora/latest/bootc/Containerfile)
-##
-## Development
-##
-develop: _deps  ## Install development requirements
-	sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9
 
 # Git vim tags and cleanup
 tags:
 	find tmt -name '*.py' | xargs ctags --python-kinds=-i
+
+##
+## Clean
+##
 
 clean:  ## Remove all temporary files, packaging artifacts and docs
 	rm -rf $(TMP) build dist tmt.1
