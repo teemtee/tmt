@@ -20,7 +20,7 @@ class PrepareVerifyInstallationData(PrepareStepData):
         help='Order in which the phase should be handled.',
     )
 
-    # FIXME: The value type should be ``list[str]`` to allow specifying multiple
+    # TODO: The value type should be ``list[str]`` to allow specifying multiple
     # acceptable source repositories for a single package (e.g. the same NVR
     # can exist in both ``tmt-artifact-shared`` and added ``repository`` without clashing.
     # When that change is made the comparison in ``go()`` must be updated from

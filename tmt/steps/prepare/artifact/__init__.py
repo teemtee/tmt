@@ -49,9 +49,9 @@ class PrepareArtifactData(PrepareStepData):
         option='--verify/--no-verify',
         is_flag=True,
         help="""
-        Verify that packages from tmt-injected install phases (test require/recommend keys
-        and essential-requires) were installed from the correct provider artifact repository.
-        User-defined prepare/install phases are not supported.
+        Verify that packages from tmt-injected install phases (test require/recommend keys,
+        their dist-git equivalents, and essential-requires) were installed from the correct
+        provider artifact repository. User-defined prepare/install phases are not covered.
         """,
     )
 
@@ -78,13 +78,19 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     a preferred repository on the guest.
 
     The goal is to make sure these exact artifacts are being used
-    when requested in one of the
-    :tmt:story:`test require </spec/tests/require>`,
-    :tmt:story:`test recommend </spec/tests/recommend>`, or
-    :ref:`prepare install </plugins/prepare/install>`. Exact NVR
+    when requested via
+    :tmt:story:`test require </spec/tests/require>` or
+    :tmt:story:`test recommend </spec/tests/recommend>` keys. Exact NVR
     *should not* be used in those requests, instead this plugin
     will take care of disambiguating the requested package based
     on the provided artifacts.
+
+    When ``verify`` is enabled (the default), the plugin injects a
+    verification phase that checks packages installed from tmt-managed
+    install phases (``require``, ``recommend``, ``essential-requires``,
+    and their dist-git equivalents) actually came from the configured
+    artifact repositories. User-defined ``prepare/install`` phases are
+    not covered by this verification.
 
     Currently, the following artifact providers are supported:
 
@@ -318,9 +324,22 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         the packages into it. Otherwise, create and add a new phase.
         """
         # Collect packages from the install phases injected by tmt on behalf of
-        # test/essential requirements (names set in Prepare._go). User-defined
-        # prepare/install phases are intentionally excluded.
-        _tmt_install_phase_names = {'essential-requires', 'requires', 'recommends'}
+        # test/essential requirements. User-defined prepare/install phases are
+        # intentionally excluded.
+        #
+        # Phase name sources:
+        #   'essential-requires'    — Prepare._go() in tmt/steps/prepare/__init__.py
+        #   'requires'              — Prepare._go() in tmt/steps/prepare/__init__.py
+        #   'recommends'            — Prepare._go() in tmt/steps/prepare/__init__.py
+        #   'requires (dist-git)'   — tmt/steps/prepare/distgit.py
+        #   'recommends (dist-git)' — tmt/steps/prepare/distgit.py
+        _tmt_install_phase_names = {
+            'essential-requires',
+            'requires',
+            'recommends',
+            'requires (dist-git)',
+            'recommends (dist-git)',
+        }
         pkg_names: set[str] = set()
         _install_phases = self.step.phases(classes=PrepareInstall)  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
         for install_phase in _install_phases:  # pyright: ignore[reportUnknownVariableType]
