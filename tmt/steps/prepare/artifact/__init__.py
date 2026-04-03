@@ -49,9 +49,10 @@ class PrepareArtifactData(PrepareStepData):
         option='--verify/--no-verify',
         is_flag=True,
         help="""
-            Verify that packages from phases installing test requirements
-            were installed from the correct provider artifact repository.
-            """,
+        Verify that packages from tmt-injected install phases (test require/recommend keys
+        and essential-requires) were installed from the correct provider artifact repository.
+        User-defined prepare/install phases are not supported.
+        """,
     )
 
 
@@ -316,11 +317,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         If a verify phase already exists for the same where= group, merge
         the packages into it. Otherwise, create and add a new phase.
         """
-        # Collect packages explicitly listed in prepare install phases
-        # that are enabled for this guest.
+        # Collect packages from the install phases injected by tmt on behalf of
+        # test/essential requirements (names set in Prepare._go). User-defined
+        # prepare/install phases are intentionally excluded.
+        _tmt_install_phase_names = {'essential-requires', 'requires', 'recommends'}
         pkg_names: set[str] = set()
         _install_phases = self.step.phases(classes=PrepareInstall)  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
         for install_phase in _install_phases:  # pyright: ignore[reportUnknownVariableType]
+            if install_phase.data.name not in _tmt_install_phase_names:  # pyright: ignore[reportUnknownMemberType]
+                continue
             if not install_phase.enabled_on_guest(guest):  # pyright: ignore[reportUnknownMemberType]
                 continue
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
