@@ -12,12 +12,12 @@ rlJournalStart
         setup_distro_environment
 
         # Get koji build ID for make
-        get_koji_build_id "make" "f${fedora_release}"
+        get_koji_build_id "make" "$koji_tag"
     rlPhaseEnd
 
     rlPhaseStartTest "Test verify-installation phase injection (verify=true)"
         rlRun -s "tmt run -i $run --scratch -vvv --all \
-            plan --name /plan/verify \
+            plan --name /plan \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide koji.build:${KOJI_BUILD_ID}" \
             0 "Verify should pass with verify=true (default)"
@@ -29,7 +29,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test verify=false suppresses verify-installation phase"
         rlRun -s "tmt run -i $run --scratch -vvv --all \
-            plan --name /plan/no-verify \
+            plan --name /plan \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide koji.build:${KOJI_BUILD_ID} --no-verify" \
             0 "No-verify should succeed without verify phase"

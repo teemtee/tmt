@@ -1,16 +1,11 @@
 /plan:
+    summary: Plan for verify-installation injection tests
     discover:
         how: fmf
     provision:
         how: container
     execute:
         how: tmt
-
-    /verify:
-        summary: Verify injection of verify-installation phase when verify=true (default)
-
-    /no-verify:
-        summary: Verify verify=false suppresses verify-installation phase injection
 
 /test:
     test: /bin/true
