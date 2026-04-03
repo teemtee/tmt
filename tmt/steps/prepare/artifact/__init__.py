@@ -15,6 +15,10 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     Repository,
 )
+
+# ``@provides_method`` causes pyright to lose the class type, which is the
+# root cause of all ``pyright: ignore`` waivers referencing these two classes.
+# This will be fixed by https://github.com/teemtee/tmt/issues/4766.
 from tmt.steps.prepare.install import PrepareInstall  # pyright: ignore[reportUnknownVariableType]
 from tmt.steps.prepare.verify_installation import (
     PrepareVerifyInstallation,  # pyright: ignore[reportUnknownVariableType]
@@ -49,9 +53,10 @@ class PrepareArtifactData(PrepareStepData):
         option='--verify/--no-verify',
         is_flag=True,
         help="""
-        Verify that packages from tmt-injected install phases (test require/recommend keys,
-        their dist-git equivalents, and essential-requires) were installed from the correct
-        provider artifact repository. User-defined prepare/install phases are not covered.
+        Verify that packages from tmt-injected ``prepare/install`` phases
+        (test ``require``/``recommend`` keys, their dist-git equivalents, and essential requires)
+        were installed from the correct provider artifact repository.
+        User-defined ``prepare/install`` phases are not covered.
         """,
     )
 
