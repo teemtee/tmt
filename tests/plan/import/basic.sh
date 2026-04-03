@@ -139,6 +139,11 @@ rlJournalStart
         rlRun -s "tmt -c how=full run -r --dry plan -n /plans/full/tmt" 0 "Run plan (dry mode)"
     rlPhaseEnd
 
+    rlPhaseStartTest "Remote plan should not be fetched if disabled by adjust"
+        rlRun -s "tmt -c distro=fedora-rawhide run --remove --dry plan --name /plans/disabled-by-adjust" 2 "Expect no plans to be found"
+        rlRun -s "tmt -c distro=fedora-rawhide -c how=full plan show /plans/disabled-by-adjust" 0 "Show plan correctly"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
