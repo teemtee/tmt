@@ -118,7 +118,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         for package, expected_repo in self.data.verify.items():
             actual_origin = package_origins[package]
 
-            if actual_origin == expected_repo:
+            if actual_origin in expected_repo:
                 outcome.results.append(
                     PhaseResult(
                         name=f'{self.name} / {package}',

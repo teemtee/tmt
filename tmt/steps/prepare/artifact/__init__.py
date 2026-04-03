@@ -362,10 +362,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # a dedicated ``repo`` field. See https://github.com/teemtee/tmt/issues/4714.
         pkg_to_repo: dict[str, str] = {}
         for provider in providers:
-            if provider.get_repositories():
-                # Repository provider: location is the repo name set by enumerate_artifacts().
+            repositories = provider.get_repositories()
+            if repositories:
+                # Repository provider: collect all repo_ids from all repositories.
+                # A .repo file may declare multiple sections; any of them is a valid origin.
+                all_repo_ids = ','.join(
+                    repo_id for repo in repositories for repo_id in repo.repo_ids
+                )
                 for artifact in provider.artifacts:
-                    pkg_to_repo[artifact.version.name] = artifact.location
+                    pkg_to_repo[artifact.version.name] = all_repo_ids
             else:
                 # Download provider: packages land in the shared repo.
                 for artifact in provider.artifacts:
