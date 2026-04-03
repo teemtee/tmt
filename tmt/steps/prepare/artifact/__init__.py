@@ -49,9 +49,8 @@ class PrepareArtifactData(PrepareStepData):
         option='--verify/--no-verify',
         is_flag=True,
         help="""
-            Verify that packages from install phases that are present in the
-            artifact metadata were installed from the provider artifact
-            repository. Enabled by default.
+            Verify that packages from phases installing test requirements
+            were installed from the correct provider artifact repository.
             """,
     )
 
@@ -195,7 +194,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     #: Summary of the auto-injected verify-installation phase.
     VERIFY_PHASE_SUMMARY: ClassVar[str] = (
-        'Verify packages were installed from artifact repositories'
+        'Verify test requirement packages were installed from the correct artifact repositories'
     )
 
     def go(
@@ -328,10 +327,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
         # Build package → origin repo mapping from all providers.
-        # FIXME: ``artifact.location`` is overloaded: a download URL for download
+        # TODO: ``artifact.location`` is overloaded: a download URL for download
         # providers and a repo name for repository providers. We use
         # ``provider.get_repositories()`` as a proxy until ``ArtifactInfo`` gains
-        # a dedicated ``verification_repo`` field. See https://github.com/teemtee/tmt/issues/4714.
+        # a dedicated ``repo`` field. See https://github.com/teemtee/tmt/issues/4714.
         pkg_to_repo: dict[str, str] = {}
         for provider in providers:
             if provider.get_repositories():
@@ -347,7 +346,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         pkgs_to_verify = {pkg: repo for pkg, repo in pkg_to_repo.items() if pkg in pkg_names}
 
         if not pkgs_to_verify:
-            self.debug('No overlap between artifact packages and install phases.')
+            self.verbose('No packages to be installed were found in the provided artifacts.')
             return
 
         self.debug(f"Verifying {fmf.utils.listed(sorted(pkgs_to_verify), 'package')}.")

@@ -87,6 +87,11 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             color='green',
         )
 
+        # TODO: Use ``rpm -q --whatprovides`` to resolve the actual RPM packages
+        # providing the requested requirements before verification. This would
+        # cover cases where ``require`` contains virtual provides like
+        # ``/usr/bin/something``. Not implemented yet as it requires live guest
+        # queries and is incompatible with bootc mode.
         try:
             package_origins = guest.package_manager.get_package_origin(self.data.verify.keys())
         except (NotImplementedError, tmt.utils.GeneralError) as err:
