@@ -1,0 +1,13 @@
+FROM ghcr.io/renovatebot/renovate:42
+
+USER root
+
+# hadolint ignore=DL3008,DL3015
+RUN apt-get update && \
+  apt-get install -y \
+    libvirt-dev \
+    libkrb5-dev \
+    libpq-dev && \
+  rm -rf /var/lib/apt/lists/*
+
+USER 12021
