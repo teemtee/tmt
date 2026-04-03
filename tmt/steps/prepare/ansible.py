@@ -1,11 +1,13 @@
 import tempfile
-from typing import Optional, Union
+import uuid
+from typing import Optional, Union, cast
 
 import requests
 
 import tmt.base.core
 import tmt.guest
 import tmt.log
+import tmt.package_managers.bootc
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
@@ -14,11 +16,17 @@ from tmt.guest import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
     AnsibleApplicable,
     AnsibleCollectionPlaybook,
+    CommandCollector,
     Guest,
+    TransferOptions,
 )
+from tmt.package_managers import Package
+from tmt.package_managers.bootc import LOCALHOST_BOOTC_IMAGE_PREFIX
 from tmt.utils import (
+    Command,
     Path,
     PrepareError,
+    ShellScript,
     Stopwatch,
     normalize_string_list,
     retry_session,
@@ -173,6 +181,273 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             *{f'playbook-{i}' for i in range(len(self.data.playbook))},
         }
 
+    def _ensure_ansible_on_guest(
+        self,
+        guest: 'Guest',
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Ensure ansible-playbook is available on the guest.
+
+        Checks if ansible-playbook is already installed. If not, installs
+        ansible-core via the bootc package manager, which triggers a
+        container image build, bootc switch, and reboot.
+        """
+
+        try:
+            guest.execute(Command('which', 'ansible-playbook'), silent=True)
+            logger.debug('ansible-playbook is already available on the guest.')
+        except tmt.utils.RunError:
+            logger.info('ansible', 'installing ansible-core on the guest', 'green')
+            guest.package_manager.install(Package('ansible-core'))
+
+    def _resolve_playbook_for_guest(
+        self,
+        raw_playbook: str,
+        playbook_index: int,
+        guest: 'Guest',
+        logger: tmt.log.Logger,
+    ) -> str:
+        """
+        Resolve a playbook specification and push it to the guest.
+
+        Handles local files, URLs, and collection playbooks.
+        Returns the guest-side path (or collection reference) for
+        ansible-playbook.
+
+        :param playbook_index: used to create unique destination filenames
+            on the guest, preventing collisions when multiple playbooks
+            share the same filename.
+        """
+
+        # Use non-recursive, non-relative options for pushing individual
+        # files. The default push options use recursive=True and
+        # relative=True which causes rsync to place the file at a deeply
+        # nested path (preserving the full source directory structure)
+        # instead of the intended destination.
+        file_push_options = TransferOptions(
+            protect_args=True,
+            compress=True,
+        )
+
+        lowercased = raw_playbook.lower()
+
+        if lowercased.startswith(('http://', 'https://')):
+            # Download remote playbook to step workdir and push to guest
+            try:
+                with retry_session(logger=logger) as session:
+                    response = session.get(raw_playbook)
+
+                if not response.ok:
+                    raise PrepareError(f"Failed to fetch remote playbook '{raw_playbook}'.")
+
+            except requests.RequestException as error:
+                raise PrepareError(f"Failed to fetch remote playbook '{raw_playbook}'.") from error
+
+            with tempfile.NamedTemporaryFile(
+                mode='w+b',
+                prefix='playbook-',
+                suffix='.yml',
+                dir=self.step_workdir,
+                delete=False,
+            ) as file:
+                file.write(response.content)
+                file.flush()
+
+                local_path = Path(file.name)
+                guest_path = guest.run_workdir / local_path.name
+                guest.push(
+                    source=local_path,
+                    destination=guest_path,
+                    options=file_push_options,
+                )
+                return str(guest_path)
+
+        if ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased):
+            # Collection playbooks are referenced by name, no file to push
+            return raw_playbook
+
+        # Local playbook file — use playbook_index prefix to avoid
+        # filename collisions (e.g. dir1/setup.yml vs dir2/setup.yml)
+        if lowercased.startswith('file://'):
+            rel_path = Path(raw_playbook[7:])
+        else:
+            rel_path = Path(raw_playbook)
+
+        local_path = self.step.plan.anchor_path / rel_path
+        guest_filename = f'{playbook_index}-{rel_path.name}'
+        guest_path = guest.run_workdir / guest_filename
+        guest.push(
+            source=local_path,
+            destination=guest_path,
+            options=file_push_options,
+        )
+        return str(guest_path)
+
+    def _go_image_mode(
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+        outcome: tmt.steps.PluginOutcome,
+    ) -> tmt.steps.PluginOutcome:
+        """
+        Run ansible playbooks on an image mode (bootc) guest.
+
+        Starts a container from the current bootc image on the guest,
+        runs ansible-playbook with the podman connection plugin targeting
+        the container, commits the container to a new image, switches
+        via bootc switch, and reboots.
+        """
+
+        bootc_pm = cast(tmt.package_managers.bootc.Bootc, guest.package_manager)
+
+        assert isinstance(bootc_pm.engine, tmt.package_managers.bootc.BootcEngine)
+        bootc_engine = bootc_pm.engine
+
+        # Flush any pending containerfile directives from prior
+        # shell/install phases to ensure correct image layering
+        if isinstance(guest, CommandCollector) and guest.has_collected_commands:
+            guest.flush_collected()
+
+        # Ensure ansible-playbook is available on the guest
+        self._ensure_ansible_on_guest(guest, logger)
+
+        # Get current bootc image
+        current_image = bootc_engine._get_current_bootc_image()
+        container_name = f'tmt-ansible-prepare-{uuid.uuid4()}'
+        new_image_tag = f'{LOCALHOST_BOOTC_IMAGE_PREFIX}/bootc/{uuid.uuid4()}'
+
+        assert guest.facts.sudo_prefix is not None  # narrow type
+
+        try:
+            # Ensure the image is available in podman's container storage.
+            # The bootc image may only exist in ostree storage and not be
+            # pullable from a registry, so we need the same fallback logic
+            # as build_container(): try pulling, then copy from bootc.
+            if not current_image.startswith(LOCALHOST_BOOTC_IMAGE_PREFIX):
+                logger.debug(f'Ensuring image {current_image} is in podman storage.')
+                guest.execute(
+                    ShellScript(
+                        f'{guest.facts.sudo_prefix} /bin/bash -c "('
+                        f'  ( podman pull {current_image}'
+                        f'    || podman pull containers-storage:{current_image} )'
+                        f'  || bootc image copy-to-storage --target {current_image}'
+                        ')"'
+                    )
+                )
+
+            # Start a container from the current bootc image
+            logger.info('ansible', f'starting container {container_name}', 'green')
+            guest.execute(
+                ShellScript(
+                    f'{guest.facts.sudo_prefix} podman run -d'
+                    f' --name {container_name}'
+                    f' -v {guest.run_workdir}:{guest.run_workdir}:Z'
+                    f' {current_image}'
+                    f' sleep infinity'
+                )
+            )
+
+            # Run each playbook against the container
+            for playbook_index, _playbook in enumerate(self.data.playbook):
+                logger.info('playbook', _playbook, 'green')
+
+                playbook_name = f'{self.name} / {_playbook}'
+
+                playbook_record_dirpath = (
+                    self.phase_workdir / f'playbook-{playbook_index}' / guest.safe_name
+                )
+                playbook_log_filepath = playbook_record_dirpath / 'output.txt'
+
+                def invoke_playbook_image_mode(
+                    playbook_record_dirpath: Path,
+                    raw_playbook: str,
+                    pb_index: int,
+                ) -> tmt.utils.CommandOutput:
+                    playbook_record_dirpath.mkdir(parents=True, exist_ok=True)
+
+                    guest_playbook = self._resolve_playbook_for_guest(
+                        raw_playbook, pb_index, guest, logger
+                    )
+
+                    # Build the ansible-playbook command to run on the guest
+                    ansible_cmd = (
+                        f'{guest.facts.sudo_prefix} ansible-playbook'
+                        f' -c containers.podman.podman'
+                        f" -i '{container_name},'"
+                        f' {guest_playbook}'
+                    )
+
+                    if self.data.extra_args:
+                        ansible_cmd += f' {self.data.extra_args}'
+
+                    return guest.execute(ShellScript(ansible_cmd))
+
+                output, exc, timer = Stopwatch.measure(
+                    invoke_playbook_image_mode, playbook_record_dirpath, _playbook, playbook_index
+                )
+
+                if exc is not None:
+                    return self._save_failed_run_outcome(
+                        log_filepath=playbook_log_filepath,
+                        label=playbook_name,
+                        timer=timer,
+                        guest=guest,
+                        exception=exc,
+                        outcome=outcome,
+                    )
+
+                if output is None:
+                    return self._save_error_outcome(
+                        label=playbook_name,
+                        timer=timer,
+                        note='Command produced no output but raised no exception',
+                        guest=guest,
+                        outcome=outcome,
+                    )
+
+                self._save_success_outcome(
+                    log_filepath=playbook_log_filepath,
+                    label=playbook_name,
+                    timer=timer,
+                    guest=guest,
+                    output=output,
+                    outcome=outcome,
+                )
+
+            # Commit the container to a new image
+            logger.info('ansible', f'committing container to {new_image_tag}', 'green')
+            guest.execute(
+                ShellScript(
+                    f'{guest.facts.sudo_prefix} podman commit {container_name} {new_image_tag}'
+                )
+            )
+
+            # Switch to the new image
+            logger.info('ansible', f'switching to new image {new_image_tag}', 'green')
+            bootc_command, _ = bootc_engine.prepare_command()
+            bootc_command += Command('switch', '--transport', 'containers-storage', new_image_tag)
+            guest.execute(bootc_command)
+
+            # Reboot into the new image
+            logger.info('ansible', 'rebooting to apply new image', 'green')
+            guest.reboot()
+
+        finally:
+            # Cleanup the container. After a successful reboot the
+            # container no longer exists, so failure is expected.
+            # Catch broadly to avoid masking the original exception.
+            try:
+                guest.execute(
+                    ShellScript(f'{guest.facts.sudo_prefix} podman rm -f {container_name}')
+                )
+            except Exception:
+                logger.debug(f'Failed to remove container {container_name}.')
+
+        return outcome
+
     def go(
         self,
         *,
@@ -185,6 +460,14 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         """
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
+
+        # Delegate to image mode handler for bootc guests
+        if guest.facts.is_image_mode and isinstance(
+            guest.package_manager, tmt.package_managers.bootc.Bootc
+        ):
+            return self._go_image_mode(
+                guest=guest, environment=environment, logger=logger, outcome=outcome
+            )
 
         # Apply each playbook on the guest
         for playbook_index, _playbook in enumerate(self.data.playbook):

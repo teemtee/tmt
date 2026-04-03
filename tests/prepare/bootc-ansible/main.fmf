@@ -1,0 +1,14 @@
+summary: Test prepare/ansible step on bootc guests
+description: |
+    Verify that prepare/ansible playbooks are executed on bootc guests
+    using the podman connection plugin targeting a container started
+    from the current bootc image. Changes are committed, switched via
+    bootc, and applied after reboot.
+link:
+  - verifies: https://github.com/teemtee/tmt/issues/4511
+tag+:
+  - provision-only
+  - provision-virtual
+require:
+  - tmt+provision-virtual
+duration: 2h
