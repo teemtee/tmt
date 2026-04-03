@@ -77,7 +77,7 @@ rlJournalStart
     testName="/test/wrong-json-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides 'results.json' in valid JSON but wrong results format"
-        rlAssertGrep "Expected list in json data, got 'dict'." $rlRun_LOG
+        rlAssertGrep "Expected list in JSON data, got 'dict'." $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/invalid-yaml-results-file"
@@ -89,7 +89,7 @@ rlJournalStart
     testName="/test/invalid-json-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides 'results.json' not in JSON format"
-        rlAssertGrep "Invalid json syntax" $rlRun_LOG
+        rlAssertGrep "Invalid JSON syntax." $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/wrong-yaml-content"
