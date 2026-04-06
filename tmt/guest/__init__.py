@@ -951,7 +951,7 @@ class GuestFacts(SerializableContainer):
             # the end of the queue and trying again will not help.
             if name in blocked_facts:
                 raise GeneralError(
-                    f"Guest fact '{name}' remains blocked by required facts {pending_facts}."
+                    f"Guest fact '{name}' remains blocked by required facts {pending_requires}."
                 )
 
             # Ok, first time resolving requirements of this fact: mark
