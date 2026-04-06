@@ -596,7 +596,7 @@ class GuestMock(tmt.Guest):
             *self.mock_shell.execute(
                 actual_command,
                 cwd=cwd,
-                env=environment,
+                environment=environment,
                 friendly_command=friendly_command or str(command),
                 logger=self._logger,
                 **kwargs,
