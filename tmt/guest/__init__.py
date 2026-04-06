@@ -1040,7 +1040,7 @@ class GuestFacts(SerializableContainer):
             elif line.startswith('<<<'):
                 if current_fact is None:
                     raise GeneralError(
-                        "Malformed fact probe output: closing marker '<<<' without opening marker"
+                        "Malformed fact probe output: closing marker '<<<' without opening marker."
                     )
 
                 facts[current_fact] = self._facts()[current_fact].extract(
@@ -1052,6 +1052,11 @@ class GuestFacts(SerializableContainer):
 
             else:
                 current_fact_content.append(line)
+
+        if current_fact is not None:
+            raise GeneralError(
+                f"Malformed fact probe output: fact '{current_fact}' was opened but never closed."
+            )
 
         return facts
 
