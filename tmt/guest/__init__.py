@@ -606,10 +606,14 @@ class guest_fact(Generic[T]):  # noqa: N801
     #: the descriptor API.
     name: Optional[str]
 
+    #: If set, the listed guest facts must be discovered before this one.
+    requires: tuple[str, ...]
+
     def __init__(
         self,
         probe: Union[str, Callable[[], str]],
         extract: Callable[[str], T],
+        *requires: str,
     ) -> None:
         """
         Initialize a fact collector.
@@ -623,6 +627,9 @@ class guest_fact(Generic[T]):  # noqa: N801
             the shell snippet, and returns the actual value of the fact,
             to be assigned to the corresponding :py:class:`GuestFacts`
             attribute.
+        :param requires: if set, the listed guest facts must be
+            discovered before this one. Fact discovery will reorder
+            snippets to honor the given requirements.
         """
 
         if isinstance(probe, str):
@@ -634,6 +641,8 @@ class guest_fact(Generic[T]):  # noqa: N801
         self.extract = extract
 
         self.name = None
+
+        self.requires = requires
 
     def __set_name__(self, owner: type, name: str) -> None:
         """
@@ -690,9 +699,11 @@ class flag_guest_fact(guest_fact[Optional[bool]]):  # noqa: N801
     A guest fact whose value is a booleab flag.
     """
 
-    def __init__(self, probe: str) -> None:
+    def __init__(self, probe: str, *requires: str) -> None:
         super().__init__(
-            probe, lambda output: output.strip() == 'true' if output.strip() != 'unknown' else None
+            probe,
+            lambda output: output.strip() == 'true' if output.strip() != 'unknown' else None,
+            *requires,
         )
 
 
@@ -732,8 +743,8 @@ class keyval_guest_fact(guest_fact[dict[str, str]]):  # noqa: N801
 
         return result
 
-    def __init__(self, path: Path) -> None:
-        super().__init__(f"cat {shlex.quote(str(path))}", keyval_guest_fact._parse)
+    def __init__(self, path: Path, *requires: str) -> None:
+        super().__init__(f"cat {shlex.quote(str(path))}", keyval_guest_fact._parse, *requires)
 
 
 class package_manager_guest_fact(guest_fact[Optional['tmt.package_managers.GuestPackageManager']]):  # noqa: N801
@@ -743,6 +754,7 @@ class package_manager_guest_fact(guest_fact[Optional['tmt.package_managers.Guest
 
     def __init__(
         self,
+        *requires: str,
         predicate: Optional[
             Callable[[type['tmt.package_managers.PackageManager[Any]']], bool]
         ] = None,
@@ -770,7 +782,7 @@ class package_manager_guest_fact(guest_fact[Optional['tmt.package_managers.Guest
 
             return output.splitlines()[0]
 
-        super().__init__(_snippet_creator, _extract)
+        super().__init__(_snippet_creator, _extract, *requires)
 
 
 @container
@@ -797,8 +809,8 @@ class GuestFacts(SerializableContainer):
 
     For example, a probe for the :py:attr:`arch` fact is simple, it calls
     the ``arch`` command. The corresponding extractor is also trivial,
-    and takes the output produced by the probe - a raw output of
-    ``arch`` - and returns it as the value of the ``arch`` fact.
+    and takes the output produced by the probe - a raw output of the
+    ``arch`` command - and returns it as the value of the ``arch`` fact.
 
     Probes of flag-like facts, :py:attr:`has_selinux` for example, usually
     test some system property, and echo ``true`` or ``false``. The
@@ -810,6 +822,15 @@ class GuestFacts(SerializableContainer):
     the actual values, and updates :py:attr:`_raw_facts` mapping.
     Descriptors then return values from this mapping instead of running
     any additional code on the guest.
+
+    In the collection shell script, every probe output is is assigned to
+    a variable of the same name as the fact (``arch`` shell variable
+    holds the output of the ``arch``  probe snippet, and so on). Probes
+    invoked later in the sequence can use previously probed facts in
+    their own probes; to make sure the required variables have been set,
+    the fact must enumerate required facts in its
+    :py:attr:`guest_fact.requires` attribute - the collectionshell script
+    will then run probes in the necessary order.
     """
 
     #: Store the actual values of facts. This mapping serves as a
@@ -834,7 +855,7 @@ class GuestFacts(SerializableContainer):
         }
 
     @functools.cached_property
-    def _fact_snippets(self) -> dict[str, str]:
+    def _fact_snippets(self) -> list[tuple[str, guest_fact[Any], str]]:
         """
         Collect all fact collection snippets from the facts.
 
@@ -842,10 +863,14 @@ class GuestFacts(SerializableContainer):
             as values.
         """
 
-        return {
-            name: (value.snippet if hasattr(value, 'snippet') else value.snippet_creator())
+        return [
+            (
+                name,
+                value,
+                (value.snippet if hasattr(value, 'snippet') else value.snippet_creator()),
+            )
             for name, value in self._facts().items()
-        }
+        ]
 
     def _create_collection_script(self, *facts: str) -> ShellScript:
         """
@@ -855,15 +880,84 @@ class GuestFacts(SerializableContainer):
             them with markers for the future parsing.
         """
 
-        scripts: list[str] = []
+        # Since facts may have requirements, we need some basic ordering.
+        # It is really trivial: facts are processed in a queue-like
+        # fashion; if a fact requires facts that have not been yet emitted
+        # into the collection script, the fact is put at the end of the
+        # queue, and we try to continue with the next fact in the queue.
+        # Hopefully, we would then emit the required facts first, then
+        # reaching those that were blocked.
 
-        for fact, snippet in self._fact_snippets.items():
-            if fact not in facts:
-                continue
+        # Facts that remain to be emitted into the collection script.
+        pending_facts = [
+            (name, fact, snippet)
+            for name, fact, snippet in self._fact_snippets[:]
+            if name in facts
+        ]
+        # Facts that were already emitted into the collection script.
+        # If a pending fact requires these, it can be emitted as well
+        # since its requirements are already ready.
+        emitted_facts: set[str] = set()
+        # Facts that cannot be emitted into the collection script because
+        # one or more of their requirements are still pending.
+        blocked_facts: set[str] = set()
 
+        scripts: list[str] = [f'unset {name}' for name, _, _ in pending_facts if name in facts]
+
+        def _emit_fact_probe(name: str, fact: guest_fact[Any], snippet: str) -> None:
             # The extra `echo` is there to enforce at least one empty line
             # in the output.
-            scripts.append(f'echo ">>> {fact}"\n{snippet}\necho\necho "<<<"\n')
+            scripts.append(
+                '\n'.join(
+                    [
+                        f'{name}=$({snippet})',
+                        f'echo ">>> {name}"',
+                        f'echo "${name}"',
+                        'echo "<<<"',
+                    ]
+                )
+            )
+
+            # Let others know this fact is done, ...
+            emitted_facts.add(name)
+
+            # ... and if it was blocked, clear the flag.
+            blocked_facts.discard(name)
+
+        while pending_facts:
+            name, fact, snippet = pending_facts.pop(0)
+
+            # No requirements? Cool, emit the snippet.
+            if not fact.requires:
+                _emit_fact_probe(name, fact, snippet)
+                continue
+
+            # Let's see which requirements are still pending.
+            pending_requires = {
+                required_fact
+                for required_fact in fact.requires
+                if required_fact not in emitted_facts
+            }
+
+            # No pending requirements? Also nice, emit the snippet.
+            if not pending_requires:
+                _emit_fact_probe(name, fact, snippet)
+                continue
+
+            # If we already saw this fact, and we already mark it as
+            # blocked, landing here means we processed all requirements
+            # positioned in the queue before it, and yet we are still
+            # left with one or more pending requirements. Moving it at
+            # the end of the queue and trying again will not help.
+            if name in blocked_facts:
+                raise GeneralError(
+                    f"Guest fact '{name}' remains blocked by required facts {pending_facts}."
+                )
+
+            # Ok, first time resolving requirements of this fact: mark
+            # it as blocked, and move it to the end of the queue.
+            blocked_facts.add(name)
+            pending_facts.append((name, fact, snippet))
 
         return ShellScript('\n\n'.join(scripts))
 
@@ -1054,7 +1148,7 @@ class GuestFacts(SerializableContainer):
     is_image_mode = flag_guest_fact(
         """
         if type bootc &> /dev/null; then
-            image="$(sudo bootc status --format yaml | grep -Po 'image: \\K(.*)')"
+            image="$($sudo_prefix bootc status --format yaml | grep -Po 'image: \\K(.*)')"
 
             if [ -n "$image" ]; then
                 if [ "$image" = "null" ]; then echo 'false'; else echo 'true'; fi
@@ -1064,7 +1158,8 @@ class GuestFacts(SerializableContainer):
         else
             echo 'false'
         fi
-        """
+        """,
+        'sudo_prefix',
     )
 
     #: Whether the guest is a toolbox container
@@ -1096,7 +1191,7 @@ class GuestFacts(SerializableContainer):
     package_manager = package_manager_guest_fact()
 
     #: name of the bootc builder available on the guest.
-    bootc_builder = package_manager_guest_fact(lambda pm: pm.bootc_builder)
+    bootc_builder = package_manager_guest_fact(predicate=lambda pm: pm.bootc_builder)
 
     #: Various Linux capabilities and whether they are permitted.
     capabilities: dict[GuestCapability, bool] = field(
