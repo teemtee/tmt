@@ -335,7 +335,7 @@ class Provision(tmt.steps.Step):
         ):
             layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
 
-        inventory = AnsibleInventory.generate(self.ready_guests, layout_path)
+        inventory = AnsibleInventory.generate(self.ready_guests, self.plan, layout_path)
         self.write(inventory_path, tmt.utils.to_yaml(inventory))
 
         self.info('ansible', f"Inventory saved to '{inventory_path}'")
