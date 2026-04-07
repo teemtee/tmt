@@ -1,0 +1,4 @@
+description: |
+    Full :tmt:story:`recipe</spec/recipe>` loading is now supported,
+    and all phases can now be loaded directly from the recipe.
+    Note that the recipe feature is still experimental and subject to change.
