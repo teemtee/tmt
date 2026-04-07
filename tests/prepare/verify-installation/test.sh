@@ -13,7 +13,7 @@ rlJournalStart
 
         rlRun "image=$TEST_IMAGE_PREFIX/$image_name"
 
-        rlRun "data_dir=$(mktemp -d)" 0 "Create temp data directory"
+        rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
         rlRun "cp -r data/. $data_dir/" 0 "Copy test data"
 
         get_koji_build_id "centpkg" "$koji_tag"
