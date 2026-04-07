@@ -120,8 +120,8 @@ link:
             how: shell
             script: ./something.sh
             when:
-            - initiator == konflux && distro == fedora
-            - initiator == human && distro == fedora
+            - initiator == konflux and distro == fedora
+            - initiator == human and distro == fedora
     link:
       - implemented-by: /tmt/steps
       - verified-by: /tests/steps/when
