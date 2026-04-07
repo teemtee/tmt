@@ -185,6 +185,14 @@ rlJournalStart
             rlPhaseStartTest "$phase_prefix Reboot persistence"
                 rlRun -s "$tmt_run --all provision --how $PROVISION_HOW --image $image plan --name /reboot-persistence"
 
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+
+                # should see the tree and diffutils version printed twice (before and after the test reboot)
+                rlAssertEquals "Verify tree available after reboot" $(grep "stdout: tree v" $rlRun_LOG | wc -l) 2
+                rlAssertEquals "Verify diffutils available after reboot" $(grep "stdout: diff (GNU diffutils)" $rlRun_LOG | wc -l) 2
+
                 rlAssertGrep "total: 1 test passed" $rlRun_LOG
             rlPhaseEnd
         fi
@@ -284,7 +292,7 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image" || is_image_mode "$image"; then
+            elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
@@ -313,8 +321,8 @@ rlJournalStart
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
 
-	    rlAssertGrep "Other failed packages:" $rlRun_LOG
-	    rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
+            rlAssertGrep "Other failed packages:" $rlRun_LOG
+            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "$phase_prefix Install existing and invalid packages (test)"
@@ -325,7 +333,7 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image" || is_image_mode "$image"; then
+            elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
@@ -354,7 +362,7 @@ rlJournalStart
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
 
-	    rlAssertGrep "Required packages failed to install, aborting:" $rlRun_LOG
+            rlAssertGrep "Required packages failed to install, aborting:" $rlRun_LOG
             rlAssertGrep "tree-but-spelled-wrong: required by: /test-with-invalid-package" $rlRun_LOG
         rlPhaseEnd
 
@@ -366,7 +374,7 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image" || is_image_mode "$image"; then
+            elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
@@ -394,8 +402,8 @@ rlJournalStart
             else
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
-	    rlAssertGrep "Other failed packages:" $rlRun_LOG
-	    rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
+            rlAssertGrep "Other failed packages:" $rlRun_LOG
+            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "$phase_prefix Empty prepare install with exclude"
