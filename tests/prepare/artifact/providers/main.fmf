@@ -1,0 +1,5 @@
+adjust:
+  # TODO: Handle centos artifacts also
+  - when: distro != fedora
+    enabled: false
+    because: Need to dynamically handle centos/brew/epel artifacts somehow also
