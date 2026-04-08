@@ -1,0 +1,16 @@
+discover:
+    how: shell
+    tests:
+      - name: /smoke
+        test: /usr/bin/true
+
+provision:
+    how: virtual
+
+prepare:
+    how: install
+    package:
+      - tree
+
+execute:
+    how: tmt
