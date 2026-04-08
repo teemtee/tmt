@@ -7,7 +7,9 @@ function fetch_downloaded_packages () {
     in_subdirectory="$2"
 
     if [ ! -e $package_cache/tree.rpm ]; then
-        # Transform image mode qcow2 URL to a distro compatible container image for artifact download
+        # Transform image mode qcow2 URL to a distro compatible container image for artifact download.
+        # We want artifacts to come from the same distribution, but using standard fedora container
+        # images is enough, they are smaller and rpm compatible with image mode based container images.
         [ "$IMAGE_MODE" = "yes" ] && image=${IMAGE_MODE_QCOW2_CONTAINER_MAP["$image"]}
 
         # For some reason, this command will get stuck in rlRun...
@@ -18,7 +20,6 @@ function fetch_downloaded_packages () {
                                                     && dnf download --destdir /tmp tree diffutils \
                                                     && mv /tmp/tree*.rpm /tmp/tree.rpm \
                                                     && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
-
         rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
         rlRun "podman cp $container_id:/tmp/diffutils.rpm $package_cache/"
         rlRun "podman kill $container_id"
