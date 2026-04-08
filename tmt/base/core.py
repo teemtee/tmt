@@ -1712,12 +1712,12 @@ class Test(
             return
 
         filename = self.fmf_sources[-1]
-        metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename))
+        metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename), yaml_type="rt")
 
         metadata['adjust'] = tmt.convert.relevancy_to_adjust(
             metadata.pop('relevancy'), self._logger
         )
-        self.write(filename, to_yaml(metadata))
+        self.write(filename, to_yaml(metadata, yaml_type="rt"))
 
         yield LinterOutcome.FIXED, 'relevancy converted into adjust'
 
@@ -1812,7 +1812,7 @@ class Test(
             return
 
         filename = self.fmf_sources[-1]
-        metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename))
+        metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename), yaml_type="rt")
 
         if not tmt.utils.is_key_origin(self.node, 'require') and all(
             dependency in metadata.get('require', []) for dependency in missing_type
@@ -1832,7 +1832,7 @@ class Test(
 
             dependency['type'] = 'file' if dependency.get('pattern') else 'library'
 
-        self.write(filename, to_yaml(metadata))
+        self.write(filename, to_yaml(metadata, yaml_type="rt"))
 
         yield LinterOutcome.FIXED, 'added type to requirements'
 
