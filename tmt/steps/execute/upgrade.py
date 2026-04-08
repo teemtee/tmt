@@ -236,21 +236,19 @@ class ExecuteUpgrade(ExecuteInternal):
         super().__init__(**kwargs)
         self._discover_upgrade: Optional[DiscoverFmf] = None
 
-    @property  # type:ignore[override]
+    @property
     def discover(self) -> Union[Discover, DiscoverFmf]:
         """
-        Return discover plugin instance
+        Return discover step or discover plugin instance
+
+        If we are in the second phase (upgrade), take tests from our
+        fake discover plugin.
         """
 
-        # If we are in the second phase (upgrade), take tests from our fake
-        # discover plugin.
         if self._discover_upgrade:
             return self._discover_upgrade
-        return self.step.plan.discover
 
-    @discover.setter
-    def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
-        self._discover = plugin
+        return self.step.plan.discover
 
     @property
     def tasks(
