@@ -12,6 +12,7 @@ import fmf.utils
 
 import tmt
 import tmt.base.core
+import tmt.base.run
 import tmt.log
 import tmt.steps
 import tmt.steps.scripts
@@ -339,7 +340,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             assert isinstance(self.phase.parent, Execute)
 
             # narrow type
-            assert isinstance(self.phase.parent.plan.my_run, tmt.base.core.Run)
+            assert isinstance(self.phase.parent.plan.my_run, tmt.base.run.Run)
 
             environment = Environment()
 

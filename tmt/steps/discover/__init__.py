@@ -9,6 +9,7 @@ import click
 from fmf.utils import listed
 
 import tmt
+import tmt.result
 from tmt.container import container, field, key_to_option
 
 if TYPE_CHECKING:
@@ -950,7 +951,7 @@ class Discover(tmt.steps.Step):
             return
 
         if self.should_run_again and tmt.base.core.Test._opt('failed_only'):
-            failed_results: list[tmt.base.core.Result] = []
+            failed_results: list[tmt.result.Result] = []
             assert self.parent is not None  # narrow type
             assert isinstance(self.parent, Plan)  # narrow type
 
