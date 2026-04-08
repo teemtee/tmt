@@ -11,6 +11,7 @@ from tmt.package_managers import (
     PackageManager,
     PackageManagerEngine,
     Repository,
+    Version,
     escape_installables,
     provides_package_manager,
 )
@@ -241,6 +242,19 @@ class Dnf(PackageManager[DnfEngine]):
     # `rpm-ostree` has its own implementation and its own priority, and
     # the `dnf` family just stays below it.
     probe_priority = 50
+
+    def list_packages(self, repository: Repository) -> list[Version]:
+        from tmt.package_managers._rpm import RpmVersion
+
+        script = self.engine.list_packages(repository)
+        output = self.guest.execute(script)
+        stdout = output.stdout
+
+        if stdout is None:
+            raise GeneralError("Repository query provided no output")
+
+        stripped_lines = (line.strip() for line in stdout.strip().splitlines())
+        return [RpmVersion.from_nevra(line) for line in stripped_lines if line]
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         try:

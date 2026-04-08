@@ -402,6 +402,9 @@ class Queue(list[TaskT]):
     Queue class for running tasks.
     """
 
+    #: If set, the queue is running and invoking tasks.
+    is_running: bool
+
     #: After yielding all outcomes from a single task, this flag is
     #: checked. If it's set, the next task in line would be started;
     #: otherwise, :py:meth:`run` will quit.
@@ -429,6 +432,7 @@ class Queue(list[TaskT]):
         """
 
         self[:] = []
+        self.is_running = False
         self._keep_running = True
         self._invoked_tasks = 0
 
@@ -516,7 +520,7 @@ class Queue(list[TaskT]):
 
             new_order = [task.name for task in self]
 
-            if current_order != new_order:
+            if current_order != new_order and self.is_running:
                 self.show_tasks(
                     f'{self.name} queue: reordering after task {task.name}', self._logger
                 )
@@ -530,6 +534,8 @@ class Queue(list[TaskT]):
         Tasks are executed in the order, for each invoked task new
         instance of this class is yielded.
         """
+
+        self.is_running = True
 
         self.show_tasks(f'queued {self.name} tasks', self._logger)
 
@@ -571,10 +577,16 @@ class Queue(list[TaskT]):
             # will need to review uses of `Queue`, which will happen as
             # part of https://github.com/teemtee/tmt/issues/4668.
             if failed_tasks:
+                self.is_running = False
+
                 return
 
             if not self._keep_running:
+                self.is_running = False
+
                 return
+
+        self.is_running = False
 
     def stop(self) -> Iterable[TaskT]:
         """

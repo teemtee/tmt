@@ -2,3 +2,11 @@ summary: Test copr-repository artifact provider
 description: |
     Test copr-repository artifact provider which makes packages from Copr
     repositories available for installation.
+
+# FIXME: mariobl/pyspread only has chroots for Fedora 43+. Replace with a
+# tmt-owned COPR project with auto-branching so the gate can be removed.
+# See https://github.com/teemtee/tmt/issues/4776
+adjust+:
+  - when: distro < fedora-43
+    enabled: false
+    because: mariobl/pyspread COPR only has chroots for Fedora 43+

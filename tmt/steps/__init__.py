@@ -4,6 +4,7 @@ Step Classes
 
 import abc
 import collections
+import copy
 import functools
 import itertools
 import re
@@ -1323,6 +1324,11 @@ class Step(
         """
         Add a phase dynamically to the current step.
 
+        .. warning::
+
+            The addition does not transcribe into step data of ``phase``
+            being added to the :py:attr:`data` list.
+
         :param phase: The phase to add.
         """
         if not isinstance(phase, self._plugin_base_class):
@@ -1395,6 +1401,58 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
         self._queue = PhaseQueue(
             self.step_name, self._logger.descend(logger_name=f'{self.step_name}.queue')
         )
+
+    @functools.cached_property
+    def _steppified_guests(self) -> list['Guest']:
+        """
+        Ready guests with setup and logger switched to this step.
+
+        Returned guests will behave as if they use this step's
+        setup and logging rather than the setup and logging of their
+        original step, ``provision``.
+        """
+
+        def _copy_guest(guest: 'Guest') -> 'Guest':
+            logger = guest._logger
+
+            guest = copy.copy(guest)
+            guest.inject_logger(logger.clone().apply_verbosity_options(**self._cli_options))
+
+            guest.parent = self
+
+            return guest
+
+        return [_copy_guest(guest) for guest in self.plan.provision.ready_guests]
+
+    def add_phase(self, phase: Phase) -> None:
+        """
+        Add a phase dynamically to the current step.
+
+        If the step is in progress and its queue is running, phase is
+        added to the queue as well. Its position in the queue is subject
+        to the queue ordering and :py:attr:`Phase.order` key.
+
+        .. warning::
+
+            The addition does not transcribe into step data of ``phase``
+            being added to the :py:attr:`data` list.
+
+        :param phase: The phase to add.
+        """
+
+        super().add_phase(phase)
+
+        if self._queue.is_running:
+            if isinstance(phase, Action):
+                self._queue.enqueue_action(phase=phase)
+
+            elif phase.enabled_by_when:
+                self._queue.enqueue_plugin(
+                    phase=phase,  # type: ignore[arg-type]
+                    guests=[
+                        guest for guest in self._steppified_guests if phase.enabled_on_guest(guest)
+                    ],
+                )
 
 
 class Method:

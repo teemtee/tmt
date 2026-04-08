@@ -1,4 +1,3 @@
-import copy
 from typing import Optional, TypeVar, cast
 
 import fmf
@@ -122,21 +121,6 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
             return
 
         if self.plan.provision.ready_guests:
-            # Prepare guests
-            guest_copies: list[Guest] = []
-
-            for guest in self.plan.provision.ready_guests:
-                # Create a guest copy and change its parent so that the
-                # operations inside finish plugins on the guest use the
-                # finish step config rather than provision step config.
-                guest_copy = copy.copy(guest)
-                guest_copy.inject_logger(
-                    guest._logger.clone().apply_verbosity_options(**self._cli_options)
-                )
-                guest_copy.parent = self
-
-                guest_copies.append(guest_copy)
-
             self._queue.reset()
 
             for phase in self.phases(classes=(Action, FinishPlugin)):
@@ -146,7 +130,11 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
                 elif phase.enabled_by_when:
                     self._queue.enqueue_plugin(
                         phase=phase,  # type: ignore[arg-type]
-                        guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
+                        guests=[
+                            guest
+                            for guest in self._steppified_guests
+                            if phase.enabled_on_guest(guest)
+                        ],
                     )
 
             results: list[PhaseResult] = []
@@ -228,11 +216,11 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
 
             # Pull artifacts created in the plan data directory
             # if there was at least one plugin executed
-            if self.phases() and guest_copies:
+            if self.phases() and self._steppified_guests:
                 sync_with_guests(
                     self,
                     'pull',
-                    PullTask(guest_copies, self.plan.data_directory, self._logger),
+                    PullTask(self._steppified_guests, self.plan.data_directory, self._logger),
                     self._logger,
                 )
 
