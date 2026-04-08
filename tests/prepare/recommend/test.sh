@@ -7,7 +7,7 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
 
-        if [ "$IMAGE_MODE" != "yes" ]; then
+        if [ "$PROVISION_HOW" = "container" ]; then
             build_container_image "ubi/8/upstream\:latest"
             build_container_image "centos/7/upstream\:latest"
             build_container_image "fedora/latest/upstream\:latest"

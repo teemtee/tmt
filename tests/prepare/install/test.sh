@@ -95,11 +95,7 @@ rlJournalStart
 
             elif is_centos_stream_10 "$image"; then
                 rlRun "distro=centos-stream-10"
-                if is_image_mode "$image"; then
-                    rlRun "package_manager=bootc"
-                else
-                    rlRun "package_manager=dnf"
-                fi
+                rlRun "package_manager=dnf"
 
             elif is_centos_7 "$image"; then
                 rlRun "distro=centos-7"
@@ -140,11 +136,7 @@ rlJournalStart
 
             elif is_fedora "$image"; then
                 rlRun "distro=fedora"
-                if is_image_mode "$image"; then
-                    rlRun "package_manager=bootc"
-                else
-                    rlRun "package_manager=dnf5"
-                fi
+                rlRun "package_manager=dnf5"
 
             elif is_alpine "$image"; then
                 rlRun "distro=alpine"
@@ -152,6 +144,10 @@ rlJournalStart
 
             else
                 rlFail "Cannot infer distro for image $image"
+            fi
+
+            if is_image_mode "$image"; then
+                rlRun "package_manager=bootc"
             fi
 
             tmt_run="tmt -vvv -c distro=$distro run --id $run --scratch"
