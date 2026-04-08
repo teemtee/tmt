@@ -1,0 +1,4 @@
+description: |
+    Fixed beakerlib library cache handling in ``tmt try`` so that
+    cached library files are properly cleared when re-running tests,
+    preventing stale cache issues during iterative testing.
