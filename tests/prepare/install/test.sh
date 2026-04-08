@@ -292,7 +292,7 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image"; then
+            elif is_ostree "$image" || is_image_mode "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
@@ -333,7 +333,7 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image"; then
+            elif is_ostree "$image" || is_image_mode "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
@@ -374,7 +374,7 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image"; then
+            elif is_ostree "$image" || is_image_mode "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
