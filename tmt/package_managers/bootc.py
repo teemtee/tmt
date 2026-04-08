@@ -318,7 +318,6 @@ class Bootc(PackageManager[BootcEngine]):
 
         if missing_installables:
             self.engine.install(*missing_installables, options=options)
-            return self.build_container() or CommandOutput(stdout=None, stderr=None)
 
         return CommandOutput(stdout=None, stderr=None)
 
@@ -329,7 +328,7 @@ class Bootc(PackageManager[BootcEngine]):
     ) -> CommandOutput:
         self.engine.reinstall(*installables, options=options)
 
-        return self.build_container() or CommandOutput(stdout=None, stderr=None)
+        return CommandOutput(stdout=None, stderr=None)
 
     def install_debuginfo(
         self,
@@ -337,35 +336,6 @@ class Bootc(PackageManager[BootcEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         self.engine.install_debuginfo(*installables, options=options)
-        return CommandOutput(stdout=None, stderr=None)
-
-    def install_from_repository(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-
-        # Check presence to avoid unnecessary container rebuilds
-        presence = self.check_presence(*installables)
-
-        missing_installables = {i for i, present in presence.items() if not present}
-        if missing_installables:
-            self.engine.install(*missing_installables, options=options)
-
-        return CommandOutput(stdout=None, stderr=None)
-
-    def install_from_url(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-
-        presence = self.check_presence(*installables)
-
-        missing_installables = {i for i, present in presence.items() if not present}
-        if missing_installables:
-            self.engine.install(*missing_installables, options=options)
-
         return CommandOutput(stdout=None, stderr=None)
 
     def install_local(
