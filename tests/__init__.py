@@ -22,8 +22,9 @@ def reset_common() -> None:
     accept CLI options are reset.
     """
 
-    from tmt.base.core import Core, Run, Story, Test, Tree
+    from tmt.base.core import Core, Story, Test, Tree
     from tmt.base.plan import Plan
+    from tmt.base.run import Run
     from tmt.utils import Common, MultiInvokableCommon
 
     for klass in (Core, Run, Tree, Test, Plan, Story, Common, MultiInvokableCommon):

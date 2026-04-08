@@ -79,6 +79,7 @@ from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base.core
+    import tmt.base.run
     import tmt.cli
     import tmt.utils.themes
     from tmt._compat.typing import ParamSpec, Self, TypeAlias
@@ -5180,7 +5181,7 @@ def generate_runs(path: Path, id_: tuple[str, ...], all_: bool = False) -> Itera
         yield abs_child_path
 
 
-def load_run(run: 'tmt.base.core.Run') -> tuple[bool, Optional[Exception]]:
+def load_run(run: 'tmt.base.run.Run') -> tuple[bool, Optional[Exception]]:
     """
     Load a run and its steps from the workdir
     """
