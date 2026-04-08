@@ -20,6 +20,13 @@ class PrepareVerifyInstallationData(PrepareStepData):
         help='Order in which the phase should be handled.',
     )
 
+    # TODO: The value type should be ``list[str]`` to allow specifying multiple
+    # acceptable source repositories for a single package (e.g. the same NVR
+    # can exist in both ``tmt-artifact-shared`` and added ``repository`` without clashing.
+    # When that change is made the comparison in ``go()`` must be updated from
+    # ``actual_origin == expected_repo`` to ``actual_origin in expected_repos``,
+    # and the semantics must be documented: a package passes verification if its
+    # actual source repo matches ANY of the listed repos (OR semantics).
     verify: dict[str, str] = field(
         default_factory=dict,
         help="Mapping of package names to expected source repository names.",
@@ -80,6 +87,11 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             color='green',
         )
 
+        # TODO: Use ``rpm -q --whatprovides`` to resolve the actual RPM packages
+        # providing the requested requirements before verification. This would
+        # cover cases where ``require`` contains virtual provides like
+        # ``/usr/bin/something``. Not implemented yet as it requires live guest
+        # queries and is incompatible with bootc mode.
         try:
             package_origins = guest.package_manager.get_package_origin(self.data.verify.keys())
         except (NotImplementedError, tmt.utils.GeneralError) as err:
@@ -106,7 +118,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         for package, expected_repo in self.data.verify.items():
             actual_origin = package_origins[package]
 
-            if actual_origin == expected_repo:
+            if actual_origin in expected_repo:
                 outcome.results.append(
                     PhaseResult(
                         name=f'{self.name} / {package}',

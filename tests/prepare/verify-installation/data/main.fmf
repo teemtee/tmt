@@ -8,6 +8,7 @@
         test: /test
     prepare:
       - how: artifact
+        verify: false
         provide:
           - koji.build:KOJI_BUILD_ID
 

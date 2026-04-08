@@ -1,5 +1,7 @@
 from typing import ClassVar, Optional
 
+import fmf.utils
+
 import tmt.base.core
 import tmt.steps
 import tmt.utils
@@ -12,6 +14,15 @@ from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
     ArtifactProvider,
     Repository,
+)
+
+# ``@provides_method`` causes pyright to lose the class type, which is the
+# root cause of all ``pyright: ignore`` waivers referencing these two classes.
+# This will be fixed by https://github.com/teemtee/tmt/issues/4766.
+from tmt.steps.prepare.install import PrepareInstall  # pyright: ignore[reportUnknownVariableType]
+from tmt.steps.prepare.verify_installation import (
+    PrepareVerifyInstallation,  # pyright: ignore[reportUnknownVariableType]
+    PrepareVerifyInstallationData,
 )
 from tmt.utils import Environment, Path
 
@@ -37,6 +48,18 @@ class PrepareArtifactData(PrepareStepData):
             """,
     )
 
+    verify: bool = field(
+        default=True,
+        option='--verify/--no-verify',
+        is_flag=True,
+        help="""
+        Verify that packages from tmt-injected ``prepare/install`` phases
+        (test ``require``/``recommend`` keys, their dist-git equivalents, and essential requires)
+        were installed from the correct provider artifact repository.
+        User-defined ``prepare/install`` phases are not covered.
+        """,
+    )
+
 
 def get_artifact_provider(provider_id: str) -> type[ArtifactProvider]:
     provider_type = provider_id.split(':', maxsplit=1)[0]
@@ -60,13 +83,19 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     a preferred repository on the guest.
 
     The goal is to make sure these exact artifacts are being used
-    when requested in one of the
-    :tmt:story:`test require </spec/tests/require>`,
-    :tmt:story:`test recommend </spec/tests/recommend>`, or
-    :ref:`prepare install </plugins/prepare/install>`. Exact NVR
+    when requested via
+    :tmt:story:`test require </spec/tests/require>` or
+    :tmt:story:`test recommend </spec/tests/recommend>` keys. Exact NVR
     *should not* be used in those requests, instead this plugin
     will take care of disambiguating the requested package based
     on the provided artifacts.
+
+    When ``verify`` is enabled (the default), the plugin injects a
+    verification phase that checks packages installed from tmt-managed
+    install phases (``require``, ``recommend``, ``essential-requires``,
+    and their dist-git equivalents) actually came from the configured
+    artifact repositories. User-defined ``prepare/install`` phases are
+    not covered by this verification.
 
     Currently, the following artifact providers are supported:
 
@@ -172,6 +201,14 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
     ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
 
+    #: Name of the auto-injected verify-installation phase.
+    VERIFY_PHASE_NAME: ClassVar[str] = 'verify-artifact-packages'
+
+    #: Summary of the auto-injected verify-installation phase.
+    VERIFY_PHASE_SUMMARY: ClassVar[str] = (
+        'Verify test requirement packages were installed from the correct artifact repositories'
+    )
+
     def go(
         self,
         *,
@@ -272,6 +309,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Persist artifact metadata to YAML
         self._save_artifacts_metadata(providers)
 
+        # Verify phase injection
+        if self.data.verify:
+            self._inject_verify_phase(providers, guest)
+
         # Report configuration summary
         logger.info(
             f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
@@ -279,6 +320,97 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         return outcome
+
+    def _inject_verify_phase(self, providers: list[ArtifactProvider], guest: Guest) -> None:
+        """
+        Inject a verify-installation phase for packages from these providers.
+
+        If a verify phase already exists for the same where= group, merge
+        the packages into it. Otherwise, create and add a new phase.
+        """
+        # Collect packages from the install phases injected by tmt on behalf of
+        # test/essential requirements. User-defined prepare/install phases are
+        # intentionally excluded.
+        #
+        # Phase name sources:
+        #   'essential-requires'    — Prepare._go() in tmt/steps/prepare/__init__.py
+        #   'requires'              — Prepare._go() in tmt/steps/prepare/__init__.py
+        #   'recommends'            — Prepare._go() in tmt/steps/prepare/__init__.py
+        #   'requires (dist-git)'   — tmt/steps/prepare/distgit.py
+        #   'recommends (dist-git)' — tmt/steps/prepare/distgit.py
+        _tmt_install_phase_names = {
+            'essential-requires',
+            'requires',
+            'recommends',
+            'requires (dist-git)',
+            'recommends (dist-git)',
+        }
+        pkg_names: set[str] = set()
+        _install_phases = self.step.phases(classes=PrepareInstall)  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
+        for install_phase in _install_phases:  # pyright: ignore[reportUnknownVariableType]
+            if install_phase.data.name not in _tmt_install_phase_names:  # pyright: ignore[reportUnknownMemberType]
+                continue
+            if not install_phase.enabled_on_guest(guest):  # pyright: ignore[reportUnknownMemberType]
+                continue
+            for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+                pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
+
+        # Build package → origin repo mapping from all providers.
+        # TODO: ``artifact.location`` is overloaded: a download URL for download
+        # providers and a repo name for repository providers. We use
+        # ``provider.get_repositories()`` as a proxy until ``ArtifactInfo`` gains
+        # a dedicated ``repo`` field. See https://github.com/teemtee/tmt/issues/4714.
+        pkg_to_repo: dict[str, str] = {}
+        for provider in providers:
+            repositories = provider.get_repositories()
+            if repositories:
+                # Repository provider: collect all repo_ids from all repositories.
+                # A .repo file may declare multiple sections; any of them is a valid origin.
+                all_repo_ids = ','.join(
+                    repo_id for repo in repositories for repo_id in repo.repo_ids
+                )
+                for artifact in provider.artifacts:
+                    pkg_to_repo[artifact.version.name] = all_repo_ids
+            else:
+                # Download provider: packages land in the shared repo.
+                for artifact in provider.artifacts:
+                    pkg_to_repo[artifact.version.name] = self.SHARED_REPO_NAME
+
+        # Only verify packages that are both required and from a known artifact.
+        pkgs_to_verify = {pkg: repo for pkg, repo in pkg_to_repo.items() if pkg in pkg_names}
+
+        if not pkgs_to_verify:
+            self.verbose('No packages to be installed were found in the provided artifacts.')
+            return
+
+        self.debug(f"Verifying {fmf.utils.listed(sorted(pkgs_to_verify), 'package')}.")
+
+        # Look for an existing verify phase for this where= group.
+        existing_verify: Optional[PrepareVerifyInstallation] = next(  # pyright: ignore[reportUnknownVariableType]
+            (
+                phase
+                for phase in self.step.phases(PrepareVerifyInstallation)  # pyright: ignore[reportUnknownArgumentType,reportUnknownVariableType]
+                if phase.data.name == self.VERIFY_PHASE_NAME  # pyright: ignore[reportUnknownMemberType]
+                and set(phase.data.where) == set(self.data.where)  # pyright: ignore[reportUnknownArgumentType,reportUnknownMemberType]
+            ),
+            None,
+        )
+
+        if existing_verify is not None:
+            # Merge into existing verify phase.
+            existing_verify.data.verify.update(pkgs_to_verify)  # pyright: ignore[reportUnknownMemberType]
+        else:
+            # Create and add a new verify phase.
+            verify_data = PrepareVerifyInstallationData(
+                name=self.VERIFY_PHASE_NAME,
+                how='verify-installation',
+                summary=self.VERIFY_PHASE_SUMMARY,
+                order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
+                where=list(self.data.where),
+                verify=pkgs_to_verify,
+            )
+            verify_phase = PreparePlugin.delegate(self.step, data=verify_data)  # pyright: ignore[reportUnknownVariableType]
+            self.step.add_phase(verify_phase)  # pyright: ignore[reportUnknownArgumentType]
 
     def essential_requires(self) -> list[tmt.base.core.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts
