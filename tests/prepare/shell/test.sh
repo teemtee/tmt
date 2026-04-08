@@ -1,12 +1,12 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
         rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
         if [ "$IMAGE_MODE" = "yes" ]; then
-            . ../../images.sh || exit 1
             rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
         fi
         rlRun "pushd data"
