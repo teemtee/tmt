@@ -1,0 +1,3 @@
+description: |
+    Fixed a caching issue in ``tmt try`` causing failures when
+    rerunning tests with beakerlib libraries.
