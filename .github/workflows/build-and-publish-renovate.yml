@@ -18,14 +18,15 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.ref }}
-      - uses: redhat-actions/buildah-build@v2.13
+          persist-credentials: false
+      - uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
         with:
           image: renovate-tmt
           containerfiles: ./containers/Containerfile.renovate
-      - uses: redhat-actions/push-to-registry@v2.8
+      - uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2.8
         with:
           image: renovate-tmt
           tags: latest

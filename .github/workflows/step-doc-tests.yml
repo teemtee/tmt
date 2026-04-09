@@ -26,14 +26,14 @@ jobs:
             sphinx_builder: html
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}
-      - uses: actions/setup-python@v6.3.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: 3.x
-      - uses: astral-sh/setup-uv@v8.2.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           activate-environment: true
       - name: Install tmt[docs]
@@ -50,7 +50,7 @@ jobs:
           echo "date=$(/usr/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
         if: ${{ matrix.builder == 'linkcheck' }}
       - name: Cache linkcheck results
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: docs/_build/linkcheck_cache.json
           key: linkcheck-${{ steps.date.outputs.date }}
