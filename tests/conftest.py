@@ -167,7 +167,7 @@ def _construct_fixture_guest(container: 'ContainerData', logger: Logger) -> Gues
     # functionality will not work correctly, e.g. dry-run detection.
     plan = Plan(node=fmf.base.Tree(data={'execute': {'how': 'tmt'}}), logger=logger)
 
-    step = Provision(plan=plan, data=[], logger=logger)
+    step = Provision(plan=plan, raw_data=[], logger=logger)
 
     guest_data = PodmanGuestData(image=container.image_url_or_id, container=container.container_id)
 
