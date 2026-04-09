@@ -179,7 +179,7 @@ def create_package_manager(
     )
 
     guest = tmt.steps.provision.podman.GuestContainer(
-        logger=logger, data=guest_data, name='dummy-container'
+        logger=logger, data=guest_data, name='dummy-container', parent=guest.parent
     )
     guest.start()
     guest.show()
@@ -193,6 +193,17 @@ def create_package_manager(
             guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
 
     return package_manager_class(guest=guest, logger=logger)
+
+
+def assert_expected_command(
+    caplog: _pytest.logging.LogCaptureFixture, expected_command_pattern: str
+) -> None:
+    assert_log(
+        caplog,
+        message=MATCH(
+            rf"(?sm)Run command: podman exec .+? /bin/bash -c '(?:export [A-Z_]+=.*; )*{expected_command_pattern}'"  # noqa: E501
+        ),
+    )
 
 
 def _parametrize_test_discovery() -> Iterator[tuple[ContainerData, PackageManagerClass]]:
@@ -384,10 +395,7 @@ def test_install(
 
     output = package_manager.install(package)
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -463,9 +471,7 @@ def test_refresh_metadata(
 
     output = package_manager.refresh_metadata()
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -583,10 +589,7 @@ def test_install_nonexistent(
     with pytest.raises(tmt.utils.RunError) as excinfo:
         package_manager.install(Package('tree-but-spelled-wrong'))
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert excinfo.type is tmt.utils.RunError
     assert excinfo.value.returncode != 0
@@ -699,10 +702,7 @@ def test_install_nonexistent_skip(
         Package('tree-but-spelled-wrong'), options=Options(skip_missing=True)
     )
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -811,10 +811,7 @@ def test_install_dont_check_first(
 
     output = package_manager.install(package, options=Options(check_first=False))
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -925,10 +922,7 @@ def test_reinstall(
 
         output = package_manager.reinstall(package)
 
-        assert_log(
-            caplog,
-            message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-        )
+        assert_expected_command(caplog, expected_command)
 
     else:
         with pytest.raises(tmt.utils.GeneralError) as excinfo:
@@ -1040,10 +1034,7 @@ def test_reinstall_nonexistent(
         with pytest.raises(tmt.utils.RunError) as excinfo:
             package_manager.reinstall(Package('tree-but-spelled-wrong'))
 
-        assert_log(
-            caplog,
-            message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-        )
+        assert_expected_command(caplog, expected_command)
 
         assert excinfo.type is tmt.utils.RunError
         assert excinfo.value.returncode != 0
@@ -1390,10 +1381,7 @@ def test_check_presence(
 
     assert package_manager.check_presence(installable) == {installable: expected_result}
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     if expected_output:
         assert_log(caplog, remove_colors=True, message=MATCH(expected_output))
@@ -1500,10 +1488,7 @@ def test_install_filesystempath(
 
     output = package_manager.install(installable)
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -1637,10 +1622,7 @@ def test_install_multiple(
 
     output = package_manager.install(*packages)
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -1831,10 +1813,7 @@ def test_install_downloaded(
     else:
         output = package_manager.install(*installables, options=Options(check_first=False))
 
-    assert_log(
-        caplog,
-        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -1972,9 +1951,7 @@ def test_install_debuginfo(
 
     output = package_manager.install_debuginfo(*installables)
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -2058,9 +2035,7 @@ def test_install_debuginfo_nonexistent(
     with pytest.raises(tmt.utils.RunError) as excinfo:
         package_manager.install_debuginfo(*installables)
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert excinfo.type is tmt.utils.RunError
     assert excinfo.value.returncode != 0
@@ -2183,8 +2158,6 @@ def test_install_debuginfo_nonexistent_skip(
 
     output = package_manager.install_debuginfo(*installables, options=Options(skip_missing=True))
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_expected_command(caplog, expected_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
