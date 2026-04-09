@@ -254,6 +254,11 @@ repos:
           - '--rst-directives'
           - 'versionadded,versionchanged'
 
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: ea2eb407b4cbce87cf0d502f36578950494f5ac9  # v1.23.1
+    hooks:
+      - id: zizmor
+
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.9
     hooks:
