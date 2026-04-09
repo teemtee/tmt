@@ -34,7 +34,7 @@ from tmt.steps.context.pidfile import PidFileContext
 from tmt.steps.context.reboot import RebootContext
 from tmt.steps.context.restart import RestartContext
 from tmt.steps.context.restraint import RestraintContext
-from tmt.steps.discover import Discover
+from tmt.steps.discover import Discover, DiscoverPlugin
 from tmt.utils import (
     Command,
     CommandOutput,
