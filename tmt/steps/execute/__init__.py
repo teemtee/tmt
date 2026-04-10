@@ -34,7 +34,7 @@ from tmt.steps.context.pidfile import PidFileContext
 from tmt.steps.context.reboot import RebootContext
 from tmt.steps.context.restart import RestartContext
 from tmt.steps.context.restraint import RestraintContext
-from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
+from tmt.steps.discover import Discover, DiscoverPlugin
 from tmt.utils import (
     Command,
     CommandOutput,
@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     import tmt.base.plan
     import tmt.result
     import tmt.steps.discover
+    from tmt.steps.discover.fmf import DiscoverFmf
 
 # Test data and checks directory names
 TEST_DATA = 'data'
@@ -694,17 +695,18 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
 
     @property
-    def discover(self) -> Discover:
+    def discover(self) -> Union[Discover, 'DiscoverFmf']:
         """
-        Return discover plugin instance
+        Return discover step or discover plugin instance
+
+        This is used for iterating over discovered tests and setting the
+        workdir. During the upgrade phase of the upgrade plugin it
+        returns instance of DiscoverFmf with upgrade tasks.
+
+        FIXME: Find a way how to handle this more cleanly.
         """
-        # This is necessary so that upgrade plugin can inject a fake discover
 
         return self.step.plan.discover
-
-    @discover.setter
-    def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
-        self._discover = plugin
 
     def prepare_tests(self, guest: Guest, logger: tmt.log.Logger) -> list[TestInvocation]:
         """
