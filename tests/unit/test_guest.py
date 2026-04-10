@@ -149,7 +149,7 @@ def test_multihost_name(root_logger: Logger) -> None:
 def test_execute_no_connection_closed(
     root_logger: Logger, stdout: str, expected: str, monkeypatch: Any
 ) -> None:
-    step = Provision(plan=MagicMock(name='mock<plan>'), data={}, logger=root_logger)
+    step = Provision(plan=MagicMock(name='mock<plan>'), raw_data=[{}], logger=root_logger)
     guest = GuestSsh(
         logger=root_logger, parent=step, name='foo', data=GuestSshData(primary_address='bar')
     )
