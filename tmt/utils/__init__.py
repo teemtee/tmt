@@ -38,6 +38,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Final,
     Generic,
     Literal,
     Optional,
@@ -2399,14 +2400,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
         Read a file from the workdir of this object.
 
-        :param filepath: file to read. It will be treated as relative to
-            :py:attr:`workdir`.
+        :param filepath: file to read. If the path is not absolute, it
+            will be treated as relative to :py:attr:`workdir`.
         :param debug_level: a level of ``debug`` verbosity to use when
             logging the operation.
         :returns: content of the file.
         """
 
-        if self.workdir:
+        if self.workdir and not filepath.is_absolute():
             filepath = self.workdir / filepath
 
         self.debug(f"Read file '{filepath}'.", level=debug_level)
@@ -2427,8 +2428,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
         Write into a file in the workdir of this object.
 
-        :param filepath: file to modify. It will be treated as relative to
-            :py:attr:`workdir`.
+        :param filepath: file to read. If the path is not absolute, it
+            will be treated as relative to :py:attr:`workdir`.
         :param data: content to write into the file.
         :param mode: whether the file should be open for writing, ``w``,
             or for appending, ``a``.
@@ -2436,7 +2437,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             logging the operation.
         """
 
-        if self.workdir:
+        if self.workdir and not filepath.is_absolute():
             filepath = self.workdir / filepath
 
         self.debug(
@@ -2459,47 +2460,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     # TODO: too many of these in the code, let's get rid of them later.
     read = read_file
     write = write_file
-
-    def read_state(self, name: str) -> Any:
-        """
-        Read a state from the workdir of this object.
-
-        State is stored in a file in the workdir, using the state ``name``
-        to construct the file name.
-
-        .. important::
-
-            This method performs no deserialization, it is the
-            responsibility of the caller to turn loaded structure,
-            consisting of built-in-like types, into objects of desired
-            classes, e.g. by the power of
-            :py:meth:`tmt.container.SerializableContainer.deserialize`.
-
-        :param name: name of the state info to read.
-        :returns: stored state as Python data structure.
-        """
-
-        return from_state(self.read_file(Path(f'{name}{STATE_FILENAME_SUFFIX}')))
-
-    def write_state(self, name: str, data: Any) -> None:
-        """
-        Write a state into the workdir of this object.
-
-        State is stored in a file in the workdir, using the state ``name``
-        to construct the file name.
-
-        .. important::
-
-            This method performs no serialization, it is the
-            responsibility of the caller to turn internal objects into
-            built-in-like Python types, e.g. by the power of
-            :py:meth:`tmt.container.SerializableContainer.serialize`.
-
-        :param name: name of the state info to write.
-        :param data: content to save.
-        """
-
-        return self.write_file(Path(f'{name}{STATE_FILENAME_SUFFIX}'), to_state(data))
 
     def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
         """
@@ -3871,29 +3831,150 @@ def json_to_list(data: str) -> list[T]:
     return loaded_data
 
 
+#
+# State info tmt stores in various state files.
+#
+
+
+@container
+class StateFormat:
+    #: Format name
+    name: str
+
+    #: Format suffix
+    suffix: str
+
+    #: Convert data structure to string containing the structure
+    #: representation in this format.
+    to_state: Callable[[Any], str]
+
+    #: Convert data structure representation in this format into Python
+    #: data structure.
+    from_state: Callable[[str], Any]
+
+
 #: Format conversions tmt can use for storing and reading its on-disk
 #: state information. It is a mapping between format name and three
 #: items, a file suffix for files holding the state, and Python-to-format
 #: and format-to-Python converters.
-_STATE_FORMATS: dict[
-    str,
-    tuple[
-        str,
-        Callable[[Any], str],
-        Callable[[str], Any],
-    ],
-] = {
-    'json': ('.json', to_json, from_json),
-    'yaml': ('.yaml', to_yaml, from_yaml),
+_STATE_FORMATS: dict[str, StateFormat] = {
+    'json': StateFormat('json', '.json', to_json, from_json),
+    'yaml': StateFormat('yaml', '.yaml', to_yaml, from_yaml),
 }
 
-try:
-    STATE_FILENAME_SUFFIX, to_state, from_state = _STATE_FORMATS[
-        os.environ.get('TMT_STATE_FORMAT', 'yaml').lower()
-    ]
 
-except Exception as exc:
-    raise GeneralError("Unknown format of tmt state files.") from exc
+def get_state_format(format: Optional[str] = None) -> StateFormat:
+    """
+    Get a state format by the given name.
+
+    :param format: if set, the format of matching name is looked up.
+    :returns: state format by the name of ``format``, or the default
+        format, :py:data:`STATE_FORMAT`.
+    """
+
+    if format is None:
+        return STATE_FORMAT
+
+    try:
+        return _STATE_FORMATS[format]
+
+    except Exception as exc:
+        raise GeneralError(f"tmt state file format '{format}' is not supported.") from exc
+
+
+#: The default state format. It is initialized via ``TMT_STATE_FORMAT``
+#: environment variable.
+STATE_FORMAT: Final[StateFormat] = get_state_format(
+    format=os.environ.get('TMT_STATE_FORMAT', 'yaml').lower()
+)
+
+
+def from_state(state: str, format_name: Optional[str] = None) -> Any:
+    """
+    Turn stored state into Python data structure.
+
+    .. important::
+
+        No deserialization is performed, it is the responsibility of the
+        caller to turn loaded structure, consisting of built-in-like
+        types, into objects of desired classes, e.g. by the power of
+        :py:meth:`tmt.container.SerializableContainer.deserialize`.
+
+    :param state: state written down in the ``format`` format.
+    :param format_name: if set, use this format instead of the default
+        one.
+    :returns: stored state as Python data structure.
+    """
+
+    state_format = get_state_format(format=format_name)
+
+    return state_format.from_state(state)
+
+
+def to_state(state: Any, format_name: Optional[str] = None) -> str:
+    """
+    Turn Python data structure into a stored state.
+
+    .. important::
+
+        No serialization is performed, it is the responsibility of the
+        caller to turn internal objects into built-in-like Python types,
+        e.g. by the power of
+        :py:meth:`tmt.container.SerializableContainer.serialize`.
+
+    :param data: Python data structure.
+    :param format_name: if set, use this format instead of the default
+        one.
+    :returns: Python data structure as stored state.
+    """
+
+    state_format = get_state_format(format=format_name)
+
+    return state_format.to_state(state)
+
+
+def read_state(filepath: Path, format_name: Optional[str] = None) -> Any:
+    """
+    Read a stored state from the given file.
+
+    .. important::
+
+        No deserialization is performed, it is the responsibility of the
+        caller to turn loaded structure, consisting of built-in-like
+        types, into objects of desired classes, e.g. by the power of
+        :py:meth:`tmt.container.SerializableContainer.deserialize`.
+
+    :param filepath: file to read the state from.
+    :param format_name: if set, use this format instead of the default
+        one.
+    :returns: stored state as Python data structure.
+    """
+
+    state_format = get_state_format(format=format_name)
+
+    return state_format.from_state(Path(f'{filepath}{state_format.suffix}').read_text())
+
+
+def write_state(filepath: Path, data: Any, format: Optional[str] = None) -> None:
+    """
+    Write a state into the given file.
+
+    .. important::
+
+        No serialization is performed, it is the responsibility of the
+        caller to turn internal objects into built-in-like Python types,
+        e.g. by the power of
+        :py:meth:`tmt.container.SerializableContainer.serialize`.
+
+    :param filepath: file to write the state into.
+    :param data: state as Python data structure.
+    :param format_name: if set, use this format instead of the default
+        one.
+    """
+
+    state_format = get_state_format(format=format)
+
+    Path(f'{filepath}{state_format.suffix}').write_text(state_format.to_state(data))
 
 
 def markdown_to_html(filename: Path) -> str:

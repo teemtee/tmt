@@ -366,7 +366,7 @@ class Provision(tmt.steps.Step):
 
         return {
             *super()._preserved_workdir_members,
-            f'guests{tmt.utils.STATE_FILENAME_SUFFIX}',
+            f'guests{tmt.utils.STATE_FORMAT.suffix}',
             'inventory.yaml',
         }
 
@@ -392,8 +392,13 @@ class Provision(tmt.steps.Step):
         """
 
         super().load()
+
+        assert self.plan.my_run is not None  # narrow type
+
         try:
-            raw_guest_data: dict[str, dict[str, Any]] = self.read_state('guests')
+            raw_guest_data: dict[str, dict[str, Any]] = self.plan.my_run.read_state(
+                self.step_workdir / 'guests'
+            )
 
             self._guest_data = {
                 name: SerializableContainer.unserialize(guest_data, self._logger)
@@ -409,12 +414,15 @@ class Provision(tmt.steps.Step):
         """
 
         super().save()
+
+        assert self.plan.my_run is not None  # narrow type
+
         try:
             raw_guest_data = {
                 guest.name: guest.save().to_serialized() for guest in self.ready_guests
             }
 
-            self.write_state('guests', raw_guest_data)
+            self.plan.my_run.write_state(self.step_workdir / 'guests', raw_guest_data)
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
 

@@ -385,6 +385,7 @@ class Try(tmt.utils.Common):
         """
         assert self.tree is not None  # narrow type
         assert self._cli_context_object is not None  # narrow type
+        assert self.workdir is not None  # narrow type
         data = RunData(
             root=str(self.tree.root) if self.tree.root else None,
             plans=[plan.name for plan in self.plans],
@@ -392,7 +393,7 @@ class Try(tmt.utils.Common):
             environment=self.environment,
             remove=self.opt('remove'),
         )
-        self.write_state('run', data.to_serialized())
+        tmt.utils.write_state(self.workdir / 'run', data.to_serialized())
 
     def choose_action(self) -> 'Action':
         """

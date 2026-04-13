@@ -598,7 +598,7 @@ class Step(
         A set of members of the step workdir that should not be removed during pruning.
         """
 
-        return {f'step{tmt.utils.STATE_FILENAME_SUFFIX}'}
+        return {f'step{tmt.utils.STATE_FORMAT.suffix}'}
 
     def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
         """
@@ -843,7 +843,9 @@ class Step(
         """
 
         try:
-            raw_step_data: dict[Any, Any] = self.read_state('step')
+            assert self.plan.my_run is not None  # narrow type
+
+            raw_step_data: dict[Any, Any] = self.plan.my_run.read_state(self.step_workdir / 'step')
 
         except tmt.utils.GeneralError:
             self.debug('Step data not found.', level=2)
@@ -871,7 +873,9 @@ class Step(
             'status': self.status(),
             'data': [datum.to_serialized() for datum in self.data],
         }
-        self.write_state('step', content)
+
+        assert self.plan.my_run is not None  # narrow type
+        self.plan.my_run.write_state(self.step_workdir / 'step', content)
 
     def _load_results(
         self,
@@ -882,8 +886,10 @@ class Step(
         Load results of this step from the workdir
         """
 
+        assert self.plan.my_run is not None  # narrow type
+
         try:
-            raw_results: list[Any] = self.read_state('results')
+            raw_results: list[Any] = self.plan.my_run.read_state(self.step_workdir / 'results')
 
             return [result_class.from_serialized(raw_result) for raw_result in raw_results]
 
@@ -902,10 +908,12 @@ class Step(
         Save results of this step to the workdir
         """
 
+        assert self.plan.my_run is not None  # narrow type
+
         try:
             raw_results = [result.to_serialized() for result in results]
 
-            self.write_state('results', raw_results)
+            self.plan.my_run.write_state(self.step_workdir / 'results', raw_results)
 
         except Exception as exc:
             raise GeneralError('Cannot save step results.') from exc

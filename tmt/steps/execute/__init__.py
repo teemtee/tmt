@@ -1079,7 +1079,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
         return {
             *super()._preserved_workdir_members,
             'data',
-            f'results{tmt.utils.STATE_FILENAME_SUFFIX}',
+            f'results{tmt.utils.STATE_FORMAT.suffix}',
         }
 
     def load(self) -> None:
