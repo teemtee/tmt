@@ -1,11 +1,25 @@
-from collections.abc import Mapping
-from typing import IO, Any, Optional, Protocol, Union
+import contextlib
+import functools
+import os
+from collections.abc import Iterable, Iterator, Mapping
+from typing import IO, Any, Callable, Optional, Protocol, TypeVar, Union, cast
 
 import click.core
 import click.testing
+import jq as _jq
 
 import tmt.__main__
+import tmt._compat.importlib.metadata
 import tmt.cli._root
+from tmt._compat.typing import ParamSpec
+from tmt.utils import Path
+
+_CLICK_VERSION = tuple(
+    int(_s) for _s in tmt._compat.importlib.metadata.version('click').split('.')
+)
+
+T = TypeVar('T')
+P = ParamSpec('P')
 
 
 def reset_common() -> None:
@@ -30,6 +44,52 @@ def reset_common() -> None:
         klass.cli_invocation = None
 
 
+@contextlib.contextmanager
+def cwd(path: Path) -> Iterator[Path]:
+    """
+    A context manager switching the current working directory to a given path.
+
+    .. warning::
+
+        Changing the current working directory can have unexpected
+        consequences in a multithreaded environment.
+    """
+
+    cwd = Path.cwd()
+
+    os.chdir(path)
+
+    try:
+        yield path
+
+    finally:
+        os.chdir(cwd)
+
+
+def with_cwd(path: Path) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """
+    Decorate a test to have it run in the given path as its CWD.
+    """
+
+    def _with_cwd(fn: Callable[P, T]) -> Callable[P, T]:
+        @functools.wraps(fn)
+        def __with_cwd(*args: P.args, **kwargs: P.kwargs) -> T:
+            with cwd(path):
+                return fn(*args, **kwargs)
+
+        return __with_cwd
+
+    return _with_cwd
+
+
+def jq_all(data: Any, query: str) -> Iterable[Any]:
+    """
+    Apply a jq filter on given data, and return the product.
+    """
+
+    return cast(Iterable[Any], _jq.compile(query).input(data).all())
+
+
 class RunTmt(Protocol):
     """
     A type representing :py:meth:`CliRunner.invoke`.
@@ -40,7 +100,7 @@ class RunTmt(Protocol):
 
     def __call__(
         self,
-        *args: str,
+        *args: Union[str, Path],
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
@@ -53,11 +113,15 @@ class RunTmt(Protocol):
 
 class CliRunner(click.testing.CliRunner):
     def __init__(self) -> None:
-        super().__init__(charset='utf-8', echo_stdin=False)
+        if _CLICK_VERSION >= (8, 2, 0):
+            super().__init__(charset='utf-8', echo_stdin=False)
+
+        else:
+            super().__init__(charset='utf-8', echo_stdin=False, mix_stderr=False)
 
     def invoke(  # type: ignore[override]
         self,
-        *args: str,
+        *args: Union[str, Path],
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
@@ -73,7 +137,7 @@ class CliRunner(click.testing.CliRunner):
 
         return super().invoke(
             command,
-            args=args,
+            args=[str(arg) for arg in args],
             input=input,
             env=env,
             catch_exceptions=catch_exceptions,
