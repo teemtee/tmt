@@ -2408,20 +2408,24 @@ class Guest(
         """
 
         def _do_download() -> None:
-            try:
-                self.execute(
-                    ShellScript(
-                        f"{self.facts.sudo_prefix} curl -L --fail"
-                        f" -o {quote(str(destination))} {quote(url)}"
-                    ),
-                    silent=True,
-                )
-            except tmt.utils.RunError as error:
-                raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
+            self.execute(
+                ShellScript(
+                    f"{self.facts.sudo_prefix} curl -L --fail"
+                    f" -o {quote(str(destination))} {quote(url)}"
+                ),
+                silent=True,
+            )
 
-        tmt.utils.retry(
-            _do_download, DOWNLOAD_ATTEMPTS, DOWNLOAD_INTERVAL, f"Download '{url}'", self._logger
-        )
+        try:
+            tmt.utils.retry(
+                _do_download,
+                DOWNLOAD_ATTEMPTS,
+                DOWNLOAD_INTERVAL,
+                f"Download '{url}'",
+                self._logger,
+            )
+        except tmt.utils.RetryError as error:
+            raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
 
     @abc.abstractmethod
     def stop(self) -> None:
