@@ -598,7 +598,12 @@ class Step(
         A set of members of the step workdir that should not be removed during pruning.
         """
 
-        return {f'step{tmt.utils.STATE_FORMAT.suffix}'}
+        members: set[str] = set()
+
+        if self.plan.my_run:
+            members = {*members, f'step{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
         """

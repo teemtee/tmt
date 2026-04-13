@@ -1076,11 +1076,15 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {
+        members = {
             *super()._preserved_workdir_members,
             'data',
-            f'results{tmt.utils.STATE_FORMAT.suffix}',
         }
+
+        if self.plan.my_run:
+            members = {*members, f'results{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     def load(self) -> None:
         """

@@ -630,7 +630,14 @@ class Discover(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, f'tests{tmt.utils.STATE_FORMAT.suffix}'}
+        members = {
+            *super()._preserved_workdir_members,
+        }
+
+        if self.plan.my_run:
+            members = {*members, f'tests{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     @property
     def required_tests(self) -> list[TestOrigin]:

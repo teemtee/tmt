@@ -77,7 +77,14 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, f'results{tmt.utils.STATE_FORMAT.suffix}'}
+        members = {
+            *super()._preserved_workdir_members,
+        }
+
+        if self.plan.my_run:
+            members = {*members, f'results{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     def wake(self) -> None:
         """

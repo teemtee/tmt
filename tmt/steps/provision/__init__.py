@@ -364,11 +364,15 @@ class Provision(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {
+        members = {
             *super()._preserved_workdir_members,
-            f'guests{tmt.utils.STATE_FORMAT.suffix}',
             'inventory.yaml',
         }
+
+        if self.plan.my_run:
+            members = {*members, f'guests{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     @property
     def is_multihost(self) -> bool:
