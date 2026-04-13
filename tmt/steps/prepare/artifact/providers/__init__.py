@@ -23,6 +23,9 @@ NEVRA_PATTERN = re.compile(
     r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
 )
 
+#: Name of the shared DNF repository that download providers contribute RPMs into.
+SHARED_REPO_NAME: str = 'tmt-artifact-shared'
+
 
 class DownloadError(tmt.utils.GeneralError):
     """
@@ -45,6 +48,11 @@ class ArtifactInfo:
     version: Version
     location: str
     provider: "ArtifactProvider"
+    #: DNF repo section IDs this artifact is available from.
+    #: Download providers set this to ``[ArtifactProvider.SHARED_REPO_NAME]``
+    #: since their RPMs land in the shared repo after being downloaded.
+    #: Repository providers set this to the section IDs from their ``.repo`` file.
+    repo_ids: list[str]
 
     @property
     def id(self) -> str:
@@ -259,6 +267,7 @@ class ArtifactProvider(ABC):
                         version=rpm_version,
                         provider=self,
                         location=repository.name,
+                        repo_ids=list(repository.repo_ids),
                     )
                 )
             self.logger.debug(
@@ -303,6 +312,7 @@ class ArtifactProvider(ABC):
                 'version': vars(artifact.version),
                 'nvra': artifact.version.nvra,
                 'location': artifact.location,
+                'repo_ids': artifact.repo_ids,
             }
             for artifact in self.artifacts
         ]

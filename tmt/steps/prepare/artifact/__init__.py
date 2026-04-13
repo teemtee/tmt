@@ -12,6 +12,7 @@ from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
+    SHARED_REPO_NAME,
     ArtifactProvider,
     Repository,
 )
@@ -198,7 +199,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     # Shared repository configuration
     SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
-    SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
+    SHARED_REPO_NAME: ClassVar[str] = SHARED_REPO_NAME
     ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
 
     #: Name of the auto-injected verify-installation phase.
@@ -355,29 +356,17 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
-        # Build package → origin repo mapping from all providers.
-        # TODO: ``artifact.location`` is overloaded: a download URL for download
-        # providers and a repo name for repository providers. We use
-        # ``provider.get_repositories()`` as a proxy until ``ArtifactInfo`` gains
-        # a dedicated ``repo`` field. See https://github.com/teemtee/tmt/issues/4714.
-        pkg_to_repo: dict[str, str] = {}
+        # Build package → list of valid repo_ids mapping from all providers.
+        pkg_to_repos: dict[str, list[str]] = {}
         for provider in providers:
-            repositories = provider.get_repositories()
-            if repositories:
-                # Repository provider: collect all repo_ids from all repositories.
-                # A .repo file may declare multiple sections; any of them is a valid origin.
-                all_repo_ids = ','.join(
-                    repo_id for repo in repositories for repo_id in repo.repo_ids
-                )
-                for artifact in provider.artifacts:
-                    pkg_to_repo[artifact.version.name] = all_repo_ids
-            else:
-                # Download provider: packages land in the shared repo.
-                for artifact in provider.artifacts:
-                    pkg_to_repo[artifact.version.name] = self.SHARED_REPO_NAME
+            for artifact in provider.artifacts:
+                repo_ids = artifact.repo_ids
+                pkg_name = artifact.version.name
+                existing = pkg_to_repos.setdefault(pkg_name, [])
+                existing.extend(rid for rid in repo_ids if rid not in existing)
 
         # Only verify packages that are both required and from a known artifact.
-        pkgs_to_verify = {pkg: repo for pkg, repo in pkg_to_repo.items() if pkg in pkg_names}
+        pkgs_to_verify = {pkg: repos for pkg, repos in pkg_to_repos.items() if pkg in pkg_names}
 
         if not pkgs_to_verify:
             self.verbose('No packages to be installed were found in the provided artifacts.')
@@ -397,8 +386,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         if existing_verify is not None:
-            # Merge into existing verify phase.
-            existing_verify.data.verify.update(pkgs_to_verify)  # pyright: ignore[reportUnknownMemberType]
+            # Merge into existing verify phase, extending repo lists rather than replacing them.
+            for verify_pkg, verify_repos in pkgs_to_verify.items():
+                existing = existing_verify.data.verify.setdefault(verify_pkg, [])  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+                existing.extend(r for r in verify_repos if r not in existing)  # pyright: ignore[reportUnknownMemberType]
         else:
             # Create and add a new verify phase.
             verify_data = PrepareVerifyInstallationData(

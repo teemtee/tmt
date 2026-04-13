@@ -14,7 +14,6 @@ summary: TC 1.1 - Repository priority overrides package version
           script: mkdir -p /tmp/nvr-test && cp -r tc11-high tc11-low /tmp/nvr-test/
         - name: Install repo files
           how: artifact
-          verify: false
           provide:
             - repository-file:file:tc11-high.repo
             - repository-file:file:tc11-low.repo

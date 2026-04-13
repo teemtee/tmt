@@ -16,6 +16,7 @@ from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
+    SHARED_REPO_NAME,
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
@@ -220,7 +221,10 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             base_url = self.result_url.rstrip("/")
 
         return ArtifactInfo(
-            version=version_info, location=urljoin(base_url + "/", filename), provider=self
+            version=version_info,
+            location=urljoin(base_url + "/", filename),
+            provider=self,
+            repo_ids=[SHARED_REPO_NAME],
         )
 
     @cached_property
