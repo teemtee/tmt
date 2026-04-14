@@ -5933,10 +5933,10 @@ def normalize_string_list_dict(
         )
 
     return {
-        str(k).strip(): (
-            [str(v).strip() for v in val] if isinstance(val, list) else [str(val).strip()]
+        str(key).strip(): (
+            [str(v).strip() for v in value] if isinstance(value, list) else [str(value).strip()]
         )
-        for k, val in raw_value.items()
+        for key, value in raw_value.items()
     }
 
 

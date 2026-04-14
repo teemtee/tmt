@@ -24,9 +24,9 @@ class PrepareVerifyInstallationData(PrepareStepData):
         default_factory=dict,
         help="""
             Mapping of package names to expected source repository names.
-            A package passes verification if its actual source repo matches
-            any of the listed repos (OR semantics). A single string value is
-            accepted and treated as a one-element list.
+            A package passes verification if it is installed and it was
+            installed from one of the listed repositories. A single string
+            value is accepted and treated as a one-element list.
             """,
         normalize=tmt.utils.normalize_string_list_dict,
     )
@@ -137,15 +137,16 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                 continue
 
             failed_packages.append(package)
-            expected_str = ' or '.join(f"'{r}'" for r in expected_repos)
+            expected_repos_formatted = ' or '.join(f"'{repo_id}'" for repo_id in expected_repos)
             if actual_origin is SpecialPackageOrigin.NOT_INSTALLED:
                 note = (
-                    f"Package '{package}': expected repo {expected_str},"
+                    f"Package '{package}': expected repo {expected_repos_formatted},"
                     f" but the package is not installed."
                 )
             else:
                 note = (
-                    f"Package '{package}': expected repo {expected_str}, actual '{actual_origin}'."
+                    f"Package '{package}': expected repo {expected_repos_formatted},"
+                    f" actual '{actual_origin}'."
                 )
 
             outcome.results.append(

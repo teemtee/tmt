@@ -23,7 +23,7 @@ NEVRA_PATTERN = re.compile(
     r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
 )
 
-#: Name of the shared DNF repository that download providers contribute RPMs into.
+#: Name of the shared repository that download providers contribute RPMs into.
 SHARED_REPO_NAME: str = 'tmt-artifact-shared'
 
 
@@ -48,11 +48,9 @@ class ArtifactInfo:
     version: Version
     location: str
     provider: "ArtifactProvider"
-    #: DNF repo section IDs this artifact is available from.
-    #: Download providers set this to ``[ArtifactProvider.SHARED_REPO_NAME]``
-    #: since their RPMs land in the shared repo after being downloaded.
-    #: Repository providers set this to the section IDs from their ``.repo`` file.
-    repo_ids: list[str]
+    #: Repository IDs this artifact is available from. Used during verification
+    #: to confirm the artifact was installed from an expected repository.
+    repo_ids: list[str] = simple_field(default_factory=lambda: [SHARED_REPO_NAME])
 
     @property
     def id(self) -> str:

@@ -10,7 +10,6 @@ from tmt.container import container, simple_field
 from tmt.guest import Guest, TransferOptions
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
-    SHARED_REPO_NAME,
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
@@ -70,7 +69,6 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             version=RpmVersion.from_filename(tmt.utils.Path(path).name),
             location=path,
             provider=self,
-            repo_ids=[SHARED_REPO_NAME],
         )
 
     @cached_property

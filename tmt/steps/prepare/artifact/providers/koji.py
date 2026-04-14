@@ -17,7 +17,6 @@ from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
-    SHARED_REPO_NAME,
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
@@ -231,7 +230,6 @@ class KojiArtifactProvider(ArtifactProvider):
             version=version_info,
             location=urljoin(self._top_url, path),
             provider=self,
-            repo_ids=[SHARED_REPO_NAME],
         )
 
 
@@ -276,7 +274,6 @@ class KojiTask(KojiArtifactProvider):
             version=RpmVersion.from_filename(filename),
             location=url,
             provider=self,
-            repo_ids=[SHARED_REPO_NAME],
         )
 
     @cached_property

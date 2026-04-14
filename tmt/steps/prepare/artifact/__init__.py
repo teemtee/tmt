@@ -360,13 +360,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         pkg_to_repos: dict[str, list[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:
-                repo_ids = artifact.repo_ids
-                pkg_name = artifact.version.name
-                existing = pkg_to_repos.setdefault(pkg_name, [])
-                existing.extend(rid for rid in repo_ids if rid not in existing)
+                existing = pkg_to_repos.setdefault(artifact.version.name, [])
+                existing.extend(
+                    repo_id for repo_id in artifact.repo_ids if repo_id not in existing
+                )
 
         # Only verify packages that are both required and from a known artifact.
-        pkgs_to_verify = {pkg: repos for pkg, repos in pkg_to_repos.items() if pkg in pkg_names}
+        pkgs_to_verify = {
+            pkg: repo_ids for pkg, repo_ids in pkg_to_repos.items() if pkg in pkg_names
+        }
 
         if not pkgs_to_verify:
             self.verbose('No packages to be installed were found in the provided artifacts.')
@@ -389,7 +391,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             # Merge into existing verify phase, extending repo lists rather than replacing them.
             for verify_pkg, verify_repos in pkgs_to_verify.items():
                 existing = existing_verify.data.verify.setdefault(verify_pkg, [])  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
-                existing.extend(r for r in verify_repos if r not in existing)  # pyright: ignore[reportUnknownMemberType]
+                existing.extend(repo_id for repo_id in verify_repos if repo_id not in existing)  # pyright: ignore[reportUnknownMemberType]
         else:
             # Create and add a new verify phase.
             verify_data = PrepareVerifyInstallationData(
