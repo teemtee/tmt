@@ -199,7 +199,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     # Shared repository configuration
     SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
-    SHARED_REPO_NAME: ClassVar[str] = SHARED_REPO_NAME
     ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
 
     #: Name of the auto-injected verify-installation phase.
@@ -229,7 +228,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             artifact_dir=shared_repo_dir,
             guest=guest,
             logger=logger,
-            repo_name=self.SHARED_REPO_NAME,
+            repo_name=SHARED_REPO_NAME,
             priority=self.data.default_repository_priority,
         )
 
@@ -356,18 +355,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
-        # Build package → list of valid repo_ids mapping from all providers.
-        pkg_to_repos: dict[str, list[str]] = {}
+        # Build package → set of valid repo_ids mapping from all providers.
+        pkg_to_repos: dict[str, set[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:
-                existing = pkg_to_repos.setdefault(artifact.version.name, [])
-                existing.extend(
-                    repo_id for repo_id in artifact.repo_ids if repo_id not in existing
-                )
+                pkg_to_repos.setdefault(artifact.version.name, set()).update(artifact.repo_ids)
 
         # Only verify packages that are both required and from a known artifact.
         pkgs_to_verify = {
-            pkg: repo_ids for pkg, repo_ids in pkg_to_repos.items() if pkg in pkg_names
+            pkg: sorted(repo_ids) for pkg, repo_ids in pkg_to_repos.items() if pkg in pkg_names
         }
 
         if not pkgs_to_verify:
