@@ -241,7 +241,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         for package in recommended:
             self.info('package', str(package), 'green')
             try:
-                super().install(package)
+                super().install(package, options=options)
             except RunError as error:
                 self.debug(f"Package installation failed: {error}")
                 self.warn(f"Unable to install recommended package '{package}'.")

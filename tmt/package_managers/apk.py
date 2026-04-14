@@ -75,7 +75,8 @@ class ApkEngine(PackageManagerEngine):
 
             else:
                 raise tmt.utils.PrepareError(
-                    "Package manager 'apk' does not support installing from a remote URL."
+                    f"Package manager 'apk' does not support installing from a remote "
+                    f"URL '{installable}'."
                 )
 
         return packages
