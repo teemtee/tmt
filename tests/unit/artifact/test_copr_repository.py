@@ -58,8 +58,12 @@ def test_enumerate_artifacts(
     mock_guest.package_manager = mock_package_manager
 
     mock_package_manager.list_packages.return_value = [
-        RpmVersion.from_nevra('tmt-1.69.0-1.fc42.noarch'),
-        RpmVersion.from_nevra('tmt-all-0:1.69.0-1.fc42.noarch'),
+        RpmVersion.from_nevra(
+            'tmt-1.69.0-1.fc42.noarch', repo_id='group_teemtee-stable-fedora-42-x86_64'
+        ),
+        RpmVersion.from_nevra(
+            'tmt-all-0:1.69.0-1.fc42.noarch', repo_id='group_teemtee-stable-fedora-42-x86_64'
+        ),
     ]
 
     provider = artifact_provider("copr.repository:@teemtee/stable")

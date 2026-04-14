@@ -48,9 +48,9 @@ class ArtifactInfo:
     version: Version
     location: str
     provider: "ArtifactProvider"
-    #: Repository IDs this artifact is available from. Used during verification
-    #: to confirm the artifact was installed from an expected repository.
-    repo_ids: list[str] = simple_field(default_factory=lambda: [SHARED_REPO_NAME])
+    #: Repository ID this artifact is available from. Used during verification
+    #: to confirm the artifact was installed from the expected repository.
+    repo_id: str = simple_field(default=SHARED_REPO_NAME)
 
     @property
     def id(self) -> str:
@@ -260,12 +260,16 @@ class ArtifactProvider(ABC):
                 )
                 continue
             for rpm_version in packages:
+                from tmt.package_managers._rpm import RpmVersion
+
+                if not isinstance(rpm_version, RpmVersion) or rpm_version.repo_id is None:
+                    continue
                 self._artifacts.append(
                     ArtifactInfo(
                         version=rpm_version,
                         provider=self,
                         location=repository.name,
-                        repo_ids=list(repository.repo_ids),
+                        repo_id=rpm_version.repo_id,
                     )
                 )
             self.logger.debug(
@@ -310,7 +314,7 @@ class ArtifactProvider(ABC):
                 'version': vars(artifact.version),
                 'nvra': artifact.version.nvra,
                 'location': artifact.location,
-                'repo_ids': artifact.repo_ids,
+                'repo_id': artifact.repo_id,
             }
             for artifact in self.artifacts
         ]

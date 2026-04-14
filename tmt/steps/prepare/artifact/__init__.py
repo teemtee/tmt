@@ -355,11 +355,11 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
-        # Build package → set of valid repo_ids mapping from all providers.
+        # Build package → set of valid repo_id mapping from all providers.
         pkg_to_repos: dict[str, set[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:
-                pkg_to_repos.setdefault(artifact.version.name, set()).update(artifact.repo_ids)
+                pkg_to_repos.setdefault(artifact.version.name, set()).add(artifact.repo_id)
 
         # Only verify packages that are both required and from a known artifact.
         pkgs_to_verify = {
