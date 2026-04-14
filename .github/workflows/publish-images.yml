@@ -6,24 +6,27 @@ permissions: {}
 jobs:
   publish-images:
     runs-on: ubuntu-latest
+    environment: quay.io
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          persist-credentials: false
       - name: Build - tmt
-        uses: redhat-actions/buildah-build@v2
+        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056  # v2
         id: build-image-tmt
         with:
           image: tmt
           containerfiles: ./containers/Containerfile.mini
       - name: Build - tmt-all
-        uses: redhat-actions/buildah-build@v2
+        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056  # v2
         id: build-image-tmt-all
         with:
           image: tmt-all
           containerfiles: ./containers/Containerfile.full
       - name: Push To quay.io - tmt
         id: push-to-quay-tmt
-        uses: redhat-actions/push-to-registry@v2
+        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c  # v2
         with:
           image: ${{ steps.build-image-tmt.outputs.image }}
           tags: ${{ steps.build-image-tmt.outputs.tags }}
@@ -32,7 +35,7 @@ jobs:
           password: ${{ secrets.QUAY_TEEMTEE_SECRET }}
       - name: Push To quay.io - tmt-all
         id: push-to-quay-tmt-all
-        uses: redhat-actions/push-to-registry@v2
+        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c  # v2
         with:
           image: ${{ steps.build-image-tmt-all.outputs.image }}
           tags: ${{ steps.build-image-tmt-all.outputs.tags }}
