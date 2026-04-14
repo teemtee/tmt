@@ -6,7 +6,6 @@ from functools import cached_property
 from typing import Optional
 from urllib.parse import urljoin
 
-import tmt.log
 from tmt.steps.prepare.artifact.providers import provides_artifact_provider
 from tmt.steps.prepare.artifact.providers.koji import (
     KojiArtifactProvider,
@@ -32,8 +31,8 @@ class BrewArtifactProvider(KojiArtifactProvider):
         artifacts = provider.fetch_contents(guest, Path("/tmp"))
     """
 
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_id, repository_priority, logger)
+    def __post_init__(self) -> None:
+        super().__post_init__()
         self._session = self._initialize_session(
             api_url="https://brewhub.engineering.redhat.com/brewhub",
             top_url="https://download.eng.bos.redhat.com/brew",

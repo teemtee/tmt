@@ -5,8 +5,8 @@ Artifact provider for creating DNF repositories from baseurl.
 from re import Pattern
 from typing import Optional
 
-import tmt.log
 import tmt.utils
+from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -20,6 +20,7 @@ from tmt.steps.prepare.artifact.providers.repository import _REPO_NAME_GENERATOR
 
 
 @provides_artifact_provider('repository-url')
+@container
 class RepositoryUrlProvider(ArtifactProvider):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
@@ -40,10 +41,7 @@ class RepositoryUrlProvider(ArtifactProvider):
     # FIXME: This docstring will need refactoring when the documentation of PrepareArtifact
     #        is made dynamic.
 
-    repository: Repository
-
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_id, repository_priority, logger)
+    repository: Repository = simple_field(init=False)
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:

@@ -5,6 +5,7 @@ Abstract base class for artifact providers.
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
+from functools import cached_property
 from re import Pattern
 from shlex import quote
 from typing import Any, Optional
@@ -12,7 +13,7 @@ from typing import Any, Optional
 import tmt.log
 import tmt.utils
 from tmt._compat.typing import TypeAlias
-from tmt.container import container
+from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.package_managers import Repository, Version
 from tmt.plugins import PluginRegistry
@@ -73,6 +74,7 @@ class ArtifactInfo:
 ArtifactProviderId: TypeAlias = str
 
 
+@container
 class ArtifactProvider(ABC):
     """
     Base class for artifact providers.
@@ -88,28 +90,33 @@ class ArtifactProvider(ABC):
       queries the package manager and populates :py:attr:`_artifacts`.
     """
 
-    #: Identifier of this artifact provider. It is valid and unique
-    #: in the domain of this provider. ``koji.build:12345``. URL for a
-    #: repository, and so on.
-    id: ArtifactProviderId
+    #: Original full provider id given
+    raw_id: str
 
     #: Repository priority for providers that create repositories.
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
+    logger: tmt.log.Logger
+
+    #: Identifier of this artifact provider. It is valid and unique
+    #: in the domain of this provider. ``koji.build:12345``. URL for a
+    #: repository, and so on.
+    id: ArtifactProviderId = simple_field(init=False)
+
     #: All artifacts known to this provider. Populated by
     #: :py:meth:`_download_artifact` and/or :py:meth:`enumerate_artifacts`.
-    _artifacts: list[ArtifactInfo]
+    _artifacts: list[ArtifactInfo] = simple_field(init=False, default_factory=list)
 
-    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
-        self.repository_priority = repository_priority
-        self.logger = logger
-        self.raw_id = raw_id
-        # Sanitize the provider ID to use as a directory name
-        self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
+    def __post_init__(self) -> None:
+        self.id = self._extract_provider_id(self.raw_id)
 
-        self.id = self._extract_provider_id(raw_id)
-        self._artifacts: list[ArtifactInfo] = []
+    @cached_property
+    def sanitized_id(self) -> str:
+        """
+        Sanitized provider ID to use as a directory name
+        """
+        return tmt.utils.sanitize_name(self.raw_id, allow_slash=False)
 
     @classmethod
     @abstractmethod
