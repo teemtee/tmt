@@ -28,7 +28,7 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
-    from tmt.hardware import Size
+    from tmt.hardware.constraints import Size
 
 JSON: 'TypeAlias' = Any
 DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')

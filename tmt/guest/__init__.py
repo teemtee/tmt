@@ -33,6 +33,7 @@ import fmf.utils
 
 import tmt
 import tmt.hardware
+import tmt.hardware.constraints
 import tmt.log
 import tmt.package_managers
 import tmt.steps
@@ -1108,7 +1109,7 @@ GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
 
 def normalize_hardware(
     key_address: str,
-    raw_hardware: Union[None, tmt.hardware.Spec, tmt.hardware.Hardware],
+    raw_hardware: Union[None, tmt.hardware.constraints.Spec, tmt.hardware.Hardware],
     logger: tmt.log.Logger,
 ) -> Optional[tmt.hardware.Hardware]:
     """
@@ -1130,10 +1131,10 @@ def normalize_hardware(
         merged: dict[str, Any] = {}
 
         for raw_datum in raw_hardware:
-            components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
+            components = tmt.hardware.constraints.ConstraintComponents.from_spec(raw_datum)
 
             if (
-                components.name not in tmt.hardware.CHILDLESS_CONSTRAINTS
+                components.name not in tmt.hardware.constraints.CHILDLESS_CONSTRAINTS
                 and components.child_name is None
             ):
                 raise tmt.utils.SpecificationError(
@@ -1142,7 +1143,7 @@ def normalize_hardware(
                 )
 
             if (
-                components.name in tmt.hardware.INDEXABLE_CONSTRAINTS
+                components.name in tmt.hardware.constraints.INDEXABLE_CONSTRAINTS
                 and components.peer_index is None
             ):
                 raise tmt.utils.SpecificationError(
