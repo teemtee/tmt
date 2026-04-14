@@ -4,6 +4,7 @@ from typing import ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
 from tmt.package_managers import (
+    YUM_REPOS_DIR,
     FileSystemPath,
     Installable,
     Options,
@@ -179,7 +180,7 @@ class DnfEngine(PackageManagerEngine):
         return script
 
     def install_repository(self, repository: Repository) -> ShellScript:
-        repo_path = f"/etc/yum.repos.d/{repository.filename}"
+        repo_path = YUM_REPOS_DIR / repository.filename
         return ShellScript(
             f"{self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'\n{repository.content}\nEOF"
         )

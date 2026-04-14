@@ -114,6 +114,11 @@ DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
 #: ``TMT_REBOOT_TIMEOUT``.
 REBOOT_TIMEOUT: int = configure_constant(DEFAULT_REBOOT_TIMEOUT, 'TMT_REBOOT_TIMEOUT')
 
+#: Number of attempts to download a file from a URL.
+DOWNLOAD_ATTEMPTS = 3
+#: Number of seconds to wait between download attempts.
+DOWNLOAD_INTERVAL = 5
+
 
 def default_reboot_waiting() -> Waiting:
     """
@@ -457,6 +462,12 @@ class RebootMode(enum.Enum):
 
 SoftRebootModes = Literal[RebootMode.SOFT, RebootMode.SYSTEMD_SOFT]
 HardRebootModes = Literal[RebootMode.HARD]
+
+
+class DownloadError(tmt.utils.GeneralError):
+    """
+    Raised when download fails.
+    """
 
 
 class RebootModeNotSupportedError(ProvisionError):
@@ -2388,6 +2399,35 @@ class Guest(
         """
 
         raise NotImplementedError
+
+    def download(self, url: str, destination: Path) -> None:
+        """
+        Download a file from a URL to a path on the guest.
+
+        :param url: URL to download from.
+        :param destination: path on the guest to save the file to.
+        :raises DownloadError: if the download fails after all attempts.
+        """
+
+        def _do_download() -> None:
+            self.execute(
+                ShellScript(
+                    f"{self.facts.sudo_prefix} curl -L --fail"
+                    f" -o {quote(str(destination))} {quote(url)}"
+                ),
+                silent=True,
+            )
+
+        try:
+            tmt.utils.retry(
+                _do_download,
+                DOWNLOAD_ATTEMPTS,
+                DOWNLOAD_INTERVAL,
+                f"Download '{url}'",
+                self._logger,
+            )
+        except tmt.utils.RetryError as error:
+            raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
 
     @abc.abstractmethod
     def stop(self) -> None:
