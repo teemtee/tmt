@@ -3007,6 +3007,11 @@ class Status(tmt.utils.Common):
 CleanCallback = Callable[[], bool]
 
 
+def _dir_size(path: Path) -> int:
+    """Return the total size in bytes of all files under path."""
+    return sum(f.stat().st_size for f in path.rglob('*') if f.is_file())
+
+
 class Clean(tmt.utils.Common):
     """
     A class for cleaning up workdirs, guests or images
@@ -3154,14 +3159,15 @@ class Clean(tmt.utils.Common):
                 successful = False
         return successful
 
-    def _clean_workdir(self, path: Path) -> bool:
+    def _clean_workdir(self, path: Path, size: int) -> bool:
         """
         Remove a workdir (unless in dry mode)
         """
+        formatted_size = tmt.utils.format_size(size)
         if self.is_dry_run:
-            self.verbose(f"Would remove workdir '{path}'.", shift=1)
+            self.verbose(f"Would remove workdir '{path}' ({formatted_size}).", shift=1)
         else:
-            self.verbose(f"Removing workdir '{path}'.", shift=1)
+            self.verbose(f"Removing workdir '{path}' ({formatted_size}).", shift=1)
             try:
                 shutil.rmtree(path)
             except OSError as error:
@@ -3184,7 +3190,14 @@ class Clean(tmt.utils.Common):
             # the correct one.
             last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
             last_run.load_workdir(with_logfiles=False)
-            return self._clean_workdir(last_run.run_workdir)
+            size = _dir_size(last_run.run_workdir)
+            success = self._clean_workdir(last_run.run_workdir, size)
+            self.verbose(
+                f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
+                f"{tmt.utils.format_size(size)} of disk space.",
+                shift=1,
+            )
+            return success
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_, all_=True))
         if keep is not None:
             # Sort by change time of the workdirs and keep the newest workdirs
@@ -3192,10 +3205,18 @@ class Clean(tmt.utils.Common):
             all_workdirs = all_workdirs[keep:]
 
         successful = True
+        total_size = 0
         for workdir in all_workdirs:
-            if not self._clean_workdir(workdir):
+            size = _dir_size(workdir)
+            total_size += size
+            if not self._clean_workdir(workdir, size):
                 successful = False
 
+        self.verbose(
+            f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
+            f"{tmt.utils.format_size(total_size)} of disk space.",
+            shift=1,
+        )
         return successful
 
 
