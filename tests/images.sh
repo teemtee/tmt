@@ -57,6 +57,7 @@ IMAGE_MODE_QCOW2_BASE_URL="https://artifacts.dev.testing-farm.io/images"
 # Image mode QCOW2 images, with mapping to compatible container image used for artifacts downloading
 declare -A IMAGE_MODE_QCOW2_CONTAINER_MAP
 IMAGE_MODE_QCOW2_CONTAINER_MAP=(
+  ["$IMAGE_MODE_QCOW2_BASE_URL/CentOS-Stream-9-image-mode-x86_64.qcow2"]="centos:stream9"
   ["$IMAGE_MODE_QCOW2_BASE_URL/CentOS-Stream-10-image-mode-x86_64.qcow2"]="centos:stream10"
   ["$IMAGE_MODE_QCOW2_BASE_URL/Fedora-44-image-mode-x86_64.qcow2"]="fedora:44"
 )
@@ -219,4 +220,15 @@ function build_container_images () {
     # tmt-check-avc-mark
     sleep 1
     LC_ALL=C bash -c 'echo "export AVC_SINCE=\"$(date "+%x %H:%M:%S")\""' > "$(dirname $TMT_TEST_DATA)/checks/avc-mark.txt"
+}
+
+
+# Assert a switch on image mode systems happened
+# Requires rlRun_LOG variable with tmt output and image as the $1 parameter
+function assert_image_mode_switch() {
+    is_image_mode "$1" || return
+
+    rlAssertGrep "building container image from collected commands" $rlRun_LOG
+    rlAssertGrep "switching to new image" $rlRun_LOG
+    rlAssertGrep "rebooting to apply new image" $rlRun_LOG
 }
