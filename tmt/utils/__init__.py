@@ -86,15 +86,6 @@ if TYPE_CHECKING:
     from tmt.hardware import Size
 
 
-def format_size(size: int) -> str:
-    """Format a byte count into a human-readable string."""
-    for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
-        if size < 1024:
-            return f'{size:.1f} {unit}'
-        size = int(size / 1024)
-    return f'{size:.1f} PB'
-
-
 def sanitize_string(text: str) -> str:
     """Remove invalid Unicode characters from a string"""
     try:
