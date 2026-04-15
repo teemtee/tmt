@@ -1,0 +1,11 @@
+description: |
+  :ref:`/plugins/provision/container` now executes tests in its containers
+  with the ``-t/--tty`` option always enabled. Before this release, ``-t``
+  was used only when interactive mode was requested, or when the
+  :tmt:story:`/spec/tests/tty` was enabled. As a side-effect, each line
+  of test output will be terminated with the CRLF pair rather than lone
+  LF.
+
+  This change should make sure that subprocesses spawned by a test would
+  be terminated when the test is terminated by tmt, e.g. when test duration
+  runs out. This behavior is now similar to how SSH-based guests work.
