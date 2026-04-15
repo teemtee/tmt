@@ -1712,6 +1712,7 @@ class Test(
             return
 
         filename = self.fmf_sources[-1]
+        # `rt` mode is needed here to preserve comments during the `fix`, see comment in `_yaml`
         metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename), yaml_type="rt")
 
         metadata['adjust'] = tmt.convert.relevancy_to_adjust(
@@ -1812,6 +1813,7 @@ class Test(
             return
 
         filename = self.fmf_sources[-1]
+        # `rt` mode is needed here to preserve comments during the `fix`, see comment in `_yaml`
         metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename), yaml_type="rt")
 
         if not tmt.utils.is_key_origin(self.node, 'require') and all(
