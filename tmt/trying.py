@@ -17,6 +17,7 @@ import fmf.utils
 
 import tmt
 import tmt.base.core
+import tmt.base.run
 import tmt.config
 import tmt.container
 import tmt.log
@@ -26,7 +27,7 @@ import tmt.steps.prepare.feature
 import tmt.templates
 import tmt.utils
 from tmt import Plan
-from tmt.base.core import RunData
+from tmt.base.run import RunData
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
@@ -285,7 +286,7 @@ class Try(tmt.utils.Common):
         options = {"names": [f"^{re.escape(test.name)}$" for test in self.tests]}
         tmt.Test.store_cli_invocation(context=None, options=options)
 
-    def get_default_plans(self, run: tmt.base.core.Run) -> list[Plan]:
+    def get_default_plans(self, run: tmt.base.run.Run) -> list[Plan]:
         """
         Get default plan from user config or the standard template
         """
@@ -321,7 +322,7 @@ class Try(tmt.utils.Common):
         self.debug("Use the default plan template.")
         return self.tree.plans(names=[f"^{plan_name}"], run=run)
 
-    def check_plans(self, run: tmt.base.core.Run) -> None:
+    def check_plans(self, run: tmt.base.run.Run) -> None:
         """
         Check for plans to be used for testing
         """
@@ -824,7 +825,7 @@ class Try(tmt.utils.Common):
         """
 
         # Create run, prepare it for testing
-        run = tmt.base.core.Run(tree=self.tree, logger=self._logger, parent=self)
+        run = tmt.base.run.Run(tree=self.tree, logger=self._logger, parent=self)
         run.prepare_for_try(self.tree)
         self._workdir = run.run_workdir
         self.environment = run.environment

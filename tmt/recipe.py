@@ -22,13 +22,13 @@ if TYPE_CHECKING:
     from tmt.base.core import (
         Dependency,
         Links,
-        Run,
         Test,
         _RawAdjustRule,
         _RawDependency,
         _RawLinks,
     )
     from tmt.base.plan import Plan
+    from tmt.base.run import Run
 
 
 # Copy of tmt.base.core.DEFAULT_ORDER

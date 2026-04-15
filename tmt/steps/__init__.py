@@ -40,6 +40,7 @@ import tmt.export
 import tmt.log
 import tmt.options
 import tmt.queue
+import tmt.result
 import tmt.steps.context
 import tmt.utils
 import tmt.utils.rest
@@ -3048,7 +3049,7 @@ class Login(Action):
         if force or self._enabled_by_results(self.parent.plan.execute.results()):
             self._login()
 
-    def _enabled_by_results(self, results: list['tmt.base.core.Result']) -> bool:
+    def _enabled_by_results(self, results: list['tmt.result.Result']) -> bool:
         """
         Verify possible test result condition
         """
@@ -3138,7 +3139,7 @@ class Login(Action):
 
     def after_test(
         self,
-        results: list['tmt.base.core.Result'],
+        results: list['tmt.result.Result'],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:
