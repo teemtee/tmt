@@ -67,7 +67,10 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, f'results{tmt.utils.STATE_FORMAT.suffix}'}
+        return {
+            *super()._preserved_workdir_members,
+            f'results{tmt.utils.DEFAULT_STATE_FORMAT.suffix}',
+        }
 
     def wake(self) -> None:
         """

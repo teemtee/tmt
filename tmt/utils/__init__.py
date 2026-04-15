@@ -3857,7 +3857,7 @@ class StateFormat:
 #: state information. It is a mapping between format name and three
 #: items, a file suffix for files holding the state, and Python-to-format
 #: and format-to-Python converters.
-_STATE_FORMATS: dict[str, StateFormat] = {
+_SUPPORTED_STATE_FORMATS: dict[str, StateFormat] = {
     'json': StateFormat('json', '.json', to_json, from_json),
     'yaml': StateFormat('yaml', '.yaml', to_yaml, from_yaml),
 }
@@ -3873,10 +3873,10 @@ def get_state_format(format: Optional[str] = None) -> StateFormat:
     """
 
     if format is None:
-        return STATE_FORMAT
+        return DEFAULT_STATE_FORMAT
 
     try:
-        return _STATE_FORMATS[format]
+        return _SUPPORTED_STATE_FORMATS[format]
 
     except Exception as exc:
         raise GeneralError(f"tmt state file format '{format}' is not supported.") from exc
@@ -3884,7 +3884,7 @@ def get_state_format(format: Optional[str] = None) -> StateFormat:
 
 #: The default state format. It is initialized via ``TMT_STATE_FORMAT``
 #: environment variable.
-STATE_FORMAT: Final[StateFormat] = get_state_format(
+DEFAULT_STATE_FORMAT: Final[StateFormat] = get_state_format(
     format=os.environ.get('TMT_STATE_FORMAT', 'yaml').lower()
 )
 
