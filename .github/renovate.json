@@ -2,7 +2,6 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    "schedule:weekly",
     ":enablePreCommit",
     ":semanticCommitsDisabled"
   ],
@@ -36,9 +35,9 @@
       "matchManagers": ["pre-commit"]
     },
     {
-      "description": "Disable all python dependencies. Specific matchers will be used.",
-      "matchManagers": ["pep621"],
-      "enabled": false
+      "description": "Python dependencies with lockfile",
+      "groupName": "Locked dependencies",
+      "matchManagers": ["pep621"]
     },
     {
       "description": "Group documentation dependencies together",
@@ -46,19 +45,7 @@
       "matchManagers": ["pep621"],
       "matchDepTypes": ["project.optional-dependencies"],
       "enabled": true,
-      "matchPackageNames": [
-        "/renku-sphinx-theme/",
-        "/sphinx/",
-        "/readthedocs-sphinx-ext/",
-        "/docutils/"
-      ]
-    },
-    {
-      "description": "Group hatch dev dependencies together",
-      "groupName": "hatch dev Dependencies",
-      "matchManagers": ["pep621"],
-      "matchDepTypes": ["tool.hatch.envs.dev"],
-      "enabled": true
+      "matchJsonata": ["managerData.depGroup = 'docs'"]
     }
   ]
 }
