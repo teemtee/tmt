@@ -137,7 +137,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                 continue
 
             failed_packages.append(package)
-            expected_repos_formatted = ' or '.join(f"'{repo_id}'" for repo_id in expected_repos)
+            expected_repos_formatted = fmf.utils.listed(expected_repos, quote="'", join='or')
             if actual_origin is SpecialPackageOrigin.NOT_INSTALLED:
                 note = (
                     f"Package '{package}': expected repo {expected_repos_formatted},"

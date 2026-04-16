@@ -355,16 +355,12 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
-        # Build package → set of valid repo_id mapping from all providers.
-        pkg_to_repos: dict[str, set[str]] = {}
+        # Build package → set of valid repo_ids, filtering to only required packages.
+        pkgs_to_verify: dict[str, set[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:
-                pkg_to_repos.setdefault(artifact.version.name, set()).add(artifact.repo_id)
-
-        # Only verify packages that are both required and from a known artifact.
-        pkgs_to_verify = {
-            pkg: sorted(repo_ids) for pkg, repo_ids in pkg_to_repos.items() if pkg in pkg_names
-        }
+                if artifact.version.name in pkg_names:
+                    pkgs_to_verify.setdefault(artifact.version.name, set()).add(artifact.repo_id)
 
         if not pkgs_to_verify:
             self.verbose('No packages to be installed were found in the provided artifacts.')
@@ -396,7 +392,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 summary=self.VERIFY_PHASE_SUMMARY,
                 order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
                 where=list(self.data.where),
-                verify=pkgs_to_verify,
+                verify={pkg: sorted(repo_ids) for pkg, repo_ids in pkgs_to_verify.items()},
             )
             verify_phase = PreparePlugin.delegate(self.step, data=verify_data)  # pyright: ignore[reportUnknownVariableType]
             self.step.add_phase(verify_phase)  # pyright: ignore[reportUnknownArgumentType]

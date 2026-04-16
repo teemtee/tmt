@@ -192,7 +192,7 @@ class DnfEngine(PackageManagerEngine):
                 '--disablerepo=*',
                 *[f'--enablerepo={repo_id}' for repo_id in repository.repo_ids],
                 '--queryformat',
-                r'%{repoid} %{name}-%{epoch}:%{version}-%{release}.%{arch}\n',
+                r'%{repoid}\t%{name}-%{epoch}:%{version}-%{release}.%{arch}\n',
             )
         ).to_script()
 
@@ -262,7 +262,7 @@ class Dnf(PackageManager[DnfEngine]):
             line = line.strip()
             if not line:
                 continue
-            repo_id, _, nevra = line.partition(' ')
+            repo_id, nevra = line.split('\t', maxsplit=1)
             result.append(RpmVersion.from_nevra(nevra, repo_id=repo_id))
         return result
 
