@@ -24,6 +24,7 @@ from typing import Any, Optional
 import click
 import jinja2
 import requests
+from common import Item
 from ruamel.yaml import YAML
 
 # https://docs.github.com/en/rest/about-the-rest-api/breaking-changes
@@ -73,26 +74,6 @@ DISPLAY_TEMPLATE = jinja2.Template(
 ================================================================================
 """,
 )
-
-
-@dataclasses.dataclass
-class Item:
-    """
-    A sprint item (issue or pull request).
-    """
-
-    id: int
-    type: str
-    repo: str
-    status: str
-    size: Optional[int]
-    url: str
-    title: str
-
-    def __str__(self) -> str:
-        size_str = f"[{self.size}]" if self.size is not None else "[-]"
-        identifier = f"{self.repo}#{self.id}"
-        return f"{identifier:<10} {size_str:>4}  {self.title}"
 
 
 def github_api_get(
