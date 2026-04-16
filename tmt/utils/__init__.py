@@ -3869,7 +3869,7 @@ def get_state_format(format: Optional[str] = None) -> StateFormat:
 
     :param format: if set, the format of matching name is looked up.
     :returns: state format by the name of ``format``, or the default
-        format, :py:data:`STATE_FORMAT`.
+        format, :py:data:`DEFAULT_STATE_FORMAT`.
     """
 
     if format is None:
@@ -3898,7 +3898,7 @@ def from_state(state: str, format_name: Optional[str] = None) -> Any:
         No deserialization is performed, it is the responsibility of the
         caller to turn loaded structure, consisting of built-in-like
         types, into objects of desired classes, e.g. by the power of
-        :py:meth:`tmt.container.SerializableContainer.deserialize`.
+        :py:meth:`tmt.container.SerializableContainer.from_serialized`.
 
     :param state: state written down in the ``format`` format.
     :param format_name: if set, use this format instead of the default
@@ -3911,7 +3911,7 @@ def from_state(state: str, format_name: Optional[str] = None) -> Any:
     return state_format.from_state(state)
 
 
-def to_state(state: Any, format_name: Optional[str] = None) -> str:
+def to_state(data: Any, format_name: Optional[str] = None) -> str:
     """
     Turn Python data structure into a stored state.
 
@@ -3920,7 +3920,7 @@ def to_state(state: Any, format_name: Optional[str] = None) -> str:
         No serialization is performed, it is the responsibility of the
         caller to turn internal objects into built-in-like Python types,
         e.g. by the power of
-        :py:meth:`tmt.container.SerializableContainer.serialize`.
+        :py:meth:`tmt.container.SerializableContainer.to_serialized`.
 
     :param data: Python data structure.
     :param format_name: if set, use this format instead of the default
@@ -3930,7 +3930,7 @@ def to_state(state: Any, format_name: Optional[str] = None) -> str:
 
     state_format = get_state_format(format=format_name)
 
-    return state_format.to_state(state)
+    return state_format.to_state(data)
 
 
 def read_state(filepath: Path, format_name: Optional[str] = None) -> Any:
@@ -3942,7 +3942,7 @@ def read_state(filepath: Path, format_name: Optional[str] = None) -> Any:
         No deserialization is performed, it is the responsibility of the
         caller to turn loaded structure, consisting of built-in-like
         types, into objects of desired classes, e.g. by the power of
-        :py:meth:`tmt.container.SerializableContainer.deserialize`.
+        :py:meth:`tmt.container.SerializableContainer.from_serialized`.
 
     :param filepath: file to read the state from.
     :param format_name: if set, use this format instead of the default
@@ -3955,7 +3955,7 @@ def read_state(filepath: Path, format_name: Optional[str] = None) -> Any:
     return state_format.from_state(Path(f'{filepath}{state_format.suffix}').read_text())
 
 
-def write_state(filepath: Path, data: Any, format: Optional[str] = None) -> None:
+def write_state(filepath: Path, data: Any, format_name: Optional[str] = None) -> None:
     """
     Write a state into the given file.
 
@@ -3964,7 +3964,7 @@ def write_state(filepath: Path, data: Any, format: Optional[str] = None) -> None
         No serialization is performed, it is the responsibility of the
         caller to turn internal objects into built-in-like Python types,
         e.g. by the power of
-        :py:meth:`tmt.container.SerializableContainer.serialize`.
+        :py:meth:`tmt.container.SerializableContainer.to_serialized`.
 
     :param filepath: file to write the state into.
     :param data: state as Python data structure.
@@ -3972,7 +3972,7 @@ def write_state(filepath: Path, data: Any, format: Optional[str] = None) -> None
         one.
     """
 
-    state_format = get_state_format(format=format)
+    state_format = get_state_format(format=format_name)
 
     Path(f'{filepath}{state_format.suffix}').write_text(state_format.to_state(data))
 
