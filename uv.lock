@@ -2455,6 +2455,9 @@ dependencies = [
     { name = "suds" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/88/38/0c0ccaafbb8594cf50af8d2376a5afee9e7279b7715a928558e7b52eb6f6/pylero-0.1.1.tar.gz", hash = "sha256:de0ccd37da69e50993fe403eca5d093d70c57319640d6af6403ab9a3496ae16c", size = 309121, upload-time = "2025-05-30T13:38:52.34Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/79/4a7ff895325f7226f846cf4e274be9bbeedcd2d9804027c5025e72134ff4/pylero-0.1.1-py3-none-any.whl", hash = "sha256:ada04668e36adaaed950e213699f8442466994142c127a3f07b5e4d19fc9709f", size = 101338, upload-time = "2025-12-19T15:11:28.422Z" },
+]
 
 [[package]]
 name = "python-bugzilla"
@@ -3446,6 +3449,7 @@ dependencies = [
     { name = "pygments" },
     { name = "requests" },
     { name = "ruamel-yaml" },
+    { name = "ruamel-yaml-clib" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
     { name = "urllib3", version = "1.26.20", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "urllib3", version = "2.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
@@ -3563,6 +3567,7 @@ requires-dist = [
     { name = "renku-sphinx-theme", marker = "extra == 'docs'" },
     { name = "requests", specifier = ">=2.25.1" },
     { name = "ruamel-yaml", specifier = ">=0.16.6" },
+    { name = "ruamel-yaml-clib" },
     { name = "setuptools", marker = "extra == 'all'", specifier = "<81" },
     { name = "setuptools", marker = "extra == 'provision-beaker'", specifier = "<81" },
     { name = "sphinx", marker = "extra == 'docs'" },

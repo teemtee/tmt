@@ -16,11 +16,11 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun -s "tmt plan export ." 0 "Export plan"
-        rlAssertGrep "- name: /plan/basic" $rlRun_LOG
-        rlAssertGrep "- name: /plan/context" $rlRun_LOG
-        rlAssertGrep "- name: /plan/environment" $rlRun_LOG
-        rlAssertGrep "- name: /plan/gate" $rlRun_LOG
-        rlAssertGrep "- name: /plan/extra-keys" $rlRun_LOG
+        rlAssertGrep "name: /plan/basic" $rlRun_LOG
+        rlAssertGrep "name: /plan/context" $rlRun_LOG
+        rlAssertGrep "name: /plan/environment" $rlRun_LOG
+        rlAssertGrep "name: /plan/gate" $rlRun_LOG
+        rlAssertGrep "name: /plan/extra-keys" $rlRun_LOG
         rlAssertGrep "discover:" $rlRun_LOG
         rlAssertGrep "execute:" $rlRun_LOG
         assert_internal_fields "$rlRun_LOG"
@@ -28,7 +28,7 @@ rlJournalStart
 
     rlPhaseStartTest "tmt plan export /plan/basic"
         rlRun -s "tmt plan export /plan/basic" 0 "Export plan"
-        rlAssertGrep "- name: /plan/basic" $rlRun_LOG
+        rlAssertGrep "name: /plan/basic" $rlRun_LOG
         rlAssertGrep "summary: Just basic keys." $rlRun_LOG
         rlAssertGrep "discover:" $rlRun_LOG
         rlAssertGrep "execute:" $rlRun_LOG
@@ -37,7 +37,7 @@ rlJournalStart
 
     rlPhaseStartTest "tmt plan export /plan/context"
         rlRun -s "tmt --context cmd-context=value plan export /plan/context" 0 "Export plan"
-        rlAssertGrep "- name: /plan/context" $rlRun_LOG
+        rlAssertGrep "name: /plan/context" $rlRun_LOG
         rlAssertGrep "summary: Define context" $rlRun_LOG
         rlAssertGrep "discover:" $rlRun_LOG
         rlAssertGrep "execute:" $rlRun_LOG
@@ -49,7 +49,7 @@ rlJournalStart
 
     rlPhaseStartTest "tmt plan export /plan/environment"
         rlRun -s "tmt plan export /plan/environment" 0 "Export plan"
-        rlAssertGrep "- name: /plan/environment" $rlRun_LOG
+        rlAssertGrep "name: /plan/environment" $rlRun_LOG
         rlAssertGrep "summary: Define environment" $rlRun_LOG
         rlAssertGrep "discover:" $rlRun_LOG
         rlAssertGrep "execute:" $rlRun_LOG
@@ -60,7 +60,7 @@ rlJournalStart
 
     rlPhaseStartTest "tmt plan export /plan/gate"
         rlRun -s "tmt plan export /plan/gate" 0 "Export plan"
-        rlAssertGrep "- name: /plan/gate" $rlRun_LOG
+        rlAssertGrep "name: /plan/gate" $rlRun_LOG
         rlAssertGrep "summary: Define gate" $rlRun_LOG
         rlAssertGrep "discover:" $rlRun_LOG
         rlAssertGrep "execute:" $rlRun_LOG
@@ -81,7 +81,7 @@ rlJournalStart
 
     rlPhaseStartTest "tmt plan export /plan/extra-keys"
         rlRun -s "tmt plan export /plan/extra-keys" 0 "Export plan with extra- keys"
-        rlAssertGrep "- name: /plan/extra-keys" $rlRun_LOG
+        rlAssertGrep "name: /plan/extra-keys" $rlRun_LOG
         rlAssertGrep "summary: Plan with extra- keys" $rlRun_LOG
         rlAssertGrep "extra-reviewer: John Doe" $rlRun_LOG
         rlAssertGrep "extra-jira-id: TMT-123" $rlRun_LOG
