@@ -1,0 +1,309 @@
+#!/usr/bin/python3
+#
+# /// script
+# dependencies = [
+#   "click",
+#   "jinja2",
+#   "jira",
+#   "ruamel.yaml",
+# ]
+# ///
+
+"""
+Sync a Jira sprint with GitHub sprint items.
+"""
+
+import os
+import re
+import sys
+from typing import Optional, cast
+
+import click
+import jinja2
+from common import Item
+from jira import JIRA
+from jira.resources import Issue
+from ruamel.yaml import YAML
+
+ITEM_TEMPLATE = jinja2.Template(
+    source="""\
+  {{ key      }}   {{ summary }}
+  {{ decision }}   {{ url }}
+{% if duplicates %}\
+             duplicates found: {{ duplicates }}
+{% endif %}"""
+)
+
+DECISION_COLORS = {
+    "keep": "blue",
+    "add ": "green",
+    "drop": "red",
+    "miss": "yellow",
+}
+
+JIRA_SERVER = "https://redhat.atlassian.net/"
+JIRA_PROJECT = "TMT"
+JIRA_BOARD_ID = 1411
+
+
+def connect_to_jira() -> JIRA:
+    """
+    Connect to Jira using environment variables for authentication.
+
+    :returns: an authenticated :py:class:`JIRA` client.
+    """
+
+    server = os.environ.get("JIRA_SERVER", JIRA_SERVER)
+    email = os.environ.get("JIRA_EMAIL")
+    token = os.environ.get("JIRA_TOKEN")
+
+    if not email:
+        click.echo("Error: JIRA_EMAIL environment variable is not set.")
+        sys.exit(1)
+
+    if not token:
+        click.echo("Error: JIRA_TOKEN environment variable is not set.")
+        sys.exit(1)
+
+    return JIRA(server=server, basic_auth=(email, token))
+
+
+def fetch_jira_items(jira: JIRA, sprint_name: str) -> list[Issue]:
+    """
+    Fetch all items from the given sprint.
+
+    :param jira: authenticated Jira client.
+    :param sprint_name: name of the sprint.
+    :returns: list of Jira items
+    """
+
+    query = f'sprint = "{sprint_name}" ORDER BY key ASC'
+    items = cast(list[Issue], jira.search_issues(query, maxResults=False))
+    click.echo(f"Fetched {len(items)} items.\n")
+
+    return items
+
+
+def load_github_items(path: Optional[str] = None) -> list[Item]:
+    """
+    Load GitHub sprint items in sprint-overview --yaml format.
+
+    :param path: path to the YAML file, or ``None`` to read from stdin.
+    :returns: a list of :py:class:`Item` instances.
+    """
+
+    if path:
+        with open(path) as f:
+            data = YAML().load(f)
+    else:
+        data = YAML().load(sys.stdin)
+
+    if not data:
+        return []
+
+    return [Item(**item) for item in data]
+
+
+def get_upstream_url(jira: JIRA, issue: Issue) -> Optional[str]:
+    """
+    Get the "Upstream issue" remote link URL for a Jira issue.
+
+    :param jira: authenticated Jira client.
+    :param issue: a Jira issue object.
+    :returns: the upstream URL, or ``None`` if not found.
+    """
+
+    for link in jira.remote_links(issue):
+        if link.object.title == "Upstream issue":
+            return link.object.url
+
+    return None
+
+
+def find_sprint_id(jira: JIRA, sprint_name: str) -> Optional[int]:
+    """
+    Find the sprint ID by name on the TMT board.
+
+    :param jira: authenticated Jira client.
+    :param sprint_name: name of the sprint.
+    :returns: the sprint ID, or ``None`` if not found.
+    """
+
+    for sprint in jira.sprints(JIRA_BOARD_ID):
+        if sprint.name == sprint_name:
+            return sprint.id
+
+    return None
+
+
+def find_jira_issue(
+    jira: JIRA,
+    github_item: Item,
+) -> tuple[Optional[Issue], Optional[str]]:
+    """
+    Find a Jira issue that has a remote link matching the given GitHub item.
+
+    First searches by remote link URL, then falls back to title search.
+
+    :param jira: authenticated Jira client.
+    :param github_item: the GitHub :py:class:`Item` to search for.
+    :returns: a tuple of the matching Jira issue (or ``None``) and
+        a comma-separated string of duplicate keys (or ``None``).
+    """
+
+    def pick_item(results: list[Issue]) -> tuple[Optional[Issue], Optional[str]]:
+        """
+        Pick the oldest item, identify duplicates
+        """
+
+        if not results:
+            return None, None
+
+        duplicates = None
+        if len(results) > 1:
+            duplicates = ", ".join(result.key for result in results)
+
+        return min(results, key=lambda result: int(result.key.split("-")[-1])), duplicates
+
+    # Search by remote link URL (works only if already indexed)
+    query = f'project = "{JIRA_PROJECT}" AND remoteLinkUrl in ("{github_item.url}")'
+    results = cast(list[Issue], jira.search_issues(query, maxResults=False))
+    if results:
+        return pick_item(results)
+
+    # Fall back to title search and verify via remote links
+    title = github_item.title.replace('"', '')
+    query = f'project = "{JIRA_PROJECT}" AND summary ~ "{title}"'
+    candidates = cast(list[Issue], jira.search_issues(query, maxResults=False))
+
+    matched = [
+        candidate
+        for candidate in candidates
+        if get_upstream_url(jira, candidate) == github_item.url
+    ]
+    return pick_item(matched)
+
+
+def sync_sprint(
+    jira: JIRA,
+    sprint_id: int,
+    jira_items: list[Issue],
+    github_items: list[Item],
+    dry: bool = False,
+) -> None:
+    """
+    Sync Jira sprint with GitHub sprint items.
+
+    Removes Jira issues not present in the GitHub sprint and adds
+    missing GitHub items into the Jira sprint.
+
+    :param jira: authenticated Jira client.
+    :param sprint_id: ID of the sprint.
+    :param jira_items: list of Jira issues currently in the sprint.
+    :param github_items: list of GitHub :py:class:`Item` instances.
+    :param dry: if ``True``, only show what would be done without
+        making any changes.
+    """
+
+    github_items_by_url = {item.url: item for item in github_items}
+    github_urls = set(github_items_by_url.keys())
+    matched_urls: set[str] = set()
+
+    def show_item(
+        key: str,
+        decision: str,
+        summary: str,
+        url: Optional[str] = None,
+        duplicates: Optional[str] = None,
+    ) -> None:
+        """
+        Render a single item, color decisions, remove prefix
+        """
+
+        click.echo(
+            ITEM_TEMPLATE.render(
+                key=f"{key:<8}",
+                decision=click.style(f"{decision:<8}", fg=DECISION_COLORS.get(decision)),
+                summary=re.sub(r'^\[teemtee/[^\]]*\]\s*', '', summary),
+                url=url,
+                duplicates=duplicates,
+            )
+        )
+
+    # Step 1: Check existing Jira items — keep or remove
+    for jira_item in jira_items:
+        url = get_upstream_url(jira, jira_item)
+
+        if url and url in github_urls:
+            matched_urls.add(url)
+            show_item(jira_item.key, "keep", jira_item.fields.summary, url)
+        else:
+            show_item(jira_item.key, "drop", jira_item.fields.summary, url)
+            if not dry:
+                jira.move_to_backlog([jira_item.key])
+
+    # Step 2: Add missing GitHub items
+    missing_urls = github_urls - matched_urls
+    if not missing_urls:
+        return
+
+    for url in missing_urls:
+        github_item = github_items_by_url[url]
+        jira_item, duplicates = find_jira_issue(jira, github_item)
+
+        if jira_item:
+            show_item(jira_item.key, "add ", jira_item.fields.summary, url, duplicates)
+            if not dry:
+                jira.add_issues_to_sprint(sprint_id, [jira_item.key])
+        else:
+            show_item("???", "miss", github_item.title, url)
+
+
+@click.command()
+@click.option(
+    "--sprint",
+    metavar="NAME",
+    required=True,
+    help="Name of the sprint, e.g. 'TMT Sprint 11'.",
+)
+@click.option(
+    "--dry",
+    is_flag=True,
+    default=False,
+    help="Only show what would be done without making any changes.",
+)
+@click.argument("yaml_file", required=False, default=None)
+def main(sprint: str, dry: bool, yaml_file: Optional[str]) -> None:
+    """
+    Sync a Jira sprint with GitHub sprint items.
+
+    Reads GitHub sprint items in YAML format (from sprint-overview --yaml)
+    from YAML_FILE or stdin. Example usage:
+
+    \b
+        ./sprint-overview --sprint 'Sprint 11' --yaml | ./sprint-sync --sprint 'TMT Sprint 11'
+
+    Authentication is configured via environment variables:
+
+    \b
+        JIRA_SERVER ... Jira server URL, https://redhat.atlassian.net/ by default
+        JIRA_EMAIL .... User email for authentication
+        JIRA_TOKEN .... Personal access token
+    """
+
+    click.echo(f"\nSyncing sprint: {sprint}{' (dry mode)' if dry else ''}")
+
+    jira = connect_to_jira()
+
+    sprint_id = find_sprint_id(jira, sprint)
+    if not sprint_id:
+        click.echo(f"Error: sprint '{sprint}' not found.")
+        sys.exit(1)
+
+    github_items = load_github_items(yaml_file)
+    jira_items = fetch_jira_items(jira, sprint)
+    sync_sprint(jira, sprint_id, jira_items, github_items, dry=dry)
+
+
+if __name__ == "__main__":
+    main()
