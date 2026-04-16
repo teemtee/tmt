@@ -24,6 +24,7 @@ from tmt.steps.prepare.install import PrepareInstall  # pyright: ignore[reportUn
 from tmt.steps.prepare.verify_installation import (
     PrepareVerifyInstallation,  # pyright: ignore[reportUnknownVariableType]
     PrepareVerifyInstallationData,
+    _resolve_virtual_provides,
 )
 from tmt.utils import Environment, Path
 
@@ -355,15 +356,25 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
+        if not pkg_names:
+            self.verbose('No packages to be installed were found in the provided artifacts.')
+            return
+
+        virtual_provides = [pkg for pkg in pkg_names if pkg.startswith('/') or '(' in pkg]
+        resolved_map = _resolve_virtual_provides(guest, virtual_provides, self._logger)
+        resolved_pkg_names: set[str] = (pkg_names - set(virtual_provides)) | set(
+            resolved_map.values()
+        )
+
         # Build package → set of valid repo_ids, filtering to only required packages.
         pkgs_to_verify: dict[str, set[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:
-                if artifact.version.name in pkg_names:
+                if artifact.version.name in resolved_pkg_names:
                     pkgs_to_verify.setdefault(artifact.version.name, set()).add(artifact.repo_id)
 
         if not pkgs_to_verify:
-            self.verbose('No packages to be installed were found in the provided artifacts.')
+            self.verbose('None of the installed packages matched the provided artifacts.')
             return
 
         self.debug(f"Verifying {fmf.utils.listed(sorted(pkgs_to_verify), 'package')}.")

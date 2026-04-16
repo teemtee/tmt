@@ -1,3 +1,4 @@
+import shlex
 from typing import Optional
 
 import fmf.utils
@@ -10,7 +11,45 @@ from tmt.log import Logger
 from tmt.package_managers import SpecialPackageOrigin
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
-from tmt.utils import Environment
+from tmt.utils import Environment, ShellScript
+
+
+def _resolve_virtual_provides(
+    guest: Guest,
+    virtual_provides: list[str],
+    logger: Logger,
+) -> dict[str, str]:
+    """Resolve virtual provides (paths, capabilities) to RPM package names."""
+    if not virtual_provides:
+        return {}
+
+    # Query each provide individually so we get exactly one output line per
+    # input, regardless of how many packages satisfy a single capability.
+    # A batched call emits N lines for a capability matched by N packages,
+    # breaking zip alignment. `| head -1` takes the first match; `|| echo`
+    # emits an empty line when rpm outputs nothing at all, keeping alignment.
+    items = ' '.join(shlex.quote(p) for p in virtual_provides)
+    script = ShellScript(
+        f'for _p in {items}; do '
+        f"rpm -q --whatprovides \"$_p\" --qf '%{{NAME}}\\n' 2>/dev/null | head -1 || echo; "
+        f'done'
+    )
+
+    stdout: Optional[str] = None
+    try:
+        output = guest.execute(script, silent=True)
+        stdout = output.stdout
+    except tmt.utils.RunError as exc:
+        stdout = exc.stdout
+
+    resolved: dict[str, str] = {}
+    for line, pkg in zip((stdout or '').splitlines(), virtual_provides):
+        line = line.strip()
+        if not line or line.startswith(('no package provides ', 'error: file ')):
+            logger.debug(f"Could not resolve virtual provide '{pkg}': {line!r}")
+            continue
+        resolved[pkg] = line
+    return resolved
 
 
 @container
@@ -92,13 +131,16 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             color='green',
         )
 
-        # TODO: Use ``rpm -q --whatprovides`` to resolve the actual RPM packages
-        # providing the requested requirements before verification. This would
-        # cover cases where ``require`` contains virtual provides like
-        # ``/usr/bin/something``. Not implemented yet as it requires live guest
-        # queries and is incompatible with bootc mode.
+        virtual_provides = [pkg for pkg in self.data.verify if pkg.startswith('/') or '(' in pkg]
+        resolved = _resolve_virtual_provides(guest, virtual_provides, self._logger)
+
+        # Remap verify dict: replace resolved virtual provides with RPM names.
+        verify_map: dict[str, list[str]] = {
+            resolved.get(pkg, pkg): repos for pkg, repos in self.data.verify.items()
+        }
+
         try:
-            package_origins = guest.package_manager.get_package_origin(self.data.verify.keys())
+            package_origins = guest.package_manager.get_package_origin(verify_map.keys())
         except (NotImplementedError, tmt.utils.GeneralError) as err:
             error: Exception = (
                 tmt.utils.PrepareError(
@@ -120,7 +162,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         failed_packages: list[str] = []
-        for package, expected_repos in self.data.verify.items():
+        for package, expected_repos in verify_map.items():
             actual_origin = package_origins[package]
 
             if actual_origin in expected_repos:
