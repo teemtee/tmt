@@ -18,6 +18,7 @@ rlJournalStart
         fi
 
         assert_image_mode() {
+            is_image_mode "$image" || return
             rlAssertGrep "building container image from collected commands" $rlRun_LOG
             rlAssertGrep "switching to new image" $rlRun_LOG
             rlAssertGrep "rebooting to apply new image" $rlRun_LOG
