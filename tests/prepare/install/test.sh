@@ -289,7 +289,14 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image" || is_image_mode "$image"; then
+            elif is_image_mode "$image"; then
+                if is_fedora "$image"; then
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                fi
+
+            elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
@@ -330,7 +337,14 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image" || is_image_mode "$image"; then
+            elif is_image_mode "$image"; then
+                if is_fedora "$image"; then
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                fi
+
+            elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
@@ -371,7 +385,14 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ostree "$image" || is_image_mode "$image"; then
+            elif is_image_mode "$image"; then
+                if is_fedora "$image"; then
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                fi
+
+            elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
