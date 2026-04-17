@@ -22,6 +22,7 @@ rlJournalStart
         rlRun -s "tmt clean runs --dry -v --workdir-root $tmprun"
         rlAssertGrep "Would remove workdir '$run1'" "$rlRun_LOG"
         rlAssertGrep "Would remove workdir '$run2'" "$rlRun_LOG"
+        rlAssertGrep "Summary: Would free.*of disk space" "$rlRun_LOG"
         rlRun -s "tmt status --workdir-root $tmprun -vv"
         rlAssertGrep "(done\s+){1}(todo\s+){6}$run1\s+/plan1" "$rlRun_LOG" -E
         rlAssertGrep "(done\s+){1}(todo\s+){6}$run2\s+/plan1" "$rlRun_LOG" -E
@@ -30,12 +31,14 @@ rlJournalStart
     rlPhaseStartTest "Specify ID"
         rlRun -s "tmt clean runs -v -i $run1"
         rlAssertGrep "Removing workdir '$run1'" "$rlRun_LOG"
+        rlAssertGrep "Summary: Freed.*of disk space" "$rlRun_LOG"
         rlRun -s "tmt status --workdir-root $tmprun -vv"
         rlAssertNotGrep "(done\s+){1}(todo\s+){6}$run1\s+/plan1" "$rlRun_LOG" -E
         rlAssertGrep "(done\s+){1}(todo\s+){6}$run2\s+/plan1" "$rlRun_LOG" -E
 
         rlRun -s "tmt clean runs -v -l --workdir-root $tmprun"
         rlAssertGrep "Removing workdir '$run2'" "$rlRun_LOG"
+        rlAssertGrep "Summary: Freed.*of disk space" "$rlRun_LOG"
         rlRun -s "tmt status --workdir-root $tmprun -vv"
         rlAssertNotGrep "(done\s+){1}(todo\s+){6}$run2\s+/plan1" "$rlRun_LOG" -E
 

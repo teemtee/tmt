@@ -1589,16 +1589,25 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             clean.warn(f"Directory '{testcloud_images}' does not exist.", shift=2)
             return True
         successful = True
+        total_size = 0
         for image in testcloud_images.iterdir():
+            size = image.stat().st_size
+            total_size += size
+            formatted_size = round(tmt.hardware.UNITS(f'{size} bytes').to_compact(), 1)
             if dry:
-                clean.verbose(f"Would remove '{image}'.", shift=2)
+                clean.verbose(f"Would remove '{image}' ({formatted_size}).", shift=2)
             else:
-                clean.verbose(f"Removing '{image}'.", shift=2)
+                clean.verbose(f"Removing '{image}' ({formatted_size}).", shift=2)
                 try:
                     image.unlink()
                 except OSError:
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False
+        clean.verbose(
+            f"Summary: {'Would free' if dry else 'Freed'} "
+            f"{round(tmt.hardware.UNITS(f'{total_size} bytes').to_compact(), 1)} of disk space.",
+            shift=2,
+        )
         return successful
 
 

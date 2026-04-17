@@ -42,6 +42,7 @@ import tmt.config
 import tmt.convert
 import tmt.export
 import tmt.frameworks
+import tmt.hardware
 import tmt.identifier
 import tmt.lint
 import tmt.log
@@ -3615,6 +3616,11 @@ class Status(tmt.utils.Common):
 CleanCallback = Callable[[], bool]
 
 
+def _dir_size(path: Path) -> int:
+    """Return the total size in bytes of all files under path."""
+    return sum(f.lstat().st_size for f in path.rglob('*'))
+
+
 class Clean(tmt.utils.Common):
     """
     A class for cleaning up workdirs, guests or images
@@ -3753,20 +3759,22 @@ class Clean(tmt.utils.Common):
                 successful = False
         return successful
 
-    def _clean_workdir(self, path: Path) -> bool:
+    def _clean_workdir(self, path: Path) -> tuple[bool, int]:
         """
         Remove a workdir (unless in dry mode)
         """
+        size = _dir_size(path)
+        formatted_size = round(tmt.hardware.UNITS(f'{size} bytes').to_compact(), 1)
         if self.is_dry_run:
-            self.verbose(f"Would remove workdir '{path}'.", shift=1)
+            self.verbose(f"Would remove workdir '{path}' ({formatted_size}).", shift=1)
         else:
-            self.verbose(f"Removing workdir '{path}'.", shift=1)
+            self.verbose(f"Removing workdir '{path}' ({formatted_size}).", shift=1)
             try:
                 shutil.rmtree(path)
             except OSError as error:
                 self.warn(f"Failed to remove '{path}': {error}.", shift=1)
-                return False
-        return True
+                return False, 0
+        return True, size
 
     def runs(self, id_: tuple[str, ...], keep: Optional[int]) -> bool:
         """
@@ -3779,7 +3787,13 @@ class Clean(tmt.utils.Common):
             # the correct one.
             last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
             last_run.load_workdir(with_logfiles=False)
-            return self._clean_workdir(last_run.run_workdir)
+            success, size = self._clean_workdir(last_run.run_workdir)
+            self.verbose(
+                f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
+                f"{round(tmt.hardware.UNITS(f'{size} bytes').to_compact(), 1)} of disk space.",
+                shift=1,
+            )
+            return success
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_, all_=True))
         if keep is not None:
             # Sort by change time of the workdirs and keep the newest workdirs
@@ -3787,10 +3801,18 @@ class Clean(tmt.utils.Common):
             all_workdirs = all_workdirs[keep:]
 
         successful = True
+        total_size = 0
         for workdir in all_workdirs:
-            if not self._clean_workdir(workdir):
+            success, size = self._clean_workdir(workdir)
+            if not success:
                 successful = False
+            total_size += size
 
+        self.verbose(
+            f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
+            f"{round(tmt.hardware.UNITS(f'{total_size} bytes').to_compact(), 1)} of disk space.",
+            shift=1,
+        )
         return successful
 
 
