@@ -5,25 +5,31 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "pushd data"
+        rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
 
-        build_container_image "ubi/8/upstream\:latest"
-        build_container_image "centos/7/upstream\:latest"
-        build_container_image "fedora/latest/upstream\:latest"
+        if [ "$PROVISION_HOW" = "container" ]; then
+            build_container_image "ubi/8/upstream\:latest"
+            build_container_image "centos/7/upstream\:latest"
+            build_container_image "fedora/latest/upstream\:latest"
+        fi
+
+        rlRun "pushd data"
     rlPhaseEnd
 
     tmt="tmt run -vv --all --remove provision --how $PROVISION_HOW"
     basic="plan --name 'mixed|weird'"
     debuginfo="plan --name debuginfo"
 
-    # Verify against the default provision image
-    rlPhaseStartTest "Test the default image ($PROVISION_HOW)"
-        rlRun -s "$tmt $basic"
-	rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
-	rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
-	rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-	rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
-    rlPhaseEnd
+    # Verify against the default provision image (skip for image mode, no default image)
+    if [[ "$IMAGE_MODE" != "yes" ]]; then
+        rlPhaseStartTest "Test the default image ($PROVISION_HOW)"
+            rlRun -s "$tmt $basic"
+            rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
+            rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
+            rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
+            rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+        rlPhaseEnd
+    fi
 
     # Check CentOS images for container provision
     if [[ "$PROVISION_HOW" == "container" ]]; then
@@ -50,8 +56,21 @@ rlJournalStart
         done
     fi
 
-    # Add one extra CoreOS run for virtual provision
-    if [[ "$PROVISION_HOW" == "virtual" ]]; then
+    # Run against image mode images
+    if [[ "$IMAGE_MODE" == "yes" ]]; then
+        while IFS= read -r image; do
+            rlPhaseStartTest "Test $image (image-mode)"
+                rlRun -s "$tmt --image $image $basic"
+                rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
+                rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
+                rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
+                rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+            rlPhaseEnd
+        done <<< "$TEST_IMAGE_MODE_IMAGES"
+    fi
+
+    # Add one extra CoreOS run for virtual provision (not image mode)
+    if [[ "$PROVISION_HOW" == "virtual" ]] && [[ "$IMAGE_MODE" != "yes" ]]; then
         rlPhaseStartTest "Test fedora-coreos ($PROVISION_HOW)"
 	    rlRun -s "$tmt --image fedora-coreos $basic"
 	    rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG

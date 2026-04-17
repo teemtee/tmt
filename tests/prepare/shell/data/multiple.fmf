@@ -2,4 +2,4 @@ provision:
     how: container
 execute:
     how: tmt
-    script: test -e /tmp/first && test -e /tmp/second
+    script: test -e $FIRST && test -e $SECOND

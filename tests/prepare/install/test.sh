@@ -3,11 +3,17 @@
 . ../../images.sh || exit 1
 
 function fetch_downloaded_packages () {
+    image="$1"
     in_subdirectory="$2"
 
     if [ ! -e $package_cache/tree.rpm ]; then
+        # Transform image mode qcow2 URL to a distro compatible container image for artifact download.
+        # We want artifacts to come from the same distribution, but using standard fedora container
+        # images is enough, they are smaller and rpm compatible with image mode based container images.
+        [ "$IMAGE_MODE" = "yes" ] && image=${IMAGE_MODE_QCOW2_CONTAINER_MAP["$image"]}
+
         # For some reason, this command will get stuck in rlRun...
-        container_id="$(podman run -d $1 sleep 3600)"
+        container_id="$(podman run -d $image sleep 3600)"
 
         rlRun "podman exec $container_id bash -c \"set -x; \
                                                     dnf install -y 'dnf-command(download)' \
@@ -33,8 +39,13 @@ function fetch_downloaded_packages () {
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+        rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
 
-        if [ "$PROVISION_HOW" = "container" ]; then
+        if [ "$IMAGE_MODE" = "yes" ]; then
+            rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
+            rlRun "SECONDARY_IMAGES=''"
+
+        elif [ "$PROVISION_HOW" = "container" ]; then
             rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
             rlRun "SECONDARY_IMAGES='$TEST_CONTAINER_IMAGES_SECONDARY'"
 
@@ -123,12 +134,20 @@ rlJournalStart
                 rlRun "distro=rhel-8"
                 rlRun "package_manager=dnf"
 
+            elif is_fedora "$image"; then
+                rlRun "distro=fedora"
+                rlRun "package_manager=dnf5"
+
             elif is_alpine "$image"; then
                 rlRun "distro=alpine"
                 rlRun "package_manager=apk"
 
             else
                 rlFail "Cannot infer distro for image $image"
+            fi
+
+            if is_image_mode "$image"; then
+                rlRun "package_manager=bootc"
             fi
 
             tmt_run="tmt -vvv -c distro=$distro run --id $run --scratch"
@@ -144,6 +163,12 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
+            if is_image_mode "$image"; then
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+            fi
+
             if is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
@@ -151,6 +176,23 @@ rlJournalStart
                 rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
             fi
         rlPhaseEnd
+
+        # On image mode, verify packages persist after reboot
+        if is_image_mode "$image"; then
+            rlPhaseStartTest "$phase_prefix Reboot persistence"
+                rlRun -s "$tmt_run --all provision --how $PROVISION_HOW --image $image plan --name /reboot-persistence"
+
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+
+                # should see the tree and diffutils version printed twice (before and after the test reboot)
+                rlAssertEquals "Verify tree available after reboot" $(grep "stdout: tree v" $rlRun_LOG | wc -l) 2
+                rlAssertEquals "Verify diffutils available after reboot" $(grep "stdout: diff (GNU diffutils)" $rlRun_LOG | wc -l) 2
+
+                rlAssertGrep "total: 1 test passed" $rlRun_LOG
+            rlPhaseEnd
+        fi
 
         # Here the basic functionality check ends for the secondary distros.
         if [[ "$SECONDARY_IMAGES" =~ "$image" ]]; then
@@ -174,7 +216,10 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-        if [ "$PROVISION_HOW" = "container" ] && rlIsFedora 43 && is_fedora_43 "$image"; then
+        # Limit these test cases to:
+        # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
+        # * image mode - the code handling is different from ^ and we need to make sure these cases work well
+        if ([ "$PROVISION_HOW" = "container" ] && rlIsFedora 43 && is_fedora_43 "$image") || is_image_mode "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
@@ -244,6 +289,13 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
+            elif is_image_mode "$image"; then
+                if is_fedora "$image"; then
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                fi
+
             elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
@@ -273,8 +325,8 @@ rlJournalStart
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
 
-	    rlAssertGrep "Other failed packages:" $rlRun_LOG
-	    rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
+            rlAssertGrep "Other failed packages:" $rlRun_LOG
+            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "$phase_prefix Install existing and invalid packages (test)"
@@ -285,6 +337,13 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
+            elif is_image_mode "$image"; then
+                if is_fedora "$image"; then
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                fi
+
             elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
@@ -314,7 +373,7 @@ rlJournalStart
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
 
-	    rlAssertGrep "Required packages failed to install, aborting:" $rlRun_LOG
+            rlAssertGrep "Required packages failed to install, aborting:" $rlRun_LOG
             rlAssertGrep "tree-but-spelled-wrong: required by: /test-with-invalid-package" $rlRun_LOG
         rlPhaseEnd
 
@@ -326,6 +385,13 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
+            elif is_image_mode "$image"; then
+                if is_fedora "$image"; then
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                fi
+
             elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
                     rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
@@ -354,8 +420,8 @@ rlJournalStart
             else
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
-	    rlAssertGrep "Other failed packages:" $rlRun_LOG
-	    rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
+            rlAssertGrep "Other failed packages:" $rlRun_LOG
+            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "$phase_prefix Empty prepare install with exclude"
@@ -364,7 +430,8 @@ rlJournalStart
 
         # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
         # possible to extend to other distros.
-        if (is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"; then
+        # TODO: image mode copr support depends on #4748
+        if ! is_image_mode "$image" && ((is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"); then
             if ! is_centos_7 "$image" && ! is_ubi_8 "$image"; then
                 rlPhaseStartTest "$phase_prefix Just enable copr"
                     rlRun "$tmt execute plan --name copr"
