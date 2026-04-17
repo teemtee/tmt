@@ -5,7 +5,11 @@ import pytest
 
 import tmt.utils
 from tmt.steps.prepare.artifact import PrepareArtifact
-from tmt.steps.prepare.artifact.providers import ArtifactInfo, ArtifactProvider, Version
+from tmt.steps.prepare.artifact.providers import (
+    ArtifactInfo,
+    ArtifactProvider,
+    Version,
+)
 
 
 class MockProvider(ArtifactProvider):
@@ -82,6 +86,7 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
         },
         "nvra": "mock-1.0-1.x86_64",
         "location": "http://example.com/mock-1.0-1.x86_64.rpm",
+        "repo_id": "tmt-artifact-shared",
     }
     assert artifact == expected
 

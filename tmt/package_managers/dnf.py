@@ -185,12 +185,16 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def list_packages(self, repository: Repository) -> ShellScript:
-        repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
-        return ShellScript(
-            f"""
-            {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
-            """
-        )
+        return (
+            self.command
+            + Command(
+                'repoquery',
+                '--disablerepo=*',
+                *[f'--enablerepo={repo_id}' for repo_id in repository.repo_ids],
+                '--queryformat',
+                r'%{repoid};%{name}-%{epoch}:%{version}-%{release}.%{arch}\n',
+            )
+        ).to_script()
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
         return (
@@ -253,8 +257,14 @@ class Dnf(PackageManager[DnfEngine]):
         if stdout is None:
             raise GeneralError("Repository query provided no output")
 
-        stripped_lines = (line.strip() for line in stdout.strip().splitlines())
-        return [RpmVersion.from_nevra(line) for line in stripped_lines if line]
+        result: list[Version] = []
+        for line in stdout.strip().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            repo_id, nevra = line.split(';', maxsplit=1)
+            result.append(RpmVersion.from_nevra(nevra, repo_id=repo_id))
+        return result
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         try:

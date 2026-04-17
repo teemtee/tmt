@@ -74,6 +74,7 @@ def test_download_artifact(tmp_path, artifact_provider):
                 "version": "5.1.8",
                 "release": "6.el9",
                 "arch": "x86_64",
+                "repo_id": None,
             },
         ),
         (
@@ -84,6 +85,7 @@ def test_download_artifact(tmp_path, artifact_provider):
                 "version": "1.61.0.dev17+gf29b2e83e",
                 "release": "1.fc41",
                 "arch": "x86_64",
+                "repo_id": None,
             },
         ),
     ],

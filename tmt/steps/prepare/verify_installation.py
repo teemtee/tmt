@@ -20,17 +20,15 @@ class PrepareVerifyInstallationData(PrepareStepData):
         help='Order in which the phase should be handled.',
     )
 
-    # TODO: The value type should be ``list[str]`` to allow specifying multiple
-    # acceptable source repositories for a single package (e.g. the same NVR
-    # can exist in both ``tmt-artifact-shared`` and added ``repository`` without clashing.
-    # When that change is made the comparison in ``go()`` must be updated from
-    # ``actual_origin == expected_repo`` to ``actual_origin in expected_repos``,
-    # and the semantics must be documented: a package passes verification if its
-    # actual source repo matches ANY of the listed repos (OR semantics).
-    verify: dict[str, str] = field(
+    verify: dict[str, list[str]] = field(
         default_factory=dict,
-        help="Mapping of package names to expected source repository names.",
-        normalize=tmt.utils.normalize_string_dict,
+        help="""
+            Mapping of package names to expected source repository names.
+            A package passes verification if it is installed and it was
+            installed from one of the listed repositories. A single string
+            value is accepted and treated as a one-element list.
+            """,
+        normalize=tmt.utils.normalize_string_list_dict,
     )
 
 
@@ -45,12 +43,16 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
 
     Packages pre-installed in a container image (or otherwise not installed
     via a repository) report an unknown source. Such packages are attributed
-    to ``<unknown>`` and can be matched with ``expected-repo: '<unknown>'``
-    in the verification mapping.
+    to ``<unknown>`` and can be matched by specifying ``'<unknown>'`` as the
+    expected repository in the verification mapping.
 
     Verification failures are recorded as ``FAIL`` results in the
     prepare phase output and cause the prepare step to fail, preventing
     test execution.
+
+    Each package may specify a single expected repository (string) or a list
+    of acceptable repositories. A package passes if its actual source matches
+    any of the listed repos.
 
     Example usage:
 
@@ -61,6 +63,9 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             verify:
                 make: tmt-artifact-shared
                 gcc: fedora
+                curl:
+                  - tmt-artifact-shared
+                  - updates
     """
 
     _data_class = PrepareVerifyInstallationData
@@ -115,10 +120,10 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         failed_packages: list[str] = []
-        for package, expected_repo in self.data.verify.items():
+        for package, expected_repos in self.data.verify.items():
             actual_origin = package_origins[package]
 
-            if actual_origin in expected_repo:
+            if actual_origin in expected_repos:
                 outcome.results.append(
                     PhaseResult(
                         name=f'{self.name} / {package}',
@@ -132,15 +137,16 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                 continue
 
             failed_packages.append(package)
+            expected_repos_formatted = fmf.utils.listed(expected_repos, quote="'", join='or')
             if actual_origin is SpecialPackageOrigin.NOT_INSTALLED:
                 note = (
-                    f"Package '{package}': expected repo"
-                    f" '{expected_repo}', but the package is not installed."
+                    f"Package '{package}': expected repo {expected_repos_formatted},"
+                    f" but the package is not installed."
                 )
             else:
                 note = (
-                    f"Package '{package}': expected repo"
-                    f" '{expected_repo}', actual '{actual_origin}'."
+                    f"Package '{package}': expected repo {expected_repos_formatted},"
+                    f" actual '{actual_origin}'."
                 )
 
             outcome.results.append(

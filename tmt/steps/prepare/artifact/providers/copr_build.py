@@ -220,7 +220,9 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             base_url = self.result_url.rstrip("/")
 
         return ArtifactInfo(
-            version=version_info, location=urljoin(base_url + "/", filename), provider=self
+            version=version_info,
+            location=urljoin(base_url + "/", filename),
+            provider=self,
         )
 
     @cached_property

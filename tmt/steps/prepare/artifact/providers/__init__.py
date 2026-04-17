@@ -23,6 +23,9 @@ NEVRA_PATTERN = re.compile(
     r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
 )
 
+#: Name of the shared repository that download providers contribute RPMs into.
+SHARED_REPO_NAME: str = 'tmt-artifact-shared'
+
 
 class DownloadError(tmt.utils.GeneralError):
     """
@@ -45,6 +48,9 @@ class ArtifactInfo:
     version: Version
     location: str
     provider: "ArtifactProvider"
+    #: Repository ID this artifact is available from. Used during verification
+    #: to confirm the artifact was installed from the expected repository.
+    repo_id: str = SHARED_REPO_NAME
 
     @property
     def id(self) -> str:
@@ -254,11 +260,24 @@ class ArtifactProvider(ABC):
                 )
                 continue
             for rpm_version in packages:
+                from tmt.package_managers._rpm import RpmVersion
+
+                if not isinstance(rpm_version, RpmVersion):
+                    raise tmt.utils.GeneralError(
+                        f"Unexpected package type '{type(rpm_version).__name__}' "
+                        f"from repository '{repository.name}'."
+                    )
+                if rpm_version.repo_id is None:
+                    raise tmt.utils.GeneralError(
+                        f"Package '{rpm_version}' from repository '{repository.name}' "
+                        f"has no repo_id."
+                    )
                 self._artifacts.append(
                     ArtifactInfo(
                         version=rpm_version,
                         provider=self,
                         location=repository.name,
+                        repo_id=rpm_version.repo_id,
                     )
                 )
             self.logger.debug(
@@ -303,6 +322,7 @@ class ArtifactProvider(ABC):
                 'version': vars(artifact.version),
                 'nvra': artifact.version.nvra,
                 'location': artifact.location,
+                'repo_id': artifact.repo_id,
             }
             for artifact in self.artifacts
         ]

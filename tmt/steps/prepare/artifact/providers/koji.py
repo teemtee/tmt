@@ -227,7 +227,9 @@ class KojiArtifactProvider(ArtifactProvider):
         )
 
         return ArtifactInfo(
-            version=version_info, location=urljoin(self._top_url, path), provider=self
+            version=version_info,
+            location=urljoin(self._top_url, path),
+            provider=self,
         )
 
 
@@ -269,7 +271,9 @@ class KojiTask(KojiArtifactProvider):
         url = f"{work_path}/{task_path}/{filename}"
 
         return ArtifactInfo(
-            version=RpmVersion.from_filename(filename), location=url, provider=self
+            version=RpmVersion.from_filename(filename),
+            location=url,
+            provider=self,
         )
 
     @cached_property

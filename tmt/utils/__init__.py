@@ -5904,6 +5904,42 @@ def normalize_string_dict(
     )
 
 
+def normalize_string_list_dict(
+    key_address: str,
+    raw_value: Any,
+    logger: tmt.log.Logger,
+) -> dict[str, list[str]]:
+    """
+    Normalize a key/value dictionary where values are lists of strings.
+
+    Each value may be specified as a single string (coerced to a one-element
+    list) or as a list of strings.
+
+    For example, the following are acceptable inputs:
+
+    .. code-block:: python
+
+       {'foo': 'bar'}               # becomes {'foo': ['bar']}
+       {'foo': ['bar', 'baz']}      # stays as-is
+
+    :param raw_value: input value from key source.
+    """
+
+    if not isinstance(raw_value, dict):
+        raise tmt.utils.NormalizationError(
+            key_address,
+            raw_value,
+            'a dictionary mapping string keys to string values or lists of strings',
+        )
+
+    return {
+        str(key).strip(): (
+            [str(v).strip() for v in value] if isinstance(value, list) else [str(value).strip()]
+        )
+        for key, value in raw_value.items()
+    }
+
+
 def normalize_data_amount(
     key_address: str,
     raw_value: Any,
