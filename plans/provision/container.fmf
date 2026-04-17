@@ -24,7 +24,9 @@ context+:
 environment:
     PROVISION_HOW: container
 
-enabled: true
+adjust+:
+  - enabled: true
+    when: how == provision
 
 /install:
     discover+:

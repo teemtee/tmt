@@ -173,6 +173,10 @@ jobs:
     tmt_plan: /plans/provision/bootc
 
   - <<: *provision
+    identifier: 'provision-container'
+    tmt_plan: /plans/provision/container
+
+  - <<: *provision
     identifier: provision-virtual
     tmt_plan: /plans/provision/virtual
 
