@@ -80,6 +80,7 @@ from tmt.utils import (
     HasRunWorkdir,
     Path,
     ShellScript,
+    StateFormat,
     WorkdirArgumentType,
     normalize_shell_script,
     to_yaml,
@@ -2934,6 +2935,74 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         return self.workdir
 
+    @functools.cached_property
+    def state_format_marker_filepath(self) -> Path:
+        return self.run_workdir / 'state-format'
+
+    @functools.cached_property
+    def state_format(self) -> StateFormat:
+        try:
+            format_name = self.state_format_marker_filepath.read_text().strip()
+
+        except FileNotFoundError:
+            state_format = tmt.utils.get_state_format()
+
+            self.debug(
+                "No state format marker file found,"
+                f" using the default state format '{state_format.name}'."
+            )
+
+            return state_format
+
+        except Exception as exc:
+            raise GeneralError('Failed to read state format marker.') from exc
+
+        state_format = tmt.utils.get_state_format(format=format_name)
+
+        self.debug(
+            f"State format marker file found, using the '{state_format.name}' state format."
+        )
+
+        return state_format
+
+    def read_state(self, filepath: Path) -> Any:
+        """
+        Read a stored state from the given file.
+
+        .. important::
+
+            No deserialization is performed, it is the responsibility of the
+            caller to turn loaded structure, consisting of built-in-like
+            types, into objects of desired classes, e.g. by the power of
+            :py:meth:`tmt.container.SerializableContainer.deserialize`.
+
+        :param filepath: file to read the state from.
+        :returns: stored state as Python data structure.
+        """
+
+        return self.state_format.from_state(
+            self.read_file(Path(f'{filepath}{self.state_format.suffix}'))
+        )
+
+    def write_state(self, filepath: Path, data: Any) -> None:
+        """
+        Write a state into the given file.
+
+        .. important::
+
+            No serialization is performed, it is the responsibility of the
+            caller to turn internal objects into built-in-like Python types,
+            e.g. by the power of
+            :py:meth:`tmt.container.SerializableContainer.serialize`.
+
+        :param filepath: file to write the state into.
+        :param data: state as Python data structure.
+        """
+
+        return self.write_file(
+            Path(f'{filepath}{self.state_format.suffix}'), self.state_format.to_state(data)
+        )
+
     def load_workdir(self, *, with_logfiles: bool = True) -> None:
         """
         Prepare the run workdir and associated.
@@ -3078,8 +3147,13 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Save list of selected plans and enabled steps
         """
+
+        self.state_format_marker_filepath.unlink(missing_ok=True)
+        self.state_format_marker_filepath.write_text(self.state_format.name)
+
         assert self.tree is not None  # narrow type
         assert self._cli_context_object is not None  # narrow type
+        assert self.workdir is not None  # narrow type
         data = RunData(
             root=str(self.tree.root) if self.tree.root else None,
             plans=[plan.name for plan in self._plans] if self._plans is not None else None,
@@ -3087,7 +3161,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             environment=self.environment,
             remove=self.remove,
         )
-        self.write(Path('run.yaml'), to_yaml(data.to_serialized()))
+        self.write_state(self.workdir / 'run', data.to_serialized())
 
     def load_from_workdir(self) -> None:
         """
@@ -3105,10 +3179,12 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         #  which in turn is only called by status and clean, both cases where we do not want
         #  to attach the logfile loggers to.
         self.load_workdir(with_logfiles=False)
+
+        assert self.workdir is not None  # narrow type
+
         try:
-            self.data = RunData.from_serialized(
-                tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
-            )
+            self.data = RunData.from_serialized(self.read_state(self.workdir / 'run'))
+
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
@@ -3137,10 +3213,11 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         from tmt.base.plan import Plan
 
+        assert self.workdir is not None  # narrow type
+
         try:
-            self.data = RunData.from_serialized(
-                tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
-            )
+            self.data = RunData.from_serialized(self.read_state(self.workdir / 'run'))
+
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return

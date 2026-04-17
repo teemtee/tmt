@@ -67,7 +67,17 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'results.yaml'}
+        members = {
+            *super()._preserved_workdir_members,
+        }
+
+        if self.plan.my_run is not None:
+            members = {
+                *members,
+                f'results{self.plan.my_run.state_format.suffix}',
+            }
+
+        return members
 
     def wake(self) -> None:
         """

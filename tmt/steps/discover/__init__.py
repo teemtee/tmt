@@ -630,7 +630,14 @@ class Discover(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'tests.yaml'}
+        members = {
+            *super()._preserved_workdir_members,
+        }
+
+        if self.plan.my_run:
+            members = {*members, f'tests{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     @property
     def required_tests(self) -> list[TestOrigin]:
@@ -720,9 +727,11 @@ class Discover(tmt.steps.Step):
         else:
             super().load()
 
+        assert self.plan.my_run is not None  # narrow type
+
         try:
-            raw_test_data: list[tmt.export._RawExportedInstance] = tmt.utils.yaml_to_list(
-                self.read(Path('tests.yaml'))
+            raw_test_data: list[tmt.export._RawExportedInstance] = self.plan.my_run.read_state(
+                self.step_workdir / 'tests'
             )
 
             self._tests = {}
@@ -782,7 +791,8 @@ class Discover(tmt.steps.Step):
 
                 raw_test_data.append(exported_test)
 
-        self.write(Path('tests.yaml'), tmt.utils.to_yaml(raw_test_data))
+        assert self.plan.my_run is not None  # narrow type
+        self.plan.my_run.write_state(self.step_workdir / 'tests', raw_test_data)
 
     def _discover_from_execute(self) -> None:
         """
