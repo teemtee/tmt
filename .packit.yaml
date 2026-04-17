@@ -123,7 +123,7 @@ _:
     tf_extra_params:
       environments:
         - tmt:
-            context:
+            context: &provision-context
               how: provision
           <<: *tmt-cloud-resources
 
@@ -133,7 +133,7 @@ _:
       environments:
         - tmt:
             context:
-              how: provision
+              <<: *provision-context
               image_mode: "yes"
           <<: *tmt-cloud-resources
 
