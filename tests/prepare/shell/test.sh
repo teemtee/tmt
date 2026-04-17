@@ -6,8 +6,11 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
         rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
+        rlRun "FIRST=/tmp/first SECOND=/tmp/second"
         if [ "$IMAGE_MODE" = "yes" ]; then
             rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
+            # In image mode use paths which survive a reboot
+            rlRun "FIRST=/first SECOND=/second"
         fi
         rlRun "pushd data"
     rlPhaseEnd
@@ -36,8 +39,8 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "Multiple Commandline Scripts"
-            rlRun "tmt run -arv provision --how=$PROVISION_HOW $image_opt plans -n multiple \
-                prepare -h shell -s 'touch /var/tmp/first' -s 'touch /var/tmp/second'"
+            rlRun -s "tmt run -arv -e FIRST=$FIRST -e SECOND=$SECOND provision --how=$PROVISION_HOW $image_opt plans -n multiple \
+                prepare -h shell -s 'touch $FIRST' -s 'touch $SECOND'"
             assert_image_mode
         rlPhaseEnd
 
