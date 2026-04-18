@@ -1,0 +1,4 @@
+summary: Verify prepare/shell with large environment succeeded
+test: |
+    tree --version
+    bootc status --booted --format humanreadable

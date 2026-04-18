@@ -1,0 +1,15 @@
+summary: Test bootc image-mode with large plan environment
+description: |
+    Verify that prepare/shell on bootc image-mode guests succeeds
+    when plan environment contains large values (e.g. base64-encoded
+    secrets). Without the push() fix, the generated Containerfile
+    was passed as a cat heredoc SSH command-line argument, exceeding
+    the OS ARG_MAX limit.
+link:
+  - verifies: https://github.com/teemtee/tmt/issues/4518
+tag+:
+  - provision-only
+  - provision-virtual
+require:
+  - tmt+provision-virtual
+duration: 2h
