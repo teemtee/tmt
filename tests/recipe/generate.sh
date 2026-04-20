@@ -11,6 +11,7 @@ rlJournalStart
     function replace_values () {
         temp_recipe=$(mktemp)
         yq '.run.root = "/path/to/fmf_root"' "$recipe" > "$temp_recipe"
+        sed -i "s#$run#/run_path#g" "$temp_recipe"
         mv "$temp_recipe" "$recipe"
     }
 

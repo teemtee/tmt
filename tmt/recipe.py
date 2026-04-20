@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast
 
-from fmf import Tree
+import fmf
 
 import tmt.utils
 from tmt.checks import Check, _RawCheck, normalize_test_checks
@@ -368,7 +368,7 @@ class _RecipeExecuteStep(_RecipeStep):
         return _RecipeExecuteStep(
             enabled=enabled,
             phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
-            results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
+            results_path=(step.step_workdir / 'results.yaml').resolve(),
         )
 
     def to_fmf_spec(self) -> list[_RawStepData]:
@@ -562,11 +562,11 @@ class RecipeManager(Common):
     def __init__(self, logger: Logger):
         super().__init__(logger=logger)
 
-    def load(self, run: 'Run', recipe_path: Path, fmf_tree: Tree) -> Recipe:
+    def load(self, run: 'Run', recipe_path: Path) -> Recipe:
         recipe = Recipe.from_spec(
             cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(recipe_path))), self._logger
         )
-        self._update_tree(recipe, fmf_tree)
+        self._update_tree(run, recipe)
         # TODO: We should have a way to set which steps are enabled
         # without modifying the CLI context directly.
         self._update_cli_context(recipe)
@@ -584,7 +584,9 @@ class RecipeManager(Common):
             ),
             plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
         )
-        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_spec()))
+        self.write(
+            run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_spec(), yaml_type='rt')
+        )
 
     def tests(self, recipe: Recipe, plan_name: str) -> list[TestOrigin]:
         """
@@ -603,12 +605,19 @@ class RecipeManager(Common):
         raise tmt.utils.GeneralError(f"Plan '{plan_name}' not found in the recipe.")
 
     @staticmethod
-    def _update_tree(recipe: Recipe, tree: Tree) -> None:
+    def _update_tree(run: 'Run', recipe: Recipe) -> None:
         """
-        Load the plans from the recipe and update the given fmf tree with their specifications.
+        Create a new fmf tree from the recipe's plan specifications.
         """
-        tree.children.clear()
-        tree.update({plan.name: plan.to_fmf_spec() for plan in recipe.plans})
+        from tmt.base.core import Tree
+
+        fmf_tree = fmf.Tree({plan.name: plan.to_fmf_spec() for plan in recipe.plans})
+        root = str(Path.cwd())
+        fmf_tree.root = root
+        for node in fmf_tree.climb():  # pyright: ignore[reportUnknownVariableType]
+            if isinstance(node, fmf.Tree):
+                node.root = root
+        run._tree = Tree(logger=run._logger, tree=fmf_tree)
 
     def _update_cli_context(self, recipe: Recipe) -> None:
         """

@@ -88,8 +88,8 @@ description: |
                     how: tmt
                     order: 50
                     ...
-                # String, relative path to the results file from the previous run
-                results-path: plans/name/execute/results.yaml
+                # String, absolute path to the results file from the previous run
+                results-path: /var/tmp/tmt/run-001/plans/name/execute/results.yaml
 
             report:
                 enabled: true

@@ -76,7 +76,7 @@ plans:
     execute:
         enabled: false
         phases: []
-        results-path: plans/import/execute/results.yaml
+        results-path: /run_path/plans/import/execute/results.yaml
     report:
         enabled: false
         phases: []

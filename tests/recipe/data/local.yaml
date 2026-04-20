@@ -140,7 +140,7 @@ plans:
             interactive: false
             restraint-compatible: false
             no-progress-bar: false
-        results-path: plans/local/execute/results.yaml
+        results-path: /run_path/plans/local/execute/results.yaml
     report:
         enabled: true
         phases:

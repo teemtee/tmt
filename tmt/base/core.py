@@ -2924,7 +2924,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self.recipe_manager = RecipeManager(logger)
         self.recipe = None
         if recipe_path is not None and self._tree is not None:
-            self.recipe = self.recipe_manager.load(self, recipe_path, self._tree.tree)
+            self.recipe = self.recipe_manager.load(self, recipe_path)
 
     @property
     def run_workdir(self) -> Path:
