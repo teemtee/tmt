@@ -117,7 +117,7 @@ def get_upstream_url(jira: JIRA, issue: Issue) -> Optional[str]:
     return None
 
 
-def find_sprint_id(jira: JIRA, sprint_name: str) -> Optional[int]:
+def find_sprint_id(jira: JIRA, sprint_name: str) -> int:
     """
     Find the sprint ID by name on the TMT board.
 
@@ -130,7 +130,8 @@ def find_sprint_id(jira: JIRA, sprint_name: str) -> Optional[int]:
         if sprint.name == sprint_name:
             return sprint.id
 
-    return None
+    click.echo(f"Sprint '{sprint_name}' not found.")
+    sys.exit(1)
 
 
 def find_jira_issue(
@@ -299,10 +300,6 @@ def main(sprint: str, dry: bool, yaml_file: IO[str]) -> None:
     jira = connect_to_jira()
 
     sprint_id = find_sprint_id(jira, sprint)
-    if not sprint_id:
-        click.echo(f"Error: sprint '{sprint}' not found.")
-        sys.exit(1)
-
     github_items = load_github_items(yaml_file)
     jira_items = fetch_jira_items(jira, sprint)
     sync_sprint(jira, sprint_id, jira_items, github_items, dry=dry)
