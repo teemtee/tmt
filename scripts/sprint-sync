@@ -230,6 +230,9 @@ def sync_sprint(
             )
         )
 
+    items_to_drop: list[str] = []
+    items_to_add: list[str] = []
+
     # Step 1: Check existing Jira items — keep or remove
     for jira_item in jira_items:
         url = get_upstream_url(jira, jira_item)
@@ -239,13 +242,10 @@ def sync_sprint(
             show_item(jira_item.key, "keep", jira_item.fields.summary, url)
         else:
             show_item(jira_item.key, "drop", jira_item.fields.summary, url)
-            if not dry:
-                jira.move_to_backlog([jira_item.key])
+            items_to_drop.append(jira_item.key)
 
-    # Step 2: Add missing GitHub items
+    # Step 2: Find missing GitHub items
     missing_urls = github_urls - matched_urls
-    if not missing_urls:
-        return
 
     for url in missing_urls:
         github_item = github_items_by_url[url]
@@ -253,10 +253,16 @@ def sync_sprint(
 
         if jira_item:
             show_item(jira_item.key, "add ", jira_item.fields.summary, url, duplicates)
-            if not dry:
-                jira.add_issues_to_sprint(sprint_id, [jira_item.key])
+            items_to_add.append(jira_item.key)
         else:
             show_item("???", "miss", github_item.title, url)
+
+    # Step 3: Apply changes
+    if not dry:
+        if items_to_drop:
+            jira.move_to_backlog(items_to_drop)
+        if items_to_add:
+            jira.add_issues_to_sprint(sprint_id, items_to_add)
 
 
 @click.command()
