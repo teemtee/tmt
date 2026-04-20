@@ -15,6 +15,7 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
+from tmt.package_managers._rpm import RpmVersion
 from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
@@ -208,6 +209,10 @@ class DnfEngine(PackageManagerEngine):
             )
         ).to_script()
 
+    def resolve_capabilities(self, *capabilities: str) -> ShellScript:
+        # Reuse the existing rpm --whatprovides script; output is one NEVRA per line,
+        return self._construct_presence_script(*[Package(c) for c in capabilities])
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -248,7 +253,6 @@ class Dnf(PackageManager[DnfEngine]):
     probe_priority = 50
 
     def list_packages(self, repository: Repository) -> list[Version]:
-        from tmt.package_managers._rpm import RpmVersion
 
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)

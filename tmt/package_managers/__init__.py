@@ -1,5 +1,6 @@
 import abc
 import configparser
+import contextlib
 import enum
 import re
 import shlex
@@ -399,6 +400,22 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def resolve_capabilities(self, *capabilities: str) -> ShellScript:
+        """
+        Resolve each capability to the NEVRA of the installed package providing it.
+
+        The script must emit one line per capability in the same order as the input.
+        Each line is either a valid NEVRA string for a found capability, or an error
+        message (e.g. ``no package provides <cap>``) for one that is not provided by
+        any installed package.
+
+        :param capabilities: Capabilities to resolve — package names, file paths, or
+            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
+        :returns: A shell script whose stdout contains one NEVRA line per capability.
+        :raises NotImplementedError: If the package manager does not support this query.
+        """
+        raise NotImplementedError
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -532,6 +549,35 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             package = parts[0]
             # Omitted origin field → unknown source repository.
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
+        return result
+
+    def resolve_capabilities(self, capabilities: Iterable[str]) -> 'dict[str, Optional[Version]]':
+        """
+        Map each capability to the :py:class:`Version` of the installed package providing it.
+
+        :param capabilities: Capabilities to resolve — package names, file paths, or
+            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
+        :returns: Mapping from each capability to its providing package :py:class:`Version`,
+            or ``None`` when no installed package provides it.
+        :raises NotImplementedError: If the package manager does not support this query.
+        """
+        from tmt.package_managers._rpm import RpmVersion
+
+        caps = list(capabilities)
+        if not caps:
+            return {}
+
+        script = self.engine.resolve_capabilities(*caps)
+        try:
+            output = self.guest.execute(script)
+            stdout = output.stdout
+        except tmt.utils.RunError as exc:
+            stdout = exc.stdout
+
+        result: dict[str, Optional[Version]] = dict.fromkeys(caps, None)
+        for cap, line in zip(caps, (stdout or '').splitlines()):
+            with contextlib.suppress(ValueError):
+                result[cap] = RpmVersion.from_nevra(line.strip())
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:
