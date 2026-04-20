@@ -72,6 +72,25 @@
         enabled: false
         when: distro == fedora-rawhide
 
+/enabled-by-adjust:
+    summary: Local plan disabled by adjust should not import remote plan
+    plan:
+        import:
+            url: https://github.com/teemtee/tmt
+            name: /plans/provision/connect
+    adjust:
+        enabled: true
+        when: distro == fedora-rawhide
+    enabled: false
+
+/disabled-internal:
+    summary: Unimportable plan should not raise errors when disabled
+    plan:
+        import:
+            url: https://secret.internal
+            name: /secret/internal/plan
+    enabled: false
+
 /disabled:
     summary: Imported plan will be disabled by local plan
     plan:

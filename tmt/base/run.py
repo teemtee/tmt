@@ -470,7 +470,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             else:
                 plan_names = [f"^{re.escape(plan_name)}$" for plan_name in self.data.plans]
 
-            self._plans = self.tree.plans(run=self, names=plan_names)
+            self._plans = self.tree.plans(run=self, names=plan_names, resolve_disabled=False)
 
         # Initialize steps only if not selected on the command line
         step_options = ['all', 'since', 'until', 'after', 'before', 'skip']
