@@ -172,7 +172,7 @@ def find_jira_issue(
         return pick_item(results)
 
     # Fall back to title search and verify via remote links
-    title = github_item.title.replace('"', '')
+    title = github_item.title.replace('\\', '\\\\').replace("'", "\\'").replace('"', '')
     query = f'project = "{JIRA_PROJECT}" AND summary ~ "{title}"'
     candidates = cast(list[Issue], jira.search_issues(query, maxResults=False))
 
