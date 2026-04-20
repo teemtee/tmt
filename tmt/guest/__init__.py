@@ -1829,14 +1829,15 @@ class Guest(
         )
 
     @functools.cached_property
-    def plan_environment_path(self) -> Path:
+    def plan_environment_path(self) -> Optional[Path]:
         """
         A path to the :ref:`plan environment file <step-variables>` file.
         """
 
-        parent = cast('Provision', self.parent)
+        if not isinstance(self.parent, tmt.steps.provision.Provision):
+            return None
 
-        path = parent.plan.data_directory / f'{PLAN_ENVIRONMENT_FILENAME}-{self.safe_name}'
+        path = self.parent.plan.data_directory / f'{PLAN_ENVIRONMENT_FILENAME}-{self.safe_name}'
         path.touch(exist_ok=True)
 
         self.debug(f"Create the environment file '{path}'.", level=2)
@@ -1849,7 +1850,11 @@ class Guest(
         Environment sourced from the :ref:`plan environment file <step-variables>`.
         """
 
-        if self.plan_environment_path.exists() and self.plan_environment_path.stat().st_size > 0:
+        if (
+            self.plan_environment_path
+            and self.plan_environment_path.exists()
+            and self.plan_environment_path.stat().st_size > 0
+        ):
             return tmt.utils.Environment.from_file(
                 filename=self.plan_environment_path.name,
                 root=self.plan_environment_path.parent,
@@ -2174,21 +2179,19 @@ class Guest(
         """
 
         if environment is None:
-            # narrow type
-            assert isinstance(self.parent, tmt.steps.Step)
-
             environment = tmt.utils.Environment()
 
-            environment.update(
-                self.environment,
-                self.parent.plan.environment,
-            )
+            environment.update(self.environment)
+
+            if isinstance(self.parent, tmt.steps.Step):
+                environment.update(self.parent.plan.environment)
 
             # TODO: this was owned by plan, but at wrong position, and it will
             # be owned by plan again once the dust of environment untangling
             # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
             # more.
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+            if self.plan_environment_path:
+                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
 
         else:
             # Create a copy of given environment - this prevents any
