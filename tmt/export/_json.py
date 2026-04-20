@@ -1,5 +1,3 @@
-import json
-
 import tmt.base.core
 import tmt.base.plan
 import tmt.export
@@ -12,4 +10,4 @@ import tmt.export
 class JSONExporter(tmt.export.TrivialExporter):
     @classmethod
     def _export(cls, data: tmt.export._RawExported) -> str:
-        return json.dumps(data)
+        return tmt.utils.to_json(data)

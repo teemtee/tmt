@@ -364,7 +364,15 @@ class Provision(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'guests.yaml', 'inventory.yaml'}
+        members = {
+            *super()._preserved_workdir_members,
+            'inventory.yaml',
+        }
+
+        if self.plan.my_run:
+            members = {*members, f'guests{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     @property
     def is_multihost(self) -> bool:
@@ -388,9 +396,12 @@ class Provision(tmt.steps.Step):
         """
 
         super().load()
+
+        assert self.plan.my_run is not None  # narrow type
+
         try:
-            raw_guest_data: dict[str, dict[str, Any]] = tmt.utils.yaml_to_dict(
-                self.read(Path('guests.yaml'))
+            raw_guest_data: dict[str, dict[str, Any]] = self.plan.my_run.read_state(
+                self.step_workdir / 'guests'
             )
 
             self._guest_data = {
@@ -407,12 +418,15 @@ class Provision(tmt.steps.Step):
         """
 
         super().save()
+
+        assert self.plan.my_run is not None  # narrow type
+
         try:
             raw_guest_data = {
                 guest.name: guest.save().to_serialized() for guest in self.ready_guests
             }
 
-            self.write(Path('guests.yaml'), tmt.utils.to_yaml(raw_guest_data))
+            self.plan.my_run.write_state(self.step_workdir / 'guests', raw_guest_data)
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
 

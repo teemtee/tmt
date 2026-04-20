@@ -598,7 +598,12 @@ class Step(
         A set of members of the step workdir that should not be removed during pruning.
         """
 
-        return {'step.yaml'}
+        members: set[str] = set()
+
+        if self.plan.my_run:
+            members = {*members, f'step{self.plan.my_run.state_format.suffix}'}
+
+        return members
 
     def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
         """
@@ -843,7 +848,9 @@ class Step(
         """
 
         try:
-            raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
+            assert self.plan.my_run is not None  # narrow type
+
+            raw_step_data: dict[Any, Any] = self.plan.my_run.read_state(self.step_workdir / 'step')
 
         except tmt.utils.GeneralError:
             self.debug('Step data not found.', level=2)
@@ -871,7 +878,9 @@ class Step(
             'status': self.status(),
             'data': [datum.to_serialized() for datum in self.data],
         }
-        self.write(Path('step.yaml'), tmt.utils.to_yaml(content))
+
+        assert self.plan.my_run is not None  # narrow type
+        self.plan.my_run.write_state(self.step_workdir / 'step', content)
 
     def _load_results(
         self,
@@ -882,8 +891,10 @@ class Step(
         Load results of this step from the workdir
         """
 
+        assert self.plan.my_run is not None  # narrow type
+
         try:
-            raw_results: list[Any] = tmt.utils.yaml_to_list(self.read(Path('results.yaml')))
+            raw_results: list[Any] = self.plan.my_run.read_state(self.step_workdir / 'results')
 
             return [result_class.from_serialized(raw_result) for raw_result in raw_results]
 
@@ -902,10 +913,12 @@ class Step(
         Save results of this step to the workdir
         """
 
+        assert self.plan.my_run is not None  # narrow type
+
         try:
             raw_results = [result.to_serialized() for result in results]
 
-            self.write(Path('results.yaml'), tmt.utils.to_yaml(raw_results))
+            self.plan.my_run.write_state(self.step_workdir / 'results', raw_results)
 
         except Exception as exc:
             raise GeneralError('Cannot save step results.') from exc
