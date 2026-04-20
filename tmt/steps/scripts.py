@@ -204,7 +204,7 @@ TMT_ETC_PROFILE_D = ScriptTemplate(
         )
     },
     # ignore[has-type]: mypy seems to not understand annotations here.
-    enabled=lambda guest: guest.facts.is_ostree is True,
+    enabled=lambda guest: guest.facts.is_ostree is True,  # type: ignore[has-type]
 )
 
 
