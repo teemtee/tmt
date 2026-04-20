@@ -23,7 +23,7 @@
     prepare+:
       - how: verify-installation
         verify:
-            centpkg: tmt-artifact-shared
+            /usr/bin/centpkg: tmt-artifact-shared
 
 /plan/failure:
     prepare+:
