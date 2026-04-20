@@ -3,8 +3,8 @@
 . ../../images.sh || exit 1
 
 function fetch_downloaded_packages () {
-    image="$1"
-    in_subdirectory="$2"
+    local image="$1"
+    local in_subdirectory="$2"
 
     if [ ! -e $package_cache/tree.rpm ]; then
         # Transform image mode qcow2 URL to a distro compatible container image for artifact download.
