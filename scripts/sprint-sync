@@ -134,40 +134,28 @@ def find_sprint_id(jira: JIRA, sprint_name: str) -> int:
     sys.exit(1)
 
 
-def find_jira_issue(
+def find_jira_issues(
     jira: JIRA,
     github_item: Item,
-) -> tuple[Optional[Issue], Optional[list[str]]]:
+) -> list[Issue]:
     """
-    Find a Jira issue that has a remote link matching the given GitHub item.
+    Find Jira issues that have a remote link matching the given GitHub item.
 
     First searches by remote link URL, then falls back to title search.
 
     :param jira: authenticated Jira client.
     :param github_item: the GitHub :py:class:`Item` to search for.
-    :returns: a tuple of the matching Jira issue (or ``None``) and
-        a list of duplicate keys (or ``None``).
+    :returns: a list of matching Jira issues sorted by key (lowest first).
     """
 
-    def pick_item(results: list[Issue]) -> tuple[Optional[Issue], Optional[list[str]]]:
-        """
-        Pick the oldest item, identify duplicates
-        """
-
-        if not results:
-            return None, None
-
-        duplicates = None
-        if len(results) > 1:
-            duplicates = [result.key for result in results]
-
-        return min(results, key=lambda result: int(result.key.split("-")[-1])), duplicates
+    def sort_by_key(results: list[Issue]) -> list[Issue]:
+        return sorted(results, key=lambda result: int(result.key.split("-")[-1]))
 
     # Search by remote link URL (works only if already indexed)
     query = f'project = "{JIRA_PROJECT}" AND remoteLinkUrl in ("{github_item.url}")'
     results = cast(list[Issue], jira.search_issues(query, maxResults=False))
     if results:
-        return pick_item(results)
+        return sort_by_key(results)
 
     # Fall back to title search and verify via remote links
     title = github_item.title.replace('\\', '\\\\').replace("'", "\\'").replace('"', '')
@@ -179,7 +167,7 @@ def find_jira_issue(
         for candidate in candidates
         if get_upstream_url(jira, candidate) == github_item.url
     ]
-    return pick_item(matched)
+    return sort_by_key(matched)
 
 
 def sync_sprint(
@@ -247,9 +235,11 @@ def sync_sprint(
 
     for url in missing_urls:
         github_item = github_items_by_url[url]
-        jira_item, duplicates = find_jira_issue(jira, github_item)
+        jira_issues = find_jira_issues(jira, github_item)
 
-        if jira_item:
+        if jira_issues:
+            jira_item = jira_issues[0]
+            duplicates = [issue.key for issue in jira_issues[1:]] or None
             show_item(jira_item.key, "add ", jira_item.fields.summary, url, duplicates)
             items_to_add.append(jira_item.key)
         else:
