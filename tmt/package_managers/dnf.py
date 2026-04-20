@@ -208,6 +208,11 @@ class DnfEngine(PackageManagerEngine):
             )
         ).to_script()
 
+    def resolve_capabilities(self, *capabilities: str) -> ShellScript:
+        # Reuse the existing rpm --whatprovides script; output is one NVRA per line,
+        # parseable by NEVRA_PATTERN in PackageManager.resolve_capabilities.
+        return self._construct_presence_script(*[Package(c) for c in capabilities])
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.

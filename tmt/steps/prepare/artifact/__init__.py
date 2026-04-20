@@ -356,6 +356,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
         # Build package → set of valid repo_ids, filtering to only required packages.
+        # TODO: Path-based or virtual-provide requirements (e.g. /usr/bin/createrepo,
+        # /usr/bin/make) in pkg_names will NOT match artifact.version.name (e.g. 'createrepo',
+        # 'make') because rpm --whatprovides cannot be used at this point — requirements are
+        # not yet installed when _inject_verify_phase runs (only artifact repos are set up).
+        # Consequently such artifacts are silently skipped from verification even when the
+        # providing package IS one of the provided artifacts.
+        #
+        # The verify plugin's Pass 1 (resolve_capabilities) handles path → name resolution
+        # correctly after installation, but only for entries that made it into pkgs_to_verify.
         pkgs_to_verify: dict[str, set[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:

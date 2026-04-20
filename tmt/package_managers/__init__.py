@@ -399,6 +399,22 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def resolve_capabilities(self, *capabilities: str) -> ShellScript:
+        """
+        Resolve each capability to the NVRA of the installed package providing it.
+
+        The script must emit one line per capability in the same order as the input.
+        Each line is either a valid NVRA string (``name-version-release.arch``) for a
+        found capability, or an error message (e.g. ``no package provides <cap>``) for
+        one that is not provided by any installed package.
+
+        :param capabilities: Capabilities to resolve — package names, file paths, or
+            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
+        :returns: A shell script whose stdout contains one NVRA line per capability.
+        :raises NotImplementedError: If the package manager does not support this query.
+        """
+        raise NotImplementedError
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -532,6 +548,38 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             package = parts[0]
             # Omitted origin field → unknown source repository.
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
+        return result
+
+    def resolve_capabilities(self, capabilities: Iterable[str]) -> 'dict[str, Optional[str]]':
+        """
+        Map each capability to the name of the installed package providing it.
+
+        :param capabilities: Capabilities to resolve — package names, file paths, or
+            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
+        :returns: Mapping from each capability to its providing package name, or ``None``
+            when no installed package provides it.
+        :raises NotImplementedError: If the package manager does not support this query.
+        """
+        from tmt.package_managers._rpm import NEVRA_PATTERN
+
+        caps = list(capabilities)
+        if not caps:
+            return {}
+
+        script = self.engine.resolve_capabilities(*caps)
+        try:
+            output = self.guest.execute(script)
+            stdout = output.stdout
+        except tmt.utils.RunError as exc:
+            stdout = exc.stdout
+
+        lines = (stdout or '').splitlines()
+        result: dict[str, Optional[str]] = {}
+        for cap, line in zip(caps, lines):
+            match = NEVRA_PATTERN.match(line.strip())
+            result[cap] = match.group('name') if match else None
+        for cap in caps[len(lines) :]:
+            result[cap] = None
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:
