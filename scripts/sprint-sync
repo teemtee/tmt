@@ -192,8 +192,7 @@ def sync_sprint(
     """
 
     github_items_by_url = {item.url: item for item in github_items}
-    github_urls = set(github_items_by_url.keys())
-    matched_urls: set[str] = set()
+    urls_to_process = set(github_items_by_url.keys())
 
     def show_item(
         key: str,
@@ -223,17 +222,15 @@ def sync_sprint(
     for jira_item in jira_items:
         url = get_upstream_url(jira, jira_item)
 
-        if url and url in github_urls:
-            matched_urls.add(url)
+        if url and url in urls_to_process:
+            urls_to_process.remove(url)
             show_item(jira_item.key, "keep", jira_item.fields.summary, url)
         else:
             show_item(jira_item.key, "drop", jira_item.fields.summary, url)
             items_to_drop.append(jira_item.key)
 
     # Step 2: Find missing GitHub items
-    missing_urls = github_urls - matched_urls
-
-    for url in missing_urls:
+    for url in urls_to_process:
         github_item = github_items_by_url[url]
         jira_issues = find_jira_issues(jira, github_item)
 
