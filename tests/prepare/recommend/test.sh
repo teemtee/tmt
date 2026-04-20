@@ -21,6 +21,7 @@ rlJournalStart
     debuginfo="plan --name debuginfo"
 
     # Verify against the default provision image (skip for image mode, no default image)
+    # TODO: re-enable once default images supported with image mode, see #4806"
     if [[ "$IMAGE_MODE" != "yes" ]]; then
         rlPhaseStartTest "Test the default image ($PROVISION_HOW)"
             rlRun -s "$tmt $basic"
