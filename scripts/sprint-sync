@@ -16,7 +16,7 @@ Sync a Jira sprint with GitHub sprint items.
 import os
 import re
 import sys
-from typing import Optional, cast
+from typing import IO, Optional, cast
 
 import click
 import jinja2
@@ -84,19 +84,15 @@ def fetch_jira_items(jira: JIRA, sprint_name: str) -> list[Issue]:
     return items
 
 
-def load_github_items(path: Optional[str] = None) -> list[Item]:
+def load_github_items(source: IO[str]) -> list[Item]:
     """
     Load GitHub sprint items in sprint-overview --yaml format.
 
-    :param path: path to the YAML file, or ``None`` to read from stdin.
+    :param source: a file-like object to read YAML from.
     :returns: a list of :py:class:`Item` instances.
     """
 
-    if path:
-        with open(path) as f:
-            data = YAML().load(f)
-    else:
-        data = YAML().load(sys.stdin)
+    data = YAML().load(source)
 
     if not data:
         return []
@@ -278,8 +274,8 @@ def sync_sprint(
     default=False,
     help="Only show what would be done without making any changes.",
 )
-@click.argument("yaml_file", required=False, default=None)
-def main(sprint: str, dry: bool, yaml_file: Optional[str]) -> None:
+@click.argument("yaml_file", default="-", type=click.File())
+def main(sprint: str, dry: bool, yaml_file: IO[str]) -> None:
     """
     Sync a Jira sprint with GitHub sprint items.
 
