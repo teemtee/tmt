@@ -564,7 +564,8 @@ class RecipeManager(Common):
 
     def load(self, run: 'Run', recipe_path: Path) -> Recipe:
         recipe = Recipe.from_spec(
-            cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(recipe_path))), self._logger
+            cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(recipe_path), yaml_type='rt')),
+            self._logger,
         )
         self._update_tree(run, recipe)
         # TODO: We should have a way to set which steps are enabled
