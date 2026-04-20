@@ -218,8 +218,8 @@ rlJournalStart
 
         # Limit these test cases to:
         # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
-        # * image mode - the code handling is different from ^ and we need to make sure these cases work well
-        if ([ "$PROVISION_HOW" = "container" ] && rlIsFedora 43 && is_fedora_43 "$image") || is_image_mode "$image"; then
+        # * image mode - the code handling is different in this case, so we need to make sure these cases work well
+        if [ "$PROVISION_HOW" = "container" ] || is_image_mode "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
