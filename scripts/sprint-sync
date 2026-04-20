@@ -90,7 +90,7 @@ def load_github_items(source: IO[str]) -> list[Item]:
     Load GitHub sprint items in sprint-overview --yaml format.
 
     :param source: a file-like object to read YAML from.
-    :returns: a list of :py:class:`Item` instances.
+    :returns: a list of sprint items
     """
 
     data = YAML().load(source)
@@ -198,7 +198,7 @@ def sync_sprint(
     :param jira: authenticated Jira client.
     :param sprint_id: ID of the sprint.
     :param jira_items: list of Jira issues currently in the sprint.
-    :param github_items: list of GitHub :py:class:`Item` instances.
+    :param github_items: list of GitHub project sprint items.
     :param dry: if ``True``, only show what would be done without
         making any changes.
     """
