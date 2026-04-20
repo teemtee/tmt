@@ -92,13 +92,24 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             color='green',
         )
 
-        # TODO: Use ``rpm -q --whatprovides`` to resolve the actual RPM packages
-        # providing the requested requirements before verification. This would
-        # cover cases where ``require`` contains virtual provides like
-        # ``/usr/bin/something``. Not implemented yet as it requires live guest
-        # queries and is incompatible with bootc mode.
+        # Resolve capabilities (paths, virtual provides) to actual package names via
+        # rpm --whatprovides. Unresolvable entries keep their original string so they
+        # surface as NOT_INSTALLED in the origin check below.
         try:
-            package_origins = guest.package_manager.get_package_origin(self.data.verify.keys())
+            capability_to_version = guest.package_manager.resolve_capabilities(
+                self.data.verify.keys()
+            )
+        except NotImplementedError:
+            capability_to_version = {}
+        verify = {
+            (
+                version.name if (version := capability_to_version.get(capability)) else capability
+            ): repos
+            for capability, repos in self.data.verify.items()
+        }
+
+        try:
+            package_origins = guest.package_manager.get_package_origin(verify.keys())
         except (NotImplementedError, tmt.utils.GeneralError) as err:
             error: Exception = (
                 tmt.utils.PrepareError(
@@ -120,7 +131,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         failed_packages: list[str] = []
-        for package, expected_repos in self.data.verify.items():
+        for package, expected_repos in verify.items():
             actual_origin = package_origins[package]
 
             if actual_origin in expected_repos:
