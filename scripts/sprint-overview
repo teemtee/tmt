@@ -24,8 +24,9 @@ from typing import Any, Optional
 import click
 import jinja2
 import requests
-from common import Item
 from ruamel.yaml import YAML
+
+from common import Item  # isort: skip
 
 # https://docs.github.com/en/rest/about-the-rest-api/breaking-changes
 GITHUB_API_URL = "https://api.github.com"

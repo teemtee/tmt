@@ -20,10 +20,11 @@ from typing import IO, Optional, cast
 
 import click
 import jinja2
-from common import Item
 from jira import JIRA
 from jira.resources import Issue
 from ruamel.yaml import YAML
+
+from common import Item  # isort: skip
 
 ITEM_TEMPLATE = jinja2.Template(
     source="""\
