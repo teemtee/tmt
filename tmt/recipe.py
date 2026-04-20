@@ -368,7 +368,7 @@ class _RecipeExecuteStep(_RecipeStep):
         return _RecipeExecuteStep(
             enabled=enabled,
             phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
-            results_path=(step.step_workdir / 'results.yaml').resolve(),
+            results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
         )
 
     def to_fmf_spec(self) -> list[_RawStepData]:
