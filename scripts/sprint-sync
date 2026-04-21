@@ -272,10 +272,14 @@ def sync_sprint(
 @click.argument("yaml_file", default="-", type=click.File())
 def main(sprint: str, dry: bool, yaml_file: IO[str]) -> None:
     """
-    Sync a Jira sprint with GitHub sprint items.
+    Sync a Jira sprint items with GitHub sprint items.
 
     Reads GitHub sprint items in YAML format (from sprint-overview --yaml)
-    from YAML_FILE or stdin. Example usage:
+    from YAML_FILE or stdin and synchronizes them with the Jira sprint.
+    Removed items are dropped, new items are added, no status changes
+    are performed.
+
+    Example usage:
 
     \b
         ./sprint-overview --sprint 'Sprint 11' --yaml | ./sprint-sync --sprint 'Sprint 11'
