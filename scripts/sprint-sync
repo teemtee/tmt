@@ -292,7 +292,7 @@ def main(sprint: str, dry: bool, yaml_file: IO[str]) -> None:
         JIRA_TOKEN .... Personal access token
     """
 
-    click.echo(f"\nSyncing sprint: {sprint}{' (dry mode)' if dry else ''}")
+    click.echo(f"Syncing sprint: {sprint}{' (dry mode)' if dry else ''}")
 
     # Sprint names in Jira are prefixed with 'TMT'
     sprint_name = f"TMT {sprint}"
