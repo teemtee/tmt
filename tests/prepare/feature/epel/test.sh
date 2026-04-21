@@ -11,10 +11,14 @@ rlJournalStart
             build_container_image "centos/stream9/upstream\:latest"
             build_container_image "ubi/8/upstream\:latest"
             rlRun "IMAGES='$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest ubi9'"
-        elif [ "$PROVISION_HOW" = "virtual" ] && [ "$IMAGE_MODE" = "yes" ]; then
-            rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
+        elif [ "$PROVISION_HOW" = "virtual" ]; then
+            if [ "$IMAGE_MODE" = "yes" ]; then
+                rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
+            else
+                rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
+            fi
         else
-            rlDie "Test supported only on containers or VMs in image mode"
+            rlDie "Test supported only on containers or VMs"
         fi
 
         rlRun "pushd data"

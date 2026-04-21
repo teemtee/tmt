@@ -61,7 +61,7 @@ adjust+:
     when: trigger == commit
 
   - discover+:
-        filter: 'tag:image-mode'
+        filter: 'tag:provision-virtual & tag:image-mode'
     environment+:
         IMAGE_MODE: "yes"
     when: image_mode == yes

@@ -3,4 +3,5 @@ description: Make sure enable/disable CRB works.
 tag+:
   - provision-container
   - provision-only
+  - provision-virtual
   - image-mode
