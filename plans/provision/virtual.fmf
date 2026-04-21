@@ -71,7 +71,7 @@ adjust+:
         test: "^/tests/provision"
     adjust+:
       - enabled: false
-        when: image_mode != yes
+        when: image_mode == yes
 
 /prepare:
     discover+:
@@ -88,18 +88,18 @@ adjust+:
         exclude: "^/tests/execute/upgrade"
     adjust+:
       - enabled: false
-        when: image_mode != yes
+        when: image_mode == yes
 
 /upgrade:
     discover+:
         test: "^/tests/execute/upgrade"
     adjust+:
       - enabled: false
-        when: image_mode != yes
+        when: image_mode == yes
 
 /the-rest:
     discover+:
         test: "^/tests/(?!provision|prepare|execute)"
     adjust+:
       - enabled: false
-        when: image_mode != yes
+        when: image_mode == yes
