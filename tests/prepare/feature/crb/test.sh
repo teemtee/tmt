@@ -3,7 +3,8 @@
 . ../../../images.sh || exit 1
 
 CONTAINER_IMAGES="$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
-$TEST_IMAGE_PREFIX/ubi/8/upstream:latest ubi9"
+$TEST_IMAGE_PREFIX/ubi/8/upstream:latest
+ubi9"
 
 rlJournalStart "CRB Feature Test"
     rlPhaseStartSetup

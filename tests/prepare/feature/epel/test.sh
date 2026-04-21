@@ -2,6 +2,10 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../../images.sh || exit 1
 
+CONTAINER_IMAGES="$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
+$TEST_IMAGE_PREFIX/ubi/8/upstream:latest
+ubi9"
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
@@ -10,7 +14,7 @@ rlJournalStart
         if [ "$PROVISION_HOW" = "container" ]; then
             build_container_image "centos/stream9/upstream\:latest"
             build_container_image "ubi/8/upstream\:latest"
-            rlRun "IMAGES='$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest ubi9'"
+            rlRun "IMAGES='$CONTAINER_IMAGES'"
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             if [ "$IMAGE_MODE" = "yes" ]; then
                 rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
@@ -58,7 +62,6 @@ rlJournalStart
     # rlPhaseStartTest "Enable EPEL on $image"
     #     rlRun -s "tmt -vvv run -a plan --name '/profile' provision --how $PROVISION_HOW --image fedora"
     # rlPhaseEnd
-
 
     rlPhaseStartCleanup
         rlRun "popd"
