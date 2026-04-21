@@ -2,6 +2,4 @@ provision:
     how: container
 execute:
     how: tmt
-    script: |
-      mkdir -p $(basename $FIRST) $(basename $SECOND)
-      test -e $FIRST && test -e $SECOND
+    script: test -e $FIRST && test -e $SECOND
