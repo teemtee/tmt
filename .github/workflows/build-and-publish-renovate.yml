@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - containers/Containerfile.renovate
+    branches: [main]
   workflow_dispatch:
     inputs:
       ref:
