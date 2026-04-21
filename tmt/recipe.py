@@ -606,12 +606,12 @@ class RecipeManager(Common):
     @staticmethod
     def _update_tree(run: 'Run', recipe: Recipe) -> None:
         """
-        Create a new fmf tree from the recipe's plan specifications.
+        Create a new fmf tree from the recipe's run and plan specifications.
         """
         from tmt.base.core import Tree
 
         fmf_tree = fmf.Tree({plan.name: plan.to_fmf_spec() for plan in recipe.plans})
-        root = str(Path.cwd())
+        root = recipe.run.root or str(Path.cwd())
         fmf_tree.root = root
         for node in fmf_tree.climb():  # pyright: ignore[reportUnknownVariableType]
             if isinstance(node, fmf.Tree):
