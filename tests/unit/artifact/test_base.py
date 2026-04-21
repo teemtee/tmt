@@ -18,14 +18,12 @@ class MockProvider(ArtifactProvider):
 
     @property
     def artifacts(self):
-        return [
-            ArtifactInfo(
-                version=Version(name="mock", version="1.0", release="1", arch="x86_64"),
-                location="http://example.com/mock-1.0-1.x86_64.rpm",
-                provider=self,
-                repo_id="mock-repo",
-            )
-        ]
+        yield ArtifactInfo(
+            version=Version(name="mock", version="1.0", release="1", arch="x86_64"),
+            location="http://example.com/mock-1.0-1.x86_64.rpm",
+            provider=self,
+            repo_id="mock-repo",
+        )
 
     def _download_artifact(self, artifact, guest, destination):
         destination.write_text("ok")

@@ -1,7 +1,5 @@
 import glob
 import urllib.parse
-from collections.abc import Sequence
-from functools import cached_property
 from typing import ClassVar
 
 import tmt.utils
@@ -55,6 +53,8 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
         parsed = urllib.parse.urlparse(source)
         self._source = source
         self._is_url = parsed.scheme in ("http", "https")
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
@@ -70,8 +70,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             repo_id=self.parent.data.repository_name,
         )
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def _populate_artifacts(self) -> None:
         artifacts: list[ArtifactInfo] = []
         seen_ids: set[str] = set()
 
@@ -101,7 +100,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
         if not artifacts:
             self.logger.warning(f"No artifacts found for source: '{self._source}'.")
 
-        return artifacts
+        self._artifacts.extend(artifacts)
 
     def _download_artifact(
         self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
