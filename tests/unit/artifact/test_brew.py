@@ -22,7 +22,7 @@ def test_brew_valid_build(mock_brew, mock_call_api, artifact_provider):
     provider = artifact_provider(f"brew.build:{MOCK_BUILD_ID_KOJI_BREW}")
     assert isinstance(provider, BrewBuild)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.artifacts) == 21
+    assert len(list(provider.artifacts)) == 21
 
 
 def test_brew_valid_draft_build(mock_brew, mock_call_api, artifact_provider):
@@ -44,7 +44,7 @@ def test_brew_valid_draft_build(mock_brew, mock_call_api, artifact_provider):
 
     provider = artifact_provider(f"brew.build:{draft_id}")
     assert isinstance(provider, BrewBuild)
-    assert len(provider.artifacts) == 2
+    assert len(list(provider.artifacts)) == 2
     assert any(f"draft_{draft_id}" in a.location for a in provider.artifacts)
 
 
@@ -59,4 +59,4 @@ def test_brew_valid_task_id_scratch_build(mock_brew, mock_call_api, artifact_pro
     assert len(tasks) == 2
     assert task_id in tasks
     assert provider.build_id is None
-    assert len(provider.artifacts) == 2
+    assert len(list(provider.artifacts)) == 2
