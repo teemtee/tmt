@@ -2,7 +2,7 @@ import datetime
 import os
 import re
 from re import Pattern
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Optional, Union, overload
 
 import requests
 import urllib3
@@ -14,9 +14,8 @@ import tmt.utils
 import tmt.utils.templates
 from tmt._compat.pathlib import Path
 from tmt.base.core import Test
-from tmt.container import container, field, option_to_key
+from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
-from tmt.steps import _RawStepData
 from tmt.utils import (
     ActionType,
     catch_warnings_safe,
@@ -380,33 +379,6 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
     test_uuids: dict[int, str] = field(default_factory=dict)
-
-    def to_spec(self) -> _RawStepData:
-        spec = super().to_spec()
-        spec['log-size-limit'] = str(self.log_size_limit)  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-        spec['traceback-size-limit'] = str(self.traceback_size_limit)  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-        spec['upload-log-pattern'] = [pattern.pattern for pattern in self.upload_log_pattern]  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-        return spec
-
-    def to_minimal_spec(self) -> _RawStepData:
-        spec = {**super().to_minimal_spec()}
-
-        field_map: dict[str, Callable[[Any], Any]] = {
-            'log-size-limit': lambda limit: str(limit),
-            'traceback-size-limit': lambda limit: str(limit),
-            'upload-log-pattern': lambda patterns: [pattern.pattern for pattern in patterns],
-        }
-        for key, transform in field_map.items():
-            value = getattr(self, option_to_key(key), None)
-            if value is not None:
-                value = transform(value)
-            # Do not include empty values
-            if value in (None, [], {}):
-                spec.pop(key, None)
-            else:
-                spec[key] = value
-
-        return cast(_RawStepData, spec)
 
 
 @tmt.steps.provides_method("reportportal")
