@@ -15,6 +15,18 @@ Machines
    runner
       The machine that is running the ``tmt`` command.
 
+Concepts
+--------
+
+.. glossary::
+
+   Image Mode
+      An approach to deploying and managing operating systems using
+      ``bootc`` container images. In Image Mode, the OS is delivered as
+      a container image managed by ``bootc``, rather than being installed
+      and updated using traditional package managers. See :ref:`image-mode`
+      for details on how ``tmt`` handles testing on Image Mode systems.
+
 Directories
 -----------
 

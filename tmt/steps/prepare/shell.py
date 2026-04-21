@@ -100,6 +100,18 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             url: https://github.com/teemtee/tmt.git
             ref: main
             script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY && make docs
+
+    .. note::
+
+        On `Image Mode`__ (bootc) guests, shell scripts are collected
+        as ``RUN`` directives in a ``Containerfile`` and executed during
+        ``podman build``, **not** on the running guest. This means there
+        is no access to running services (systemd, dbus) or live system
+        state. If your scripts need to interact with running services,
+        use the :ref:`/plugins/prepare/ansible` plugin instead.
+        See :ref:`image-mode` for more details.
+
+        __ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
     """
 
     _data_class = PrepareShellData
