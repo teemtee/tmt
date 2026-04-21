@@ -46,7 +46,8 @@ rlJournalStart
             rlRun "SECONDARY_IMAGES=''"
 
         elif [ "$PROVISION_HOW" = "container" ]; then
-            rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
+            # rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
+            rlRun "IMAGES='localhost/tmt/container/test/alpine:latest'"
             rlRun "SECONDARY_IMAGES='$TEST_CONTAINER_IMAGES_SECONDARY'"
 
             build_container_images
@@ -219,7 +220,8 @@ rlJournalStart
         # Limit these test cases to:
         # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
         # * image mode - the code handling is different in this case, so we need to make sure these cases work well
-        if [ "$PROVISION_HOW" = "container" ] || is_image_mode "$image"; then
+        # * fedora - the tests use rpms
+        if ([ "$PROVISION_HOW" = "container" ] || is_image_mode "$image") && is_fedora "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
