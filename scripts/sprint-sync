@@ -16,7 +16,7 @@ Sync a Jira sprint with GitHub sprint items.
 import os
 import re
 import sys
-from typing import IO, Optional, cast
+from typing import IO, Optional
 
 import click
 import jinja2
@@ -79,7 +79,8 @@ def fetch_jira_items(jira: JIRA, sprint_name: str) -> list[Issue]:
     """
 
     query = f'sprint = "{sprint_name}" ORDER BY key ASC'
-    items = cast(list[Issue], jira.search_issues(query, maxResults=False))
+    items = jira.search_issues(query, maxResults=False, json_result=False)
+    assert isinstance(items, list)
     click.echo(f"Fetched {len(items)} items.\n")
 
     return items
@@ -153,14 +154,16 @@ def find_jira_issues(
 
     # Search by remote link URL (works only if already indexed)
     query = f'project = "{JIRA_PROJECT}" AND remoteLinkUrl in ("{github_item.url}")'
-    results = cast(list[Issue], jira.search_issues(query, maxResults=False))
+    results = jira.search_issues(query, maxResults=False, json_result=False)
+    assert isinstance(results, list)
     if results:
         return sort_by_key(results)
 
     # Fall back to title search and verify via remote links
     title = github_item.title.replace('\\', '\\\\').replace("'", "\\'").replace('"', '')
     query = f'project = "{JIRA_PROJECT}" AND summary ~ "{title}"'
-    candidates = cast(list[Issue], jira.search_issues(query, maxResults=False))
+    candidates = jira.search_issues(query, maxResults=False, json_result=False)
+    assert isinstance(candidates, list)
 
     matched = [
         candidate
