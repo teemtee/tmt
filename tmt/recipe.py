@@ -564,7 +564,7 @@ class RecipeManager(Common):
 
     def load(self, run: 'Run', recipe_path: Path) -> Recipe:
         recipe = Recipe.from_spec(
-            cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(recipe_path), yaml_type='rt')),
+            cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(recipe_path))),
             self._logger,
         )
         self._update_tree(run, recipe)
@@ -585,9 +585,7 @@ class RecipeManager(Common):
             ),
             plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
         )
-        self.write(
-            run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_spec(), yaml_type='rt')
-        )
+        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_spec()))
 
     def tests(self, recipe: Recipe, plan_name: str) -> list[TestOrigin]:
         """
