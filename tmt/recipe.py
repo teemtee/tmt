@@ -575,6 +575,7 @@ class RecipeManager(Common):
         return recipe
 
     def save(self, run: 'Run') -> None:
+        return
         recipe = Recipe(
             run=_RecipeRun(
                 root=str(run.tree.root) if run.tree and run.tree.root else None,
