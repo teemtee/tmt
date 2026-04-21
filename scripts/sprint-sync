@@ -154,7 +154,8 @@ def find_jira_issues(
     def sort_by_key(results: list[Issue]) -> list[Issue]:
         return sorted(results, key=lambda result: int(result.key.split("-")[-1]))
 
-    # Search by remote link URL (works only if already indexed)
+    # Search by remote link URL (this works only if already indexed, and
+    # rebuilding the index can take several days when restarted again)
     query = f'project = "{JIRA_PROJECT}" AND remoteLinkUrl in ("{github_item.url}")'
     results = jira.search_issues(query, maxResults=False, json_result=False)
     assert isinstance(results, list)
