@@ -39,6 +39,7 @@ DECISION_COLORS = {
     "keep": "blue",
     "add ": "green",
     "drop": "red",
+    "lost": "red",
     "miss": "yellow",
 }
 
@@ -225,7 +226,9 @@ def sync_sprint(
     for jira_item in jira_items:
         url = get_upstream_url(jira, jira_item)
 
-        if url and url in urls_to_process:
+        if not url:
+            show_item(jira_item.key, "lost", jira_item.fields.summary, "Upstream issue not found.")
+        elif url in urls_to_process:
             urls_to_process.remove(url)
             show_item(jira_item.key, "keep", jira_item.fields.summary, url)
         else:
