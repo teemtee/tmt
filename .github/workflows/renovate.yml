@@ -17,6 +17,7 @@ permissions: {}
 
 jobs:
   renovate:
+    environment: renovate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
