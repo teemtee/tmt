@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterable
 from typing import (
     Optional,
 )
@@ -81,6 +82,9 @@ class MockEngine(PackageManagerEngine):
 
     def refresh_metadata(self) -> ShellScript:
         return self._prepare_mock_command_script('makecache --refresh')
+
+    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
+        raise NotImplementedError
 
 
 class _MockPackageManager(PackageManager[MockEngine]):

@@ -209,9 +209,18 @@ class DnfEngine(PackageManagerEngine):
             )
         ).to_script()
 
-    def resolve_capabilities(self, *capabilities: str) -> ShellScript:
-        # Reuse the existing rpm --whatprovides script; output is one NEVRA per line,
-        return self._construct_presence_script(*[Package(c) for c in capabilities])
+    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
+        qf = r'%{name}-%{epoch}:%{version}-%{release}.%{arch}\n'
+        cmd = (
+            self.command + Command('repoquery', '--queryformat', qf, '--whatprovides')
+        ).to_script()
+        provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
+        return ShellScript(f"""
+        for _provide in {provides_str}; do
+            {cmd} "$_provide" 2>/dev/null
+            echo ---
+        done
+        """)
 
     def create_repository(self, directory: Path) -> ShellScript:
         """
@@ -379,6 +388,9 @@ class Dnf5(Dnf):
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+
+    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
+        raise NotImplementedError
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
         # Real yum 3.x (not a dnf symlink) ships repoquery as a separate
