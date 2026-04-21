@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterable
 from typing import Optional
 
 from tmt.package_managers import (
@@ -112,6 +113,9 @@ class RpmOstreeEngine(PackageManagerEngine):
         options: Optional[Options] = None,
     ) -> ShellScript:
         raise GeneralError("rpm-ostree does not support debuginfo packages.")
+
+    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
+        raise NotImplementedError
 
 
 @provides_package_manager('rpm-ostree')

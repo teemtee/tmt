@@ -1,6 +1,5 @@
 import abc
 import configparser
-import contextlib
 import enum
 import re
 import shlex
@@ -275,6 +274,13 @@ def find_package_manager(
     return plugin
 
 
+def is_file_or_virtual_provide(requirement: str) -> bool:
+    """
+    Return ``True`` if *requirement* is a file path or virtual provide rather than a plain package.
+    """
+    return requirement.startswith('/') or '(' in requirement
+
+
 def escape_installables(*installables: Installable) -> Iterator[str]:
     for installable in installables:
         yield shlex.quote(str(installable))
@@ -308,6 +314,10 @@ class Options:
 class PackageManagerEngine(tmt.utils.Common):
     command: Command
     options: Command
+
+    #: Sentinel line emitted by :py:meth:`resolve_provides` shell scripts to
+    #: separate NEVRA groups for consecutive provides.
+    RESOLVE_PROVIDES_SENTINEL: ClassVar[str] = '---'
 
     def __init__(self, *, guest: 'Guest', logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger)
@@ -400,18 +410,20 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def resolve_capabilities(self, *capabilities: str) -> ShellScript:
+    @abc.abstractmethod
+    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
         """
-        Resolve each capability to the NEVRA of the installed package providing it.
+        Resolve each provide to the NEVRAs of packages that provide it.
 
-        The script must emit one line per capability in the same order as the input.
-        Each line is either a valid NEVRA string for a found capability, or an error
-        message (e.g. ``no package provides <cap>``) for one that is not provided by
-        any installed package.
+        The script must emit zero or more NEVRA lines per provide followed by a
+        :py:attr:`PackageManagerEngine.RESOLVE_PROVIDES_SENTINEL` line, one group per input provide
+        in the same order as the input.  An empty group (sentinel only) means
+        nothing provides that capability.
 
-        :param capabilities: Capabilities to resolve — package names, file paths, or
+        :param provides: Provides to resolve, e.g. package names, file paths, or
             virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
-        :returns: A shell script whose stdout contains one NEVRA line per capability.
+        :returns: A shell script that emits NEVRA lines grouped by provide, each
+            group terminated by :py:attr:`PackageManagerEngine.RESOLVE_PROVIDES_SENTINEL`.
         :raises NotImplementedError: If the package manager does not support this query.
         """
         raise NotImplementedError
@@ -551,33 +563,43 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
         return result
 
-    def resolve_capabilities(self, capabilities: Iterable[str]) -> 'dict[str, Optional[Version]]':
+    def resolve_provides(self, provides: Iterable[str]) -> dict[str, set[Version]]:
         """
-        Map each capability to the :py:class:`Version` of the installed package providing it.
+        Map each provide to the :py:class:`Version` objects of packages that provide it.
 
-        :param capabilities: Capabilities to resolve — package names, file paths, or
+        :param provides: Provides to resolve, e.g. package names, file paths, or
             virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
-        :returns: Mapping from each capability to its providing package :py:class:`Version`,
-            or ``None`` when no installed package provides it.
-        :raises NotImplementedError: If the package manager does not support this query.
+        :returns: Mapping from each provide to a set of :py:class:`Version` objects.
+            An empty set means nothing provides that capability.  Returns an
+            empty mapping when ``provides`` is empty.
+        :raises NotImplementedError: if the package manager does not support this query.
         """
         from tmt.package_managers._rpm import RpmVersion
 
-        caps = list(capabilities)
-        if not caps:
-            return {}
+        provides_list = list(provides)
+        result: dict[str, set[Version]] = {p: set() for p in provides_list}
+        if not provides_list:
+            return result
 
-        script = self.engine.resolve_capabilities(*caps)
-        try:
-            output = self.guest.execute(script)
-            stdout = output.stdout
-        except tmt.utils.RunError as exc:
-            stdout = exc.stdout
+        script = self.engine.resolve_provides(iter(provides_list))
+        stdout = self.guest.execute(script).stdout or ''
 
-        result: dict[str, Optional[Version]] = dict.fromkeys(caps, None)
-        for cap, line in zip(caps, (stdout or '').splitlines()):
-            with contextlib.suppress(ValueError):
-                result[cap] = RpmVersion.from_nevra(line.strip())
+        groups: list[list[str]] = []
+        current: list[str] = []
+        for line in stdout.splitlines():
+            line = line.strip()
+            if line == PackageManagerEngine.RESOLVE_PROVIDES_SENTINEL:
+                groups.append(current)
+                current = []
+            elif line:
+                current.append(line)
+
+        for provide, nevras in zip(provides_list, groups):
+            for nevra in nevras:
+                try:
+                    result[provide].add(RpmVersion.from_nevra(nevra))
+                except ValueError:
+                    self.debug(f"Could not parse NEVRA for '{provide}': {nevra}")
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:
