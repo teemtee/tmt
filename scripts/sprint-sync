@@ -16,7 +16,7 @@ Sync a Jira sprint with GitHub sprint items.
 import os
 import re
 import sys
-from typing import IO, Optional
+from typing import IO, Any, Optional, cast
 
 import click
 import jinja2
@@ -97,10 +97,11 @@ def load_github_items(source: IO[str]) -> list[Item]:
 
     data = YAML().load(source)
 
-    if not data:
-        return []
+    if not isinstance(data, list):
+        click.echo(f"Invalid input data:\n{data}")
+        sys.exit(1)
 
-    return [Item(**item) for item in data]
+    return [Item(**item) for item in cast(list[dict[str, Any]], data)]
 
 
 def get_upstream_url(jira: JIRA, issue: Issue) -> Optional[str]:

@@ -235,14 +235,14 @@ def main(sprint: str, output_yaml: bool) -> None:
     """
     items = fetch_sprint_items(sprint)
 
-    if not items:
-        click.echo(f"No items found in sprint '{sprint}'.")
-        return
-
     if output_yaml:
         YAML().dump([dataclasses.asdict(item) for item in items], sys.stdout)
-    else:
+        return
+
+    if items:
         display_items(sprint, items)
+    else:
+        click.echo(f"No items found in sprint '{sprint}'.", err=True)
 
 
 if __name__ == "__main__":
