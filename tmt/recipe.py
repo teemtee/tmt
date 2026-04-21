@@ -611,11 +611,10 @@ class RecipeManager(Common):
         from tmt.base.core import Tree
 
         fmf_tree = fmf.Tree({plan.name: plan.to_fmf_spec() for plan in recipe.plans})
-        root = recipe.run.root or str(Path.cwd())
-        fmf_tree.root = root
+        fmf_tree.root = recipe.run.root
         for node in fmf_tree.climb():  # pyright: ignore[reportUnknownVariableType]
             if isinstance(node, fmf.Tree):
-                node.root = root
+                node.root = recipe.run.root
         run._tree = Tree(logger=run._logger, tree=fmf_tree)
 
     def _update_cli_context(self, recipe: Recipe) -> None:
