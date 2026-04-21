@@ -46,8 +46,7 @@ rlJournalStart
             rlRun "SECONDARY_IMAGES=''"
 
         elif [ "$PROVISION_HOW" = "container" ]; then
-            # rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
-            rlRun "IMAGES='localhost/tmt/container/test/alpine:latest'"
+            rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
             rlRun "SECONDARY_IMAGES='$TEST_CONTAINER_IMAGES_SECONDARY'"
 
             build_container_images
