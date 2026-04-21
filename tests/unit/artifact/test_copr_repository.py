@@ -74,10 +74,11 @@ def test_enumerate_artifacts(
     ):
         provider.fetch_contents(mock_guest, tmppath / "artifacts")
 
-    provider.enumerate_artifacts(mock_guest)
+    provider.enumerate_artifacts(mock_guest, mock_repo)
 
-    assert len(provider.artifacts) == 2
-    assert provider.artifacts[0].version.name == 'tmt'
-    assert provider.artifacts[0].version.version == '1.69.0'
-    assert provider.artifacts[1].version.name == 'tmt-all'
-    assert provider.artifacts[1].version.epoch == 0
+    artifacts = list(provider.artifacts)
+    assert len(artifacts) == 2
+    assert artifacts[0].version.name == 'tmt'
+    assert artifacts[0].version.version == '1.69.0'
+    assert artifacts[1].version.name == 'tmt-all'
+    assert artifacts[1].version.epoch == 0

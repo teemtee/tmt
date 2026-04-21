@@ -247,16 +247,6 @@ def test_id_extraction(artifact_provider):
     assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
 
 
-def test_artifacts_before_fetch(artifact_provider):
-    """Test that repository provider artifacts returns empty list"""
-
-    provider = artifact_provider("repository-file:https://example.com/test.repo")
-
-    # Repository providers don't enumerate individual artifacts
-    # They provide repositories that the package manager uses
-    assert provider.artifacts == []
-
-
 def test_fetch_contents(mock_guest_and_pm, artifact_provider, tmppath):
     """Test that fetch_contents is a no-op for repository providers"""
 
@@ -274,7 +264,7 @@ def test_fetch_contents(mock_guest_and_pm, artifact_provider, tmppath):
     assert result == []
 
     # Verify artifacts property returns empty list (no individual artifact files)
-    artifacts = provider.artifacts
+    artifacts = list(provider.artifacts)
     assert len(artifacts) == 0
 
 
@@ -299,7 +289,7 @@ def test_contribute_to_shared_repository(mock_guest_and_pm, artifact_provider, t
     mock_package_manager.install_repository.assert_not_called()
 
     # Verify artifacts returns empty list (no individual files)
-    assert provider.artifacts == []
+    assert list(provider.artifacts) == []
 
 
 def test_get_repositories(mock_guest_and_pm, artifact_provider, tmppath):
