@@ -11,7 +11,7 @@ def test_copr_valid_build_non_pulp(artifact_provider):
     provider._session = mock_copr_build_api_responses(provider._session)
     assert isinstance(provider, CoprBuildArtifactProvider)
     assert provider.build_id == MOCK_BUILD_ID_COPR
-    assert len(provider.artifacts) == 14
+    assert len(list(provider.artifacts)) == 14
     assert not provider.is_pulp
 
     for artifact in provider.artifacts:
@@ -24,7 +24,7 @@ def test_copr_pulp_build(artifact_provider, monkeypatch):
 
     monkeypatch.setattr(provider, "_fetch_results_json", lambda: MOCK_RPMS_PULP)
 
-    artifacts = provider.artifacts
+    artifacts = list(provider.artifacts)
     assert provider.is_pulp
     assert len(artifacts) == len(MOCK_RPMS_PULP)
 
