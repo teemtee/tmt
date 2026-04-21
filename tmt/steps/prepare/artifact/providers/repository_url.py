@@ -2,9 +2,6 @@
 Artifact provider for creating DNF repositories from baseurl.
 """
 
-from re import Pattern
-from typing import Optional
-
 import tmt.utils
 from tmt.container import container, simple_field
 from tmt.guest import Guest
@@ -65,7 +62,6 @@ class RepositoryUrlProvider(ArtifactProvider):
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[tmt.utils.Path]:
         # Fetches and initializes the repository from the baseurl.
         # Repository provider does not download individual artifacts. Instead, it creates

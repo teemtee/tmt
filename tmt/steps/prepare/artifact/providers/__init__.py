@@ -6,7 +6,6 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from functools import cached_property
-from re import Pattern
 from shlex import quote
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -162,7 +161,6 @@ class ArtifactProvider(ABC):
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[tmt.utils.Path]:
         """
         Fetch all artifacts to the specified destination.
@@ -171,8 +169,6 @@ class ArtifactProvider(ABC):
             downloaded.
         :param download_path: path into which the artifact should be
             downloaded.
-        :param exclude_patterns: if set, artifacts whose names match any
-            of the given regular expressions would not be downloaded.
         :returns: a list of paths to the downloaded artifacts.
         :raises GeneralError: Unexpected errors outside the download process.
         :note: Errors during individual artifact downloads are
@@ -180,8 +176,6 @@ class ArtifactProvider(ABC):
         """
 
         self.logger.info(f"Downloading artifacts to '{download_path!s}'.")
-
-        exclude_patterns = exclude_patterns or []
 
         # Ensure download directory exists on guest (create only if missing)
         guest.execute(
@@ -194,7 +188,9 @@ class ArtifactProvider(ABC):
 
         downloaded_paths: list[tmt.utils.Path] = []
 
-        for artifact in self._filter_artifacts(exclude_patterns):
+        # FIXME: This is not the correct usage of the artifacts, it mixes both artifacts to be
+        #  downloaded and external ones
+        for artifact in self.artifacts:
             local_path = download_path / artifact.filename
             self.logger.debug(f"Downloading '{artifact}' to '{local_path}'.")
 
@@ -219,19 +215,6 @@ class ArtifactProvider(ABC):
 
         self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
-
-    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfo]:
-        """
-        Filter artifacts based on exclude patterns.
-
-        :param exclude_patterns: artifact whose name matches any of
-            these patterns would be skipped.
-        :yields: artifacts that satisfy the filtering.
-        """
-
-        for artifact in self.artifacts:
-            if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
-                yield artifact
 
     def get_repositories(self) -> list['Repository']:
         """
@@ -290,7 +273,6 @@ class ArtifactProvider(ABC):
         guest: Guest,
         source_path: Path,
         shared_repo_dir: Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> None:
         """
         Contribute artifacts to the shared repository.
@@ -303,8 +285,6 @@ class ArtifactProvider(ABC):
         :param source_path: path where the artifacts are located (source for contribution).
         :param shared_repo_dir: path to the shared repository directory where
             artifacts should be contributed.
-        :param exclude_patterns: if set, artifacts whose names match any
-            of the given regular expressions would not be contributed.
         """
         pass
 
