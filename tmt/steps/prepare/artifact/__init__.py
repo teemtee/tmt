@@ -8,6 +8,7 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
+from tmt.package_managers import is_file_or_virtual_provide
 from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
@@ -355,13 +356,23 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
-        # Build package → set of valid repo_ids, filtering to only required packages.
-        # TODO: Path-based or virtual-provide requirements (e.g. /usr/bin/createrepo,
-        # /usr/bin/make) in pkg_names will NOT match artifact.version.name (e.g. 'createrepo',
-        # 'make') because rpm --whatprovides cannot be used at this point — requirements are
-        # not yet installed when _inject_verify_phase runs (only artifact repos are set up).
-        # Consequently such artifacts are silently skipped from verification even when the
-        # providing package is one of the provided artifacts.
+        # Resolve path-based and virtual-provide requirements to package names so
+        # they can be matched against artifact.version.name below.  Artifact repos
+        # are already configured on the guest at this point even though the packages
+        # themselves are not yet installed, so repoquery can resolve them.
+        provides = {p for p in pkg_names if is_file_or_virtual_provide(p)}
+        if provides:
+            try:
+                resolved = guest.package_manager.resolve_provides(provides)
+                for provide, versions in resolved.items():
+                    pkg_names.discard(provide)
+                    pkg_names.update(version.name for version in versions)
+            except NotImplementedError as err:
+                raise tmt.utils.PrepareError(
+                    f"Package manager '{guest.facts.package_manager}' does not support "
+                    f"provides resolution — cannot resolve path/virtual requirements "
+                    f"{sorted(provides)} to package names for verification."
+                ) from err
 
         pkgs_to_verify: dict[str, set[str]] = {}
         for provider in providers:
