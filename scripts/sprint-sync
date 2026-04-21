@@ -275,7 +275,7 @@ def main(sprint: str, dry: bool, yaml_file: IO[str]) -> None:
     from YAML_FILE or stdin. Example usage:
 
     \b
-        ./sprint-overview --sprint 'Sprint 11' --yaml | ./sprint-sync --sprint 'TMT Sprint 11'
+        ./sprint-overview --sprint 'Sprint 11' --yaml | ./sprint-sync --sprint 'Sprint 11'
 
     Authentication is configured via environment variables:
 
@@ -287,11 +287,14 @@ def main(sprint: str, dry: bool, yaml_file: IO[str]) -> None:
 
     click.echo(f"\nSyncing sprint: {sprint}{' (dry mode)' if dry else ''}")
 
+    # Sprint names in Jira are prefixed with 'TMT'
+    sprint_name = f"TMT {sprint}"
+
     jira = connect_to_jira()
 
-    sprint_id = find_sprint_id(jira, sprint)
+    sprint_id = find_sprint_id(jira, sprint_name)
     github_items = load_github_items(yaml_file)
-    jira_items = fetch_jira_items(jira, sprint)
+    jira_items = fetch_jira_items(jira, sprint_name)
     sync_sprint(jira, sprint_id, jira_items, github_items, dry=dry)
 
 
