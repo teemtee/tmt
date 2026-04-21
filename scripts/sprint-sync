@@ -26,26 +26,61 @@ from ruamel.yaml import YAML
 
 from common import Item  # isort: skip
 
-ITEM_TEMPLATE = jinja2.Template(
-    source="""\
+JIRA_SERVER = "https://redhat.atlassian.net/"
+JIRA_PROJECT = "TMT"
+JIRA_BOARD_ID = 1411
+
+
+class SyncItem:
+    """
+    Represents a sync decision for a single item.
+    """
+
+    TEMPLATE = jinja2.Template(
+        source="""\
   {{ key      }}   {{ summary }}
   {{ decision }}   {{ url }}
 {% if duplicates %}\
              duplicates found: {{ duplicates | join(", ") }}
 {% endif %}"""
-)
+    )
 
-DECISION_COLORS = {
-    "keep": "blue",
-    "add ": "green",
-    "drop": "red",
-    "lost": "red",
-    "miss": "yellow",
-}
+    COLORS = {
+        "keep": "blue",
+        "add ": "green",
+        "drop": "red",
+        "lost": "red",
+        "miss": "yellow",
+    }
 
-JIRA_SERVER = "https://redhat.atlassian.net/"
-JIRA_PROJECT = "TMT"
-JIRA_BOARD_ID = 1411
+    def __init__(
+        self,
+        key: str,
+        decision: str,
+        summary: str,
+        url: Optional[str] = None,
+        duplicates: Optional[list[str]] = None,
+    ) -> None:
+        self.key = key
+        self.decision = decision
+        self.summary = re.sub(r'^\[teemtee/[^\]]*\]\s*', '', summary)
+        self.url = url
+        self.duplicates = duplicates
+
+    def show(self) -> None:
+        """
+        Render the item, color decisions
+        """
+
+        click.echo(
+            self.TEMPLATE.render(
+                key=f"{self.key:<8}",
+                decision=click.style(f"{self.decision:<8}", fg=self.COLORS.get(self.decision)),
+                summary=self.summary,
+                url=self.url or "Upstream issue not found.",
+                duplicates=self.duplicates,
+            )
+        )
 
 
 def connect_to_jira() -> JIRA:
@@ -200,27 +235,6 @@ def sync_sprint(
     github_items_by_url = {item.url: item for item in github_items}
     urls_to_process = set(github_items_by_url.keys())
 
-    def show_item(
-        key: str,
-        decision: str,
-        summary: str,
-        url: Optional[str] = None,
-        duplicates: Optional[list[str]] = None,
-    ) -> None:
-        """
-        Render a single item, color decisions, remove prefix
-        """
-
-        click.echo(
-            ITEM_TEMPLATE.render(
-                key=f"{key:<8}",
-                decision=click.style(f"{decision:<8}", fg=DECISION_COLORS.get(decision)),
-                summary=re.sub(r'^\[teemtee/[^\]]*\]\s*', '', summary),
-                url=url,
-                duplicates=duplicates,
-            )
-        )
-
     items_to_drop: list[str] = []
     items_to_add: list[str] = []
 
@@ -229,12 +243,12 @@ def sync_sprint(
         url = get_upstream_url(jira, jira_item)
 
         if not url:
-            show_item(jira_item.key, "lost", jira_item.fields.summary, "Upstream issue not found.")
+            SyncItem(jira_item.key, "lost", jira_item.fields.summary).show()
         elif url in urls_to_process:
             urls_to_process.remove(url)
-            show_item(jira_item.key, "keep", jira_item.fields.summary, url)
+            SyncItem(jira_item.key, "keep", jira_item.fields.summary, url).show()
         else:
-            show_item(jira_item.key, "drop", jira_item.fields.summary, url)
+            SyncItem(jira_item.key, "drop", jira_item.fields.summary, url).show()
             items_to_drop.append(jira_item.key)
 
     # Step 2: Find missing GitHub items
@@ -245,10 +259,10 @@ def sync_sprint(
         if jira_issues:
             jira_item = jira_issues[0]
             duplicates = [issue.key for issue in jira_issues[1:]] or None
-            show_item(jira_item.key, "add ", jira_item.fields.summary, url, duplicates)
+            SyncItem(jira_item.key, "add ", jira_item.fields.summary, url, duplicates).show()
             items_to_add.append(jira_item.key)
         else:
-            show_item("???", "miss", github_item.title, url)
+            SyncItem("???", "miss", github_item.title, url).show()
 
     # Step 3: Apply changes
     if not dry:
