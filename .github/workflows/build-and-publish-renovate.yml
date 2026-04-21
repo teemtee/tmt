@@ -9,6 +9,8 @@ on:
         description: Committish to build and publish
         required: true
 
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest

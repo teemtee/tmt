@@ -11,6 +11,10 @@ on:
     # Weekly on Friday
     - cron: 0 0 * * 5
 
+# Note that the real permissions are being handled by actions/create-github-app-token,
+# this only affects the other steps like actions/checkout
+permissions: {}
+
 jobs:
   renovate:
     runs-on: ubuntu-latest
