@@ -72,6 +72,7 @@ class Epel(ToggleableFeature):
         # Install packages via package_manager instead of Ansible playbook
         # to support image mode (bootc) guests with immutable /usr filesystem.
         # The playbook handles only repo enable/disable operations (/etc mutations).
+        # https://docs.fedoraproject.org/en-US/epel/getting-started/
         if distro == 'rhel':
             # RHEL uses URL-based epel-release from Fedora Project
             guest.package_manager.install(
@@ -85,16 +86,6 @@ class Epel(ToggleableFeature):
                 guest.package_manager.install(Package("yum-utils"))
             else:
                 guest.package_manager.install(Package("dnf-command(config-manager)"))
-                # EPEL Next is available for CentOS Stream 9
-                # Enable for Stream 10 once epel-next is available
-                if version == 9:
-                    guest.package_manager.install(
-                        PackageUrl(
-                            f"https://dl.fedoraproject.org/pub/epel/"
-                            f"epel-next-release-latest-{version}.noarch.rpm"
-                        ),
-                        options=Options(allow_untrusted=True),
-                    )
         elif distro == 'centos':
             # CentOS has epel-release in its default repos
             guest.package_manager.install(Package("epel-release"))
@@ -102,8 +93,7 @@ class Epel(ToggleableFeature):
                 guest.package_manager.install(Package("yum-utils"))
             else:
                 guest.package_manager.install(Package("dnf-command(config-manager)"))
-                # EPEL Next is available for CentOS Stream 9
-                # Enable for Stream 10 once epel-next is available
+                # EPEL Next is needed only for CentOS Stream 9
                 if version == 9:
                     guest.package_manager.install(Package("epel-next-release"))
 
