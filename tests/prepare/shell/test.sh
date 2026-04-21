@@ -38,7 +38,7 @@ rlJournalStart
         rlPhaseStartTest "Multiple Commandline Scripts"
             # NOTE: These paths need to persist from the image and survive a reboot
             # See https://developers.redhat.com/articles/2025/08/25/what-image-mode-3-way-merge
-            rlRun "FIRST=/var/local/first SECOND=/var/local/second"
+            rlRun "FIRST=/usr/share/first SECOND=/usr/share/second"
             rlRun -s "tmt run -arv -e FIRST=$FIRST -e SECOND=$SECOND provision --how=$PROVISION_HOW $image_opt plans -n multiple \
                 prepare -h shell -s 'touch $FIRST' -s 'touch $SECOND'"
             assert_image_mode
