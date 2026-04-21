@@ -221,14 +221,3 @@ function build_container_images () {
     sleep 1
     LC_ALL=C bash -c 'echo "export AVC_SINCE=\"$(date "+%x %H:%M:%S")\""' > "$(dirname $TMT_TEST_DATA)/checks/avc-mark.txt"
 }
-
-
-# Assert a switch on image mode systems happened
-# Requires rlRun_LOG variable with tmt output and image as the $1 parameter
-function assert_image_mode_switch() {
-    is_image_mode "$1" || return
-
-    rlAssertGrep "building container image from collected commands" $rlRun_LOG
-    rlAssertGrep "switching to new image" $rlRun_LOG
-    rlAssertGrep "rebooting to apply new image" $rlRun_LOG
-}
