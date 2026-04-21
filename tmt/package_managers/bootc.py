@@ -1,6 +1,6 @@
 import re
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import Any, Optional
 
 import tmt.utils
@@ -173,6 +173,9 @@ class BootcEngine(PackageManagerEngine):
         script = self.aux_engine.refresh_metadata()
         self.containerfile_directives.append(f'RUN {script}')
         return script
+
+    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
+        raise NotImplementedError
 
 
 @provides_package_manager('bootc')
