@@ -95,11 +95,11 @@ def connect_to_jira() -> JIRA:
     token = os.environ.get("JIRA_TOKEN")
 
     if not email:
-        click.echo("Error: JIRA_EMAIL environment variable is not set.")
+        click.echo("Error: JIRA_EMAIL environment variable is not set.", err=True)
         sys.exit(1)
 
     if not token:
-        click.echo("Error: JIRA_TOKEN environment variable is not set.")
+        click.echo("Error: JIRA_TOKEN environment variable is not set.", err=True)
         sys.exit(1)
 
     return JIRA(server=server, basic_auth=(email, token))
@@ -133,7 +133,7 @@ def load_github_items(source: IO[str]) -> list[Item]:
     data = YAML().load(source)
 
     if not isinstance(data, list):
-        click.echo(f"Invalid input data:\n{data}")
+        click.echo(f"Invalid input data:\n{data}", err=True)
         sys.exit(1)
 
     return [Item(**item) for item in cast(list[dict[str, Any]], data)]
@@ -161,14 +161,14 @@ def find_sprint_id(jira: JIRA, sprint_name: str) -> int:
 
     :param jira: authenticated Jira client.
     :param sprint_name: name of the sprint.
-    :returns: the sprint ID, or ``None`` if not found.
+    :returns: the sprint ID, or gives an error if not found.
     """
 
     for sprint in jira.sprints(JIRA_BOARD_ID):
         if sprint.name == sprint_name:
             return sprint.id
 
-    click.echo(f"Sprint '{sprint_name}' not found.")
+    click.echo(f"Sprint '{sprint_name}' not found.", err=True)
     sys.exit(1)
 
 
@@ -252,7 +252,7 @@ def sync_sprint(
             items_to_drop.append(jira_item.key)
 
     # Step 2: Find missing GitHub items
-    for url in urls_to_process:
+    for url in sorted(urls_to_process):
         github_item = github_items_by_url[url]
         jira_issues = find_jira_issues(jira, github_item)
 
