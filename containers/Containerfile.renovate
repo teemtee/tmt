@@ -1,5 +1,6 @@
 FROM ghcr.io/renovatebot/renovate:42
 
+# Changing user to root and back to run the apt-get commands
 USER root
 
 # hadolint ignore=DL3008,DL3015
@@ -10,4 +11,6 @@ RUN apt-get update && \
     libpq-dev && \
   rm -rf /var/lib/apt/lists/*
 
+# Changing back to the user defined in the original renovate image
+# Last known source location: https://github.com/renovatebot/renovate/blob/main/tools/docker/Dockerfile
 USER 12021
