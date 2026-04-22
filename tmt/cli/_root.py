@@ -1101,7 +1101,7 @@ def plans_show(context: Context, /, **kwargs: Any) -> None:
 
     logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
-    for plan in context.obj.tree.plans(logger=logger, resolve_disabled=True):
+    for plan in context.obj.tree.plans(logger=logger, resolve_enabled_only=False):
         plan.show()
         context.obj.print()
 

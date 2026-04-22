@@ -2545,7 +2545,7 @@ class Tree(tmt.utils.Common):
         links: Optional[list['LinkNeedle']] = None,
         excludes: Optional[list[str]] = None,
         apply_command_line: bool = True,
-        resolve_disabled: bool = True,
+        resolve_enabled_only: bool = False,
     ) -> list["Plan"]:
         """
         Search available plans
@@ -2623,17 +2623,16 @@ class Tree(tmt.utils.Common):
                 policy.apply_to_plans(plans=plans, logger=logger)
 
         if Plan._opt('enabled') or ('enabled:true' in filters):
-            resolve_disabled = False
+            resolve_enabled_only = True
 
         if not Plan._opt('shallow'):
             unresolved_plans = plans
             plans = []
             for plan in unresolved_plans:
                 # Do not resolve disabled plans unless forced to
-                if not resolve_disabled and not plan.enabled:
+                if resolve_enabled_only and not plan.enabled:
                     plan.debug(
-                        f"Plan '{plan.name}' is not enabled, skipping imports resolution",
-                        level=3,
+                        f"Plan '{plan.name}' is not enabled, skipping imports resolution.",
                     )
                     continue
                 try:
@@ -3155,7 +3154,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             else:
                 plan_names = [f"^{re.escape(plan_name)}$" for plan_name in self.data.plans]
 
-            self._plans = self.tree.plans(run=self, names=plan_names, resolve_disabled=False)
+            self._plans = self.tree.plans(run=self, names=plan_names, resolve_enabled_only=True)
 
         # Initialize steps only if not selected on the command line
         step_options = ['all', 'since', 'until', 'after', 'before', 'skip']
@@ -3176,7 +3175,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         if self._plans is None:
             assert self.tree is not None  # narrow type
-            self._plans = self.tree.plans(run=self, filters=['enabled:true'])
+            self._plans = self.tree.plans(
+                run=self, filters=['enabled:true'], resolve_enabled_only=True
+            )
         return self._plans
 
     @functools.cached_property

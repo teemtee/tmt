@@ -62,34 +62,46 @@
             name: /plans/provision/connect
     enabled: true
 
-/disabled-by-adjust:
-    summary: Local plan disabled by adjust should not import remote plan
-    plan:
-        import:
-            url: https://github.com/teemtee/tmt
-            name: /plans/provision/connect
-    adjust:
-        enabled: false
-        when: distro == fedora-rawhide
-
-/enabled-by-adjust:
-    summary: Local plan disabled by adjust should not import remote plan
-    plan:
-        import:
-            url: https://github.com/teemtee/tmt
-            name: /plans/provision/connect
-    adjust:
-        enabled: true
-        when: distro == fedora-rawhide
-    enabled: false
-
-/disabled-internal:
-    summary: Unimportable plan should not raise errors when disabled
+/inaccessible:
     plan:
         import:
             url: https://secret.internal
             name: /secret/internal/plan
-    enabled: false
+    /disabled:
+        summary: Unimportable plan should not raise errors when disabled
+        enabled: false
+
+    /disabled-by-adjust:
+        summary: Local plan disabled by adjust should not import remote plan
+        adjust:
+            enabled: false
+            when: distro == fedora-rawhide
+
+    /enabled-by-adjust:
+        summary: Local plan enabled by adjust should import remote plan
+        adjust:
+            enabled: true
+            when: distro == fedora-rawhide
+        enabled: false
+
+/importing:
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
+
+    /disabled-by-adjust:
+        summary: Local plan disabled by adjust should not import remote plan
+        adjust:
+            enabled: false
+            when: distro == fedora-rawhide
+
+    /enabled-by-adjust:
+        summary: Local plan enabled by adjust should import remote plan
+        adjust:
+            enabled: true
+            when: distro == fedora-rawhide
+        enabled: false
 
 /disabled:
     summary: Imported plan will be disabled by local plan
