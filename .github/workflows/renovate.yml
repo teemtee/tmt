@@ -34,3 +34,5 @@ jobs:
           token: '${{ steps.token.outputs.token }}'
           renovate-image: ghcr.io/teemtee/renovate-tmt
           renovate-version: latest
+        env:
+          LOG_LEVEL: ${{ runner.debug == '1' && 'debug' || 'info' }}
