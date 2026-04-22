@@ -86,6 +86,8 @@ class Epel(ToggleableFeature):
                 guest.package_manager.install(Package("yum-utils"))
             else:
                 guest.package_manager.install(Package("dnf-command(config-manager)"))
+                if version == 9:
+                    guest.package_manager.install(Package("epel-next-release"))
         elif distro == 'centos':
             # CentOS has epel-release in its default repos
             guest.package_manager.install(Package("epel-release"))
@@ -93,7 +95,6 @@ class Epel(ToggleableFeature):
                 guest.package_manager.install(Package("yum-utils"))
             else:
                 guest.package_manager.install(Package("dnf-command(config-manager)"))
-                # EPEL Next is needed only for CentOS Stream 9
                 if version == 9:
                     guest.package_manager.install(Package("epel-next-release"))
 
