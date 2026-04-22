@@ -1,0 +1,34 @@
+name: Build and publish renovate image
+on:
+  push:
+    paths:
+      - containers/Containerfile.renovate
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Committish to build and publish
+        required: true
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: redhat-actions/buildah-build@v2
+        with:
+          image: renovate-tmt
+          containerfiles: ./containers/Containerfile.renovate
+      - uses: redhat-actions/push-to-registry@v2
+        with:
+          image: renovate-tmt
+          tags: latest
+          registry: ghcr.io/teemtee
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
