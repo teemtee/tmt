@@ -14,10 +14,13 @@ discover:
       - check: avc
 
 prepare:
-    name: enable-epel
+  - name: enable-epel
     how: feature
     epel: enabled
     order: 20
+  - name: latest-packages
+    how: shell
+    script: dnf update -y
 
 link:
   - relates: https://github.com/containers/container-selinux
