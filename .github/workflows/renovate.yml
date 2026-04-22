@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Get GitHub App token
         id: token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.RENOVATE_BOT_APP_ID }}
           private-key: ${{ secrets.RENOVATE_BOT_PRIVATE_KEY }}
