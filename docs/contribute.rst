@@ -855,6 +855,38 @@ prioritized issues.
 .. _backlog: https://github.com/orgs/teemtee/projects/1/views/1
 
 
+Sync
+------------------------------------------------------------------
+
+The ``scripts/sprint-overview`` script lists all issues and pull
+requests in a GitHub Project sprint together with their story
+points. It can also output the data in YAML format for further
+processing:
+
+  .. code-block:: bash
+
+     ./scripts/sprint-overview --sprint 'Sprint 11'
+     ./scripts/sprint-overview --sprint 'Sprint 11' --yaml
+
+The ``scripts/sprint-sync`` script synchronizes a Jira sprint
+with GitHub sprint items. It reads the YAML output from
+``sprint-overview``, removes Jira items not present in the
+GitHub sprint and adds missing items into the Jira sprint:
+
+  .. code-block:: bash
+
+     ./scripts/sprint-overview --sprint 'Sprint 11' --yaml \
+         | ./scripts/sprint-sync --sprint 'Sprint 11'
+
+Use ``--dry`` to preview changes without modifying the Jira
+sprint:
+
+  .. code-block:: bash
+
+     ./scripts/sprint-overview --sprint 'Sprint 11' --yaml \
+         | ./scripts/sprint-sync --sprint 'Sprint 11' --dry
+
+
 Release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

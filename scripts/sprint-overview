@@ -26,6 +26,8 @@ import jinja2
 import requests
 from ruamel.yaml import YAML
 
+from common import Item  # isort: skip
+
 # https://docs.github.com/en/rest/about-the-rest-api/breaking-changes
 GITHUB_API_URL = "https://api.github.com"
 GITHUB_API_VERSION = "2026-03-10"
@@ -73,26 +75,6 @@ DISPLAY_TEMPLATE = jinja2.Template(
 ================================================================================
 """,
 )
-
-
-@dataclasses.dataclass
-class Item:
-    """
-    A sprint item (issue or pull request).
-    """
-
-    id: int
-    type: str
-    repo: str
-    status: str
-    size: Optional[int]
-    url: str
-    title: str
-
-    def __str__(self) -> str:
-        size_str = f"[{self.size}]" if self.size is not None else "[-]"
-        identifier = f"{self.repo}#{self.id}"
-        return f"{identifier:<10} {size_str:>4}  {self.title}"
 
 
 def github_api_get(
@@ -253,14 +235,14 @@ def main(sprint: str, output_yaml: bool) -> None:
     """
     items = fetch_sprint_items(sprint)
 
-    if not items:
-        click.echo(f"No items found in sprint '{sprint}'.")
-        return
-
     if output_yaml:
         YAML().dump([dataclasses.asdict(item) for item in items], sys.stdout)
-    else:
+        return
+
+    if items:
         display_items(sprint, items)
+    else:
+        click.echo(f"No items found in sprint '{sprint}'.", err=True)
 
 
 if __name__ == "__main__":
