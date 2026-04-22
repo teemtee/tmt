@@ -1,0 +1,5 @@
+description: |
+    The position of FIPS enablement under ``tmt try`` command changes:
+    it is recommended to run FIPS prepare feature after all test
+    dependencies are installed to prevent issues with packages using
+    FIPS-incompatible digests.

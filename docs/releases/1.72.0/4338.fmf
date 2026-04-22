@@ -1,0 +1,5 @@
+description: |
+    Default formatting of YAML emitted by tmt changes slightly, list items
+    are no longer indented. While the YAML emitted before this changes was
+    fully compliant with the YAML specification, change removes indentation
+    of the top-level list which may be surprising to some YAML parsers.

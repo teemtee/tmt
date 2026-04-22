@@ -1,0 +1,3 @@
+description: |
+    Fixed recipe generation when :ref:`/plugins/report/reportportal` plugin
+    is used.

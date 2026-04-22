@@ -1,0 +1,5 @@
+description: |
+    tmt now supports multiple formats for storing its state information
+    - step data, test data, etc. YAML remains the default format, and
+    JSON is now supported as well. The format can be selected via
+    :ref:`TMT_STATE_FORMAT<command-variables>` environment variable.
