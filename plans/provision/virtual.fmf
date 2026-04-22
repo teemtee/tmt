@@ -72,7 +72,7 @@ adjust+:
     adjust+:
       - enabled: false
         when: image_mode == yes
-        because: These tests were not yet ported to image mode.
+        because: These tests have not yet been ported to image mode.
 
 /prepare:
     discover+:
@@ -90,7 +90,7 @@ adjust+:
     adjust+:
       - enabled: false
         when: image_mode == yes
-        because: These tests were not yet ported to image mode.
+        because: These tests have not yet been ported to image mode.
 
 /upgrade:
     discover+:
@@ -98,7 +98,7 @@ adjust+:
     adjust+:
       - enabled: false
         when: image_mode == yes
-        because: These tests were not yet ported to image mode.
+        because: These tests have not yet been ported to image mode.
 
 /the-rest:
     discover+:
@@ -106,4 +106,4 @@ adjust+:
     adjust+:
       - enabled: false
         when: image_mode == yes
-        because: These tests were not yet ported to image mode.
+        because: These tests have not yet been ported to image mode.
