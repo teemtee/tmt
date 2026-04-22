@@ -611,6 +611,8 @@ class GuestFacts(SerializableContainer):
     sudo_prefix: Optional[str] = None
     is_ostree: Optional[bool] = None
     is_image_mode: Optional[bool] = None
+    distro_id: Optional[str] = None
+    distro_major_version: Optional[int] = None
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
     is_container: Optional[bool] = None
@@ -782,6 +784,15 @@ class GuestFacts(SerializableContainer):
                 (Command('cat', '/etc/fedora-release'), r'(.*)'),
             ],
         )
+
+    def _query_distro_id(self, guest: 'Guest') -> Optional[str]:
+        return self.os_release_content.get('ID')
+
+    def _query_distro_major_version(self, guest: 'Guest') -> Optional[int]:
+        version_id = self.os_release_content.get('VERSION_ID')
+        if version_id:
+            return int(version_id.split('.')[0])
+        return None
 
     def _query_kernel_release(self, guest: 'Guest') -> Optional[str]:
         return self._query(guest, [(Command('uname', '-r'), r'(.+)')])
@@ -1054,6 +1065,8 @@ class GuestFacts(SerializableContainer):
             self.sudo_prefix = self._query_sudo_prefix(guest)
             self.is_ostree = self._query_is_ostree(guest)
             self.is_image_mode = self._query_is_image_mode(guest)
+            self.distro_id = self._query_distro_id(guest)
+            self.distro_major_version = self._query_distro_major_version(guest)
             self.is_toolbox = self._query_is_toolbox(guest)
             self.toolbox_container_name = self._query_toolbox_container_name(guest)
             self.is_container = self._query_is_container(guest)
@@ -1087,6 +1100,8 @@ class GuestFacts(SerializableContainer):
         yield _flag('is_container', 'is container')
         yield _flag('is_ostree', 'is ostree')
         yield _flag('is_image_mode', 'is image mode')
+        yield _value('distro_id', 'distro id')
+        yield _value('distro_major_version', 'distro major version')
         yield _flag('is_toolbox', 'is toolbox')
         yield _flag('has_selinux', 'selinux')
         yield _flag('has_systemd', 'systemd')

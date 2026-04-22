@@ -4,6 +4,7 @@ from typing import Any, Optional
 import tmt.log
 from tmt.container import container, field
 from tmt.guest import Guest
+from tmt.package_managers import Options, Package, PackageUrl
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 
 SUPPORTED_DISTRO_PATTERNS = tuple(
@@ -64,8 +65,48 @@ class Epel(ToggleableFeature):
         ):
             logger.warning('EPEL prepare feature is supported on RHEL/CentOS-Stream 8+.')
             return
+
+        distro = guest.facts.distro_id
+        version = guest.facts.distro_major_version
+
+        # Install packages via package_manager instead of Ansible playbook
+        # to support image mode (bootc) guests with immutable /usr filesystem.
+        # The playbook handles only repo enable/disable operations (/etc mutations).
+        # https://docs.fedoraproject.org/en-US/epel/getting-started/
+        if distro == 'rhel':
+            # RHEL uses URL-based epel-release from Fedora Project
+            guest.package_manager.install(
+                PackageUrl(
+                    f"https://dl.fedoraproject.org/pub/epel/"
+                    f"epel-release-latest-{version}.noarch.rpm"
+                ),
+                options=Options(allow_untrusted=True),
+            )
+            if version == 7:
+                guest.package_manager.install(Package("yum-utils"))
+            else:
+                guest.package_manager.install(Package("dnf-command(config-manager)"))
+                if version == 9:
+                    guest.package_manager.install(Package("epel-next-release"))
+        elif distro == 'centos':
+            # CentOS has epel-release in its default repos
+            guest.package_manager.install(Package("epel-release"))
+            if version == 7:
+                guest.package_manager.install(Package("yum-utils"))
+            else:
+                guest.package_manager.install(Package("dnf-command(config-manager)"))
+                if version == 9:
+                    guest.package_manager.install(Package("epel-next-release"))
+
         cls._run_playbook('enable', "epel-enable.yaml", guest, logger)
 
     @classmethod
     def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        version = guest.facts.distro_major_version
+
+        if version and version == 7:
+            guest.package_manager.install(Package("yum-utils"))
+        elif version and version >= 8:
+            guest.package_manager.install(Package("dnf-command(config-manager)"))
+
         cls._run_playbook('disable', "epel-disable.yaml", guest, logger)

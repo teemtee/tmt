@@ -57,6 +57,7 @@ IMAGE_MODE_QCOW2_BASE_URL="https://artifacts.dev.testing-farm.io/images"
 # Image mode QCOW2 images, with mapping to compatible container image used for artifacts downloading
 declare -A IMAGE_MODE_QCOW2_CONTAINER_MAP
 IMAGE_MODE_QCOW2_CONTAINER_MAP=(
+  ["$IMAGE_MODE_QCOW2_BASE_URL/CentOS-Stream-9-image-mode-x86_64.qcow2"]="centos:stream9"
   ["$IMAGE_MODE_QCOW2_BASE_URL/CentOS-Stream-10-image-mode-x86_64.qcow2"]="centos:stream10"
   ["$IMAGE_MODE_QCOW2_BASE_URL/Fedora-44-image-mode-x86_64.qcow2"]="fedora:44"
 )

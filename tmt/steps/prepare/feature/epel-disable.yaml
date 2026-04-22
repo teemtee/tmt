@@ -2,7 +2,8 @@
 
 # Pre-setup to install Python 3.9 on RHEL/CentOS 8 systems
 # This is needed because Ansible 2.17+ requires Python 3.7+ but RHEL/CentOS 8
-# ships with Python 3.6, causing "future feature annotations is not defined" errors
+# ships with Python 3.6, causing "future feature annotations is not defined" errors.
+# NOTE: RHEL/CentOS 8 is not supported in image mode, so dnf commands are fine here.
 - name: Workaround Ansible 2.17+ not supporting RHEL/CentOS 8 systems
   hosts: all
   gather_facts: false
@@ -22,7 +23,7 @@
         'Red Hat Enterprise Linux release 8.' in release_out.stdout
         or 'CentOS Linux release 8' in release_out.stdout
         or 'CentOS Stream release 8' in release_out.stdout
-      changed_when: true
+      changed_when: false
 
 - name: Disable EPEL repositories
   hosts: all
@@ -32,11 +33,6 @@
         - ansible_distribution in ["RedHat", "CentOS"]
         - ansible_distribution_major_version | int == 7
       block:
-        - name: Install package 'yum-utils'
-          ansible.builtin.dnf:
-            name: yum-utils
-            state: present
-
         - name: Detect package 'epel-release' is installed
           ansible.builtin.command: rpm -q epel-release # noqa: command-instead-of-module
           register: result
@@ -54,11 +50,6 @@
         - ansible_distribution in ["RedHat", "CentOS"]
         - ansible_distribution_major_version | int >= 8
       block:
-        - name: Install 'dnf config-manager'
-          ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
-          register: output
-          changed_when: output.rc != 0
-
         - name: Detect package 'epel-release' is installed
           ansible.builtin.command: rpm -q epel-release # noqa: command-instead-of-module
           register: result
@@ -72,7 +63,7 @@
           changed_when: output.rc != 0
 
         - name: Detect package 'epel-next-release' is installed
-          ansible.builtin.command: rpm -q epel-release # noqa: command-instead-of-module
+          ansible.builtin.command: rpm -q epel-next-release # noqa: command-instead-of-module
           register: result
           ignore_errors: true
           changed_when: false

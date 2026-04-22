@@ -2,7 +2,8 @@
 
 # Pre-setup to install Python 3.9 on RHEL/CentOS 8 systems
 # This is needed because Ansible 2.17+ requires Python 3.7+ but RHEL/CentOS 8
-# ships with Python 3.6, causing "future feature annotations is not defined" errors
+# ships with Python 3.6, causing "future feature annotations is not defined" errors.
+# NOTE: RHEL/CentOS 8 is not supported in image mode, so dnf commands are fine here.
 - name: Workaround Ansible 2.17+ not supporting RHEL/CentOS 8 systems
   hosts: all
   gather_facts: false
@@ -32,17 +33,6 @@
         - ansible_distribution == "RedHat"
         - ansible_distribution_major_version | int == 7
       block:
-        - name: Install package 'epel-release'
-          ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
-            disable_gpg_check: true
-            state: present
-
-        - name: Install package 'yum-utils'
-          ansible.builtin.dnf:
-            name: yum-utils
-            state: present
-
         - name: Enable EPEL repos
           ansible.builtin.command: yum-config-manager --enable epel epel-debuginfo epel-source
           register: output
@@ -53,47 +43,15 @@
         - ansible_distribution == "RedHat"
         - ansible_distribution_major_version | int >= 8
       block:
-        - name: Install package 'epel-release'
-          ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
-            disable_gpg_check: true
-            state: present
-          when: ansible_distribution_major_version | int >= 9
-
-        - name: Install package 'epel-release'
-          ansible.builtin.shell: |
-            set -e
-            if ! rpm -q epel-release; then
-              rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
-              echo "CHANGED"
-            fi
-          # The dnf python module is not available with python3.9 installed on the host, do not use ansible.builtin.dnf module
-          when: ansible_distribution_major_version | int == 8
-          register: output
-          changed_when: "'CHANGED' in output.stdout"
-
-
-        - name: Install package 'epel-next-release'
-          ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
-            disable_gpg_check: true
-            state: present
-          # EPEL Next is available for CentOS Stream 9
-          # Enable for Stream 10 once epel-next is available
-          when: ansible_distribution_major_version | int == 9
-
-        - name: Install 'dnf config-manager'
-          ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
-          register: output
-          changed_when: output.rc != 0
-
         - name: Enable EPEL repos
           ansible.builtin.command: dnf config-manager --enable epel epel-debuginfo epel-source
           register: output
           changed_when: output.rc != 0
 
         - name: Enable EPEL-Next repos
-          ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
+          ansible.builtin.command: >-
+            dnf config-manager --enable epel-next
+            epel-next-debuginfo epel-next-source
           register: output
           changed_when: output.rc != 0
           # EPEL Next is available for CentOS Stream 9
@@ -103,7 +61,8 @@
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
           environment:
-            # Skips subscription-manager usage, which is generally not configured in test environment
+            # Skips subscription-manager usage, which is generally
+            # not configured in test environment
             FORCE_DNF: "1"
           register: output
           changed_when: output.rc != 0
@@ -113,18 +72,10 @@
         - ansible_distribution == "CentOS"
         - ansible_distribution_major_version | int == 7
       block:
-        - name: Install package 'epel-release'
-          ansible.builtin.dnf:
-            name: epel-release
-            state: present
-
-        - name: Install package 'yum-utils'
-          ansible.builtin.dnf:
-            name: yum-utils
-            state: present
-
         - name: Enable EPEL repos
-          ansible.builtin.command: yum-config-manager --enable epel epel-debuginfo epel-source
+          ansible.builtin.command: >-
+            yum-config-manager --enable epel
+            epel-debuginfo epel-source
           register: output
           changed_when: output.rc != 0
 
@@ -133,31 +84,17 @@
         - ansible_distribution == "CentOS"
         - ansible_distribution_major_version | int >= 8
       block:
-        - name: Install package 'epel-release'
-          ansible.builtin.dnf:
-            name: epel-release
-            state: present
-
-        - name: Install package 'epel-next-release'
-          ansible.builtin.dnf:
-            name: epel-next-release
-            state: present
-          # EPEL Next is available for CentOS Stream 9
-          # Enable for Stream 10 once epel-next is available
-          when: ansible_distribution_major_version | int == 9
-
-        - name: Install 'dnf config-manager'
-          ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
-          register: output
-          changed_when: output.rc != 0
-
         - name: Enable EPEL repos
-          ansible.builtin.command: dnf config-manager --enable epel epel-debuginfo epel-source
+          ansible.builtin.command: >-
+            dnf config-manager --enable epel
+            epel-debuginfo epel-source
           register: output
           changed_when: output.rc != 0
 
         - name: Enable EPEL-Next repos
-          ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
+          ansible.builtin.command: >-
+            dnf config-manager --enable epel-next
+            epel-next-debuginfo epel-next-source
           register: output
           changed_when: output.rc != 0
           # EPEL Next is available for CentOS Stream 9
@@ -167,7 +104,8 @@
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
           environment:
-            # Skips subscription-manager usage, which is generally not configured in test environment
+            # Skips subscription-manager usage, which is generally
+            # not configured in test environment
             FORCE_DNF: "1"
           register: output
           changed_when: output.rc != 0
