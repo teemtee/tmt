@@ -7,7 +7,15 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
+    function replace_fmf_root () {
+        local recipe=$1
+        local temp_recipe=$(mktemp)
+        yq ".run.root = \"$PWD\"" "$recipe" > "$temp_recipe"
+        mv "$temp_recipe" "$recipe"
+    }
+
     rlPhaseStartTest "Test recipe loading with library dependencies"
+        replace_fmf_root "local.yaml"
         rlRun -s "tmt run -vvv --scratch --id $run --recipe local.yaml"
         rlAssertGrep "name: discover-fmf" $rlRun_LOG
         rlAssertGrep "name: discover-shell" $rlRun_LOG
@@ -24,6 +32,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test recipe loading with remote repository"
+        replace_fmf_root "remote.yaml"
         rlRun -s "tmt run -vvv --scratch --id $run --recipe remote.yaml"
         rlAssertGrep "summary: 1 test selected" $rlRun_LOG
         rlAssertGrep "pass /tests/one" $rlRun_LOG
@@ -32,6 +41,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test recipe loading of imported plan"
+        replace_fmf_root "import.yaml"
         rlRun -s "tmt run -vvv --scratch --id $run --recipe import.yaml"
         rlAssertGrep "summary: 2 tests selected" $rlRun_LOG
     rlPhaseEnd
