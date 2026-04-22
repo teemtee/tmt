@@ -2529,7 +2529,7 @@ class Tree(tmt.utils.Common):
         links: Optional[list['LinkNeedle']] = None,
         excludes: Optional[list[str]] = None,
         apply_command_line: bool = True,
-        resolve_disabled: bool = True,
+        resolve_enabled_only: bool = False,
     ) -> list["Plan"]:
         """
         Search available plans
@@ -2607,17 +2607,16 @@ class Tree(tmt.utils.Common):
                 policy.apply_to_plans(plans=plans, logger=logger)
 
         if Plan._opt('enabled') or ('enabled:true' in filters):
-            resolve_disabled = False
+            resolve_enabled_only = True
 
         if not Plan._opt('shallow'):
             unresolved_plans = plans
             plans = []
             for plan in unresolved_plans:
                 # Do not resolve disabled plans unless forced to
-                if not resolve_disabled and not plan.enabled:
+                if resolve_enabled_only and not plan.enabled:
                     plan.debug(
-                        f"Plan '{plan.name}' is not enabled, skipping imports resolution",
-                        level=3,
+                        f"Plan '{plan.name}' is not enabled, skipping imports resolution.",
                     )
                     continue
                 try:

@@ -26,3 +26,7 @@
 /step-inheritance:
   summary: Make sure step inheritance for report and finish steps works
   test: ./step-inheritance.sh
+
+/inaccessible:
+  summary: Ensure inaccessible remote plans work properly
+  test: ./inaccessible.sh

@@ -470,7 +470,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             else:
                 plan_names = [f"^{re.escape(plan_name)}$" for plan_name in self.data.plans]
 
-            self._plans = self.tree.plans(run=self, names=plan_names, resolve_disabled=False)
+            self._plans = self.tree.plans(run=self, names=plan_names, resolve_enabled_only=True)
 
         # Initialize steps only if not selected on the command line
         step_options = ['all', 'since', 'until', 'after', 'before', 'skip']
@@ -491,7 +491,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         if self._plans is None:
             assert self.tree is not None  # narrow type
-            self._plans = self.tree.plans(run=self, filters=['enabled:true'])
+            self._plans = self.tree.plans(
+                run=self, filters=['enabled:true'], resolve_enabled_only=True
+            )
         return self._plans
 
     @functools.cached_property
