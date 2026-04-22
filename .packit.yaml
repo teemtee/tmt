@@ -123,8 +123,18 @@ _:
     tf_extra_params:
       environments:
         - tmt:
-            context:
+            context: &provision-context
               how: provision
+          <<: *tmt-cloud-resources
+
+  # Image mode
+  - &image-mode
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              <<: *provision-context
+              image_mode: "yes"
           <<: *tmt-cloud-resources
 
 jobs:
@@ -174,6 +184,11 @@ jobs:
 
   - <<: *provision
     identifier: provision-virtual
+    tmt_plan: /plans/provision/virtual
+
+  - <<: *provision
+    <<: *image-mode
+    identifier: provision-image-mode-virtual
     tmt_plan: /plans/provision/virtual
 
   # Test internal plugins
