@@ -1251,3 +1251,4 @@ __ https://github.com/teemtee/tmt/issues/2047
 
 .. include:: guide/test-runner.inc.rst
 .. include:: guide/guest-preparation.inc.rst
+.. include:: guide/image-mode.inc.rst
