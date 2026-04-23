@@ -1,0 +1,4 @@
+description: |
+    YAML file reads and writes now use a C-based YAML parser and emitter,
+    ``ruamel.yaml.clib``. This should speed up writing and updating large
+    ``results.yaml`` files.
