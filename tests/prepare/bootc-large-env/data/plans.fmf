@@ -1,0 +1,19 @@
+discover:
+    how: fmf
+
+provision:
+    how: virtual
+
+execute:
+    how: tmt
+
+/centos-stream-10:
+    provision+:
+        image: https://artifacts.dev.testing-farm.io/images/CentOS-Stream-10-image-mode-x86_64.qcow2
+
+    /large-env:
+        summary: "Prepare/shell with large environment on bootc guest"
+        prepare:
+            how: shell
+            script:
+              - dnf -y install tree
