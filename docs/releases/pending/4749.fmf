@@ -1,0 +1,4 @@
+description: |
+    Disabled remote plans in `run` and `plan ls --enabled`
+    are no longer imported, allowing for the URL to be not
+    publicly accessible.
