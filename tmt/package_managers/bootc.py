@@ -12,7 +12,15 @@ from tmt.package_managers import (
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
+from tmt.utils import (
+    Command,
+    CommandOutput,
+    GeneralError,
+    Path,
+    PrepareError,
+    RunError,
+    ShellScript,
+)
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 
@@ -175,7 +183,7 @@ class BootcEngine(PackageManagerEngine):
         return script
 
     def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise NotImplementedError
+        raise PrepareError("Package manager 'bootc' does not support provides resolution.")
 
 
 @provides_package_manager('bootc')

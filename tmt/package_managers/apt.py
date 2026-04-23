@@ -235,7 +235,7 @@ class AptEngine(PackageManagerEngine):
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
 
     def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise NotImplementedError
+        raise tmt.utils.PrepareError("Package manager 'apt' does not support provides resolution.")
 
 
 @provides_package_manager('apt')

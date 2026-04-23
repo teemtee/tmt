@@ -1,8 +1,4 @@
-from collections import defaultdict
-from typing import TYPE_CHECKING, Optional
-
-if TYPE_CHECKING:
-    from tmt.package_managers import Version
+from typing import Optional
 
 import fmf.utils
 
@@ -11,7 +7,7 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
-from tmt.package_managers import SpecialPackageOrigin, is_file_or_virtual_provide
+from tmt.package_managers import SpecialPackageOrigin
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.utils import Environment
@@ -96,28 +92,8 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             color='green',
         )
 
-        # Resolve paths and virtual provides (e.g. /usr/bin/make, pkgconfig(openssl))
-        # to package names. Plain package names are passed through unchanged.
-        provides = [p for p in self.data.verify if is_file_or_virtual_provide(p)]
-        dependency_to_versions: dict[str, set[Version]] = {}
-        if provides:
-            try:
-                dependency_to_versions = guest.package_manager.resolve_provides(provides)
-            except NotImplementedError:
-                self.debug(
-                    f"Package manager '{guest.facts.package_manager}' does not support "
-                    f"provides resolution."
-                )
-        verify_raw: defaultdict[str, list[str]] = defaultdict(list)
-        for requirement, repos in self.data.verify.items():
-            versions = dependency_to_versions.get(requirement)
-            names = {v.name for v in versions} if versions else {requirement}
-            for name in names:
-                verify_raw[name].extend(repos)
-        verify = {name: tmt.utils.uniq(repos) for name, repos in verify_raw.items()}
-
         try:
-            package_origins = guest.package_manager.get_package_origin(verify.keys())
+            package_origins = guest.package_manager.get_package_origin(self.data.verify.keys())
         except (NotImplementedError, tmt.utils.GeneralError) as err:
             error: Exception = (
                 tmt.utils.PrepareError(
@@ -139,7 +115,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         failed_packages: list[str] = []
-        for package, expected_repos in verify.items():
+        for package, expected_repos in self.data.verify.items():
             actual_origin = package_origins[package]
 
             if actual_origin in expected_repos:

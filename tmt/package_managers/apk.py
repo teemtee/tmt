@@ -148,7 +148,7 @@ class ApkEngine(PackageManagerEngine):
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
 
     def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise NotImplementedError
+        raise tmt.utils.PrepareError("Package manager 'apk' does not support provides resolution.")
 
 
 @provides_package_manager('apk')
