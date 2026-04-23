@@ -274,13 +274,6 @@ def find_package_manager(
     return plugin
 
 
-def is_file_or_virtual_provide(requirement: str) -> bool:
-    """
-    Return ``True`` if *requirement* is a file path or virtual provide rather than a plain package.
-    """
-    return requirement.startswith('/') or '(' in requirement
-
-
 def escape_installables(*installables: Installable) -> Iterator[str]:
     for installable in installables:
         yield shlex.quote(str(installable))
@@ -314,10 +307,6 @@ class Options:
 class PackageManagerEngine(tmt.utils.Common):
     command: Command
     options: Command
-
-    #: Sentinel line emitted by :py:meth:`resolve_provides` shell scripts to
-    #: separate NEVRA groups for consecutive provides.
-    RESOLVE_PROVIDES_SENTINEL: ClassVar[str] = '---'
 
     def __init__(self, *, guest: 'Guest', logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger)
@@ -411,22 +400,24 @@ class PackageManagerEngine(tmt.utils.Common):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
+    def resolve_provides(self, provides: list[str]) -> ShellScript:
         """
         Resolve each provide to the NEVRAs of packages that provide it.
 
-        The script must emit zero or more NEVRA lines per provide followed by a
-        :py:attr:`PackageManagerEngine.RESOLVE_PROVIDES_SENTINEL` line, one group per input provide
-        in the same order as the input.  An empty group (sentinel only) means
-        nothing provides that capability.
+        The script must emit YAML mapping each provide string to a list of NEVRA
+        strings (or null when nothing provides it), e.g.::
+
+            '/usr/bin/cmake':
+            - 'cmake-0:3.31.6-4.fc43.x86_64'
+            'make':
+            - 'make-1:4.4.1-8.fc43.x86_64'
 
         :param provides: Provides to resolve, e.g. package names, file paths, or
             virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
-        :returns: A shell script that emits NEVRA lines grouped by provide, each
-            group terminated by :py:attr:`PackageManagerEngine.RESOLVE_PROVIDES_SENTINEL`.
-        :raises NotImplementedError: If the package manager does not support this query.
+        :returns: A shell script that emits a YAML mapping of provide → NEVRA list.
+        :raises PrepareError: If the package manager does not support this query.
         """
-        raise NotImplementedError
+        raise PrepareError("Package manager does not support provides resolution.")
 
     def create_repository(self, directory: Path) -> ShellScript:
         """
@@ -563,7 +554,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
         return result
 
-    def resolve_provides(self, provides: Iterable[str]) -> dict[str, set[Version]]:
+    def resolve_provides(self, provides: list[str]) -> dict[str, set[Version]]:
         """
         Map each provide to the :py:class:`Version` objects of packages that provide it.
 
@@ -576,30 +567,24 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         from tmt.package_managers._rpm import RpmVersion
 
-        provides_list = list(provides)
-        result: dict[str, set[Version]] = {p: set() for p in provides_list}
-        if not provides_list:
-            return result
+        if not provides:
+            return {}
 
-        script = self.engine.resolve_provides(iter(provides_list))
+        script = self.engine.resolve_provides(provides)
         stdout = self.guest.execute(script).stdout or ''
+        parsed: dict[str, Optional[list[str]]] = tmt.utils.from_yaml(stdout) or {}
 
-        groups: list[list[str]] = []
-        current: list[str] = []
-        for line in stdout.splitlines():
-            line = line.strip()
-            if line == PackageManagerEngine.RESOLVE_PROVIDES_SENTINEL:
-                groups.append(current)
-                current = []
-            elif line:
-                current.append(line)
-
-        for provide, nevras in zip(provides_list, groups):
-            for nevra in nevras:
+        result: dict[str, set[Version]] = {}
+        for provide, nevras in parsed.items():
+            versions: set[Version] = set()
+            for nevra_str in nevras or []:
                 try:
-                    result[provide].add(RpmVersion.from_nevra(nevra))
+                    versions.add(RpmVersion.from_nevra(nevra_str))
                 except ValueError:
-                    self.debug(f"Could not parse NEVRA for '{provide}': {nevra}")
+                    self.debug(f"Could not parse NEVRA for '{provide}': {nevra_str}")
+            result[provide] = versions
+
+        self.debug(f"Resolved provides mapping: {result}")
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:

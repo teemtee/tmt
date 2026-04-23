@@ -8,7 +8,6 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
-from tmt.package_managers import is_file_or_virtual_provide
 from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
@@ -356,28 +355,19 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
-        # Resolve path-based and virtual-provide requirements to package names so
-        # they can be matched against artifact.version.name below.  Artifact repos
-        # are already configured on the guest at this point even though the packages
-        # themselves are not yet installed, so repoquery can resolve them.
-        provides = {p for p in pkg_names if is_file_or_virtual_provide(p)}
-        if provides:
-            try:
-                resolved = guest.package_manager.resolve_provides(provides)
-                for provide, versions in resolved.items():
-                    pkg_names.discard(provide)
-                    pkg_names.update(version.name for version in versions)
-            except NotImplementedError as err:
-                raise tmt.utils.PrepareError(
-                    f"Package manager '{guest.facts.package_manager}' does not support "
-                    f"provides resolution — cannot resolve path/virtual requirements "
-                    f"{sorted(provides)} to package names for verification."
-                ) from err
+        # Resolve all requirements to canonical package names via whatprovides so
+        # they can be matched against artifact.version.name below.  This handles
+        # plain names, file paths, pkgconfig(...) and package-level provides
+        # Artifact repos are already configured on the guest at this
+        # point even though the packages themselves are not yet installed.
+        resolved = guest.package_manager.resolve_provides(list(pkg_names))
+
+        resolved_names = {version.name for versions in resolved.values() for version in versions}
 
         pkgs_to_verify: dict[str, set[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:
-                if artifact.version.name in pkg_names:
+                if artifact.version.name in resolved_names:
                     pkgs_to_verify.setdefault(artifact.version.name, set()).add(artifact.repo_id)
 
         if not pkgs_to_verify:
