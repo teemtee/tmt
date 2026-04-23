@@ -136,6 +136,12 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43/unprivileged:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/44:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/44/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/44/unprivileged:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/45:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/45/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/45/unprivileged:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubi/8/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/12.7/upstream:latest \
@@ -285,6 +291,15 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/4
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/44/unprivileged\:latest:
 	$(call build-test-container-image,$@,fedora/44/Containerfile.unprivileged)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/45\:latest:
+	$(call build-test-container-image,$@,fedora/45/Containerfile)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/45/upstream\:latest:
+	$(call build-test-container-image,$@,fedora/45/Containerfile.upstream)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/45/unprivileged\:latest:
+	$(call build-test-container-image,$@,fedora/45/Containerfile.unprivileged)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubi/8/upstream\:latest:
 	$(call build-test-container-image,$@,ubi/8/Containerfile.upstream)
