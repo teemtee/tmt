@@ -14,7 +14,7 @@ rlJournalStart
         mv "$temp_recipe" "$recipe"
     }
 
-    for plan_name in 'local' 'remote'; do
+    for plan_name in 'local' 'remote' 'minimal'; do
         rlPhaseStartTest "Test recipe generation of a $plan_name plan"
             rlRun -s "tmt -vv run --scratch --id $run -e RUN_ENV=run_value plan -n /plans/$plan_name"
             rlAssertExists "$recipe" "Recipe file exists"

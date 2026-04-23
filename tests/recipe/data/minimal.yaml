@@ -1,0 +1,101 @@
+plans:
+- cleanup:
+    enabled: true
+    phases:
+    - how: tmt
+      name: default-0
+      order: 50
+  discover:
+    enabled: true
+    phases:
+    - dist-git-download-only: false
+      dist-git-install-builddeps: false
+      dist-git-source: false
+      how: shell
+      keep-git-metadata: false
+      name: default-0
+      order: 50
+      tests:
+      - duration: 1h
+        enabled: true
+        manual: false
+        name: script-00
+        order: 50
+        result: respect
+        test: echo "Execute script"
+        tty: false
+      url-content-type: git
+    tests:
+    - discover-phase: default-0
+      duration: 1h
+      enabled: true
+      framework: shell
+      manual: false
+      name: /script-00
+      order: 50
+      path: /default-0/tests
+      restart-max-count: 1
+      restart-with-reboot: false
+      result: respect
+      serial-number: 1
+      test: echo "Execute script"
+      tty: false
+  enabled: true
+  environment:
+    PLAN_ENV: plan_value
+  execute:
+    enabled: true
+    phases:
+    - duration: 1h
+      exit-first: false
+      how: tmt
+      ignore-duration: false
+      interactive: false
+      name: default-0
+      no-progress-bar: false
+      order: 50
+      restraint-compatible: false
+    results-path: plans/minimal/execute/results.yaml
+  finish:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+      order: 50
+  name: /plans/minimal
+  order: 50
+  prepare:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+      order: 50
+  provision:
+    enabled: true
+    phases:
+    - become: false
+      environment:
+        PROVISION_ENV: provision_value
+      force-pull: false
+      how: container
+      image: fedora
+      name: default-0
+      order: 50
+      pull-attempts: 5
+      pull-interval: 5
+      stop-time: 1
+      user: root
+  report:
+    enabled: true
+    phases:
+    - display-guest: auto
+      how: display
+      name: default-0
+      order: 50
+  summary: A minimal plan
+run:
+  context: {}
+  environment:
+    RUN_ENV: run_value
+  remove: false
+  root: /path/to/fmf_root
