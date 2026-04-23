@@ -15,6 +15,7 @@ from tmt._compat.pathlib import Path
 from tmt.container import SerializableContainer, container, field
 
 if TYPE_CHECKING:
+    from tmt.base.plan import Plan
     from tmt.guest import Guest
 
 
@@ -299,7 +300,24 @@ class AnsibleInventory:
         target_group['hosts'][guest.name] = {}
 
     @classmethod
-    def generate(cls, guests: list['Guest'], layout_path: Optional[Path] = None) -> dict[str, Any]:
+    def _add_context_vars(cls, inventory: dict[str, Any], plan: "Plan") -> None:
+        """
+        Add the plan's context as ansible variables.
+
+        :param inventory: the inventory dictionary to modify.
+        :param plan: the plan owning the context variables.
+        """
+        # TODO: this might be better managed as group_vars
+        inventory_context = (
+            inventory["all"].setdefault("vars", {}).setdefault("tmt", {}).setdefault("context", {})
+        )
+        for key, value in plan.fmf_context.items():
+            inventory_context[key] = value
+
+    @classmethod
+    def generate(
+        cls, guests: list['Guest'], plan: "Plan", layout_path: Optional[Path] = None
+    ) -> dict[str, Any]:
         """
         Generate Ansible inventory from guests and layout.
 
@@ -316,5 +334,7 @@ class AnsibleInventory:
             # Add host to its groups (without variables)
             for group in guest.ansible_host_groups:
                 cls._add_host_to_group(inventory, guest, group)
+
+        cls._add_context_vars(inventory, plan)
 
         return inventory
