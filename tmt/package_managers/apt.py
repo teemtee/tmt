@@ -1,5 +1,4 @@
 import re
-from collections.abc import Iterable
 from typing import Optional, Union
 
 import tmt.utils
@@ -233,9 +232,6 @@ class AptEngine(PackageManagerEngine):
         options: Optional[Options] = None,
     ) -> ShellScript:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
-
-    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise tmt.utils.PrepareError("Package manager 'apt' does not support provides resolution.")
 
 
 @provides_package_manager('apt')

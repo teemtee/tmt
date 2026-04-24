@@ -1,6 +1,6 @@
 import re
 import uuid
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 from typing import Any, Optional
 
 import tmt.utils
@@ -12,15 +12,7 @@ from tmt.package_managers import (
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import (
-    Command,
-    CommandOutput,
-    GeneralError,
-    Path,
-    PrepareError,
-    RunError,
-    ShellScript,
-)
+from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 
@@ -181,9 +173,6 @@ class BootcEngine(PackageManagerEngine):
         script = self.aux_engine.refresh_metadata()
         self.containerfile_directives.append(f'RUN {script}')
         return script
-
-    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise PrepareError("Package manager 'bootc' does not support provides resolution.")
 
 
 @provides_package_manager('bootc')

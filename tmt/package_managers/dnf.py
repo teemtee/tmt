@@ -209,13 +209,23 @@ class DnfEngine(PackageManagerEngine):
             )
         ).to_script()
 
-    def resolve_provides(self, provides: list[str]) -> ShellScript:
+    def resolve_provides(
+        self,
+        provides: Iterable[str],
+        repo_ids: Iterable[str],
+    ) -> ShellScript:
         provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
-        cmd = (self.command + Command('repoquery', '--whatprovides')).to_script()
+        cmd = (
+            self.command
+            + Command(
+                'repoquery', *[f'--repo={repo_id}' for repo_id in repo_ids], '--whatprovides'
+            )
+        ).to_script()
+        qf = "- nevra: '%{full_nevra}'\\n  repo_id: '%{repoid}'\\n"
         return ShellScript(f"""
         for _provide in {provides_str}; do
             echo "'$_provide':"
-            {cmd} "$_provide" --queryformat "- '%{{full_nevra}}'\\n"
+            {cmd} "$_provide" --queryformat "{qf}"
         done
         """)
 
@@ -386,7 +396,11 @@ class Dnf5(Dnf):
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
 
-    def resolve_provides(self, provides: list[str]) -> ShellScript:
+    def resolve_provides(
+        self,
+        provides: Iterable[str],
+        repo_ids: Iterable[str],
+    ) -> ShellScript:
         raise PrepareError("Package manager 'yum' does not support provides resolution.")
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:

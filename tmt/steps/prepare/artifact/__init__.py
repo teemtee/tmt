@@ -355,12 +355,20 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
+        provider_repo_ids = {SHARED_REPO_NAME} | {
+            repo_id
+            for provider in providers
+            for repo in provider.get_repositories()
+            for repo_id in repo.repo_ids
+        }
+
         # Resolve all requirements to canonical package names via whatprovides so
         # they can be matched against artifact.version.name below.  This handles
         # plain names, file paths, pkgconfig(...) and package-level provides
         # Artifact repos are already configured on the guest at this
         # point even though the packages themselves are not yet installed.
-        resolved = guest.package_manager.resolve_provides(list(pkg_names))
+
+        resolved = guest.package_manager.resolve_provides(pkg_names, provider_repo_ids)
 
         resolved_names = {version.name for versions in resolved.values() for version in versions}
 
