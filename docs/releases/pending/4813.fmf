@@ -1,0 +1,5 @@
+description: |
+  Fixed a bug with the ``modified-only`` option in :ref:`discover fmf</plugins/discover/fmf>`
+  plugin where it would trigger tests in ``/tests/foo-other`` when files in ``/tests/foo``
+  directory were modified. Any sub tests like ``/tests/foo/valid`` are still correctly
+  triggered.
