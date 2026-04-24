@@ -407,10 +407,12 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         #  which in turn is only called by status and clean, both cases where we do not want
         #  to attach the logfile loggers to.
         self.load_workdir(with_logfiles=False)
+
+        assert self.workdir is not None  # narrow type
+
         try:
-            self.data = RunData.from_serialized(
-                tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
-            )
+            self.data = RunData.from_serialized(self.read_state(self.workdir / 'run'))
+
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
