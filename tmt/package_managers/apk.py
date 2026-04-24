@@ -1,5 +1,4 @@
 import re
-from collections.abc import Iterable
 from typing import Optional, Union
 
 import tmt.utils
@@ -146,9 +145,6 @@ class ApkEngine(PackageManagerEngine):
         options: Optional[Options] = None,
     ) -> ShellScript:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
-
-    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise tmt.utils.PrepareError("Package manager 'apk' does not support provides resolution.")
 
 
 @provides_package_manager('apk')

@@ -360,7 +360,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # plain names, file paths, pkgconfig(...) and package-level provides
         # Artifact repos are already configured on the guest at this
         # point even though the packages themselves are not yet installed.
-        resolved = guest.package_manager.resolve_provides(list(pkg_names))
+        resolved = guest.package_manager.resolve_provides(pkg_names)
 
         resolved_names = {version.name for versions in resolved.values() for version in versions}
 

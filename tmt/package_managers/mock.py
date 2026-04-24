@@ -1,5 +1,4 @@
 import re
-from collections.abc import Iterable
 from typing import (
     Optional,
 )
@@ -14,7 +13,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.steps.provision.mock import GuestMock
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
 class MockEngine(PackageManagerEngine):
@@ -82,9 +81,6 @@ class MockEngine(PackageManagerEngine):
 
     def refresh_metadata(self) -> ShellScript:
         return self._prepare_mock_command_script('makecache --refresh')
-
-    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise PrepareError("Package manager 'mock' does not support provides resolution.")
 
 
 class _MockPackageManager(PackageManager[MockEngine]):
