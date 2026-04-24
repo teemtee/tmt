@@ -114,6 +114,11 @@ DISPLAY_COMPARISON_TEMPLATE = jinja2.Template(
 )
 
 
+def load_items(filepath: str) -> list[Item]:
+    with open(filepath) as f:
+        return [Item(**item) for item in YAML().load(f)]
+
+
 def github_api_get(
     path: str,
     params: Optional[dict[str, str]] = None,
@@ -356,12 +361,14 @@ def display_comparison(sprint_name: str, base: list[Item], current: list[Item]) 
 @click.option(
     '--base',
     'base_path',
+    metavar='PATH',
     default=None,
     help='Instead of reporting, compare the current sprint against this saved state.',
 )
 @click.option(
     '--current',
     'current_path',
+    metavar='PATH',
     default=None,
     help='If set, compare --base against --current instead of the live sprint state.',
 )
@@ -378,8 +385,7 @@ def main(
     """
 
     if current_path is not None:
-        with open(current_path) as f:
-            items = YAML().load(f)
+        items = load_items(current_path)
 
     else:
         items = fetch_sprint_items(sprint)
@@ -392,8 +398,7 @@ def main(
         YAML().dump([dataclasses.asdict(item) for item in items], sys.stdout)
 
     elif base_path is not None:
-        with open(base_path) as f:
-            base = [Item(**item) for item in YAML().load(f)]
+        base = load_items(base_path)
 
         display_comparison(sprint, base, items)
 
