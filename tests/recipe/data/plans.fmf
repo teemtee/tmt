@@ -51,3 +51,9 @@ environment:
         import:
             url: https://github.com/teemtee/tests
             name: /plans/remote
+
+/minimal:
+    summary: A minimal plan
+    execute:
+        how: tmt
+        script: echo "Execute script"
