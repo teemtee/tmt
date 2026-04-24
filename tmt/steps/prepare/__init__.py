@@ -272,16 +272,10 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                 if not test.enabled_on_guest(guest):
                     continue
 
+                # Collect required packages (require, framework and checks)
+
                 collected_requires[guest].dependencies += tmt.base.core.assert_simple_dependencies(
                     test.require,
-                    'After beakerlib processing, tests may have only simple requirements',
-                    self._logger,
-                )
-
-                collected_recommends[
-                    guest
-                ].dependencies += tmt.base.core.assert_simple_dependencies(
-                    test.recommend,
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger,
                 )
@@ -291,9 +285,19 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                 )
 
                 for check in test.check:
-                    collected_essential_requires[
-                        guest
-                    ].dependencies += check.plugin.essential_requires(guest, test, self._logger)
+                    collected_requires[guest].dependencies += check.plugin.essential_requires(
+                        guest, test, self._logger
+                    )
+
+                # Collect recommended packages
+
+                collected_recommends[
+                    guest
+                ].dependencies += tmt.base.core.assert_simple_dependencies(
+                    test.recommend,
+                    'After beakerlib processing, tests may have only simple requirements',
+                    self._logger,
+                )
 
         # 2. Now we have guests and all their requirements. There can be
         # duplicities, multiple tests requesting the same package, but also
