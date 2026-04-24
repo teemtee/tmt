@@ -1,0 +1,15 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+        image: centos:stream10
+    prepare:
+        how: feature
+        epel: enabled
+    execute:
+        how: tmt
+
+/test:
+    test: . /usr/share/beakerlib/beakerlib.sh && rlJournalStart && rlJournalEnd
+    framework: beakerlib
