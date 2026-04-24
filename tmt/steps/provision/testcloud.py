@@ -37,7 +37,7 @@ from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.hardware import Size
+    from tmt.hardware.constraints import Size
 
 
 libvirt: Optional[types.ModuleType] = None
