@@ -3,8 +3,19 @@ import configparser
 import enum
 import re
 import shlex
+from collections import defaultdict
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Optional, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Generic,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 from urllib.parse import urlparse
 
 import tmt.log
@@ -16,12 +27,22 @@ from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
     from tmt.guest import Guest
+    from tmt.package_managers._rpm import RpmVersion
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
 
     #: A package origin: either an actual repository name or a :class:`SpecialPackageOrigin`.
     PackageOrigin: TypeAlias = Union[str, 'SpecialPackageOrigin']
+
+
+class _ResolvedEntry(TypedDict):
+    """
+    Single entry from the YAML output of :py:meth:`PackageManagerEngine.resolve_provides`.
+    """
+
+    nevra: str
+    repo_id: str
 
 
 @container(frozen=True)
@@ -399,22 +420,31 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def resolve_provides(self, provides: list[str]) -> ShellScript:
+    def resolve_provides(
+        self,
+        provides: Iterable[str],
+        repo_ids: Iterable[str],
+    ) -> ShellScript:
         """
-        Resolve each provide to the NEVRAs of packages that provide it.
+        Resolves each provide to the NEVRAs of packages that provide it.
 
-        The script must emit YAML mapping each provide string to a list of NEVRA
-        strings (or null when nothing provides it), e.g.::
+        The script must emit YAML mapping each provide string to a list of
+        mappings with ``nevra`` and ``repo_id`` keys, or an empty value when
+        nothing provides it, e.g.
+
+        .. code-block:: yaml
 
             '/usr/bin/cmake':
-            - 'cmake-0:3.31.6-4.fc43.x86_64'
+                - nevra: 'cmake-0:3.31.6-4.fc43.x86_64'
+                  repo_id: 'updates'
+            '/usr/bin/non-existent-provides':
             'make':
-            - 'make-1:4.4.1-8.fc43.x86_64'
+                - nevra: 'make-1:4.4.1-8.fc43.x86_64'
+                  repo_id: 'fedora'
 
-        :param provides: Provides to resolve, e.g. package names, file paths, or
-            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
-        :returns: A shell script that emits a YAML mapping of provide → NEVRA list.
+        :param provides: Provides to resolve.
+        :param repo_ids: Limit the query to these repository IDs.
+        :returns: A shell script emitting the YAML mapping described above.
         :raises PrepareError: If the package manager does not support this query.
         """
         raise PrepareError("Package manager does not support provides resolution.")
@@ -554,37 +584,55 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
         return result
 
-    def resolve_provides(self, provides: list[str]) -> dict[str, set[Version]]:
+    # String annotation avoids circular import: _rpm.py imports Version from this module.
+    # NOTE: this method is only meaningful for RPM-based package managers; non-RPM engines
+    # raise PrepareError from their engine.resolve_provides implementation.
+    def resolve_provides(
+        self,
+        provides: Iterable[str],
+        repo_ids: Iterable[str],
+    ) -> 'dict[str, list[RpmVersion]]':
         """
-        Map each provide to the :py:class:`Version` objects of packages that provide it.
+        Map each provide to the :py:class:`RpmVersion` objects of packages that provide it.
 
-        :param provides: Provides to resolve, e.g. package names, file paths, or
-            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
-        :returns: Mapping from each provide to a set of :py:class:`Version` objects.
-            An empty set means nothing provides that capability.  Returns an
-            empty mapping when ``provides`` is empty.
-        :raises NotImplementedError: if the package manager does not support this query.
+        :param provides: Provides to resolve.
+        :param repo_ids: Limit the query to these repository IDs.
+        :returns: Mapping from each provide to a list of :py:class:`RpmVersion` objects,
+            each carrying the NEVRA and source repository. Every requested provide appears
+            as a key; provides with no match map to an empty list.
         """
         from tmt.package_managers._rpm import RpmVersion
 
-        if not provides:
-            return {}
+        provides_list = list(provides)
+        script = self.engine.resolve_provides(provides_list, repo_ids=repo_ids)
+        output = self.guest.execute(script)
 
-        script = self.engine.resolve_provides(provides)
-        stdout = self.guest.execute(script).stdout or ''
-        parsed: dict[str, Optional[list[str]]] = tmt.utils.from_yaml(stdout) or {}
+        result: defaultdict[str, list[RpmVersion]] = defaultdict(list)
 
-        result: dict[str, set[Version]] = {}
-        for provide, nevras in parsed.items():
-            versions: set[Version] = set()
-            for nevra_str in nevras or []:
+        provides_yaml: Optional[dict[str, Optional[list[_ResolvedEntry]]]] = tmt.utils.from_yaml(
+            output.stdout or ''
+        )
+        if provides_yaml is None:
+            return result
+
+        for provide, nevras in provides_yaml.items():
+            if nevras is None:
+                self.info(f"Nothing provides '{provide}'.")
+                continue
+            resolved: list[RpmVersion] = []
+            for resolved_provide in nevras:
                 try:
-                    versions.add(RpmVersion.from_nevra(nevra_str))
-                except ValueError:
-                    self.debug(f"Could not parse NEVRA for '{provide}': {nevra_str}")
-            result[provide] = versions
+                    resolved.append(
+                        RpmVersion.from_nevra(
+                            resolved_provide['nevra'], repo_id=resolved_provide['repo_id']
+                        )
+                    )
+                except ValueError as exc:
+                    raise PrepareError(
+                        f"Cannot parse '{resolved_provide}' for provide '{provide}': {exc}"
+                    ) from exc
+            result[provide] = resolved
 
-        self.debug(f"Resolved provides mapping: {result}")
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:

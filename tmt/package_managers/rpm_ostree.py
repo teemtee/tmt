@@ -1,5 +1,4 @@
 import re
-from collections.abc import Iterable
 from typing import Optional
 
 from tmt.package_managers import (
@@ -12,7 +11,7 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
 class RpmOstreeEngine(PackageManagerEngine):
@@ -113,9 +112,6 @@ class RpmOstreeEngine(PackageManagerEngine):
         options: Optional[Options] = None,
     ) -> ShellScript:
         raise GeneralError("rpm-ostree does not support debuginfo packages.")
-
-    def resolve_provides(self, provides: Iterable[str]) -> ShellScript:
-        raise PrepareError("Package manager 'rpm-ostree' does not support provides resolution.")
 
 
 @provides_package_manager('rpm-ostree')
