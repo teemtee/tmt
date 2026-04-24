@@ -27,6 +27,7 @@ Table of Contents
     :maxdepth: 2
 
     Overview <overview>
+    Environment variables (temporary) <environment>
     Guide <guide>
     Specification <spec>
     Plugins <plugins/index>
