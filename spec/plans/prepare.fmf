@@ -27,7 +27,9 @@ description: |
           The default order of any object.
 
       70
-          Installation of packages :tmt:story:`required</spec/tests/require>` by tests.
+          Installation of packages :tmt:story:`required</spec/tests/require>`
+          by tests (including :tmt:story:`/spec/tests/framework` and
+          :tmt:story:`/spec/tests/check` requires).
 
       75
           Installation of packages :tmt:story:`recommended</spec/tests/recommend>` by tests.

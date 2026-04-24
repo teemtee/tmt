@@ -1,0 +1,6 @@
+description: |
+    Packages required by the test :tmt:story:`/spec/tests/framework`
+    and test :tmt:story:`/spec/tests/check` are now installed as part of
+    the `Install required packages` prepare phase with the default order ``70``.
+    This simplifies ``beakerlib`` framework installation from ``epel`` on
+    ``centos-stream``.
