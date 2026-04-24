@@ -1,0 +1,4 @@
+description: |
+    Recipe loading now works even when the current working directory does
+    not contain an fmf tree, by creating a new tree from the saved fmf root
+    path.
