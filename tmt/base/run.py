@@ -279,7 +279,10 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
                     Optional[fmf.Tree], default_plan_tree.find(tmt.templates.DEFAULT_PLAN_NAME)
                 )
                 if default_plan_node is None:
-                    raise GeneralError("...")
+                    raise GeneralError(
+                        f"Failed to find default plan '{tmt.templates.DEFAULT_PLAN_NAME}'"
+                        " in the default plan tree."
+                    )
 
                 default_plan_node.root = self.tree.root
                 default_plan_tree.root = self.tree.root
