@@ -15,7 +15,8 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
+from tmt.package_managers._rpm import RpmVersion
+from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
 
 
 class DnfEngine(PackageManagerEngine):
@@ -208,6 +209,16 @@ class DnfEngine(PackageManagerEngine):
             )
         ).to_script()
 
+    def resolve_provides(self, provides: list[str]) -> ShellScript:
+        provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
+        cmd = (self.command + Command('repoquery', '--whatprovides')).to_script()
+        return ShellScript(f"""
+        for _provide in {provides_str}; do
+            echo "'$_provide':"
+            {cmd} "$_provide" --queryformat "- '%{{full_nevra}}'\\n"
+        done
+        """)
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -248,7 +259,6 @@ class Dnf(PackageManager[DnfEngine]):
     probe_priority = 50
 
     def list_packages(self, repository: Repository) -> list[Version]:
-        from tmt.package_managers._rpm import RpmVersion
 
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)
@@ -375,6 +385,9 @@ class Dnf5(Dnf):
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+
+    def resolve_provides(self, provides: list[str]) -> ShellScript:
+        raise PrepareError("Package manager 'yum' does not support provides resolution.")
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
         # Real yum 3.x (not a dnf symlink) ships repoquery as a separate

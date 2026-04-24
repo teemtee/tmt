@@ -399,6 +399,26 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def resolve_provides(self, provides: list[str]) -> ShellScript:
+        """
+        Resolve each provide to the NEVRAs of packages that provide it.
+
+        The script must emit YAML mapping each provide string to a list of NEVRA
+        strings (or null when nothing provides it), e.g.::
+
+            '/usr/bin/cmake':
+            - 'cmake-0:3.31.6-4.fc43.x86_64'
+            'make':
+            - 'make-1:4.4.1-8.fc43.x86_64'
+
+        :param provides: Provides to resolve, e.g. package names, file paths, or
+            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
+        :returns: A shell script that emits a YAML mapping of provide → NEVRA list.
+        :raises PrepareError: If the package manager does not support this query.
+        """
+        raise PrepareError("Package manager does not support provides resolution.")
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -532,6 +552,39 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             package = parts[0]
             # Omitted origin field → unknown source repository.
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
+        return result
+
+    def resolve_provides(self, provides: list[str]) -> dict[str, set[Version]]:
+        """
+        Map each provide to the :py:class:`Version` objects of packages that provide it.
+
+        :param provides: Provides to resolve, e.g. package names, file paths, or
+            virtual provides (e.g. ``make``, ``/usr/bin/make``, ``pkgconfig(openssl)``).
+        :returns: Mapping from each provide to a set of :py:class:`Version` objects.
+            An empty set means nothing provides that capability.  Returns an
+            empty mapping when ``provides`` is empty.
+        :raises NotImplementedError: if the package manager does not support this query.
+        """
+        from tmt.package_managers._rpm import RpmVersion
+
+        if not provides:
+            return {}
+
+        script = self.engine.resolve_provides(provides)
+        stdout = self.guest.execute(script).stdout or ''
+        parsed: dict[str, Optional[list[str]]] = tmt.utils.from_yaml(stdout) or {}
+
+        result: dict[str, set[Version]] = {}
+        for provide, nevras in parsed.items():
+            versions: set[Version] = set()
+            for nevra_str in nevras or []:
+                try:
+                    versions.add(RpmVersion.from_nevra(nevra_str))
+                except ValueError:
+                    self.debug(f"Could not parse NEVRA for '{provide}': {nevra_str}")
+            result[provide] = versions
+
+        self.debug(f"Resolved provides mapping: {result}")
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:
