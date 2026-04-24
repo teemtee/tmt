@@ -540,16 +540,6 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.guest.execute(self.engine.create_repository(directory))
 
-    def install_from_repository(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        """
-        Install packages from a repository
-        """
-        return self.install(*installables, options=options)
-
     def install_local(
         self,
         *installables: Installable,
@@ -557,16 +547,6 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     ) -> CommandOutput:
         """
         Install packages stored in a local directory
-        """
-        return self.install(*installables, options=options)
-
-    def install_from_url(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        """
-        Install packages stored on a remote URL
         """
         return self.install(*installables, options=options)
 
