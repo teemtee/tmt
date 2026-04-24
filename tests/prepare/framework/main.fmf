@@ -1,0 +1,5 @@
+summary: Verify framework installation on centos-stream
+description: |
+    Make sure that a beakerlib test can be easily executed on
+    `centos-stream` with `epel` enabled without need for `order`
+    in the `prepare` step.
