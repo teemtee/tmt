@@ -14,7 +14,7 @@ import tmt.log
 import tmt.utils
 from tmt._compat.typing import TypeAlias
 from tmt.container import container, simple_field
-from tmt.guest import Guest
+from tmt.guest import DownloadError, Guest
 from tmt.package_managers import Repository, Version
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path, ShellScript
@@ -25,12 +25,6 @@ NEVRA_PATTERN = re.compile(
 
 #: Name of the shared repository that download providers contribute RPMs into.
 SHARED_REPO_NAME: str = 'tmt-artifact-shared'
-
-
-class DownloadError(tmt.utils.GeneralError):
-    """
-    Raised when download fails.
-    """
 
 
 class UnsupportedOperationError(RuntimeError):
@@ -147,18 +141,22 @@ class ArtifactProvider(ABC):
 
         return self._artifacts
 
-    @abstractmethod
     def _download_artifact(
         self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """
         Download a single artifact to the specified destination on a given guest.
 
+        :param artifact: the artifact to download.
         :param guest: the guest on which the artifact should be downloaded.
         :param destination: path into which the artifact should be downloaded.
+        :raises DownloadError: if the download fails.
         """
 
-        raise NotImplementedError
+        try:
+            guest.download(artifact.location, destination)
+        except tmt.utils.GeneralError as error:
+            raise DownloadError(f"Failed to download '{artifact}'.") from error
 
     def fetch_contents(
         self,
