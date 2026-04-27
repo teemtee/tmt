@@ -499,7 +499,7 @@ class ExecuteUpgrade(ExecuteInternal):
                 required_packages += test.test_framework.get_requirements(test, self._logger)
 
                 for check in test.check:
-                    required_packages += check.plugin.essential_requires(guest, test, self._logger)
+                    required_packages += check.plugin.requires(guest, test, self._logger)
 
             self._install_dependencies(guest, required_packages)
             self._install_dependencies(guest, recommended_packages, recommends=True)

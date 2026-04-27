@@ -468,7 +468,7 @@ class AvcDenials(CheckPlugin[AvcCheck]):
     _check_class = AvcCheck
 
     @classmethod
-    def essential_requires(
+    def requires(
         cls,
         guest: 'Guest',
         test: 'tmt.base.core.Test',
