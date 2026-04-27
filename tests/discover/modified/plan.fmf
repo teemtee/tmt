@@ -1,0 +1,22 @@
+discover:
+  how: fmf
+  modified-only: true
+provision:
+  how: local
+execute:
+  how: tmt
+
+/remote:
+  discover+:
+    url: https://github.com/teemtee/tests
+    ref: 89ec2b1
+    modified-ref: 89ec2b1^
+    filter: tag:remote
+
+/local:
+  # TODO: enable tests after migration
+  enabled: false
+  discover+:
+    # TODO: Fixing the ref requires 3 PRs
+    ref: TBD-2
+    modified-ref: TBD

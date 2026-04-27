@@ -5,6 +5,17 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun 'set -o pipefail'
+        rlRun "run=\$(mktemp -d)" 0 "Create a run directory"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Remote"
+        rlRun "pushd modified"
+        rlRun -s "tmt run -v --scratch -i $run discover plan -n /plan/remote"
+        rlAssertGrep "summary: 2 tests selected" "$rlRun_LOG"
+        rlAssertGrep "/tests/modified-only$" "$rlRun_LOG" -E
+        rlAssertGrep "/tests/modified-only/sub$" "$rlRun_LOG" -E
+        rlAssertNotGrep "/tests/modified-only-skip$" "$rlRun_LOG" -E
+        rlRun "popd"
     rlPhaseEnd
 
     rlPhaseStartTest 'Command-line'
@@ -26,5 +37,9 @@ rlJournalStart
         rlRun -s 'env -C data tmt run -rdv discover \
             plan -n fmf/empty-modified >/dev/null'
         rlAssertGrep 'summary: 0 tests selected' "$rlRun_LOG"
+    rlPhaseEnd
+
+    rlPhaseStartCleanup
+        rlRun "rm -r $run" 0 "Remove the run directory"
     rlPhaseEnd
 rlJournalEnd
