@@ -11,5 +11,8 @@
         how: tmt
 
 /test:
-    test: . /usr/share/beakerlib/beakerlib.sh && rlJournalStart && rlJournalEnd
     framework: beakerlib
+    test: |
+        . /usr/share/beakerlib/beakerlib.sh
+        rlJournalStart
+        rlJournalEnd

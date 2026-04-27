@@ -10,9 +10,10 @@ rlJournalStart
         build_container_image "centos/stream10/upstream:latest"
     rlPhaseEnd
 
-    rlPhaseStartTest
+    rlPhaseStartTest "Make sure the test framework is installed"
         image="$TEST_IMAGE_PREFIX/centos/stream10/upstream:latest"
-        rlRun "tmt run --id $run -vvv --all provision --how container --image $image"
+        rlRun "tmt run --id $run -vvv --all provision --how container --image $image" 0 \
+            "Run a beakerlib test on centos-stream with epel enabled"
     rlPhaseEnd
 
     rlPhaseStartCleanup
