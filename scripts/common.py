@@ -20,6 +20,10 @@ class Item:
     url: str
     title: str
 
+    @property
+    def safe_size(self) -> int:
+        return self.size or 0
+
     def __str__(self) -> str:
         size_str = f"[{self.size}]" if self.size is not None else "[-]"
         identifier = f"{self.repo}#{self.id}"
