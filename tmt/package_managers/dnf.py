@@ -212,21 +212,25 @@ class DnfEngine(PackageManagerEngine):
     def resolve_provides(
         self,
         provides: Iterable[str],
-        repo_ids: Iterable[str],
+        repo_ids: Iterable[str] = (),
     ) -> ShellScript:
         provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
         cmd = (
             self.command
             + Command(
-                'repoquery', *[f'--repo={repo_id}' for repo_id in repo_ids], '--whatprovides'
+                'repoquery',
+                '--queryformat',
+                r"- nevra: '%{full_nevra}'\n  repo_id: '%{repoid}'\n",
+                *[f'--repo={repo_id}' for repo_id in repo_ids],
+                '--whatprovides',
             )
         ).to_script()
-        qf = "- nevra: '%{full_nevra}'\\n  repo_id: '%{repoid}'\\n"
         return ShellScript(f"""
         for _provide in {provides_str}; do
             echo "'$_provide':"
-            {cmd} "$_provide" --queryformat "{qf}"
+            {cmd} "$_provide"
         done
+        {'' if provides_str else "echo '{}'"}
         """)
 
     def create_repository(self, directory: Path) -> ShellScript:
@@ -399,7 +403,7 @@ class YumEngine(DnfEngine):
     def resolve_provides(
         self,
         provides: Iterable[str],
-        repo_ids: Iterable[str],
+        repo_ids: Iterable[str] = (),
     ) -> ShellScript:
         raise PrepareError("Package manager 'yum' does not support provides resolution.")
 

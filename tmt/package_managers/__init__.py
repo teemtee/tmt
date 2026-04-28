@@ -3,7 +3,6 @@ import configparser
 import enum
 import re
 import shlex
-from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
@@ -15,6 +14,7 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
+    cast,
 )
 from urllib.parse import urlparse
 
@@ -423,7 +423,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def resolve_provides(
         self,
         provides: Iterable[str],
-        repo_ids: Iterable[str],
+        repo_ids: Iterable[str] = (),
     ) -> ShellScript:
         """
         Resolves each provide to the NEVRAs of packages that provide it.
@@ -443,7 +443,8 @@ class PackageManagerEngine(tmt.utils.Common):
                   repo_id: 'fedora'
 
         :param provides: Provides to resolve.
-        :param repo_ids: Limit the query to these repository IDs.
+        :param repo_ids: Restrict the query to these repository IDs; searches all enabled
+            repositories when not provided.
         :returns: A shell script emitting the YAML mapping described above.
         :raises PrepareError: If the package manager does not support this query.
         """
@@ -584,19 +585,17 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
         return result
 
-    # String annotation avoids circular import: _rpm.py imports Version from this module.
-    # NOTE: this method is only meaningful for RPM-based package managers; non-RPM engines
-    # raise PrepareError from their engine.resolve_provides implementation.
     def resolve_provides(
         self,
         provides: Iterable[str],
-        repo_ids: Iterable[str],
-    ) -> 'dict[str, list[RpmVersion]]':
+        repo_ids: Iterable[str] = (),
+    ) -> dict[str, list['RpmVersion']]:
         """
         Map each provide to the :py:class:`RpmVersion` objects of packages that provide it.
 
         :param provides: Provides to resolve.
-        :param repo_ids: Limit the query to these repository IDs.
+        :param repo_ids: Restrict the query to these repository IDs; searches all enabled
+            repositories when not provided.
         :returns: Mapping from each provide to a list of :py:class:`RpmVersion` objects,
             each carrying the NEVRA and source repository. Every requested provide appears
             as a key; provides with no match map to an empty list.
@@ -604,25 +603,21 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         from tmt.package_managers._rpm import RpmVersion
 
         provides_list = list(provides)
-        script = self.engine.resolve_provides(provides_list, repo_ids=repo_ids)
-        output = self.guest.execute(script)
+        output = self.guest.execute(self.engine.resolve_provides(provides_list, repo_ids=repo_ids))
 
-        result: defaultdict[str, list[RpmVersion]] = defaultdict(list)
+        result: dict[str, list[RpmVersion]] = {provide: [] for provide in provides_list}
 
-        provides_yaml: Optional[dict[str, Optional[list[_ResolvedEntry]]]] = tmt.utils.from_yaml(
-            output.stdout or ''
+        provides_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
+            cast(str, output.stdout)
         )
-        if provides_yaml is None:
-            return result
 
         for provide, nevras in provides_yaml.items():
             if nevras is None:
                 self.info(f"Nothing provides '{provide}'.")
                 continue
-            resolved: list[RpmVersion] = []
             for resolved_provide in nevras:
                 try:
-                    resolved.append(
+                    result[provide].append(
                         RpmVersion.from_nevra(
                             resolved_provide['nevra'], repo_id=resolved_provide['repo_id']
                         )
@@ -631,7 +626,6 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                     raise PrepareError(
                         f"Cannot parse '{resolved_provide}' for provide '{provide}': {exc}"
                     ) from exc
-            result[provide] = resolved
 
         return result
 
