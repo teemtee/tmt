@@ -378,9 +378,9 @@ The following environment variables can be used to modify
 behaviour of the ``tmt`` command.
 
 TMT_DEBUG
-    Enable the desired debug level. Most of the commands support
-    levels from 1 to 3. However, some of the plugins go even
-    deeper when needed.
+    Emit debugging information. Using this environment variable has the
+    same effect as the equal number of ``-d`` options. The value can go
+    from ``0`` to ``4`` for increasingly detailed logging.
 
 TMT_PLUGINS
     Path to a directory with additional plugins. Multiple paths
