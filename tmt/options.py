@@ -195,14 +195,22 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         '--verbose',
         count=True,
         default=0,
-        help='Show more details. Use multiple times to raise verbosity.',
+        help="""
+             Make output more verbose, show more details. Can be used
+             up to three times (``-v`` to ``-vvv``) for even more
+             increased verbosity.
+             """,
     ),
     option(
         '-d',
         '--debug',
         count=True,
         default=0,
-        help='Provide debugging information. Repeat to see more details.',
+        help="""
+             Emit debugging information. Can be used up to four times
+             (``-d`` to ``-dddd``, or ``TMT_DEBUG=1`` to ``TMT_DEBUG=4``)
+             for increasingly detailed logging.
+             """,
     ),
     option(
         '-q',

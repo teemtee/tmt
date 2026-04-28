@@ -31,10 +31,13 @@ import itertools
 import logging
 import os
 import sys
+import textwrap
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Literal,
+    NoReturn,
     Optional,
     Protocol,
     TextIO,
@@ -53,6 +56,7 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.utils
     import tmt.utils.themes
+    from tmt._compat.typing import TypeAlias
 
 # Log in workdir
 LOG_FILENAME = 'log.txt'
@@ -60,8 +64,18 @@ LOG_FILENAME = 'log.txt'
 # Hierarchy indent
 INDENT = 4
 
-DEFAULT_VERBOSITY_LEVEL = 0
-DEFAULT_DEBUG_LEVEL = 0
+#: Supported verbosity levels.
+VERBOSITY_LEVELS = (0, 1, 2, 3, 4)
+#: Supported debug levels.
+DEBUG_LEVELS = (0, 1, 2, 3, 4)
+
+#: A type of verbosity level values accepted by logging functions.
+VerbosityLevel: 'TypeAlias' = Literal[0, 1, 2, 3, 4]
+#: A type of debug level values accepted by logging functions.
+DebugLevel: 'TypeAlias' = Literal[0, 1, 2, 3, 4]
+
+DEFAULT_VERBOSITY_LEVEL: VerbosityLevel = 0
+DEFAULT_DEBUG_LEVEL: DebugLevel = 0
 
 
 class Topic(enum.Enum):
@@ -114,21 +128,13 @@ def create_decolorizer(apply_colors: bool) -> Callable[[str], str]:
     return tmt.utils.remove_color
 
 
-def _debug_level_from_global_envvar() -> int:
-    import tmt.utils
-
+def _debug_level_from_global_envvar() -> Optional[DebugLevel]:
     raw_value = os.getenv('TMT_DEBUG', None)
 
     if raw_value is None:
         return 0
 
-    try:
-        return int(raw_value)
-
-    except ValueError as error:
-        raise tmt.utils.GeneralError(
-            f"Invalid debug level '{raw_value}', use an integer."
-        ) from error
+    return normalize_debug_level(raw_value)
 
 
 def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
@@ -266,6 +272,86 @@ def indent(
     )
 
 
+# RET503: explicit return is not needed, last expression is a call of a
+# `NoReturn` function.
+def normalize_verbosity_level(raw_value: Any) -> Optional[VerbosityLevel]:  # noqa: RET503
+    def _raise(exc: Optional[Exception] = None) -> NoReturn:
+        import tmt.utils
+
+        message = (
+            textwrap.dedent(
+                f"""
+            Verbosity level '{raw_value}' is invalid. Supported verbosity levels are
+            {VERBOSITY_LEVELS[1]} (-{'v' * VERBOSITY_LEVELS[1]})
+            to
+            {VERBOSITY_LEVELS[-1]} (-{'v' * VERBOSITY_LEVELS[-1]}).
+            """
+            )
+            .replace('\n', ' ')
+            .strip()
+        )
+
+        if exc is None:
+            raise tmt.utils.GeneralError(message)
+
+        raise tmt.utils.GeneralError(message) from exc
+
+    if raw_value is None:
+        return None
+
+    if isinstance(raw_value, str):
+        try:
+            raw_value = int(raw_value)
+
+        except ValueError as exc:
+            _raise(exc=exc)
+
+    if isinstance(raw_value, int) and raw_value in VERBOSITY_LEVELS:
+        return cast(VerbosityLevel, raw_value)
+
+    _raise()
+
+
+# RET503: explicit return is not needed, last expression is a call of a
+# `NoReturn` function.
+def normalize_debug_level(raw_value: Any) -> Optional[DebugLevel]:  # noqa: RET503
+    def _raise(exc: Optional[Exception] = None) -> NoReturn:
+        import tmt.utils
+
+        message = (
+            textwrap.dedent(
+                f"""
+            Debug level '{raw_value}' is invalid. Supported debug levels are
+            {DEBUG_LEVELS[1]} (-{'d' * DEBUG_LEVELS[1]})
+            to
+            {DEBUG_LEVELS[-1]} (-{'d' * DEBUG_LEVELS[-1]}).
+            """
+            )
+            .replace('\n', ' ')
+            .strip()
+        )
+
+        if exc is None:
+            raise tmt.utils.GeneralError(message)
+
+        raise tmt.utils.GeneralError(message) from exc
+
+    if raw_value is None:
+        return None
+
+    if isinstance(raw_value, str):
+        try:
+            raw_value = int(raw_value)
+
+        except ValueError as exc:
+            _raise(exc)
+
+    if isinstance(raw_value, int) and raw_value in DEBUG_LEVELS:
+        return cast(DebugLevel, raw_value)
+
+    _raise()
+
+
 @container
 class LogRecordDetails:
     """
@@ -281,11 +367,11 @@ class LogRecordDetails:
     logger_labels: list[str] = simple_field(default_factory=list[str])
     logger_labels_padding: int = 0
 
-    logger_verbosity_level: int = 0
-    message_verbosity_level: Optional[int] = None
+    logger_verbosity_level: VerbosityLevel = 0
+    message_verbosity_level: Optional[VerbosityLevel] = None
 
-    logger_debug_level: int = 0
-    message_debug_level: Optional[int] = None
+    logger_debug_level: DebugLevel = 0
+    message_debug_level: Optional[DebugLevel] = None
 
     logger_quiet: bool = False
     ignore_quietness: bool = False
@@ -488,14 +574,14 @@ class RunWarningsFilter(logging.Filter):
         return False
 
 
-class LoggingFunction(Protocol):
+class VerboseLoggingFunction(Protocol):
     def __call__(
         self,
         key: str,
         value: Optional[str] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        level: int = 1,
+        level: VerbosityLevel = 1,
         topic: Optional[Topic] = None,
         stacklevel: int = 1,
     ) -> None:
@@ -521,14 +607,17 @@ class Logger:
     and handlers.
     """
 
+    verbosity_level: VerbosityLevel
+    debug_level: DebugLevel
+
     def __init__(
         self,
         actual_logger: logging.Logger,
         base_shift: int = 0,
         labels: Optional[list[str]] = None,
         labels_padding: int = 0,
-        verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
-        debug_level: int = DEFAULT_DEBUG_LEVEL,
+        verbosity_level: VerbosityLevel = DEFAULT_VERBOSITY_LEVEL,
+        debug_level: DebugLevel = DEFAULT_DEBUG_LEVEL,
         quiet: bool = False,
         topics: Optional[set[Topic]] = None,
         apply_colors_output: bool = True,
@@ -751,7 +840,8 @@ class Logger:
 
         actual_kwargs.update(kwargs)
 
-        verbosity_level = cast(Optional[int], actual_kwargs.get('verbose', None))
+        verbosity_level = normalize_verbosity_level(actual_kwargs.get('verbose', None))
+
         if verbosity_level is None or verbosity_level == 0:
             pass
 
@@ -760,11 +850,11 @@ class Logger:
 
         debug_level_from_global_envvar = _debug_level_from_global_envvar()
 
-        if debug_level_from_global_envvar not in (None, 0):
+        if debug_level_from_global_envvar is not None and debug_level_from_global_envvar != 0:
             self.debug_level = debug_level_from_global_envvar
 
         else:
-            debug_level_from_option = cast(Optional[int], actual_kwargs.get('debug', None))
+            debug_level_from_option = normalize_debug_level(actual_kwargs.get('debug', None))
 
             if debug_level_from_option is None or debug_level_from_option == 0:
                 pass
@@ -925,7 +1015,7 @@ class Logger:
         value: Optional[LoggableValue] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        level: int = 1,
+        level: VerbosityLevel = 1,
         topic: Optional[Topic] = None,
         stacklevel: int = 1,
     ) -> None:
@@ -948,7 +1038,7 @@ class Logger:
         value: Optional[LoggableValue] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        level: int = 1,
+        level: DebugLevel = 1,
         topic: Optional[Topic] = None,
         stacklevel: int = 1,
     ) -> None:

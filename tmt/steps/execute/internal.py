@@ -308,7 +308,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         value: Optional[str] = None,
         color: tmt.utils.themes.Style = None,
         shift: int = 2,
-        level: int = 3,
+        level: tmt.log.VerbosityLevel = 3,
         topic: Optional[tmt.log.Topic] = None,
     ) -> None:
         """
@@ -383,7 +383,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             value: Optional[str] = None,
             color: tmt.utils.themes.Style = None,
             shift: int = 2,
-            level: int = 3,
+            level: tmt.log.VerbosityLevel = 3,
             topic: Optional[tmt.log.Topic] = None,
             stacklevel: int = 1,
         ) -> None:
