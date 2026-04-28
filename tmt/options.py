@@ -197,8 +197,8 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         default=0,
         help="""
              Make output more verbose, show more details. Can be used
-             up to three times (``-v`` to ``-vvv``) for even more
-             increased verbosity.
+             up to four times (``-v`` to ``-vvvv``) for increasingly
+             detailed output.
              """,
     ),
     option(

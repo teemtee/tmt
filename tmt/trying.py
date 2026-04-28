@@ -29,7 +29,7 @@ import tmt.utils
 from tmt import Plan
 from tmt.base.run import RunData
 from tmt.steps.prepare import PreparePlugin
-from tmt.utils import Command, GeneralError, MetadataError, NormalizationError, Path
+from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
@@ -518,7 +518,7 @@ class Try(tmt.utils.Common):
                 self.verbosity_level = verbosity_level
                 self.print(f"Switched to verbose level {self.verbosity_level}.")
 
-        except (ValueError, NormalizationError):
+        except GeneralError:
             self.print(f"Invalid level '{answer}'.")
 
     @Action("verbose", shortcut="v", order=4, group=1, prompt_function=prompt_verbose)
@@ -552,7 +552,7 @@ class Try(tmt.utils.Common):
                 self.debug_level = debug_level
                 self.print(f"Switched to debug level {self.debug_level}.")
 
-        except ValueError:
+        except GeneralError:
             self.print(f"Invalid level '{answer}'.")
 
     @Action("debug", shortcut="b", order=5, group=1, prompt_function=prompt_debug)
