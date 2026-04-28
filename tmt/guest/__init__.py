@@ -116,9 +116,22 @@ DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
 REBOOT_TIMEOUT: int = configure_constant(DEFAULT_REBOOT_TIMEOUT, 'TMT_REBOOT_TIMEOUT')
 
 #: Number of attempts to download a file from a URL.
-DOWNLOAD_ATTEMPTS = 3
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_DOWNLOAD_ATTEMPTS: int = 3
+
+#: Number of attempts to download a file from a URL.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_DOWNLOAD_ATTEMPTS``.
+DOWNLOAD_ATTEMPTS: int = configure_constant(DEFAULT_DOWNLOAD_ATTEMPTS, 'TMT_DOWNLOAD_ATTEMPTS')
+
 #: Number of seconds to wait between download attempts.
-DOWNLOAD_INTERVAL = 5
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_DOWNLOAD_INTERVAL: int = 5
+
+#: Number of seconds to wait between download attempts.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_DOWNLOAD_INTERVAL``.
+DOWNLOAD_INTERVAL: int = configure_constant(DEFAULT_DOWNLOAD_INTERVAL, 'TMT_DOWNLOAD_INTERVAL')
 
 
 def default_reboot_waiting() -> Waiting:
