@@ -93,6 +93,8 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             self.chroot = chroot
         except (ValueError, IndexError) as error:
             raise ValueError(f"Invalid provider id '{self.id}'.") from error
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
 
     @cached_property
     def build_info(self) -> Optional["Munch"]:
@@ -225,12 +227,11 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             provider=self,
         )
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def _populate_artifacts(self) -> None:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 
-        return [self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas]
+        self._artifacts.extend([self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas])
 
     def contribute_to_shared_repo(
         self,

@@ -4,7 +4,7 @@ Abstract base class for artifact providers.
 
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from functools import cached_property
 from re import Pattern
 from shlex import quote
@@ -110,7 +110,7 @@ class ArtifactProvider(ABC):
     #: repository, and so on.
     id: ArtifactProviderId = simple_field(init=False)
 
-    #: All artifacts known to this provider. Populated by
+    #: Writable internal field of :py:attr:`artifacts`. To be populated by
     #: :py:meth:`_download_artifact` and/or :py:meth:`enumerate_artifacts`.
     _artifacts: list[ArtifactInfo] = simple_field(init=False, default_factory=list)
 
@@ -138,14 +138,12 @@ class ArtifactProvider(ABC):
         raise NotImplementedError
 
     @property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def artifacts(self) -> Iterator[ArtifactInfo]:
         """
-        Collect all artifacts available from this provider.
-
-        :returns: a list of provided artifacts.
+        All artifacts known to this provider.
         """
 
-        return self._artifacts
+        yield from self._artifacts
 
     @abstractmethod
     def _download_artifact(

@@ -4,7 +4,7 @@ Koji Artifact Provider
 
 import types
 from abc import abstractmethod
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from functools import cached_property
 from shlex import quote
 from typing import Any, Optional, TypeVar
@@ -234,7 +234,13 @@ class KojiArtifactProvider(ArtifactProvider):
 
 
 @provides_artifact_provider("koji.task")
+@container
 class KojiTask(KojiArtifactProvider):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
+
     @cached_property
     def build_id(self) -> Optional[int]:
         task_id = int(self.id)
@@ -276,8 +282,7 @@ class KojiTask(KojiArtifactProvider):
             provider=self,
         )
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def _populate_artifacts(self) -> None:
         self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
         # If task produced a build, reuse build path
         if self.build_id is not None:
@@ -285,7 +290,8 @@ class KojiTask(KojiArtifactProvider):
                 f"Task '{self.id}' produced build '{self.build_id}', fetching RPMs from the build."
             )
             assert self.build_provider is not None
-            return list(self.build_provider.artifacts)
+            self._artifacts.extend(self.build_provider.artifacts)
+            return
 
         # Otherwise, list the task output files for scratch builds
         self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
@@ -307,27 +313,40 @@ class KojiTask(KojiArtifactProvider):
                         f"Skipping redundant RPM '{rpm.id}' from task '{child_task}'"
                     )
 
-        return artifacts
+        self._artifacts.extend(artifacts)
 
 
 @provides_artifact_provider('koji.build')
+@container
 class KojiBuild(KojiArtifactProvider):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
+
     @cached_property
     def build_id(self) -> int:
         return int(self.id)
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def _populate_artifacts(self) -> None:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.")
 
-        return [
-            self.make_rpm_artifact(rpm_dict)
-            for rpm_dict in self._call_api("listBuildRPMs", self.build_id)
-        ]
+        self._artifacts.extend(
+            [
+                self.make_rpm_artifact(rpm_dict)
+                for rpm_dict in self._call_api("listBuildRPMs", self.build_id)
+            ]
+        )
 
 
 @provides_artifact_provider("koji.nvr")
+@container
 class KojiNvr(KojiArtifactProvider):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
+
     @cached_property
     def build_info(self) -> Optional[dict[str, Any]]:
         """
@@ -347,11 +366,10 @@ class KojiNvr(KojiArtifactProvider):
         assert isinstance(build_id, int)
         return build_id
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def _populate_artifacts(self) -> None:
         """
         RPM artifacts for the given NVR.
         """
         self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
         assert self.build_provider is not None
-        return list(self.build_provider.artifacts)
+        self._artifacts.extend(self.build_provider.artifacts)
