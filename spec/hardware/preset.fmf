@@ -1,0 +1,69 @@
+summary: |
+    Reference predefined hardware configurations from external preset files.
+
+description: |
+    .. code-block:: yaml
+
+       provision:
+           # Define the preset source (URL or local path)
+           # Required when using filter in hardware
+           preset:
+               url: https://github.com/my-team/project/presets.yml
+               # path: /home/user/.presets.yml
+
+           hardware:
+               # Reference a named preset
+               filter: AMD__ROME
+
+    Preset files use YAML format with named configurations:
+
+    .. code-block:: yaml
+
+       # presets.yml
+       - name: AMD__ROME
+         hardware:
+           cpu:
+             family: 23
+             model: 49
+       - name: MEMORY_MIN_64G
+         hardware:
+           memory: ">= 64 GB"
+
+    A filter reference expands to all of its defined constraints combined
+    with AND, and can be used anywhere a hardware constraint can appear.
+
+    .. versionadded:: 1.73
+
+example:
+  - |
+    # Use a remote preset
+    provision:
+        preset:
+            url: https://github.com/my-team/presets.yml
+        hardware:
+            filter: AMD__ROME
+
+  - |
+    # Use a local preset file
+    provision:
+        preset:
+            path: ~/.config/tmt/presets.yml
+        hardware:
+            filter: MEMORY_MIN_64G
+            disk:
+                - size: ">= 500 GB"
+
+  - |
+    # Use preset in OR logic
+    provision:
+        preset:
+            url: https://example.com/presets.yml
+        hardware:
+            or:
+                - cpu:
+                    model: 97
+                - filter: AMD__ROME
+
+# NOTE: not yet supported
+# link:
+#   - implemented-by: /tmt/steps/provision/artemis.py
