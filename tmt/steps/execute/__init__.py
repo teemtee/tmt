@@ -455,7 +455,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         command: ShellScript,
         *,
         cwd: Path,
-        log: tmt.log.LoggingFunction,
+        log: tmt.log.VerboseLoggingFunction,
         interactive: bool,
         deadline: Optional[tmt.utils.wait.Deadline],
     ) -> tmt.utils.CommandOutput:

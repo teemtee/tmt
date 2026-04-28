@@ -74,7 +74,7 @@ from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
-from tmt.log import LoggableValue
+from tmt.log import DebugLevel, LoggableValue, VerbosityLevel
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
@@ -1035,7 +1035,7 @@ class StreamLogger(Thread):
         log_header: str,
         *,
         stream: Optional[IO[bytes]] = None,
-        logger: Optional[tmt.log.LoggingFunction] = None,
+        logger: Optional[tmt.log.VerboseLoggingFunction] = None,
         click_context: Optional[click.Context] = None,
         stream_output: bool = True,
     ) -> None:
@@ -1257,7 +1257,7 @@ class Command:
         # Logging
         message: Optional[str] = None,
         friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         silent: bool = False,
         stream_output: bool = True,
         caller: Optional['Common'] = None,
@@ -2059,7 +2059,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return parent if parent is not None else local
 
     @property
-    def debug_level(self) -> int:
+    def debug_level(self) -> DebugLevel:
         """
         The current debug level applied to this object
         """
@@ -2067,7 +2067,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return self._logger.debug_level
 
     @debug_level.setter
-    def debug_level(self, level: int) -> None:
+    def debug_level(self, level: DebugLevel) -> None:
         """
         Update the debug level attached to this object
         """
@@ -2075,7 +2075,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self._logger.debug_level = level
 
     @property
-    def verbosity_level(self) -> int:
+    def verbosity_level(self) -> 'VerbosityLevel':
         """
         The current verbosity level applied to this object
         """
@@ -2083,7 +2083,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return self._logger.verbosity_level
 
     @verbosity_level.setter
-    def verbosity_level(self, level: int) -> None:
+    def verbosity_level(self, level: VerbosityLevel) -> None:
         """
         Update the verbosity level attached to this object
         """
@@ -2256,7 +2256,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         value: Optional[LoggableValue] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        level: int = 1,
+        level: 'VerbosityLevel' = 1,
         topic: Optional[tmt.log.Topic] = None,
         stacklevel: int = 1,
     ) -> None:
@@ -2282,7 +2282,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         value: Optional[LoggableValue] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        level: int = 1,
+        level: 'DebugLevel' = 1,
         topic: Optional[tmt.log.Topic] = None,
         stacklevel: int = 1,
     ) -> None:
@@ -2322,7 +2322,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         value: Optional[str] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 1,
-        level: int = 3,
+        level: VerbosityLevel = 3,
         topic: Optional[tmt.log.Topic] = None,
         stacklevel: int = 1,
     ) -> None:
@@ -2355,7 +2355,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         env: Optional[Environment] = None,
         interactive: bool = False,
         join: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         timeout: Optional[int] = None,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
@@ -2397,7 +2397,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             logger=self._logger,
         )
 
-    def read_file(self, filepath: Path, debug_level: int = 2) -> str:
+    def read_file(self, filepath: Path, debug_level: VerbosityLevel = 2) -> str:
         """
         Read a file from the workdir of this object.
 
@@ -2424,7 +2424,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         filepath: Path,
         data: str,
         mode: WriteMode = 'w',
-        debug_level: int = 2,
+        debug_level: VerbosityLevel = 2,
     ) -> None:
         """
         Write into a file in the workdir of this object.
@@ -6337,7 +6337,8 @@ class NormalizeKeysMixin(_CommonBase):
 
         from tmt.container import key_to_option
 
-        log_shift, log_level = 2, 4
+        log_shift: int = 2
+        log_level: DebugLevel = 4
 
         debug_intro = functools.partial(
             logger.debug,
@@ -6377,7 +6378,7 @@ class NormalizeKeysMixin(_CommonBase):
             value_source: FieldValueSource
 
             # Verbose, let's hide it a bit deeper.
-            debug('dict', self.__dict__, level=log_level + 1)
+            debug('dict', self.__dict__)
 
             if hasattr(self, keyname):
                 # If the key exists as instance's attribute already, it is because it's been

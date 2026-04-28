@@ -590,7 +590,7 @@ class Step(
         return self.plan.run_workdir
 
     @property
-    def _cli_invocation_logger(self) -> tmt.log.LoggingFunction:
+    def _cli_invocation_logger(self) -> tmt.log.VerboseLoggingFunction:
         return functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
 
     @property

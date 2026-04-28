@@ -29,7 +29,7 @@ import tmt.utils
 from tmt import Plan
 from tmt.base.run import RunData
 from tmt.steps.prepare import PreparePlugin
-from tmt.utils import Command, GeneralError, MetadataError, Path
+from tmt.utils import Command, GeneralError, MetadataError, NormalizationError, Path
 from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
@@ -216,7 +216,7 @@ class Try(tmt.utils.Common):
         # Use the verbosity level 3 unless user explicitly requested
         # a different level on the command line
         if self.verbosity_level == 0:
-            self.verbosity_level: int = 3
+            self.verbosity_level = 3
 
         # Use the interactive mode during test execution
         tmt.steps.execute.Execute.store_cli_invocation(
@@ -509,9 +509,16 @@ class Try(tmt.utils.Common):
             return
 
         try:
-            self.verbosity_level = int(answer)
-            self.print(f"Switched to verbose level {self.verbosity_level}.")
-        except ValueError:
+            verbosity_level = tmt.log.normalize_verbosity_level(answer)
+
+            if verbosity_level is None:
+                self.print(f"Invalid level '{answer}'.")
+
+            else:
+                self.verbosity_level = verbosity_level
+                self.print(f"Switched to verbose level {self.verbosity_level}.")
+
+        except (ValueError, NormalizationError):
             self.print(f"Invalid level '{answer}'.")
 
     @Action("verbose", shortcut="v", order=4, group=1, prompt_function=prompt_verbose)
@@ -536,8 +543,15 @@ class Try(tmt.utils.Common):
             return
 
         try:
-            self.debug_level = int(answer)
-            self.print(f"Switched to debug level {self.debug_level}.")
+            debug_level = tmt.log.normalize_debug_level(answer)
+
+            if debug_level is None:
+                self.print(f"Invalid level '{answer}'.")
+
+            else:
+                self.debug_level = debug_level
+                self.print(f"Switched to debug level {self.debug_level}.")
+
         except ValueError:
             self.print(f"Invalid level '{answer}'.")
 
