@@ -4,7 +4,6 @@ from typing import Any, Optional
 import tmt.log
 from tmt.container import container, field
 from tmt.guest import Guest
-from tmt.package_managers import Package
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 from tmt.utils import ShellScript
 
@@ -59,7 +58,7 @@ class Crb(ToggleableFeature):
             logger.warning('CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.')
             return
 
-        guest.package_manager.install(Package("dnf-command(config-manager)"))
+        guest.package_manager.install_config_manager()
 
         logger.info(f"{action.capitalize()} CRB repository.")
 

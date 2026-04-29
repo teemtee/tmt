@@ -253,6 +253,9 @@ class Dnf(PackageManager[DnfEngine]):
     #: Package name of the COPR plugin for this package manager.
     copr_plugin: ClassVar[str] = 'dnf-plugins-core'
 
+    #: Package name of the config-manager plugin for this package manager.
+    config_manager_plugin: ClassVar[str] = 'dnf-command(config-manager)'
+
     # Compiled regex patterns for DNF/YUM error messages
     _FAILED_PACKAGE_INSTALLATION_PATTERNS = [
         re.compile(r'Unable to find a match:\s+([^\s\n]+)', re.IGNORECASE),
@@ -330,6 +333,10 @@ class Dnf(PackageManager[DnfEngine]):
 
         return results
 
+    def install_config_manager(self) -> None:
+        self.debug('Make sure the config-manager plugin is available.')
+        self.install(Package(self.config_manager_plugin))
+
     def enable_copr(self, *repositories: str) -> None:
         """
         Enable requested copr repositories
@@ -393,6 +400,7 @@ class Dnf5(Dnf):
     _engine_class = Dnf5Engine
 
     copr_plugin: ClassVar[str] = 'dnf5-command(copr)'
+    config_manager_plugin: ClassVar[str] = 'dnf5-command(config-manager)'
 
     probe_command = Command('dnf5', '--version')
     probe_priority = 60
@@ -482,6 +490,7 @@ class Yum(Dnf):
     _engine_class = YumEngine
 
     copr_plugin: ClassVar[str] = 'yum-plugin-copr'
+    config_manager_plugin: ClassVar[str] = 'yum-utils'
 
     bootc_builder = False
 
