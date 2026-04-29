@@ -3,3 +3,6 @@ description:
     Make sure enable/disable EPEL works.
 tag+:
   - provision-container
+  - provision-only
+  - provision-virtual
+  - image-mode

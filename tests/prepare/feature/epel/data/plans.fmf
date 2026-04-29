@@ -1,5 +1,5 @@
 provision:
-    how: container
+    how: $PROVISION_HOW
 
 execute:
     how: tmt
