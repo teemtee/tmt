@@ -1,0 +1,21 @@
+/inaccessible:
+    plan:
+        import:
+            url: https://secret.internal
+            name: /secret/internal/plan
+    /disabled:
+        summary: Unimportable plan should not raise errors when disabled
+        enabled: false
+
+    /disabled-by-adjust:
+        summary: Local plan disabled by adjust should not import remote plan
+        adjust:
+            enabled: false
+            when: distro == fedora-rawhide
+
+    /enabled-by-adjust:
+        summary: Local plan enabled by adjust should import remote plan
+        adjust:
+            enabled: true
+            when: distro == fedora-rawhide
+        enabled: false

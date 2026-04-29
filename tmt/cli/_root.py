@@ -1079,7 +1079,7 @@ def plans_ls(context: Context, /, **kwargs: Any) -> None:
     """
 
     tmt.Plan.store_cli_invocation(context)
-    for plan in context.obj.tree.plans():
+    for plan in context.obj.tree.plans(resolve_enabled_only=False):
         plan.ls()
 
 
@@ -1101,7 +1101,7 @@ def plans_show(context: Context, /, **kwargs: Any) -> None:
 
     logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
-    for plan in context.obj.tree.plans(logger=logger):
+    for plan in context.obj.tree.plans(logger=logger, resolve_enabled_only=False):
         plan.show()
         context.obj.print()
 
