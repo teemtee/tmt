@@ -291,6 +291,12 @@ beakerlib
 integration
     Test using `requre`__ to mock connections to other servers.
 
+podman
+    Integration tests which are used as reverse dependency tests
+    for ``podman`` and related components. Test code should not
+    contain any distribution specific setup to work across Fedora,
+    CentOS Stream and RHEL.
+
 __ https://github.com/beakerlib/beakerlib
 __ https://requre.readthedocs.io/en/latest/
 
