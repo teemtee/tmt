@@ -365,9 +365,23 @@ class _RecipeExecuteStep(_RecipeStep):
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeExecuteStep':
         enabled = bool(step.enabled)
+
+        # The 'script' field is consumed by _discover_from_execute() to create
+        # tests in the discover step. Keeping it in the recipe would cause
+        # a conflict during recipe loading.
+        phases = cast(
+            list[_RawStepData],
+            [
+                {key: value for key, value in phase.to_minimal_spec().items() if key != 'script'}
+                for phase in step.data
+            ]
+            if enabled
+            else [],
+        )
+
         return _RecipeExecuteStep(
             enabled=enabled,
-            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
+            phases=phases,
             results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
         )
 

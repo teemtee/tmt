@@ -46,6 +46,14 @@ rlJournalStart
         rlAssertGrep "summary: 2 tests selected" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Test recipe loading of minimal plan"
+        replace_fmf_root "minimal.yaml"
+        rlRun -s "tmt run -vvv --scratch --id $run --recipe minimal.yaml"
+        rlAssertGrep "summary: 1 test selected" $rlRun_LOG
+        rlAssertGrep "total: 1 test passed" $rlRun_LOG
+        rlAssertGrep "Execute script" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
