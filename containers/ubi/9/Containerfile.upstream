@@ -1,0 +1,17 @@
+#
+# A UBI9 image tailored for tmt test suite
+#
+# tmt/tests/ubi/9/upstream:latest
+#
+
+FROM registry.access.redhat.com/ubi9:latest
+
+RUN <<EOF
+set -ex
+
+# Populate yum cache
+dnf makecache
+
+# Make sure the image is built with the latest packages
+dnf update -y
+EOF

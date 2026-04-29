@@ -46,6 +46,10 @@ class Fips(ToggleableFeature):
        In order to prevent issues with installation of packages signed by
        non-FIPS-compliant algorithms we recommend enabling FIPS mode after
        package installation prepare steps. Use ``order:`` to enforce that.
+
+    .. note::
+
+       This feature plugin is not supported in Image Mode.
     """
 
     _data_class = FipsStepData
@@ -61,9 +65,10 @@ class Fips(ToggleableFeature):
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        if guest.facts.is_ostree or guest.facts.is_container:
+        if guest.facts.is_container or guest.facts.is_ostree or guest.facts.is_image_mode:
             raise tmt.utils.GeneralError(
-                'FIPS prepare feature is not supported on ostree or container systems.'
+                'FIPS prepare feature is not supported on container, ostree,'
+                ' or image mode systems.'
             )
         if not (
             guest.facts.distro

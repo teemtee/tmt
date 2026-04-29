@@ -480,7 +480,7 @@ def test_refresh_metadata(
 
 
 def _parametrize_test_assert_config_manager() -> Iterator[
-    tuple[Container, PackageManagerClass, Union[str, Exception]]
+    tuple[Container, PackageManagerClass, str | Exception]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -532,7 +532,7 @@ def test_assert_config_manager(
     container_per_test: ContainerData,
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
-    expected_command_or_exception: Union[str, Exception],
+    expected_command_or_exception: str | Exception,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
