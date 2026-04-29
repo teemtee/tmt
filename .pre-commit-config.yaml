@@ -18,7 +18,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.19.1"
+    rev: "v1.20.2"
     hooks:
       - id: mypy
         language: python # Required for Renovate additional_dependencies
@@ -58,7 +58,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.32.4.20260108; python_version < '3.10'"
+          - "types-requests<2.33.0.20260409; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -71,7 +71,7 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.408
+    rev: v1.1.409
     hooks:
       - id: pyright
         language: python # Required for Renovate additional_dependencies
@@ -111,7 +111,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.32.4.20260108; python_version < '3.10'"
+          - "types-requests<2.33.0.20260409; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -122,7 +122,7 @@ repos:
           - "types-lxml"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.37.0"
+    rev: "0.37.1"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -147,7 +147,7 @@ repos:
           )$
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v26.3.0
+    rev: v26.4.0
     hooks:
       - id: ansible-lint
         language: python # Required for Renovate additional_dependencies
@@ -164,7 +164,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.15.5
+    rev: v0.15.12
     hooks:
       - id: ruff-check
         args:
@@ -173,7 +173,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.68.0
+    rev: 1.72.0
     hooks:
       - id: tmt-lint
         language: python # Required for Renovate additional_dependencies
@@ -255,7 +255,7 @@ repos:
           - 'versionadded,versionchanged'
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.10.9
+    rev: 0.11.8
     hooks:
       # Keep pyproject.toml and uv.lock in sync
       - id: uv-lock
