@@ -1,3 +1,6 @@
+/:
+    select: true
+
 execute:
     how: tmt
 
