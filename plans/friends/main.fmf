@@ -1,6 +1,28 @@
 execute:
     how: tmt
 
+discover:
+    how: fmf
+
+adjust:
+  - when: initiator == packit
+    because: >
+      We want to test against the tmt main branch
+    prepare+:
+      - order: 40
+        how: install
+        copr: "@teemtee/latest"
+    discover+:
+      url: https://github.com/teemtee/tmt
+      ref: main
+  - when: initiator == fedora-ci
+    because: >
+      We want to test against the source in Fedora
+    discover+:
+      dist-git-source: true
+      url: https://src.fedoraproject.org/rpms/tmt.git
+      ref: $@{dist-git-branch}
+
 prepare:
     # Install jq and yq for cleaner tests
   - how: install
