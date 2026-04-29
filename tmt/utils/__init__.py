@@ -1209,6 +1209,15 @@ class Command:
 
         return Command(*self._command, *other)
 
+    def __iadd__(self, other: Union['Command', RawCommand]) -> Self:
+        if isinstance(other, Command):
+            self._command += other._command
+
+        else:
+            self._command += [str(element) for element in other]
+
+        return self
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Command):
             return False
