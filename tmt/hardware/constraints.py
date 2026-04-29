@@ -199,7 +199,9 @@ class ConstraintComponents:
         match = CONSTRAINT_COMPONENTS_PATTERN.match(spec)
 
         if match is None:
-            raise tmt.utils.SpecificationError('foo')
+            raise tmt.utils.SpecificationError(
+                f"Failed to split hardware requirement '{spec}' into its components."
+            )
 
         groups = match.groupdict()
 
