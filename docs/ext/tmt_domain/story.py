@@ -249,7 +249,7 @@ class StoryIndex(Index):
     domain: "TmtDomain"
 
     def generate(
-        self, docnames: Iterable[str] | None = None
+        self, docnames: Optional[Iterable[str]] = None
     ) -> tuple[list[tuple[str, list[IndexEntry]]], bool]:
         content = {}
         # TODO: What to actually use for key-value in the index?
