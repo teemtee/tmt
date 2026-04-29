@@ -3,7 +3,7 @@ import configparser
 import enum
 import re
 import shlex
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -421,7 +421,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
     def resolve_provides(
         self,
-        provides: Iterable[str],
+        provides: Sequence[str],
         repo_ids: Iterable[str] = (),
     ) -> ShellScript:
         """
@@ -586,7 +586,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
     def resolve_provides(
         self,
-        provides: Iterable[str],
+        provides: Sequence[str],
         repo_ids: Iterable[str] = (),
     ) -> dict[str, list['RpmVersion']]:
         """
@@ -601,10 +601,11 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         from tmt.package_managers._rpm import RpmVersion
 
-        provides_list = list(provides)
-        output = self.guest.execute(self.engine.resolve_provides(provides_list, repo_ids=repo_ids))
+        if not provides:
+            return {}
+        output = self.guest.execute(self.engine.resolve_provides(provides, repo_ids=repo_ids))
 
-        result: dict[str, list[RpmVersion]] = {provide: [] for provide in provides_list}
+        result: dict[str, list[RpmVersion]] = {provide: [] for provide in provides}
 
         assert output.stdout is not None  # narrow type
         provides_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
@@ -622,10 +623,10 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                             resolved_provide['nevra'], repo_id=resolved_provide['repo_id']
                         )
                     )
-                except ValueError as exc:
+                except ValueError as error:
                     raise PrepareError(
-                        f"Cannot parse '{resolved_provide}' for provide '{provide}': {exc}"
-                    ) from exc
+                        f"Cannot parse '{resolved_provide}' for provide '{provide}'."
+                    ) from error
 
         return result
 
