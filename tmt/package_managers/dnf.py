@@ -1,5 +1,5 @@
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
@@ -211,9 +211,11 @@ class DnfEngine(PackageManagerEngine):
 
     def resolve_provides(
         self,
-        provides: Iterable[str],
+        provides: Sequence[str],
         repo_ids: Iterable[str] = (),
     ) -> ShellScript:
+        if not provides:
+            return ShellScript("echo '{}'")
         provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
         cmd = (
             self.command
@@ -230,7 +232,6 @@ class DnfEngine(PackageManagerEngine):
             echo "'$_provide':"
             {cmd} "$_provide"
         done
-        {'' if provides_str else "echo '{}'"}
         """)
 
     def create_repository(self, directory: Path) -> ShellScript:
@@ -402,7 +403,7 @@ class YumEngine(DnfEngine):
 
     def resolve_provides(
         self,
-        provides: Iterable[str],
+        provides: Sequence[str],
         repo_ids: Iterable[str] = (),
     ) -> ShellScript:
         raise PrepareError("Package manager 'yum' does not support provides resolution.")
