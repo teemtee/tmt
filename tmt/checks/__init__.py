@@ -245,14 +245,14 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         return checks
 
     @classmethod
-    def requires(
+    def essential_requires(
         cls,
         guest: 'Guest',
         test: 'tmt.base.core.Test',
         logger: tmt.log.Logger,
     ) -> list['tmt.base.core.DependencySimple']:
         """
-        Collect all requirements of the test check.
+        Collect all essential requirements of the test check.
 
         Essential requirements of a check are necessary for the check to
         perform its basic functionality.

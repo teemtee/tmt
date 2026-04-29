@@ -191,7 +191,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
     _check_class = DmesgCheck
 
     @classmethod
-    def requires(
+    def essential_requires(
         cls,
         guest: 'Guest',
         test: 'tmt.base.core.Test',

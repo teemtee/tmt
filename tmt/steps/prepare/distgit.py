@@ -335,7 +335,9 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                     collected_requires += test.test_framework.get_requirements(test, self._logger)
 
                     for check in test.check:
-                        collected_requires += check.plugin.requires(guest, test, self._logger)
+                        collected_requires += check.plugin.essential_requires(
+                            guest, test, self._logger
+                        )
                 # Inject additional install plugins - require
                 if collected_requires and self.future_requires:
                     self.future_requires.data.package = uniq(collected_requires)

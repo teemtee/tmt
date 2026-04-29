@@ -285,7 +285,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                 )
 
                 for check in test.check:
-                    collected_requires[guest].dependencies += check.plugin.requires(
+                    collected_requires[guest].dependencies += check.plugin.essential_requires(
                         guest, test, self._logger
                     )
 
