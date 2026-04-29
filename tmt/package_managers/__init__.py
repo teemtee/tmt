@@ -14,7 +14,6 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
-    cast,
 )
 from urllib.parse import urlparse
 
@@ -607,8 +606,9 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         result: dict[str, list[RpmVersion]] = {provide: [] for provide in provides_list}
 
+        assert output.stdout is not None  # narrow type
         provides_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
-            cast(str, output.stdout)
+            output.stdout
         )
 
         for provide, nevras in provides_yaml.items():
