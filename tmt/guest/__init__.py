@@ -133,37 +133,6 @@ DEFAULT_DOWNLOAD_INTERVAL: int = 5
 #: ``TMT_DOWNLOAD_INTERVAL``.
 DOWNLOAD_INTERVAL: int = configure_constant(DEFAULT_DOWNLOAD_INTERVAL, 'TMT_DOWNLOAD_INTERVAL')
 
-#: Seconds curl waits for the connection phase to succeed during a download.
-#: This is the default value tmt would use unless told otherwise.
-DEFAULT_DOWNLOAD_CONNECT_TIMEOUT: int = 30
-
-#: Seconds curl waits for the connection phase to succeed during a download.
-#: This is the effective value, combining the default and optional envvar,
-#: ``TMT_DOWNLOAD_CONNECT_TIMEOUT``.
-DOWNLOAD_CONNECT_TIMEOUT: int = configure_constant(
-    DEFAULT_DOWNLOAD_CONNECT_TIMEOUT, 'TMT_DOWNLOAD_CONNECT_TIMEOUT'
-)
-#: Minimum transfer rate (bytes/sec) below which a download is considered stalled.
-#: This is the default value tmt would use unless told otherwise.
-DEFAULT_DOWNLOAD_SPEED_LIMIT: int = 1000
-
-#: Minimum transfer rate (bytes/sec) below which a download is considered stalled.
-#: This is the effective value, combining the default and optional envvar,
-#: ``TMT_DOWNLOAD_SPEED_LIMIT``.
-DOWNLOAD_SPEED_LIMIT: int = configure_constant(
-    DEFAULT_DOWNLOAD_SPEED_LIMIT, 'TMT_DOWNLOAD_SPEED_LIMIT'
-)
-#: Seconds the transfer rate must stay below the speed limit before curl aborts.
-#: This is the default value tmt would use unless told otherwise.
-DEFAULT_DOWNLOAD_SPEED_TIME: int = 60
-
-#: Seconds the transfer rate must stay below the speed limit before curl aborts.
-#: This is the effective value, combining the default and optional envvar,
-#: ``TMT_DOWNLOAD_SPEED_TIME``.
-DOWNLOAD_SPEED_TIME: int = configure_constant(
-    DEFAULT_DOWNLOAD_SPEED_TIME, 'TMT_DOWNLOAD_SPEED_TIME'
-)
-
 
 def default_reboot_waiting() -> Waiting:
     """
@@ -2445,7 +2414,6 @@ class Guest(
     def download(self, url: str, destination: Path) -> None:
         """
         Download a file from a URL to a path on the guest.
-
         :param url: URL to download from.
         :param destination: path on the guest to save the file to.
         :raises DownloadError: if the download fails after all attempts.
@@ -2454,12 +2422,8 @@ class Guest(
             self.execute(
                 ShellScript(
                     f"{self.facts.sudo_prefix} curl -L --fail"
-                    f" --connect-timeout {DOWNLOAD_CONNECT_TIMEOUT}"
-                    f" --speed-time {DOWNLOAD_SPEED_TIME}"
-                    f" --speed-limit {DOWNLOAD_SPEED_LIMIT}"
                     f" --retry {DOWNLOAD_ATTEMPTS - 1}"
                     f" --retry-delay {DOWNLOAD_INTERVAL}"
-                    f" --retry-connrefused"
                     f" -o {quote(str(destination))} {quote(url)}"
                 ),
                 silent=True,
