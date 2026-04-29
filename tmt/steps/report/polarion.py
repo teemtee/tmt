@@ -4,7 +4,7 @@ from typing import Optional
 
 from requests import post
 
-import tmt
+import tmt.log
 import tmt.steps
 import tmt.steps.report
 import tmt.utils

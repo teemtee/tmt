@@ -39,6 +39,7 @@ import tmt.checks
 import tmt.convert
 import tmt.export
 import tmt.frameworks
+import tmt.guest
 import tmt.identifier
 import tmt.lint
 import tmt.log

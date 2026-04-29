@@ -13,11 +13,13 @@ import fmf.utils
 import tmt
 import tmt.base.core
 import tmt.base.run
+import tmt.guest
 import tmt.log
 import tmt.steps
 import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
+import tmt.utils.wait
 from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.guest import Guest

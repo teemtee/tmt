@@ -3,7 +3,9 @@ from typing import Any, Optional
 import tmt.base.core
 import tmt.base.plan
 import tmt.export
+import tmt.log
 import tmt.utils
+import tmt.utils.templates
 from tmt.utils import Path
 
 

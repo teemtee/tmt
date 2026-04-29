@@ -9,6 +9,7 @@ import click
 from fmf.utils import listed
 
 import tmt
+import tmt.log
 import tmt.result
 from tmt.container import container, field, key_to_option
 

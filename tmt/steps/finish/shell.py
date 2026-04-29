@@ -1,6 +1,6 @@
 import tmt.steps
 import tmt.steps.finish
-from tmt.steps.prepare.shell import PrepareShell
+from tmt.steps.prepare.shell import PrepareShell, PrepareShellData
 
 
 @tmt.steps.provides_method('shell')
@@ -47,7 +47,7 @@ class FinishShell(tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData]
     # We are reusing "prepare" step for "finish",
     # and they both have different expectations.
     # Mypy is not happy about this though.
-    _data_class = tmt.steps.prepare.shell.PrepareShellData  # type: ignore[assignment]
+    _data_class = PrepareShellData  # type: ignore[assignment]
 
     # `FinishPlugin` plugin would win the inheritance battle and provide
     # its no-op `go()`. Force the one from `PrepareShell`.

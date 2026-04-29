@@ -1,5 +1,7 @@
 import tmt
 import tmt.steps
+import tmt.steps.provision
+import tmt.utils
 from tmt.options import option
 
 # See the online documentation for more details about writing plugins

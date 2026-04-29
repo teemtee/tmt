@@ -16,6 +16,7 @@ import click
 import requests
 
 import tmt
+import tmt.guest
 import tmt.hardware
 import tmt.log
 import tmt.steps

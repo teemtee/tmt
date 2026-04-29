@@ -1,6 +1,7 @@
 import tmt.base.core
 import tmt.base.plan
 import tmt.export
+import tmt.utils
 
 
 @tmt.base.core.FmfId.provides_export('json')

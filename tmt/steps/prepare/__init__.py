@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Literal, Optional, TypeVar, cast
 
 import fmf.utils
 
-import tmt
 import tmt.log
 import tmt.steps
 import tmt.utils
@@ -22,6 +21,7 @@ from tmt.utils import uniq
 
 if TYPE_CHECKING:
     import tmt.base.core
+    import tmt.guest
     from tmt.base.plan import Plan
 
 

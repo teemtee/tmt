@@ -31,11 +31,11 @@ from typing import (
 
 import fmf.utils
 
-import tmt
 import tmt.ansible
 import tmt.hardware
 import tmt.hardware.constraints
 import tmt.log
+import tmt.options
 import tmt.package_managers
 import tmt.steps
 import tmt.steps.scripts

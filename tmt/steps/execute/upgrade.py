@@ -5,6 +5,7 @@ import fmf.utils
 
 import tmt.base.core
 import tmt.base.plan
+import tmt.guest
 import tmt.log
 import tmt.steps
 import tmt.utils
@@ -253,7 +254,7 @@ class ExecuteUpgrade(ExecuteInternal):
     @property
     def tasks(
         self,
-    ) -> Iterator[tuple[Optional[str], list['tmt.guest.Guest']]]:
+    ) -> Iterator[tuple[Optional[str], list[tmt.guest.Guest]]]:
         # upgrade plugin is expected to execute multiple
         # discover phases on old, perform the upgrade, then execute
         # those same discover phases again on new. All of this should occur
@@ -279,7 +280,7 @@ class ExecuteUpgrade(ExecuteInternal):
     def go(
         self,
         *,
-        guest: 'tmt.guest.Guest',
+        guest: tmt.guest.Guest,
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> None:

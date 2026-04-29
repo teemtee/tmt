@@ -2,8 +2,9 @@ from typing import Optional, TypeVar, cast
 
 import fmf
 
-import tmt
+import tmt.log
 import tmt.steps
+import tmt.utils
 from tmt.container import container
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry

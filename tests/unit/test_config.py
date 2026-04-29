@@ -9,6 +9,7 @@ import fmf
 import pytest
 
 import tmt.config
+import tmt.utils
 from tmt._compat.pydantic import PYDANTIC_V1
 from tmt.log import Logger
 from tmt.utils import Path

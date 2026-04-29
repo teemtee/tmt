@@ -12,6 +12,7 @@ from typing import Any, Optional
 
 import tmt.log
 import tmt.utils
+import tmt.utils.hints
 from tmt._compat.typing import TypeAlias
 from tmt.container import container, simple_field
 from tmt.guest import DownloadError, Guest

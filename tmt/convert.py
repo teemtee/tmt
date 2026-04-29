@@ -15,7 +15,6 @@ import fmf.utils
 from click import echo
 
 import tmt.base.core
-import tmt.export
 import tmt.identifier
 import tmt.log
 import tmt.utils
@@ -1231,7 +1230,7 @@ def adjust_runtest(path: Path) -> None:
     try:
         path.chmod(0o755)
     except OSError as error:
-        raise tmt.convert.ConvertError(f"Could not make '{path}' executable.") from error
+        raise ConvertError(f"Could not make '{path}' executable.") from error
 
 
 def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
