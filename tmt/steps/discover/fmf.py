@@ -650,16 +650,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         super().go(path=path, logger=logger)
 
         dist_git_source = self.get('dist-git-source', False)
-        dist_git_merge = self.get('dist-git-merge', False)
 
         # No tests are selected in some cases
         self._tests: list[tmt.Test] = []
-
-        # Self checks
-        if dist_git_source and not dist_git_merge and (self.data.ref or self.data.url):
-            raise tmt.utils.DiscoverError(
-                "Cannot manipulate with dist-git without the `--dist-git-merge` option."
-            )
 
         self.log_import_plan_details()
 
