@@ -24,7 +24,7 @@ Table of Contents
 ==================
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: About
 
     Overview <overview>
@@ -32,7 +32,7 @@ Table of Contents
     Repository <https://github.com/teemtee/tmt>
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: User
 
     Guide <guide>
@@ -40,7 +40,7 @@ Table of Contents
     Questions <questions>
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Reference
 
     Specification <spec>
@@ -48,7 +48,7 @@ Table of Contents
     glossary
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Contributor
 
     Contribute <contribute>
