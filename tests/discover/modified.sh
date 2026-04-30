@@ -40,6 +40,6 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm -r $run" 0 "Remove the run directory"
+        rlRun "rm -rf $run" 0 "Remove the run directory"
     rlPhaseEnd
 rlJournalEnd
