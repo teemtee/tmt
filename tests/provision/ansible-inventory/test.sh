@@ -9,7 +9,7 @@ rlJournalStart
         rlLogInfo "Testing Ansible inventory generation functionality"
     rlPhaseEnd
 
-    tmt_command="tmt run -vv --scratch --id ${run} plan --name"
+    tmt_command="tmt -c cli-var=bar run -vv --scratch --id ${run} plan --name"
 
     planName="plan/default-layout"
     rlPhaseStartTest "Inventory generation with no layout (default layout)"
@@ -25,6 +25,13 @@ rlJournalStart
             rlRun "cat $inventory_file"
             rlRun "yq -e '.all' $inventory_file" 0 "Has 'all' group"
             rlRun "yq -e '.all.hosts' $inventory_file" 0 "Has 'hosts' section"
+
+            # Check context vars
+            rlRun "yq -e '.all.vars.tmt.context' $inventory_file" 0 "Has 'tmt.context' vars"
+            rlRun -s "yq -e '.all.vars.tmt.context.cli-var' $inventory_file"
+            rlAssertGrep "- bar" $rlRun_LOG
+            rlRun -s "yq -e '.all.vars.tmt.context.plan-var' $inventory_file"
+            rlAssertGrep "- foo" $rlRun_LOG
         else
             rlFail "Inventory file not found or doesn't exist at expected location"
         fi
@@ -71,6 +78,13 @@ rlJournalStart
             # Debug: Show the actual inventory structure around auto-created group
             rlRun "yq -r '.all.children | keys' $inventory_file" 0 "Show all children groups"
             rlRun "yq -e '.all.children.\"auto-created\".hosts.\"auto-group-host\"' $inventory_file" 0 "Auto-created group exists"
+
+            # Check context vars
+            rlRun "yq -e '.all.vars.tmt.context' $inventory_file" 0 "Has 'tmt.context' vars"
+            rlRun -s "yq -e '.all.vars.tmt.context.cli-var' $inventory_file"
+            rlAssertGrep "- bar" $rlRun_LOG
+            rlRun -s "yq -e '.all.vars.tmt.context.plan-var' $inventory_file"
+            rlAssertGrep "- foo" $rlRun_LOG
 
             # Ansible tasks are executed on correct hosts based on group membership
             # This validates that TMT-generated inventory correctly drives Ansible task execution
@@ -121,6 +135,12 @@ rlJournalStart
             # Verify host with custom group still works
             rlRun "yq -e '.all.children.\"custom-group\".hosts.\"custom-host\"' $inventory_file" 0 "Host with custom group works"
 
+            # Check context vars
+            rlRun "yq -e '.all.vars.tmt.context' $inventory_file" 0 "Has 'tmt.context' vars"
+            rlRun -s "yq -e '.all.vars.tmt.context.cli-var' $inventory_file"
+            rlAssertGrep "- bar" $rlRun_LOG
+            rlRun -s "yq -e '.all.vars.tmt.context.plan-var' $inventory_file"
+            rlAssertGrep "- foo" $rlRun_LOG
         else
             rlFail "Inventory file not found or doesn't exist at expected location"
         fi
