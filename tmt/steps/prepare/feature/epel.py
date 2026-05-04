@@ -69,4 +69,3 @@ class Epel(ToggleableFeature):
     @classmethod
     def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
         cls._run_playbook('disable', "epel-disable.yaml", guest, logger)
-
