@@ -25,15 +25,32 @@ Table of Contents
 
 .. toctree::
     :maxdepth: 2
+    :caption: About
 
     Overview <overview>
+    Releases <releases/index>
+    Repository <https://github.com/teemtee/tmt>
+
+.. toctree::
+    :maxdepth: 2
+    :caption: User
+
     Guide <guide>
+    Examples <examples>
+    Questions <questions>
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Reference
+
     Specification <spec>
     Plugins <plugins/index>
-    Examples <examples>
-    Stories <stories>
-    Questions <questions>
-    Contribute <contribute>
-    Code <code/index>
     glossary
-    Releases <releases/index>
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Contributor
+
+    Contribute <contribute>
+    Stories <stories>
+    Code <code/index>
