@@ -2422,7 +2422,7 @@ class Guest(
             self.execute(
                 ShellScript(
                     f"{self.facts.sudo_prefix} curl -L --fail"
-                    f" --retry {DOWNLOAD_ATTEMPTS - 1}"
+                    f" --retry {max(DOWNLOAD_ATTEMPTS - 1, 0)}"
                     f" --retry-delay {DOWNLOAD_INTERVAL}"
                     f" -o {quote(str(destination))} {quote(url)}"
                 ),
