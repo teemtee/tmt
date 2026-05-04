@@ -39,6 +39,7 @@ rlJournalStart
     rlPhaseEnd
 
 # Disabled: report/reportportal ignores `--dry`, we can't have it connecting anywhere.
+# See https://github.com/teemtee/tmt/issues/4851
 #    rlPhaseStartTest "Verify multi-value plugin option"
 #        rlRun "run_tmt_reportportal=\"tmt --context report-portal=1 -vvv --feeling-safe --log-topic=cli-invocations run --id $rundir --scratch --dry\""
 #
