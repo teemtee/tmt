@@ -51,6 +51,7 @@ environment:
         import:
             url: https://github.com/teemtee/tests
             name: /plans/remote
+            ref: 7ab3dab
 
 /minimal:
     summary: A minimal plan
