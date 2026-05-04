@@ -793,7 +793,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if output.stdout:
                 directories = [Path(name).parent for name in output.stdout.split('\n')]
                 modified = {
-                    # ($|/): match end of plan name or `/` which would be any sub-plan
+                    # ($|/): match end of test name or `/` which would be any sub-test
                     f"^/{re.escape(str(directory))}($|/)"
                     for directory in directories
                     if directory
