@@ -522,16 +522,16 @@ class PluginEnvVar:
     value: EnvVarValue
 
     #: Step as detected from the environment variable name using
-    #: :py_data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
+    #: :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
     step: 'Step'
 
     #: Plugin name a.k.a. "how" as detected from the environment variable
-    #: name using :py_data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN`
+    #: name using :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN`
     #: pattern.
     how: str
 
     #: Plugin key name as detected from the environment variable name using
-    #: :py_data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
+    #: :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
     key: str
 
     def __str__(self) -> str:
