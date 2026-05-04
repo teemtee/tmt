@@ -10,7 +10,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest "Foo"
+    rlPhaseStartTest "Verify plugin envvars are delivered"
         rlRun "run_tmt=\"tmt -vvv --feeling-safe --log-topic=cli-invocations run --id $rundir --scratch\""
 
         rlRun -s "$run_tmt"
@@ -23,15 +23,13 @@ rlJournalStart
     rlPhaseStartTest "Verify unknown plugins are reported"
         rlRun -s "TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST=never $run_tmt"
 
-        rlAssertGrep "warn: Found environment variables for plugin 'report/xhtml', but the plugin was not found. The following environment variables will have no effect:" $rlRun_LOG
-        rlAssertGrep "warn: TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST" $rlRun_LOG
+        rlAssertGrep "warn: Found environment variable for plugin 'report/xhtml', but the plugin was not found. The following environment variable will have no effect: TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Verify unused envvars are reported"
         rlRun -s "TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST=never $run_tmt"
 
-        rlAssertGrep "warn: Found environment variables for plugin 'report/display', but the plugin is not used by the plan '/'. The following environment variables will have no effect:" $rlRun_LOG
-        rlAssertGrep "warn: TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST" $rlRun_LOG
+        rlAssertGrep "warn: Found environment variable for plugin 'report/display', but the plugin is not used by the plan '/'. The following environment variable will have no effect: TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Verify unknown options are reported"
@@ -39,6 +37,14 @@ rlJournalStart
 
         rlAssertGrep "Failed to find the 'hide-guest' key of the 'report/html' plugin." $rlRun_LOG
     rlPhaseEnd
+
+# Disabled: report/reportportal ignores `--dry`, we can't have it connecting anywhere.
+#    rlPhaseStartTest "Verify multi-value plugin option"
+#        rlRun "run_tmt_reportportal=\"tmt --context report-portal=1 -vvv --feeling-safe --log-topic=cli-invocations run --id $rundir --scratch --dry\""
+#
+#        rlRun -s "TMT_PLUGIN_REPORT_REPORTPORTAL_UPLOAD_LOG_PATTERN=\"cool.log my-special-log\" $run_tmt_reportportal"
+#        rlAssertGrep "ReportPlugin.delegate\(step=report, data=None, raw_data=\{'how': 'reportportal',.*'upload-log-pattern': \('cool.log', 'my-special-log'\).*\)" $rundir/log.txt -E
+#    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"

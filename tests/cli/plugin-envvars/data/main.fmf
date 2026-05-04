@@ -8,3 +8,11 @@ report:
   - how: html
     absolute-paths: false
     display-guest: auto
+
+adjust:
+  - when: report-portal is defined
+    report:
+      - how: reportportal
+        project: fake-project
+        url: https://dummy.host/
+        token: dummy token

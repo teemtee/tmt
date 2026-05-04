@@ -509,6 +509,141 @@ class WhereableStepData(SerializableContainer):
     )
 
 
+@container
+class PluginEnvVar:
+    """
+    Represents an environment variable delivering value for a plugin key.
+    """
+
+    #: Name of the environment variable.
+    name: EnvVarName
+
+    #: Value of the environment variable.
+    value: EnvVarValue
+
+    #: Step as detected from the environment variable name using
+    #: :py_data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
+    step: 'Step'
+
+    #: Plugin name a.k.a. "how" as detected from the environment variable
+    #: name using :py_data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN`
+    #: pattern.
+    how: str
+
+    #: Plugin key name as detected from the environment variable name using
+    #: :py_data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
+    key: str
+
+    def __str__(self) -> str:
+        return f'{self.name}={self.value} ({self.step}/{self.how}.{self.key})'
+
+    @functools.cached_property
+    def field_name(self) -> str:
+        return self.key.replace('-', '_')
+
+    # We do not want to invent our custom parser for turning an environment
+    # variable into plugin step data value. Instead, we need to reach the
+    # Click command of the plugin, because that command already knows how
+    # to handle its input. This requires a bit of traversal. Get the right
+    # plugin class, then its command, and then its parameters.
+
+    @functools.cached_property
+    def plugin_class(self) -> Optional['Method']:
+        """
+        Plugin class according to :py:attr:`how`, or ``None``.
+        """
+
+        return self.step._plugin_base_class._supported_methods.get_plugin(self.how)
+
+    @functools.cached_property
+    def plugin_command(self) -> click.Command:
+        """
+        Plugin command-line command that owns the option-to-value conversion.
+        """
+
+        assert self.plugin_class is not None
+
+        return self.plugin_class.class_.command()
+
+    @functools.cached_property
+    def plugin_command_params(self) -> dict[str, click.Parameter]:
+        """
+        A mapping between command-line parameter names and instances.
+        """
+
+        # Apparently, Click does not offer a mapping between option names and their
+        # `click.Parameter` descriptions. We shall build our own then, we will need it.
+        return {
+            param.name: param for param in self.plugin_command.params if param.name is not None
+        }
+
+    @functools.cached_property
+    def normalized_value(self) -> Any:
+        """
+        Value as if processed by command-line command.
+        """
+
+        plugin_context = self.plugin_command.make_context(info_name=None, args=[])
+
+        plugin_param = self.plugin_command_params.get(self.field_name)
+
+        if plugin_param is None:
+            raise GeneralError(
+                f"Failed to find the '{self.key}' key of the '{self.step.name}/{self.how}' plugin."
+            )
+
+        if plugin_param.multiple:
+            return plugin_param.process_value(
+                plugin_context, plugin_param.type.split_envvar_value(self.value)
+            )
+
+        return plugin_param.process_value(plugin_context, self.value)
+
+    @classmethod
+    def from_environment(cls, environment: Environment, step: 'Step') -> Iterator[Self]:
+        """
+        Find all plugin-specific environment variables in the given environment.
+
+        Plugin-specific environment variable are those whose name matches
+        :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` regular
+        expression. Other variables are silently ignored.
+
+        :param environment: environment to scan for plugin-specific
+            variables.
+        :param step: limit the discovery to environment variables matching
+            the given step.
+        :yields: plugin-specific environment variables, each wrapped by
+            ``PluginEnvVar`` instance.
+        """
+
+        for envvar_name, envvar_value in environment.items():
+            # Skip all environment variables not matching the special
+            # pattern or for different step. Neither of these groups is
+            # interesting.
+            if not (match := PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN.match(envvar_name)):
+                continue
+
+            step_name, plugin_name, option_name = tuple(
+                component.lower() for component in match.groups()
+            )
+
+            if not is_step_name(step_name):
+                continue
+
+            if step_name != step.name:
+                continue
+
+            yield cls(
+                name=envvar_name,
+                value=envvar_value,
+                step=step,
+                # Since the environment variable names are upper-cased only,
+                # plugin and option names require a bit of character manipulation.
+                how=plugin_name.replace('_', '-'),
+                key=option_name.replace('_', '-'),
+            )
+
+
 class Step(
     HasRunWorkdir,
     HasStepWorkdir,
@@ -1156,73 +1291,42 @@ class Step(
         _log_raw_data('before', raw_data)
 
         # First pass, apply environment variables
-        for i, (how, plugin_environment) in enumerate(environment_invocations.items()):
-            debug2(f'environment invocation #{i}', f'{how}: {plugin_environment}')
+        for i, plugin_envvar in enumerate(
+            PluginEnvVar.from_environment(Environment.from_environ(), self)
+        ):
+            debug2(f'environment invocation #{i}', str(plugin_envvar))
 
-            original_environment_variable_names = [
-                envvar_name for (envvar_name, _) in plugin_environment.values()
-            ]
+            plugin_label = f'{plugin_envvar.step.name}/{plugin_envvar.how}'
 
-            # We do not want to invent our custom parsers. Instead, we need to reach the Click
-            # command of our plugin, because that command already knows how to handle its input.
-            # This requires a bit of traversal. Get the right plugin class, then its command, and
-            # then its parameters.
-            plugin_class = self._plugin_base_class._supported_methods.get_plugin(how)
-
-            if plugin_class is None:
+            if plugin_envvar.plugin_class is None:
                 self.warn(
-                    f"Found environment variables for plugin '{self.step_name}/{how}',"
-                    " but the plugin was not found. The following environment variables"
-                    " will have no effect:"
+                    f"Found environment variable for plugin '{plugin_label}',"
+                    " but the plugin was not found. The following environment variable"
+                    f" will have no effect: {plugin_envvar.name}."
                 )
 
-                self.warn(fmf.utils.listed(original_environment_variable_names))
-
                 continue
-
-            plugin_command = plugin_class.class_.command()
-            plugin_context = plugin_command.make_context(info_name=None, args=[])
-
-            # Apparently, Click does not offer a mapping between option names and their
-            # `click.Parameter` descriptions. We shall build our own then, we will need it.
-            plugin_params = {param.name: param for param in plugin_command.params}
 
             # Now, traverse the raw data, skip those for different plugins, and update the suitable
             # ones with values coming from the environment variables.
             compatible_raw_data = [
-                raw_datum for raw_datum in raw_data if raw_datum.get('how') == how
+                raw_datum for raw_datum in raw_data if raw_datum.get('how') == plugin_envvar.how
             ]
 
             if not compatible_raw_data:
                 self.warn(
-                    f"Found environment variables for plugin '{self.step_name}/{how}',"
+                    f"Found environment variable for plugin '{plugin_label}',"
                     f" but the plugin is not used by the plan '{self.plan.name}'. The"
-                    " following environment variables will have no effect:"
+                    f" following environment variable will have no effect: {plugin_envvar.name}."
                 )
-
-                self.warn(fmf.utils.listed(original_environment_variable_names))
 
                 continue
 
             for j, raw_datum in enumerate(compatible_raw_data):
                 debug3(f'raw step datum #{j}', str(raw_datum))
+                debug4('raw environment variable', str(plugin_envvar))
 
-                for option_name, (envvar_name, envvar_value) in plugin_environment.items():
-                    debug4('raw environment variable', f'{envvar_name}={envvar_value}')
-
-                    param_name = option_to_key(option_name)
-
-                    plugin_param = plugin_params.get(param_name)
-
-                    if plugin_param is None:
-                        raise GeneralError(
-                            f"Failed to find the '{param_name.replace('_', '-')}' key"
-                            f" of the '{self.step_name}/{how}' plugin."
-                        )
-
-                    raw_datum[key_to_option(param_name)] = plugin_param.type_cast_value(  # type: ignore[literal-required]
-                        plugin_context, str(envvar_value)
-                    )
+                raw_datum[plugin_envvar.key] = plugin_envvar.normalized_value  # type: ignore[literal-required]
 
         _log_raw_data('after environment invocations', raw_data)
 

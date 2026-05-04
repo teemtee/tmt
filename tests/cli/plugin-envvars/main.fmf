@@ -1,4 +1,4 @@
-summary: Verify some basic output of `tmt about`
+summary: Verify whether plugin-specific environment variables are delivered to phases
 
 tag+:
   - provision-local
