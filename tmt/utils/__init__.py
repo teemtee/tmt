@@ -6209,6 +6209,68 @@ def normalize_data_amount(
     raise NormalizationError(key_address, raw_value, 'a quantity or a string')
 
 
+def _normalize_structured_blob(
+    key_address: str,
+    raw_value: Any,
+    expected_type: str,
+    logger: tmt.log.Logger,
+) -> Any:
+    if raw_value is None:
+        return None
+
+    if isinstance(raw_value, str):
+        raw_content: str
+        loader: Callable[[str], Any]
+
+        def _detect_loader() -> Callable[[str], Any]:
+            if raw_value.lower().endswith(('.yaml', '.yml')):
+                return from_yaml
+
+            return from_json
+
+        if raw_value.startswith("http"):
+            loader = _detect_loader()
+
+            # Create retry session for longer retries, see #1229
+            session = retry_session.create(
+                allowed_methods=('GET',),
+                logger=logger,
+            )
+
+            try:
+                response = session.get(raw_value)
+                response.raise_for_status()
+
+                raw_content = response.text
+
+            except requests.RequestException as error:
+                raise GeneralError(f"Failed to download from URL '{raw_value}'.") from error
+
+        elif raw_value.startswith('@'):
+            if not raw_value[1:]:
+                raise NormalizationError(key_address, raw_value, expected_type)
+
+            filepath = Path(raw_value[1:])
+
+            if not filepath.is_file():
+                raise GeneralError(f"File '{filepath}' doesn't exist.")
+
+            loader = _detect_loader()
+            raw_content = filepath.read_text()
+
+        else:
+            loader = from_json
+            raw_content = raw_value
+
+        try:
+            return loader(raw_content)
+
+        except Exception as exc:
+            raise NormalizationError(key_address, raw_value, expected_type) from exc
+
+    return raw_value
+
+
 # TODO: once we replace our custom "containers" with pydantic's `MetadataContainer`,
 # this enum and `_field_value_sources` should move there.
 class FieldValueSource(enum.Enum):
