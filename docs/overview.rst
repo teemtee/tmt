@@ -541,8 +541,8 @@ TMT_DOWNLOAD_ATTEMPTS
     By default, 3 attempts are made.
 
 TMT_DOWNLOAD_INTERVAL
-    Number of seconds to wait between download attempts.
-    By default, it is 5 seconds.
+    Number of seconds to wait before retrying after an unsuccessful
+    attempt to download a file from a URL to guest.
 
 TMT_RETRY_SESSION_RETRIES
     The number of retries for HTTP/HTTPS requests when encountering
