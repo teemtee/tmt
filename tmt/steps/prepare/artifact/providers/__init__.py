@@ -150,13 +150,8 @@ class ArtifactProvider(ABC):
         :param artifact: the artifact to download.
         :param guest: the guest on which the artifact should be downloaded.
         :param destination: path into which the artifact should be downloaded.
-        :raises DownloadError: if the download fails.
         """
-
-        try:
-            guest.download(artifact.location, destination)
-        except tmt.utils.GeneralError as error:
-            raise DownloadError(f"Failed to download '{artifact}'.") from error
+        guest.download(artifact.location, destination)
 
     def fetch_contents(
         self,
