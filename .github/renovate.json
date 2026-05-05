@@ -47,5 +47,9 @@
       "enabled": true,
       "matchJsonata": ["managerData.depGroup = 'docs'"]
     }
-  ]
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "groupName": "Locked dependencies"
+  }
 }
