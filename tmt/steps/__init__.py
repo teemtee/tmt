@@ -561,7 +561,7 @@ class PluginEnvVar:
         Plugin command-line command that owns the option-to-value conversion.
         """
 
-        assert self.plugin_class is not None
+        assert self.plugin_class is not None  # narrow type
 
         return self.plugin_class.class_.command()
 
