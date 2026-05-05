@@ -3,7 +3,8 @@
   "extends": [
     "config:recommended",
     ":enablePreCommit",
-    ":semanticCommitsDisabled"
+    ":semanticCommitsDisabled",
+    ":disableDependencyDashboard"
   ],
   "separateMajorMinor": false,
   "configMigration": true,
@@ -47,5 +48,9 @@
       "enabled": true,
       "matchJsonata": ["managerData.depGroup = 'docs'"]
     }
-  ]
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "groupName": "Locked dependencies"
+  }
 }
