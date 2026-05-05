@@ -216,20 +216,36 @@ class DnfEngine(PackageManagerEngine):
     ) -> ShellScript:
         assert provides, "provides must not be empty"
         provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
-        cmd = (
+        repo_ids = list(repo_ids)
+        queryformat = r"- nevra: '%{full_nevra}'\n  repo_id: '%{repoid}'\n"
+        cmd_whatprovides = (
             self.command
             + Command(
                 'repoquery',
                 '--queryformat',
-                r"- nevra: '%{full_nevra}'\n  repo_id: '%{repoid}'\n",
+                queryformat,
                 *[f'--repo={repo_id}' for repo_id in repo_ids],
                 '--whatprovides',
+            )
+        ).to_script()
+        cmd_direct = (
+            self.command
+            + Command(
+                'repoquery',
+                '--queryformat',
+                queryformat,
+                *[f'--repo={repo_id}' for repo_id in repo_ids],
             )
         ).to_script()
         return ShellScript(f"""
         for _provide in {provides_str}; do
             echo "'$_provide':"
-            {cmd} "$_provide"
+            _result=$({cmd_whatprovides} "$_provide")
+            if [ -n "$_result" ]; then
+                printf '%s\\n' "$_result"
+            else
+                {cmd_direct} "$_provide"
+            fi
         done
         """)
 

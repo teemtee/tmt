@@ -1,0 +1,17 @@
+summary: TC 2 - Package already installed before artifact prepare runs
+
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+        image: fedora:43
+    prepare:
+        how: artifact
+        provide: koji.build:2971867
+    execute:
+        how: tmt
+
+/test:
+    test: rpm -q vim-minimal
+    require: vim-minimal
