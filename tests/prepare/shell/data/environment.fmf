@@ -1,0 +1,10 @@
+provision:
+    how: container
+prepare:
+  - name: Run preparation script
+    how: shell
+    script: /bin/true
+execute:
+    how: tmt
+environment:
+    DUMMY_ENVVAR: dummy_value
