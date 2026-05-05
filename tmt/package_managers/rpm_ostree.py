@@ -247,7 +247,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
                 self.warn(f"Unable to install recommended package '{package}'.")
 
         if required:
-            return super().install(*required)
+            return super().install(*required, options=options)
 
         return CommandOutput(stdout=None, stderr=None)
 
