@@ -214,8 +214,7 @@ class DnfEngine(PackageManagerEngine):
         provides: Sequence[str],
         repo_ids: Iterable[str] = (),
     ) -> ShellScript:
-        if not provides:
-            return ShellScript("echo '{}'")
+        assert provides, "provides must not be empty"
         provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
         cmd = (
             self.command
