@@ -187,9 +187,10 @@ class DnfEngine(PackageManagerEngine):
 
     def list_packages(self, repository: Repository) -> ShellScript:
         return (
-            self.command
-            + Command(
+            # self.command
+            Command(
                 'repoquery',
+                '-a',
                 '--disablerepo=*',
                 *[f'--enablerepo={repo_id}' for repo_id in repository.repo_ids],
                 '--queryformat',
