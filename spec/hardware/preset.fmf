@@ -5,9 +5,9 @@ description: |
     .. code-block:: yaml
 
        provision:
-           # Define the preset source (URL or local path)
+           # Define the hardware preset source (URL or local path)
            # Required when using filter in hardware
-           preset:
+           hardware-preset:
                url: https://github.com/my-team/project/presets.yml
                # path: /home/user/.presets.yml
 
@@ -29,6 +29,24 @@ description: |
          hardware:
            memory: ">= 64 GB"
 
+    Preset file schema:
+
+    .. code-block:: yaml
+
+       type: array
+       items:
+         type: object
+         additionalProperties: false
+         required:
+           - name
+           - hardware
+         properties:
+           name:
+             type: string
+             pattern: "^[A-Za-z_][A-Za-z0-9_]*$"
+           hardware:
+             $ref: "/schemas/provision/hardware#/definitions/hardware"
+
     A filter reference expands to all of its defined constraints combined
     with AND, and can be used anywhere a hardware constraint can appear.
 
@@ -38,7 +56,7 @@ example:
   - |
     # Use a remote preset
     provision:
-        preset:
+        hardware-preset:
             url: https://github.com/my-team/presets.yml
         hardware:
             filter: AMD__ROME
@@ -46,7 +64,7 @@ example:
   - |
     # Use a local preset file
     provision:
-        preset:
+        hardware-preset:
             path: ~/.config/tmt/presets.yml
         hardware:
             filter: MEMORY_MIN_64G
@@ -54,9 +72,9 @@ example:
                 - size: ">= 500 GB"
 
   - |
-    # Use preset in OR logic
+    # Use a preset filter inside OR logic
     provision:
-        preset:
+        hardware-preset:
             url: https://example.com/presets.yml
         hardware:
             or:
