@@ -543,6 +543,7 @@ TMT_DOWNLOAD_ATTEMPTS
 TMT_DOWNLOAD_INTERVAL
     Number of seconds to wait before retrying after an unsuccessful
     attempt to download a file from a URL to guest.
+    By default, 5 seconds.
 
 TMT_RETRY_SESSION_RETRIES
     The number of retries for HTTP/HTTPS requests when encountering
