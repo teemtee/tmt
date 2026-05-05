@@ -128,7 +128,10 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         environment = environment or tmt.utils.Environment()
-        environment.update(guest.environment)
+        environment.update(
+            guest.environment,
+            self.step.plan.environment,
+        )
 
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
