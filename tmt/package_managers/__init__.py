@@ -670,9 +670,9 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.install(*installables, options=options)
 
-    def install_config_manager(self) -> None:
+    def assert_config_manager(self) -> None:
         """
-        Install the config-manager plugin for repository management.
+        Make sure the ``config-manager`` plugin for repository management is installed.
         """
         raise PrepareError(f"Package manager '{self.NAME}' does not support config-manager.")
 

@@ -333,7 +333,7 @@ class Dnf(PackageManager[DnfEngine]):
 
         return results
 
-    def install_config_manager(self) -> None:
+    def assert_config_manager(self) -> None:
         self.debug('Make sure the config-manager plugin is available.')
         self.install(Package(self.config_manager_plugin))
 

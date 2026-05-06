@@ -1,3 +1,4 @@
+import re
 from collections.abc import Iterator
 from inspect import isclass
 from typing import Optional
@@ -24,6 +25,7 @@ from tmt.package_managers import (
     PackageManager,
     PackageManagerClass,
     PackagePath,
+    PrepareError,
 )
 from tmt.steps.provision.podman import GuestContainer
 from tmt.utils import ShellScript
@@ -476,8 +478,8 @@ def test_refresh_metadata(
     assert_output(expected_output, output.stdout, output.stderr)
 
 
-def _parametrize_test_install_config_manager() -> Iterator[
-    tuple[Container, PackageManagerClass, str]
+def _parametrize_test_assert_config_manager() -> Iterator[
+    tuple[Container, PackageManagerClass, str | Exception]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -491,14 +493,14 @@ def _parametrize_test_install_config_manager() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides dnf-command\(config-manager\) \|\| dnf install -y  dnf-command\(config-manager\)",  # noqa: E501
+                r"""rpm -q --whatprovides '"'"'dnf-command\(config-manager\)'"'"' \|\| dnf install -y  '"'"'dnf-command\(config-manager\)'"'"'""",  # noqa: E501
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides dnf5-command\(config-manager\) \|\| dnf5 install -y  dnf5-command\(config-manager\)",  # noqa: E501
+                r"""rpm -q --whatprovides '"'"'dnf5-command\(config-manager\)'"'"' \|\| dnf5 install -y  '"'"'dnf5-command\(config-manager\)'"'"'""",  # noqa: E501
             )
 
         elif package_manager_class in (
@@ -506,41 +508,30 @@ def _parametrize_test_install_config_manager() -> Iterator[
             tmt.package_managers.rpm_ostree.RpmOstree,
             tmt.package_managers.apk.Apk,
         ):
-            continue
+            yield (
+                container,
+                package_manager_class,
+                PrepareError(
+                    f"Package manager '{package_manager_class.NAME}' does not support config-manager."  # noqa: E501
+                ),
+            )
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-CONTAINER_CONFIG_MANAGER_MATRIX = [
-    (container, pm_class)
-    for container, pm_class in CONTAINER_BASE_MATRIX
-    if pm_class
-    in (
-        tmt.package_managers.dnf.Dnf,
-        tmt.package_managers.dnf.Dnf5,
-        tmt.package_managers.dnf.Yum,
-    )
-]
-
-CONTAINER_CONFIG_MANAGER_MATRIX_IDS = [
-    f'{container.url} / {package_manager_class.__name__.lower()}'
-    for container, package_manager_class in CONTAINER_CONFIG_MANAGER_MATRIX
-]
-
-
 @pytest.mark.containers
 @pytest.mark.parametrize(
-    ('container_per_test', 'package_manager_class', 'expected_command'),
-    list(_parametrize_test_install_config_manager()),
+    ('container_per_test', 'package_manager_class', 'expected_command_or_exception'),
+    list(_parametrize_test_assert_config_manager()),
     indirect=["container_per_test"],
-    ids=CONTAINER_CONFIG_MANAGER_MATRIX_IDS,
+    ids=CONTAINER_MATRIX_IDS,
 )
-def test_install_config_manager(
+def test_assert_config_manager(
     container_per_test: ContainerData,
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
-    expected_command: str,
+    expected_command_or_exception: str | Exception,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -548,9 +539,15 @@ def test_install_config_manager(
         container_per_test, guest_per_test, package_manager_class, root_logger
     )
 
-    package_manager.install_config_manager()
-
-    assert_expected_command(caplog, expected_command)
+    if isinstance(expected_command_or_exception, str):
+        package_manager.assert_config_manager()
+        assert_expected_command(caplog, expected_command_or_exception)
+    else:
+        with pytest.raises(
+            type(expected_command_or_exception),
+            match=re.escape(str(expected_command_or_exception)),
+        ):
+            package_manager.assert_config_manager()
 
 
 def _parametrize_test_install_nonexistent() -> Iterator[

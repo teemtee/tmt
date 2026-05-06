@@ -58,7 +58,7 @@ class Crb(ToggleableFeature):
             logger.warning('CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.')
             return
 
-        guest.package_manager.install_config_manager()
+        guest.package_manager.assert_config_manager()
 
         logger.info(f"{action.capitalize()} CRB repository.")
 
