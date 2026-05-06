@@ -133,7 +133,7 @@ class GuestLocal(tmt.Guest):
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
 
         # Accumulate all necessary commands - they will form a "shell" script, a single
-        # string passed to a shell executed inside the container.
+        # string passed to a shell executed on the local host.
         script = ShellScript.from_scripts(
             self._prepare_command_environment(env).to_shell_exports()
         )
