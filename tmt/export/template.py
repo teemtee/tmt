@@ -4,7 +4,8 @@ import tmt.base.core
 import tmt.base.plan
 import tmt.export
 import tmt.utils
-from tmt.utils import Path
+
+from ..utils import Path
 
 
 @tmt.base.core.FmfId.provides_export('template')

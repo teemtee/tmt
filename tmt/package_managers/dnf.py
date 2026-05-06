@@ -2,8 +2,9 @@ import re
 from collections.abc import Iterable
 from typing import ClassVar, Optional, cast
 
-from tmt._compat.pathlib import Path
-from tmt.package_managers import (
+from .._compat.pathlib import Path
+from ..utils import Command, CommandOutput, GeneralError, RunError, ShellScript
+from . import (
     FileSystemPath,
     Installable,
     Options,
@@ -15,7 +16,6 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
 class DnfEngine(PackageManagerEngine):
@@ -248,7 +248,7 @@ class Dnf(PackageManager[DnfEngine]):
     probe_priority = 50
 
     def list_packages(self, repository: Repository) -> list[Version]:
-        from tmt.package_managers._rpm import RpmVersion
+        from ._rpm import RpmVersion
 
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)

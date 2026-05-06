@@ -5,10 +5,11 @@
 from typing import Any, Optional
 
 import tmt.utils
-from tmt.cli import CliInvocation, Context, pass_context
-from tmt.cli._root import main, verbosity_options, workdir_root_options
-from tmt.options import option
-from tmt.utils import Path, effective_workdir_root
+
+from ..options import option
+from ..utils import Path, effective_workdir_root
+from . import CliInvocation, Context, pass_context
+from ._root import main, verbosity_options, workdir_root_options
 
 
 @main.command()

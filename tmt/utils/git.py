@@ -14,8 +14,9 @@ from typing import TYPE_CHECKING, Optional
 import tmt.log
 import tmt.utils
 import tmt.utils.url
-from tmt.container import container
-from tmt.utils import (
+
+from ..container import container
+from . import (
     Command,
     CommandOutput,
     Common,
@@ -783,7 +784,7 @@ def git_clone(
         )
         return output
 
-    from tmt.utils import GIT_CLONE_ATTEMPTS, GIT_CLONE_INTERVAL, GIT_CLONE_TIMEOUT
+    from . import GIT_CLONE_ATTEMPTS, GIT_CLONE_INTERVAL, GIT_CLONE_TIMEOUT
 
     timeout = timeout or GIT_CLONE_TIMEOUT
     attempts = attempts or GIT_CLONE_ATTEMPTS

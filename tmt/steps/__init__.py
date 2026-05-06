@@ -44,8 +44,9 @@ import tmt.result
 import tmt.steps.context
 import tmt.utils
 import tmt.utils.rest
-from tmt._compat.typing import Self, TypeGuard
-from tmt.container import (
+
+from .._compat.typing import Self, TypeGuard
+from ..container import (
     SerializableContainer,
     SpecBasedContainer,
     container,
@@ -56,9 +57,9 @@ from tmt.container import (
     option_to_key,
     simple_field,
 )
-from tmt.options import ClickOptionDecoratorType, option
-from tmt.result import ResultOutcome
-from tmt.utils import (
+from ..options import ClickOptionDecoratorType, option
+from ..result import ResultOutcome
+from ..utils import (
     DEFAULT_NAME,
     Command,
     CommandOutput,
@@ -74,15 +75,16 @@ from tmt.utils import (
     ShellScript,
     Stopwatch,
 )
-from tmt.utils.templates import render_template
+from ..utils.templates import render_template
 
 if TYPE_CHECKING:
     import tmt.base.core
     import tmt.cli
     import tmt.plugins
-    from tmt.base.plan import Plan
-    from tmt.guest import Guest, TransferOptions
-    from tmt.result import BaseResult, PhaseResult
+
+    from ..base.plan import Plan
+    from ..guest import Guest, TransferOptions
+    from ..result import BaseResult, PhaseResult
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
@@ -1567,7 +1569,7 @@ def provides_method(
         )
 
         if installation_hint is not None:
-            from tmt.utils.hints import register_hint
+            from ..utils.hints import register_hint
 
             register_hint(f'{base_class.get_step_name()}/{name}', installation_hint)
 
@@ -1971,7 +1973,7 @@ class BasePlugin(
                 assert isinstance(plugin, BasePlugin)
                 return plugin
 
-        from tmt.utils.hints import print_hints
+        from ..utils.hints import print_hints
 
         print_hints(f'{step.name}/{how}', ignore_missing=True, logger=step._logger)
         print_hints(step.name, ignore_missing=True, logger=step._logger)
@@ -2426,7 +2428,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
             it is appended to this list.
         """
 
-        from tmt.steps.context import is_guest_healthy
+        from .context import is_guest_healthy
 
         if not is_guest_healthy(reboot, restart):
             return
@@ -2475,7 +2477,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :returns: plugin outcome provided as argument, ``outcome``.
         """
 
-        from tmt.result import PhaseResult, ResultGuestData
+        from ..result import PhaseResult, ResultGuestData
 
         self.write_command_report(
             path=log_filepath,
@@ -2535,7 +2537,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :returns: plugin outcome provided as argument, ``outcome``.
         """
 
-        from tmt.result import PhaseResult, ResultGuestData
+        from ..result import PhaseResult, ResultGuestData
 
         self.write_command_report(
             path=log_filepath,
@@ -2598,7 +2600,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :returns: plugin outcome provided as argument, ``outcome``.
         """
 
-        from tmt.result import PhaseResult, ResultGuestData
+        from ..result import PhaseResult, ResultGuestData
 
         outcome.results.append(
             PhaseResult(
@@ -2666,7 +2668,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :returns: plugin outcome provided as argument, ``outcome``.
         """
 
-        from tmt.result import PhaseResult, ResultGuestData
+        from ..result import PhaseResult, ResultGuestData
 
         if exception is not None:
             outcome.results.append(
@@ -2913,7 +2915,7 @@ class Reboot(Action):
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
 
-        from tmt.guest import RebootMode
+        from ..guest import RebootMode
 
         command = tmt.utils.ShellScript(self.opt('command')) if self.opt('command') else None
 
@@ -2970,7 +2972,7 @@ class Login(Action):
         """
 
         # Avoid circular imports
-        from tmt.result import ResultOutcome
+        from ..result import ResultOutcome
 
         @click.command()
         @click.pass_context
@@ -3068,7 +3070,7 @@ class Login(Action):
         """
 
         # Avoid circular imports
-        from tmt.result import ResultOutcome
+        from ..result import ResultOutcome
 
         expected_results: Optional[list[ResultOutcome]] = [
             ResultOutcome.from_spec(raw_expected_result)
@@ -3334,7 +3336,7 @@ class Topology(SerializableContainer):
         """
 
         # Avoid circular imports
-        from tmt.guest import TransferOptions
+        from ..guest import TransferOptions
 
         topology_filepaths = self.save(dirpath=dirpath, filename_base=filename_base)
 
@@ -3405,7 +3407,7 @@ class PluginTask(
 
     @property
     def phase_name(self) -> str:
-        from tmt.steps.execute import ExecutePlugin
+        from .execute import ExecutePlugin
 
         # A better fitting name for an execute step phase, instead of its own
         # name, which is always the same, would be the name of the discover

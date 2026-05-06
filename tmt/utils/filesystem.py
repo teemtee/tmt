@@ -5,8 +5,9 @@ Utility functions for filesystem operations.
 import shutil
 
 import tmt.log
-from tmt._compat.pathlib import Path
-from tmt.utils import Command, GeneralError, RunError
+
+from .._compat.pathlib import Path
+from . import Command, GeneralError, RunError
 
 
 def _copy_tree_cp(

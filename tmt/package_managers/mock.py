@@ -3,7 +3,9 @@ from typing import (
     Optional,
 )
 
-from tmt.package_managers import (
+from ..steps.provision.mock import GuestMock
+from ..utils import Command, CommandOutput, GeneralError, RunError, ShellScript
+from . import (
     Installable,
     Options,
     PackageManager,
@@ -12,8 +14,6 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.steps.provision.mock import GuestMock
-from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
 class MockEngine(PackageManagerEngine):

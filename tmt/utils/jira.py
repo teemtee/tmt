@@ -9,8 +9,9 @@ import tmt.config
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt.config.models.link import IssueTracker, IssueTrackerType
-from tmt.plugins import ModuleImporter
+
+from ..config.models.link import IssueTracker, IssueTrackerType
+from ..plugins import ModuleImporter
 
 if TYPE_CHECKING:
     import jira

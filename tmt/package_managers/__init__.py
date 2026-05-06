@@ -10,12 +10,13 @@ from urllib.parse import urlparse
 import tmt.log
 import tmt.plugins
 import tmt.utils
-from tmt.container import container, simple_field
-from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
+
+from ..container import container, simple_field
+from ..utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
-    from tmt.guest import Guest
+    from .._compat.typing import TypeAlias
+    from ..guest import Guest
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str

@@ -49,9 +49,10 @@ import tmt.templates
 import tmt.utils
 import tmt.utils.git
 import tmt.utils.jira
-from tmt._compat.typing import Self
-from tmt.checks import Check
-from tmt.container import (
+
+from .._compat.typing import Self
+from ..checks import Check
+from ..container import (
     SerializableContainer,
     SpecBasedContainer,
     container,
@@ -59,9 +60,9 @@ from tmt.container import (
     container_fields,
     field,
 )
-from tmt.lint import LinterOutcome, LinterReturn
-from tmt.result import ResultInterpret
-from tmt.utils import (
+from ..lint import LinterOutcome, LinterReturn
+from ..result import ResultInterpret
+from ..utils import (
     Environment,
     FmfContext,
     Path,
@@ -70,12 +71,13 @@ from tmt.utils import (
     to_yaml,
     verdict,
 )
-from tmt.utils.themes import style
+from ..utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.cli
-    from tmt.base.plan import Plan
-    from tmt.base.run import Run
+
+    from .plan import Plan
+    from .run import Run
 
 
 T = TypeVar('T')
@@ -2534,7 +2536,7 @@ class Tree(tmt.utils.Common):
         """
         Search available plans
         """
-        from tmt.base.plan import Plan
+        from .plan import Plan
 
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
@@ -2716,7 +2718,7 @@ class Tree(tmt.utils.Common):
         """
         Initialize a new tmt tree, optionally with a template
         """
-        from tmt.base.plan import Plan
+        from .plan import Plan
 
         path = path.resolve()
         dry = Tree._opt('dry')
@@ -2986,7 +2988,7 @@ class Status(tmt.utils.Common):
 
         # TODO: avoid circular import - hopefully this would disappear
         # once we move `Status` into its own module.
-        from tmt.base.run import Run
+        from .run import Run
 
         # Prepare absolute workdir path if --id was used
         root_path = Path(self.workdir_root)
@@ -3116,7 +3118,7 @@ class Clean(tmt.utils.Common):
         if self.opt('last'):
             # TODO: avoid circular import - hopefully this would disappear
             # once we split `Clean` into plugins
-            from tmt.base.run import Run
+            from .run import Run
 
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -3139,7 +3141,7 @@ class Clean(tmt.utils.Common):
 
         # TODO: avoid circular import - hopefully this would disappear
         # once we split `Clean` into plugins
-        from tmt.base.run import Run
+        from .run import Run
 
         for abs_path in all_workdirs:
             run = Run(
@@ -3177,7 +3179,7 @@ class Clean(tmt.utils.Common):
         if self.opt('last'):
             # TODO: avoid circular import - hopefully this would disappear
             # once we split `Clean` into plugins
-            from tmt.base.run import Run
+            from .run import Run
 
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -3506,7 +3508,7 @@ def resolve_dynamic_ref(
     Plan is used for context and environment expansion to process reference.
     Common instance is used for appropriate logging.
     """
-    from tmt.base.plan import Plan
+    from .plan import Plan
 
     # Nothing to do if no dynamic reference provided
     if not ref or not ref.startswith("@"):

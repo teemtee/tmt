@@ -3,7 +3,8 @@ from typing import Any, Optional
 import tmt.base.core
 import tmt.export
 import tmt.export.template
-from tmt.utils import Path
+
+from ..utils import Path
 
 
 @tmt.base.core.Story.provides_export('rst')

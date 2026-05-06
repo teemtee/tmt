@@ -6,7 +6,8 @@ import email.message
 
 import tmt.log
 import tmt.utils
-from tmt.utils import Path
+
+from . import Path
 
 
 def download(url: str, destination: Path, *, logger: tmt.log.Logger) -> Path:

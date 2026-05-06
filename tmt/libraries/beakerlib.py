@@ -10,16 +10,16 @@ import tmt.log
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt.base.core import Dependency, DependencyFmfId, DependencySimple
-from tmt.container import container, simple_field
-from tmt.convert import write
-from tmt.steps.discover import Discover
-from tmt.utils import Command, Environment, EnvVarValue, Path
 
+from ..base.core import Dependency, DependencyFmfId, DependencySimple
+from ..container import container, simple_field
+from ..convert import write
+from ..steps.discover import Discover
+from ..utils import Command, Environment, EnvVarValue, Path
 from . import Library, LibraryError
 
 if TYPE_CHECKING:
-    from tmt.base.core import _RawDependency
+    from ..base.core import _RawDependency
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
@@ -149,11 +149,11 @@ class BeakerLib(Library):
         """
         Constructor for Beakerlib library from the current DiscoverPlugin.
         """
-        from tmt.steps.discover import (
+        from ..steps.discover import (
             DiscoverPlugin,
             DiscoverStepData,
         )
-        from tmt.steps.discover.fmf import DiscoverFmfStepData
+        from ..steps.discover.fmf import DiscoverFmfStepData
 
         assert not identifier.url
         assert not identifier.path

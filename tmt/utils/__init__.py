@@ -68,23 +68,25 @@ from ruamel.yaml.representer import Representer
 from urllib3.response import HTTPResponse
 
 import tmt.log
-from tmt._compat import importlib
-from tmt._compat.annotationlib import Format, get_annotations
-from tmt._compat.importlib.readers import MultiplexedPath
-from tmt._compat.pathlib import Path
-from tmt._compat.typing import ParamSpec, Self
-from tmt.container import container
-from tmt.log import LoggableValue
-from tmt.utils.themes import style
+
+from .._compat import importlib
+from .._compat.annotationlib import Format, get_annotations
+from .._compat.importlib.readers import MultiplexedPath
+from .._compat.pathlib import Path
+from .._compat.typing import ParamSpec, Self
+from ..container import container
+from ..log import LoggableValue
+from .themes import style
 
 if TYPE_CHECKING:
     import tmt.base.core
     import tmt.base.run
     import tmt.cli
     import tmt.utils.themes
-    from tmt._compat.typing import ParamSpec, Self, TypeAlias
-    from tmt.guest import GuestLog
-    from tmt.hardware.constraints import Size
+
+    from .._compat.typing import ParamSpec, Self, TypeAlias
+    from ..guest import GuestLog
+    from ..hardware.constraints import Size
 
 
 def sanitize_string(text: str) -> str:
@@ -2549,7 +2551,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # the go-to logger for async code, like signal handlers, the
         # exception logger is not to be used from anywhere but exception
         # logging.
-        from tmt._bootstrap import _BOOTSTRAP_LOGGER
+        from .._bootstrap import _BOOTSTRAP_LOGGER
 
         _BOOTSTRAP_LOGGER.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
 
@@ -3363,7 +3365,7 @@ def show_exception(
         logfiles as well as to standard error output.
     """
 
-    from tmt._bootstrap import EXCEPTION_LOGGER
+    from .._bootstrap import EXCEPTION_LOGGER
 
     traceback_verbosity = traceback_verbosity or TracebackVerbosity.from_env()
 
@@ -4811,8 +4813,8 @@ def fmf_id(
     Return full fmf identifier of the node
     """
 
-    from tmt.base.core import FmfId
-    from tmt.utils.git import GitInfo
+    from ..base.core import FmfId
+    from .git import GitInfo
 
     fmf_id = FmfId(fmf_root=fmf_root, name=name)
     git_info = GitInfo.from_fmf_root(fmf_root=fmf_root, logger=logger)
@@ -5536,7 +5538,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
         # Instead of having a set of if-elif tests, we can reach the default `how`
         # dynamically.
 
-        from tmt.plugins import import_member
+        from ..plugins import import_member
 
         step_module_name = f'tmt.steps.{step_name}'
         step_class_name = step_name.capitalize()
@@ -5704,7 +5706,7 @@ def dataclass_normalize_field(
     and the return value is assigned to container field instead of ``value``.
     """
 
-    from tmt.container import container_field
+    from ..container import container_field
 
     # Find out whether there's a normalization callback, and use it. Otherwise,
     # the raw value is simply used.
@@ -6335,7 +6337,7 @@ class NormalizeKeysMixin(_CommonBase):
         Extract values for class-level attributes, and verify they match declared types.
         """
 
-        from tmt.container import key_to_option
+        from ..container import key_to_option
 
         log_shift, log_level = 2, 4
 

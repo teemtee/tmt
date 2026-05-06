@@ -8,9 +8,10 @@ from click import echo
 
 import tmt.base.core
 import tmt.export
-from tmt.identifier import ID_KEY, add_uuid_if_not_defined
-from tmt.utils import ConvertError, Path
-from tmt.utils.themes import style
+
+from ..identifier import ID_KEY, add_uuid_if_not_defined
+from ..utils import ConvertError, Path
+from ..utils.themes import style
 
 PolarionException: Any = None
 PolarionTestCase: Any = None

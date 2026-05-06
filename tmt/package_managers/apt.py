@@ -2,7 +2,16 @@ import re
 from typing import Optional, Union
 
 import tmt.utils
-from tmt.package_managers import (
+
+from ..utils import (
+    Command,
+    CommandOutput,
+    GeneralError,
+    RunError,
+    ShellScript,
+)
+from ..utils.templates import render_template
+from . import (
     FileSystemPath,
     Installable,
     Options,
@@ -13,14 +22,6 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.utils import (
-    Command,
-    CommandOutput,
-    GeneralError,
-    RunError,
-    ShellScript,
-)
-from tmt.utils.templates import render_template
 
 ReducedPackages = list[Union[Package, PackagePath]]
 
