@@ -66,8 +66,7 @@ tag+:
 
 /fedora-bootc:
   environment:
-    # TODO: Move these back to latest after avc issue is resolved
-    IMAGE: localhost/tmt/container/test/fedora/42/bootc:latest
+    IMAGE: localhost/tmt/container/test/fedora/latest/bootc:latest
     DEFAULT_TMT_SCRIPTS_DIR: /var/lib/tmt/scripts
     FOUND: |
       /var/lib/tmt/scripts/rhts-abort
@@ -103,8 +102,7 @@ tag+:
 
 /fedora-bootc-force:
   environment:
-    # TODO: Move these back to latest after avc issue is resolved
-    IMAGE: localhost/tmt/container/test/fedora/42/bootc:latest
+    IMAGE: localhost/tmt/container/test/fedora/latest/bootc:latest
     TMT_SCRIPTS_DIR: /var/tmp/tmt/bin
     DEFAULT_TMT_SCRIPTS_DIR: /var/lib/tmt/scripts
     FOUND: |
