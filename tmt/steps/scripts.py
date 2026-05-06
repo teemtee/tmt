@@ -5,11 +5,12 @@ from typing import Callable, Optional
 import tmt
 import tmt.log
 import tmt.utils
-from tmt.container import container
-from tmt.utils import (
+
+from ..container import container
+from ..utils import (
     Path,
 )
-from tmt.utils.templates import render_template_file
+from ..utils.templates import render_template_file
 
 #: Scripts source resource. Use `tmt.utils.resource_files` to access them.
 SCRIPTS_RESOURCE = 'steps/scripts'

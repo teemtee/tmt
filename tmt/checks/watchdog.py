@@ -12,13 +12,14 @@ import tmt.steps.provision.connect
 import tmt.steps.provision.local
 import tmt.steps.provision.mrack
 import tmt.utils
-from tmt.checks import Check, CheckPlugin, provides_check
-from tmt.container import container, field
-from tmt.result import CheckResult, ResultOutcome
-from tmt.utils import Path, format_timestamp, render_run_exception_streams
+
+from ..container import container, field
+from ..result import CheckResult, ResultOutcome
+from ..utils import Path, format_timestamp, render_run_exception_streams
+from . import Check, CheckPlugin, provides_check
 
 if TYPE_CHECKING:
-    from tmt.steps.execute import TestInvocation
+    from ..steps.execute import TestInvocation
 
 PING_OUTPUT_PATTERN = re.compile(
     r'(?m)(?P<transmitted>\d+) packets transmitted, (?P<received>\d+) received'

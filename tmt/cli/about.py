@@ -7,12 +7,13 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 import tmt.utils.rest
-from tmt.cli import Context, CustomGroup, pass_context
-from tmt.cli._root import main
-from tmt.options import option
-from tmt.plugins import REGISTRIES, PluginRegistry
-from tmt.utils import GeneralError
-from tmt.utils.templates import render_template, render_template_file
+
+from ..options import option
+from ..plugins import REGISTRIES, PluginRegistry
+from ..utils import GeneralError
+from ..utils.templates import render_template, render_template_file
+from . import Context, CustomGroup, pass_context
+from ._root import main
 
 TEMPLATES_RESOURCE = 'cli/templates/about'
 

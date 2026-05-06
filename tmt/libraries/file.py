@@ -5,10 +5,10 @@ import fmf.utils
 
 import tmt.log
 import tmt.utils
-from tmt.base.core import Dependency, DependencyFile
-from tmt.container import container
-from tmt.utils import Path
 
+from ..base.core import Dependency, DependencyFile
+from ..container import container
+from ..utils import Path
 from . import Library, LibraryError
 
 

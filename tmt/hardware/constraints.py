@@ -18,13 +18,14 @@ import pint
 
 import tmt.log
 import tmt.utils
-from tmt.container import SpecBasedContainer, container
-from tmt.utils import SpecificationError
+
+from ..container import SpecBasedContainer, container
+from ..utils import SpecificationError
 
 if TYPE_CHECKING:
     from pint import Quantity
 
-    from tmt._compat.typing import TypeAlias
+    from .._compat.typing import TypeAlias
 
     #: A type of values describing sizes of things like storage or RAM.
     # Note: type-hinting is a bit wonky with pyright

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from click import style as _style  # noqa: TID251
 
 if TYPE_CHECKING:
-    from tmt.config.models.themes import Style as ThemeStyle
+    from ..config.models.themes import Style as ThemeStyle
 
 
 #: A style to apply to a string.
@@ -53,7 +53,7 @@ def style(
 
         return s
 
-    from tmt.config.models.themes import Style as ThemeStyle
+    from ..config.models.themes import Style as ThemeStyle
 
     # If `style` is indeed a theme style, then apply it.
     if isinstance(style, ThemeStyle):

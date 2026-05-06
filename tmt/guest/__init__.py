@@ -40,12 +40,13 @@ import tmt.steps
 import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.wait
-from tmt._compat.typing import Self
-from tmt.ansible import (
+
+from .._compat.typing import Self
+from ..ansible import (
     GuestAnsible,
     normalize_guest_ansible,
 )
-from tmt.container import (
+from ..container import (
     SerializableContainer,
     SpecBasedContainer,
     container,
@@ -53,11 +54,11 @@ from tmt.container import (
     key_to_option,
     option_to_key,
 )
-from tmt.package_managers import (
+from ..package_managers import (
     FileSystemPath,
     Package,
 )
-from tmt.utils import (
+from ..utils import (
     Command,
     GeneralError,
     OnProcessEndCallback,
@@ -68,13 +69,14 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
-from tmt.utils.hints import get_hint
-from tmt.utils.wait import Deadline, Waiting
+from ..utils.hints import get_hint
+from ..utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt._compat.typing import TypeAlias
-    from tmt.steps.provision import Provision, ProvisionPlugin, ProvisionStepDataT
+
+    from .._compat.typing import TypeAlias
+    from ..steps.provision import Provision, ProvisionPlugin, ProvisionStepDataT
 
 
 T = TypeVar('T')

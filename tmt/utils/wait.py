@@ -4,9 +4,10 @@ from functools import cached_property
 from typing import Callable, TypeVar
 
 import tmt.log
-from tmt._compat.typing import Self
-from tmt.container import container
-from tmt.utils import GeneralError
+
+from .._compat.typing import Self
+from ..container import container
+from . import GeneralError
 
 T = TypeVar('T')
 
@@ -204,7 +205,7 @@ class Waiting:
         :raises Interrupted: when tmt has been interrupted.
         """
 
-        from tmt.utils.signals import INTERRUPT_PENDING, Interrupted
+        from .signals import INTERRUPT_PENDING, Interrupted
 
         def _check_interrupted() -> None:
             if INTERRUPT_PENDING.is_set():

@@ -26,7 +26,7 @@ decoupled from the rest, and made available for inspection.
 [1] https://tmt.readthedocs.io/en/stable/spec/hardware.html
 """
 
-from tmt.hardware.constraints import (
+from .constraints import (
     UNITS,
     Constraint,
     FlagConstraint,
@@ -36,7 +36,7 @@ from tmt.hardware.constraints import (
     SizeConstraint,
     TextConstraint,
 )
-from tmt.hardware.requirements import Hardware
+from .requirements import Hardware
 
 __all__ = [
     'UNITS',

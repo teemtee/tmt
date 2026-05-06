@@ -12,10 +12,11 @@ from typing import Any, Callable, Generic, Optional, TypeVar, cast
 
 import tmt
 import tmt.utils
-from tmt._compat.importlib.metadata import entry_points
-from tmt._compat.typing import Concatenate, ParamSpec
-from tmt.log import Logger
-from tmt.utils import GeneralError, Path
+
+from .._compat.importlib.metadata import entry_points
+from .._compat.typing import Concatenate, ParamSpec
+from ..log import Logger
+from ..utils import GeneralError, Path
 
 P = ParamSpec('P')
 ModuleT = TypeVar('ModuleT', bound=ModuleType)
@@ -70,7 +71,7 @@ def discover(path: Path) -> Iterator[str]:
 # is resolved, to use `Exportable` in tmt.steps, we need a delayed import. Hence
 # the function.
 def _discover_packages() -> list[tuple[str, Path]]:
-    from tmt.steps import STEPS
+    from ..steps import STEPS
 
     return [(f'tmt.steps.{step}', Path('steps') / step) for step in STEPS] + [
         ('tmt.plugins', Path('plugins')),
@@ -271,7 +272,7 @@ def _import_or_raise(
 
     except tmt.utils.GeneralError as exc:
         if hint_id is not None:
-            from tmt.utils.hints import print_hints
+            from ..utils.hints import print_hints
 
             print_hints(hint_id, logger=logger)
 

@@ -21,12 +21,12 @@ import fmf.utils
 import jinja2
 import jinja2.exceptions
 
-from tmt.utils import GeneralError, Path, to_yaml
-from tmt.utils.git import web_git_url
+from . import GeneralError, Path, to_yaml
+from .git import web_git_url
 
 if TYPE_CHECKING:
-    from tmt.guest import Guest
-    from tmt.result import BaseResult
+    from ..guest import Guest
+    from ..result import BaseResult
 
 
 def _template_filter_basename(  # type: ignore[reportUnusedFunction,unused-ignore]
@@ -342,7 +342,7 @@ def _template_filter_style(  # type: ignore[reportUnusedFunction,unused-ignore]
     Implemented by passing all arguments to :py:func:`click.style`.
     """
 
-    from tmt.utils.themes import style
+    from .themes import style
 
     return style(s, fg=fg, bold=bold, underline=underline)
 
@@ -364,7 +364,7 @@ def _template_filter_guest_full_name(  # type: ignore[reportUnusedFunction,unuse
         {{ {"name": "foo", "role": "bar"} | guest_full_name }}
     """
 
-    from tmt.guest import format_guest_full_name
+    from ..guest import format_guest_full_name
 
     return format_guest_full_name(guest.name, guest.role)
 

@@ -4,15 +4,16 @@ from collections.abc import Iterator
 from typing import Any, Optional
 
 import tmt.utils
-from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer
-from tmt.package_managers import (
+
+from ..container import PYDANTIC_V1, ConfigDict, MetadataContainer
+from ..utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
+from . import (
     Installable,
     Options,
     PackageManager,
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 

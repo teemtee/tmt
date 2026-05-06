@@ -10,10 +10,10 @@ import jinja2
 import tmt.log
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
-from tmt.container import container, field
-from tmt.result import CheckResult, ResultOutcome, save_failures
-from tmt.utils import (
+
+from ..container import container, field
+from ..result import CheckResult, ResultOutcome, save_failures
+from ..utils import (
     CommandOutput,
     Path,
     ShellScript,
@@ -21,12 +21,14 @@ from tmt.utils import (
     render_command_report,
     safe_call,
 )
-from tmt.utils.hints import hints_as_notes
+from ..utils.hints import hints_as_notes
+from . import Check, CheckPlugin, _RawCheck, provides_check
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.guest import Guest
-    from tmt.steps.execute import TestInvocation
+
+    from ..guest import Guest
+    from ..steps.execute import TestInvocation
 
 
 class TestMethod(enum.Enum):

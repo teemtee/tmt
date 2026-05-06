@@ -7,10 +7,11 @@ from typing import Any
 import click
 
 import tmt.templates
-from tmt.cli import Context, pass_context
-from tmt.cli._root import force_dry_options, main, verbosity_options
-from tmt.options import option
-from tmt.utils import Path
+
+from ..options import option
+from ..utils import Path
+from . import Context, pass_context
+from ._root import force_dry_options, main, verbosity_options
 
 
 @main.command()

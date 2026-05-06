@@ -21,12 +21,13 @@ import docutils.utils
 
 import tmt.log
 import tmt.utils
-from tmt.config import Config
-from tmt.log import Logger
-from tmt.utils import GeneralError
+
+from ..config import Config
+from ..log import Logger
+from . import GeneralError
 
 if TYPE_CHECKING:
-    from tmt.config.models.themes import Style
+    from ..config.models.themes import Style
 
 # We may be sharing parser structures with Sphinx, when it's generating
 # docs. And that lead to problems, our roles conflicting with those
