@@ -9,6 +9,9 @@ rlJournalStart
         if [ "$IMAGE_MODE" = "yes" ]; then
             rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
         fi
+
+        rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
+
         rlRun "pushd data"
     rlPhaseEnd
 
@@ -44,6 +47,16 @@ rlJournalStart
             assert_image_mode
         rlPhaseEnd
 
+        rlPhaseStartTest "Make sure plan environment is exposed to scripts"
+            rlRun -s "tmt run --id $run --scratch -v provision --how=$PROVISION_HOW $image_opt prepare cleanup plan -n environment" 0
+
+            if [ "$IMAGE_MODE" = "yes" ]; then
+                rlAssertGrep "Collected command for Containerfile:.*export DUMMY_ENVVAR=dummy_value; .*/bin/true" "$run/log.txt"
+            else
+                rlAssertGrep "Run command: .*export DUMMY_ENVVAR=dummy_value;.*/bin/true" "$run/log.txt"
+            fi
+        rlPhaseEnd
+
         # TODO: #4785 Preparing from a remote script is broken in Image Mode
         if [ "$IMAGE_MODE" != "yes" ]; then
             rlPhaseStartTest "Remote Script"
@@ -57,5 +70,6 @@ rlJournalStart
 
     rlPhaseStartCleanup
         rlRun "popd"
+        rlRun "rm -rf $run" 0 "Removing run directory"
     rlPhaseEnd
 rlJournalEnd
