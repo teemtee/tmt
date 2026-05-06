@@ -37,7 +37,7 @@ def sphinx_apidoc(app: "Sphinx") -> None:
             "--no-toc",
             "-o",
             str(autodocs_path),
-            str(root / "tmt"),
+            str(root / "src/tmt"),
         ]
     )
 
