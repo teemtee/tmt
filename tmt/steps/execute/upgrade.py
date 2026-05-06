@@ -9,19 +9,20 @@ import tmt.guest
 import tmt.log
 import tmt.steps
 import tmt.utils
-from tmt.container import container, field, key_to_option
-from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref
-from tmt.steps.discover.fmf import (
+
+from ...container import container, field, key_to_option
+from ...utils import Environment, EnvVarValue, Path
+from ..discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref
+from ..discover.fmf import (
     DiscoverFmf,
     DiscoverFmfStepData,
     TestsWithAdjusts,
     normalize_tests_with_adjusts,
 )
-from tmt.steps.execute import ExecutePlugin
-from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
-from tmt.steps.prepare import PreparePlugin
-from tmt.steps.prepare.install import PrepareInstallData
-from tmt.utils import Environment, EnvVarValue, Path
+from ..prepare import PreparePlugin
+from ..prepare.install import PrepareInstallData
+from . import ExecutePlugin
+from .internal import ExecuteInternal, ExecuteInternalData
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
 BEFORE_UPGRADE_PREFIX = 'old'

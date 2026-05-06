@@ -5,9 +5,9 @@ RPM-specific version type shared across package managers and artifact providers.
 import re
 from typing import Any, Optional
 
-from tmt._compat.typing import Self
-from tmt.container import container
-from tmt.package_managers import Version
+from .._compat.typing import Self
+from ..container import container
+from . import Version
 
 NEVRA_PATTERN = re.compile(
     r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'

@@ -1,7 +1,7 @@
 import re
 import sys
 
-from tmt.__main__ import run_cli
+from ..__main__ import run_cli
 
 
 def _run_precommit() -> None:  # pyright: ignore[reportUnusedFunction] (used by project.scripts)

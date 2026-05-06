@@ -14,7 +14,8 @@ import click
 import tmt.lint
 import tmt.log
 import tmt.utils
-from tmt.container import container
+
+from .container import container
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
 # we need to define FC on our own.
@@ -739,7 +740,7 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
                         break
 
             if how and self._method is None:
-                from tmt.utils.hints import print_hints
+                from .utils.hints import print_hints
 
                 # Use run for logging, steps may not be initialized yet
                 assert context.obj.run is not None  # narrow type

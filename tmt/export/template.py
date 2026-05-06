@@ -6,7 +6,8 @@ import tmt.export
 import tmt.log
 import tmt.utils
 import tmt.utils.templates
-from tmt.utils import Path
+
+from ..utils import Path
 
 
 @tmt.base.core.FmfId.provides_export('template')

@@ -37,7 +37,8 @@ from typing import Any, Callable, NoReturn, Optional
 
 import tmt.log
 import tmt.utils
-from tmt._compat.typing import ParamSpec, Self
+
+from .._compat.typing import ParamSpec, Self
 
 P = ParamSpec('P')
 

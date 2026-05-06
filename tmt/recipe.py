@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast
 import fmf
 
 import tmt.utils
-from tmt.checks import Check, _RawCheck, normalize_test_checks
-from tmt.container import (
+
+from .checks import Check, _RawCheck, normalize_test_checks
+from .container import (
     SerializableContainer,
     SpecBasedContainer,
     container,
@@ -12,14 +13,14 @@ from tmt.container import (
     key_to_option,
     option_to_key,
 )
-from tmt.log import Logger
-from tmt.result import ResultInterpret
-from tmt.steps import STEPS, Step, _RawStepData
-from tmt.steps.discover import Discover, TestOrigin
-from tmt.utils import Common, Environment, FmfContext, NormalizeKeysMixin, Path, ShellScript
+from .log import Logger
+from .result import ResultInterpret
+from .steps import STEPS, Step, _RawStepData
+from .steps.discover import Discover, TestOrigin
+from .utils import Common, Environment, FmfContext, NormalizeKeysMixin, Path, ShellScript
 
 if TYPE_CHECKING:
-    from tmt.base.core import (
+    from .base.core import (
         Dependency,
         Links,
         Test,
@@ -27,8 +28,8 @@ if TYPE_CHECKING:
         _RawDependency,
         _RawLinks,
     )
-    from tmt.base.plan import Plan
-    from tmt.base.run import Run
+    from .base.plan import Plan
+    from .base.run import Run
 
 
 # Copy of tmt.base.core.DEFAULT_ORDER
@@ -39,7 +40,7 @@ DEFAULT_TEST_DURATION_L1 = '5m'
 
 
 def _normalize_link(value: Optional['_RawLinks']) -> 'Links':
-    from tmt.base.core import Links
+    from .base.core import Links
 
     return Links(data=value)
 
@@ -47,7 +48,7 @@ def _normalize_link(value: Optional['_RawLinks']) -> 'Links':
 def _normalize_require(
     key_address: str, raw_require: Optional['_RawDependency'], logger: Logger
 ) -> list['Dependency']:
-    from tmt.base.core import normalize_require
+    from .base.core import normalize_require
 
     return normalize_require(key_address, raw_require, logger)
 
@@ -215,7 +216,7 @@ class _RecipeTest(
         )
 
     def to_minimal_spec(self) -> _RawRecipeTest:
-        from tmt.base.core import _RawLinks
+        from .base.core import _RawLinks
 
         spec = {
             key_to_option(key): value for key, value in self.items() if value not in (None, [], {})
@@ -249,7 +250,7 @@ class _RecipeTest(
         """
         Convert the recipe test to a :py:class:`tmt.base.core.Test` instance.
         """
-        from tmt.base.core import Test
+        from .base.core import Test
 
         data = self.to_minimal_spec()
         data.pop('discover-phase')  # type: ignore[typeddict-item]
@@ -421,7 +422,7 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
     def from_spec(cls, spec: _RawRecipePlan, logger: Logger) -> '_RecipePlan':  # type: ignore[override]
-        from tmt.base.core import DEFAULT_ORDER, _RawLinks
+        from .base.core import DEFAULT_ORDER, _RawLinks
 
         return _RecipePlan(
             name=spec.get('name', ''),
@@ -474,7 +475,7 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
         )
 
     def to_minimal_spec(self) -> _RawRecipePlan:
-        from tmt.base.core import _RawLinks
+        from .base.core import _RawLinks
 
         spec = {
             key_to_option(key): value for key, value in self.items() if value not in (None, [], {})
@@ -622,7 +623,7 @@ class RecipeManager(Common):
         """
         Create a new fmf tree from the recipe's run and plan specifications.
         """
-        from tmt.base.core import Tree
+        from .base.core import Tree
 
         fmf_tree = fmf.Tree({plan.name: plan.to_fmf_spec() for plan in recipe.plans})
         fmf_tree.root = recipe.run.root

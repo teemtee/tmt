@@ -5,11 +5,13 @@ import fmf.utils
 import tmt.log
 import tmt.steps
 import tmt.utils
-from tmt.container import container, simple_field
-from tmt.guest import Guest
-from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
-from tmt.steps import (
+
+from ...container import container, simple_field
+from ...guest import Guest
+from ...plugins import PluginRegistry
+from ...result import PhaseResult, ResultGuestData, ResultOutcome
+from ...utils import uniq
+from .. import (
     Action,
     PluginOutcome,
     PluginTask,
@@ -17,12 +19,12 @@ from tmt.steps import (
     PushTask,
     sync_with_guests,
 )
-from tmt.utils import uniq
 
 if TYPE_CHECKING:
     import tmt.base.core
     import tmt.guest
-    from tmt.base.plan import Plan
+
+    from ...base.plan import Plan
 
 
 @container
@@ -339,7 +341,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             order: int,
             missing: Literal['skip', 'fail'] = 'fail',
         ) -> None:
-            from tmt.steps.prepare.install import PrepareInstallData
+            from .install import PrepareInstallData
 
             for collection in pruned_collections:
                 if not collection.dependencies:

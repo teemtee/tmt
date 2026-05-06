@@ -30,9 +30,10 @@ import tmt.steps
 import tmt.templates
 import tmt.utils
 import tmt.utils.jira
-from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
-from tmt.options import Deprecated, create_options_decorator, option
-from tmt.utils import Command, GeneralError, Path, effective_workdir_root
+
+from ..options import Deprecated, create_options_decorator, option
+from ..utils import Command, GeneralError, Path, effective_workdir_root
+from . import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 
 if TYPE_CHECKING:
     import tmt.steps.cleanup

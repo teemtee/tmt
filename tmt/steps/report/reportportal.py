@@ -13,24 +13,25 @@ import tmt.result
 import tmt.steps.report
 import tmt.utils
 import tmt.utils.templates
-from tmt._compat.pathlib import Path
-from tmt.base.core import Test
-from tmt.container import container, field, option_to_key
-from tmt.result import Result, ResultOutcome
-from tmt.steps import _RawStepData
-from tmt.utils import (
+
+from ..._compat.pathlib import Path
+from ...base.core import Test
+from ...container import container, field, option_to_key
+from ...result import Result, ResultOutcome
+from ...utils import (
     ActionType,
     catch_warnings_safe,
     format_timestamp,
     sanitize_string,
 )
-from tmt.utils import (
+from ...utils import (
     yaml_to_dict as _yaml_to_dict,
 )
+from .. import _RawStepData
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
-    from tmt.hardware.constraints import Size
+    from ..._compat.typing import TypeAlias
+    from ...hardware.constraints import Size
 
 JSON: 'TypeAlias' = Any
 DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')

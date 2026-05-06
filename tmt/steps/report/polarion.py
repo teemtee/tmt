@@ -8,9 +8,9 @@ import tmt.log
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
-from tmt.container import container, field
-from tmt.utils import Path
 
+from ...container import container, field
+from ...utils import Path
 from .junit import ResultsContext, make_junit_xml
 
 DEFAULT_FILENAME = 'xunit.xml'
@@ -298,10 +298,10 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         super().go(logger=logger)
 
-        from tmt.export.polarion import find_polarion_case_ids, import_polarion
+        from ...export.polarion import find_polarion_case_ids, import_polarion
 
         import_polarion()
-        from tmt.export.polarion import PolarionWorkItem
+        from ...export.polarion import PolarionWorkItem
 
         title = self.data.title
         if not title:

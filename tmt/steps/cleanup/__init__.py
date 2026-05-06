@@ -5,11 +5,12 @@ import fmf.utils
 import tmt.log
 import tmt.steps
 import tmt.utils
-from tmt.container import container
-from tmt.guest import Guest
-from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
-from tmt.steps import (
+
+from ...container import container
+from ...guest import Guest
+from ...plugins import PluginRegistry
+from ...result import PhaseResult, ResultGuestData, ResultOutcome
+from .. import (
     Method,
     PluginOutcome,
     PluginTask,

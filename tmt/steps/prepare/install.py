@@ -11,9 +11,10 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
-from tmt.container import container, field
-from tmt.guest import Guest
-from tmt.package_managers import (
+
+from ...container import container, field
+from ...guest import Guest
+from ...package_managers import (
     FileSystemPath,
     Installable,
     Options,
@@ -21,7 +22,7 @@ from tmt.package_managers import (
     PackagePath,
     PackageUrl,
 )
-from tmt.utils import Path
+from ...utils import Path
 
 
 @container

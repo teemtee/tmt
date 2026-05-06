@@ -3,12 +3,12 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from tmt.base.core import Test
-    from tmt.base.plan import Plan
-    from tmt.options import ClickOptionDecoratorType
-    from tmt.steps.discover import TestOrigin
+    from ...base.core import Test
+    from ...base.plan import Plan
+    from ...options import ClickOptionDecoratorType
+    from ...steps.discover import TestOrigin
 
-from tmt.plugins.plan_shapers import PlanShaper, provides_plan_shaper
+from . import PlanShaper, provides_plan_shaper
 
 
 @provides_plan_shaper('max-tests')
@@ -22,7 +22,7 @@ class MaxTestsPlanShaper(PlanShaper):
 
     @classmethod
     def run_options(cls) -> list['ClickOptionDecoratorType']:
-        from tmt.options import Deprecated, option
+        from ...options import Deprecated, option
 
         return [
             option(

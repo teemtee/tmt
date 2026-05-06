@@ -5,11 +5,12 @@ import tmt.log
 import tmt.plugins
 import tmt.result
 import tmt.utils
-from tmt.guest import TransferOptions
+
+from ..guest import TransferOptions
 
 if TYPE_CHECKING:
-    from tmt.base.core import DependencySimple, Test
-    from tmt.steps.execute import TestInvocation
+    from ..base.core import DependencySimple, Test
+    from ..steps.execute import TestInvocation
 
 
 TestFrameworkClass = type['TestFramework']

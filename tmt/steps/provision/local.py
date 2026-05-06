@@ -10,12 +10,13 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
-from tmt.container import container
-from tmt.guest import RebootMode, TransferOptions
-from tmt.steps.provision import Provision
-from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
-from tmt.utils.hints import get_hint
-from tmt.utils.wait import Waiting
+
+from ...container import container
+from ...guest import RebootMode, TransferOptions
+from ...utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
+from ...utils.hints import get_hint
+from ...utils.wait import Waiting
+from . import Provision
 
 
 @container

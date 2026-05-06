@@ -9,18 +9,19 @@ import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
 import tmt.utils.wait
-from tmt.container import container, field
-from tmt.guest import DEFAULT_PULL_OPTIONS, Guest
-from tmt.result import Result, ResultOutcome
-from tmt.steps.context.abort import AbortStep
-from tmt.steps.discover import DiscoverPlugin
-from tmt.steps.execute import (
+
+from ...container import container, field
+from ...guest import DEFAULT_PULL_OPTIONS, Guest
+from ...result import Result, ResultOutcome
+from ...utils import Environment, ShellScript
+from ...utils.themes import style
+from ..context.abort import AbortStep
+from ..discover import DiscoverPlugin
+from ..report.display import ResultRenderer
+from . import (
     TEST_OUTPUT_FILENAME,
     TestInvocation,
 )
-from tmt.steps.report.display import ResultRenderer
-from tmt.utils import Environment, ShellScript
-from tmt.utils.themes import style
 
 #
 # Shell wrappers for the test script.

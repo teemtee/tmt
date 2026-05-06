@@ -34,7 +34,8 @@ import tmt.container
 import tmt.log
 import tmt.utils
 import tmt.utils.rest
-from tmt.log import Logger
+
+from ..log import Logger
 
 
 @tmt.container.container

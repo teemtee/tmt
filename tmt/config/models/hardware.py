@@ -1,4 +1,4 @@
-from tmt.container import MetadataContainer
+from ...container import MetadataContainer
 
 
 class MrackTranslation(MetadataContainer):

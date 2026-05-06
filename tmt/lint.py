@@ -76,8 +76,9 @@ from typing import (
 )
 
 import tmt.utils
-from tmt.config import Config
-from tmt.container import container
+
+from .config import Config
+from .container import container
 
 # ignore[type-arg]: bound type vars cannot be generic, and it would create a loop anyway.
 LintableT = TypeVar('LintableT', bound='Lintable')  # type: ignore[type-arg]

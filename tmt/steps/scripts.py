@@ -4,11 +4,12 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.container import container
-from tmt.utils import (
+
+from ..container import container
+from ..utils import (
     Path,
 )
-from tmt.utils.templates import render_template_file
+from ..utils.templates import render_template_file
 
 if TYPE_CHECKING:
     import tmt.guest

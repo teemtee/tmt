@@ -19,9 +19,10 @@ from click import echo
 
 import tmt.export
 import tmt.utils
-from tmt.utils import ConvertError, Path
-from tmt.utils.structured_field import StructuredField
-from tmt.utils.themes import style
+
+from ..utils import ConvertError, Path
+from ..utils.structured_field import StructuredField
+from ..utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base.core

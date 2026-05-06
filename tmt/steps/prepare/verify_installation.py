@@ -4,13 +4,14 @@ import fmf.utils
 
 import tmt.steps
 import tmt.utils
-from tmt.container import container, field
-from tmt.guest import Guest
-from tmt.log import Logger
-from tmt.package_managers import SpecialPackageOrigin
-from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
-from tmt.steps.prepare import PreparePlugin, PrepareStepData
-from tmt.utils import Environment
+
+from ...container import container, field
+from ...guest import Guest
+from ...log import Logger
+from ...package_managers import SpecialPackageOrigin
+from ...result import PhaseResult, ResultGuestData, ResultOutcome
+from ...utils import Environment
+from . import PreparePlugin, PrepareStepData
 
 
 @container

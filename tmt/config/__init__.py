@@ -8,12 +8,13 @@ import fmf.utils
 
 import tmt.log
 import tmt.utils
-from tmt._compat.pathlib import Path
-from tmt._compat.pydantic import ValidationError
-from tmt.config.models.hardware import HardwareConfig
-from tmt.config.models.link import LinkConfig
-from tmt.config.models.themes import Theme, ThemeConfig
-from tmt.container import MetadataContainer
+
+from .._compat.pathlib import Path
+from .._compat.pydantic import ValidationError
+from ..container import MetadataContainer
+from .models.hardware import HardwareConfig
+from .models.link import LinkConfig
+from .models.themes import Theme, ThemeConfig
 
 MetadataContainerT = TypeVar('MetadataContainerT', bound='MetadataContainer')
 

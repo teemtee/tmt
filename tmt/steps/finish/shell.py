@@ -1,6 +1,7 @@
 import tmt.steps
 import tmt.steps.finish
-from tmt.steps.prepare.shell import PrepareShell, PrepareShellData
+
+from ..prepare.shell import PrepareShell, PrepareShellData
 
 
 @tmt.steps.provides_method('shell')

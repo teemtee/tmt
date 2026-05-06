@@ -5,8 +5,9 @@ import tmt.config
 import tmt.log
 import tmt.utils
 import tmt.utils.templates
-from tmt._compat.importlib.readers import MultiplexedPath
-from tmt.utils import Path
+
+from .._compat.importlib.readers import MultiplexedPath
+from ..utils import Path
 
 DEFAULT_CUSTOM_TEMPLATES_PATH = tmt.config.effective_config_dir() / 'templates'
 DEFAULT_PLAN_NAME = "/default/plan"

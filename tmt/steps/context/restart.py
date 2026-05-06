@@ -2,12 +2,13 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.container import container
-from tmt.guest import Guest
-from tmt.utils import Environment, EnvVarValue, HasEnvironment
+
+from ...container import container
+from ...guest import Guest
+from ...utils import Environment, EnvVarValue, HasEnvironment
 
 if TYPE_CHECKING:
-    from tmt.steps.context.reboot import RebootContext
+    from .reboot import RebootContext
 
 
 @container

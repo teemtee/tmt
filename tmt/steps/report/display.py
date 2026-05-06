@@ -4,8 +4,9 @@ from typing import Any, Optional, Union
 import tmt.log
 import tmt.steps
 import tmt.steps.report
-from tmt.container import container, field, simple_field
-from tmt.result import (
+
+from ...container import container, field, simple_field
+from ...result import (
     RESULT_OUTCOME_COLORS,
     BaseResult,
     CheckResult,
@@ -14,9 +15,9 @@ from tmt.result import (
     ResultOutcome,
     SubResult,
 )
-from tmt.steps.execute import TEST_OUTPUT_FILENAME
-from tmt.utils import INDENT, Path
-from tmt.utils.templates import default_template_environment, render_template
+from ...utils import INDENT, Path
+from ...utils.templates import default_template_environment, render_template
+from ..execute import TEST_OUTPUT_FILENAME
 
 PER_LEVEL_INDENT = ' ' * INDENT
 

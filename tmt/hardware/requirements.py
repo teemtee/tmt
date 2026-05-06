@@ -3,8 +3,9 @@ from collections.abc import Iterator
 from typing import Any, Callable, Optional
 
 import tmt.log
-from tmt.container import SpecBasedContainer, container
-from tmt.hardware.constraints import (
+
+from ..container import SpecBasedContainer, container
+from .constraints import (
     And,
     BaseConstraint,
     CompoundConstraint,

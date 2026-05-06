@@ -6,13 +6,14 @@ import tmt.guest
 import tmt.log
 import tmt.steps.scripts
 import tmt.utils
-from tmt.container import MetadataContainer, container
-from tmt.guest import Guest, RebootMode, SoftRebootModes
-from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
-from tmt.utils.wait import Deadline, Waiting
+
+from ...container import MetadataContainer, container
+from ...guest import Guest, RebootMode, SoftRebootModes
+from ...utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
+from ...utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
-    from tmt.steps.context.restart import RestartContext
+    from .restart import RestartContext
 
 
 class RebootData(MetadataContainer):

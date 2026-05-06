@@ -1,7 +1,8 @@
 import tmt.steps
 import tmt.steps.finish
 import tmt.steps.prepare.ansible
-from tmt.steps.prepare.ansible import PrepareAnsible
+
+from ..prepare.ansible import PrepareAnsible
 
 
 @tmt.steps.provides_method('ansible')

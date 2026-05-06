@@ -13,21 +13,22 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
-from tmt._compat.typing import Self
-from tmt.container import (
+
+from ..._compat.typing import Self
+from ...container import (
     SerializableContainer,
     SpecBasedContainer,
     container,
     field,
     option_to_key,
 )
-from tmt.steps import _RawStepData
-from tmt.steps.prepare.distgit import insert_to_prepare_step
-from tmt.utils import (
+from ...utils import (
     Command,
     Path,
     ShellScript,
 )
+from .. import _RawStepData
+from ..prepare.distgit import insert_to_prepare_step
 
 T = TypeVar('T', bound='TestDescription')
 

@@ -5,10 +5,11 @@ import tmt.log
 import tmt.result
 import tmt.steps.execute
 import tmt.utils
-from tmt.frameworks import TestFramework, provides_framework
-from tmt.result import ResultOutcome, save_failures
-from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
-from tmt.utils import Path
+
+from ..result import ResultOutcome, save_failures
+from ..steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
+from ..utils import Path
+from . import TestFramework, provides_framework
 
 # Pattern to match lines containing "error" or "fail" as whole words.
 # Compiled at module level to avoid re-compilation per call.

@@ -11,14 +11,16 @@ from fmf.utils import listed
 import tmt
 import tmt.log
 import tmt.result
-from tmt.container import container, field, key_to_option
+
+from ...container import container, field, key_to_option
 
 if TYPE_CHECKING:
     import tmt.cli
     import tmt.export
     import tmt.options
     import tmt.steps
-    from tmt.base.plan import Plan
+
+    from ...base.plan import Plan
 
 import tmt.base.core
 import tmt.steps
@@ -26,9 +28,10 @@ import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.url
-from tmt.plugins import PluginRegistry
-from tmt.steps import Action
-from tmt.utils import Command, Environment, EnvVarValue, GeneralError, Path
+
+from ...plugins import PluginRegistry
+from ...utils import Command, Environment, EnvVarValue, GeneralError, Path
+from .. import Action
 
 
 def normalize_ref(
@@ -611,7 +614,7 @@ class Discover(tmt.steps.Step):
         self.extract_tests_later: bool = False
 
     def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
-        from tmt.libraries.beakerlib import BeakerLib, BeakerLibFromUrl
+        from ...libraries.beakerlib import BeakerLib, BeakerLibFromUrl
 
         super()._workdir_cleanup(path)
         # TODO: for now we are cleaning up the whole library cache, probably
@@ -811,7 +814,7 @@ class Discover(tmt.steps.Step):
             scripts = [scripts]
 
         # Avoid circular imports
-        from tmt.steps.discover.shell import DiscoverShellData, TestDescription
+        from .shell import DiscoverShellData, TestDescription
 
         # Give a warning when discover step defined as well
         if self.data and not all(datum.is_bare for datum in self.data):
@@ -891,7 +894,7 @@ class Discover(tmt.steps.Step):
         Discover all tests
         """
 
-        from tmt.base.plan import Plan
+        from ...base.plan import Plan
 
         super().go(force=force)
 
@@ -1009,7 +1012,7 @@ class Discover(tmt.steps.Step):
         :returns: a list of phase name and test pairs.
         """
 
-        from tmt.steps.discover import TestOrigin
+        from . import TestOrigin
 
         suitable_tests = self._failed_tests or self._tests
         suitable_phases = [phase_name] if phase_name is not None else list(self._tests.keys())

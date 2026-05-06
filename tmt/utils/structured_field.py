@@ -5,7 +5,7 @@ from typing import Any, Optional, Union
 
 import fmf.utils
 
-from tmt.utils import StructuredFieldError, format_value, pure_ascii
+from . import StructuredFieldError, format_value, pure_ascii
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  StructuredField

@@ -5,21 +5,23 @@ from typing import TYPE_CHECKING, Any, Generic, Optional, TypedDict, TypeVar, ca
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt.container import (
+
+from ..container import (
     SerializableContainer,
     SpecBasedContainer,
     container,
     field,
     key_to_option,
 )
-from tmt.plugins import PluginRegistry
-from tmt.utils import NormalizeKeysMixin
+from ..plugins import PluginRegistry
+from ..utils import NormalizeKeysMixin
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.guest import Guest
-    from tmt.result import CheckResult
-    from tmt.steps.execute import TestInvocation
+
+    from ..guest import Guest
+    from ..result import CheckResult
+    from ..steps.execute import TestInvocation
 
 
 #: A type variable representing a :py:class:`Check` instances.

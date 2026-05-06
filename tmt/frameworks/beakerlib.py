@@ -7,14 +7,15 @@ import tmt.result
 import tmt.steps.execute
 import tmt.steps.scripts
 import tmt.utils
-from tmt.frameworks import TestFramework, provides_framework
-from tmt.guest import TransferOptions
-from tmt.result import ResultOutcome, save_failures
-from tmt.utils import Environment, EnvVarValue, GeneralError, Path
+
+from ..guest import TransferOptions
+from ..result import ResultOutcome, save_failures
+from ..utils import Environment, EnvVarValue, GeneralError, Path
+from . import TestFramework, provides_framework
 
 if TYPE_CHECKING:
-    from tmt.base.core import DependencySimple, Test
-    from tmt.steps.execute import TestInvocation
+    from ..base.core import DependencySimple, Test
+    from ..steps.execute import TestInvocation
 
 
 BEAKERLIB_REPORT_RESULT_COMMAND = 'rhts-report-result'
@@ -67,7 +68,7 @@ class Beakerlib(TestFramework):
     @classmethod
     def get_requirements(cls, test: 'Test', logger: tmt.log.Logger) -> list['DependencySimple']:
         # Avoiding circular imports: `Test.test_framework` requires `tmt.frameworks`.
-        from tmt.base.core import DependencySimple
+        from ..base.core import DependencySimple
 
         return [DependencySimple('beakerlib')]
 

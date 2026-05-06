@@ -3,12 +3,13 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable
 
 import tmt.utils
-from tmt.plugins import PluginRegistry
+
+from .. import PluginRegistry
 
 if TYPE_CHECKING:
-    from tmt.base.plan import Plan
-    from tmt.options import ClickOptionDecoratorType
-    from tmt.steps.discover import TestOrigin
+    from ...base.plan import Plan
+    from ...options import ClickOptionDecoratorType
+    from ...steps.discover import TestOrigin
 
 
 class PlanShaper(tmt.utils.Common):

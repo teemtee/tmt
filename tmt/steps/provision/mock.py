@@ -16,11 +16,12 @@ import tmt.package_managers
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt._compat.typing import Self
-from tmt.container import container, field
-from tmt.guest import RebootMode
-from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
-from tmt.utils.wait import Waiting
+
+from ..._compat.typing import Self
+from ...container import container, field
+from ...guest import RebootMode
+from ...utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
+from ...utils.wait import Waiting
 
 MOCK_PIPE: Path = Path('/srv/tmt-mock')
 MOCK_PIPE_STDOUT: Path = MOCK_PIPE / 'stdout'
@@ -35,7 +36,7 @@ def mock_config(root: Optional[str], logger: tmt.log.Logger) -> dict[str, Any]:
         import mockbuild.config
 
     except ImportError as error:
-        from tmt.utils.hints import print_hints
+        from ...utils.hints import print_hints
 
         print_hints('provision/mock', logger=logger)
         raise tmt.utils.ProvisionError('Could not import mockbuild.config module.') from error

@@ -23,9 +23,10 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.wait
-from tmt.container import container, field
-from tmt.guest import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
-from tmt.utils import (
+
+from ...container import container, field
+from ...guest import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
+from ...utils import (
     Command,
     Path,
     ProvisionError,
@@ -34,11 +35,12 @@ from tmt.utils import (
     retry,
     retry_session,
 )
-from tmt.utils.wait import Deadline, Waiting
+from ...utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.hardware.constraints import Size
+
+    from ...hardware.constraints import Size
 
 
 libvirt: Optional[types.ModuleType] = None
@@ -95,7 +97,7 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
         )
         from testcloud.workarounds import Workarounds
     except ImportError as error:
-        from tmt.utils.hints import print_hints
+        from ...utils.hints import print_hints
 
         print_hints('provision/virtual.testcloud', logger=logger)
 

@@ -9,14 +9,15 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
-from tmt.container import container, field
-from tmt.guest import (
+
+from ...container import container, field
+from ...guest import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
     AnsibleApplicable,
     AnsibleCollectionPlaybook,
     Guest,
 )
-from tmt.utils import (
+from ...utils import (
     Path,
     PrepareError,
     Stopwatch,

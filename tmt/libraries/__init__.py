@@ -9,9 +9,10 @@ import fmf.utils
 
 import tmt.log
 import tmt.utils
-from tmt.base.core import Dependency, DependencyFile, DependencyFmfId, DependencySimple
-from tmt.container import container
-from tmt.utils import Path
+
+from ..base.core import Dependency, DependencyFile, DependencyFmfId, DependencySimple
+from ..container import container
+from ..utils import Path
 
 # A type for Beakerlib dependencies
 LibraryDependenciesType = tuple[list[Dependency], list[Dependency]]

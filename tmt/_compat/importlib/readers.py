@@ -11,7 +11,7 @@ else:
     from importlib_resources.abc import Traversable
     from importlib_resources.readers import MultiplexedPath as _MultiplexedPath
 
-from tmt._compat.pathlib import Path
+from ..pathlib import Path
 
 
 class MultiplexedPath(_MultiplexedPath):

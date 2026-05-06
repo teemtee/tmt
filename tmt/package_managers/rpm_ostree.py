@@ -1,7 +1,8 @@
 import re
 from typing import Optional
 
-from tmt.package_managers import (
+from ..utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from . import (
     FileSystemPath,
     Installable,
     Options,
@@ -11,7 +12,6 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
 
 
 class RpmOstreeEngine(PackageManagerEngine):
@@ -211,7 +211,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         if not repositories:
             return
 
-        from tmt.package_managers.dnf import Dnf5
+        from .dnf import Dnf5
 
         Dnf5(guest=self.guest, logger=self._logger).enable_copr(*repositories)
 

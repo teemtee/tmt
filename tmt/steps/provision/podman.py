@@ -8,15 +8,15 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.container import container, field
-from tmt.guest import (
+
+from ...container import container, field
+from ...guest import (
     DEFAULT_PUSH_OPTIONS,
     GuestCapability,
     RebootMode,
     TransferOptions,
 )
-from tmt.steps.provision import Provision
-from tmt.utils import (
+from ...utils import (
     Command,
     OnProcessEndCallback,
     OnProcessStartCallback,
@@ -24,8 +24,9 @@ from tmt.utils import (
     ShellScript,
     retry,
 )
-from tmt.utils.hints import get_hint
-from tmt.utils.wait import Deadline, Waiting
+from ...utils.hints import get_hint
+from ...utils.wait import Deadline, Waiting
+from . import Provision
 
 # Timeout in seconds of waiting for a connection
 CONNECTION_TIMEOUT = 60

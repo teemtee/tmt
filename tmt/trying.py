@@ -26,11 +26,12 @@ import tmt.steps.execute
 import tmt.steps.prepare.feature
 import tmt.templates
 import tmt.utils
-from tmt import Plan
-from tmt.base.run import RunData
-from tmt.steps.prepare import PreparePlugin
-from tmt.utils import Command, GeneralError, MetadataError, Path
-from tmt.utils.themes import style
+
+from . import Plan
+from .base.run import RunData
+from .steps.prepare import PreparePlugin
+from .utils import Command, GeneralError, MetadataError, Path
+from .utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
 
@@ -805,7 +806,7 @@ class Try(tmt.utils.Common):
         """
 
         # tmt run prepare --how install --package PACKAGE
-        from tmt.steps.prepare.install import PrepareInstallData
+        from .steps.prepare.install import PrepareInstallData
 
         data = PrepareInstallData(
             name="tmt-try-install",

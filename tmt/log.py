@@ -44,10 +44,10 @@ from typing import (
 
 from ruamel.yaml import YAML
 
-from tmt._compat.pathlib import Path
-from tmt._compat.typing import Self, TypeAlias, override
-from tmt._compat.warnings import deprecated
-from tmt.container import SpecBasedContainer, container, simple_field
+from ._compat.pathlib import Path
+from ._compat.typing import Self, TypeAlias, override
+from ._compat.warnings import deprecated
+from .container import SpecBasedContainer, container, simple_field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -194,7 +194,7 @@ def render_labels(labels: list[str]) -> str:
     if not labels:
         return ''
 
-    from tmt.utils.themes import style
+    from .utils.themes import style
 
     return ''.join(
         # TODO: color here is questionable - it will be removed, but I'd rather not
@@ -230,7 +230,7 @@ def indent(
         length.
     """
 
-    from tmt.utils.themes import style
+    from .utils.themes import style
 
     indent = ' ' * INDENT * level
 
@@ -246,7 +246,7 @@ def indent(
 
     # Key + non-string values
     if not isinstance(value, str):
-        from tmt.utils import format_value
+        from .utils import format_value
 
         value = format_value(value, wrap=False)
 
@@ -372,7 +372,7 @@ class RunWarningsFormatter(logging.Formatter):
     _yaml_handler: YAML
 
     def __init__(self) -> None:
-        from tmt.utils import _yaml
+        from .utils import _yaml
 
         # We do not use roundtrip loader here because that would require rewriting
         # the whole content each time, but the streaming nature of the logger

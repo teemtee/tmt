@@ -12,15 +12,16 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Uni
 
 import fmf
 
-from tmt._compat.pydantic import PYDANTIC_V1, BaseModel, ConfigDict, Field, ValidationError
-from tmt._compat.typing import Self
+from .._compat.pydantic import PYDANTIC_V1, BaseModel, ConfigDict, Field, ValidationError
+from .._compat.typing import Self
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
     import tmt.log
     import tmt.options
-    from tmt._compat.typing import TypeAlias
+
+    from .._compat.typing import TypeAlias
 
 
 # A stand-in variable for generic use.
@@ -213,7 +214,7 @@ class FieldMetadata(Generic[T]):
     @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
         if self._option is None and self.cli_option:
-            from tmt.options import option
+            from ..options import option
 
             self._option_args = (
                 (self.cli_option,) if isinstance(self.cli_option, str) else self.cli_option
@@ -667,7 +668,8 @@ class SerializableContainer(DataContainer):
         """
 
         import tmt.utils
-        from tmt.plugins import import_member
+
+        from ..plugins import import_member
 
         # Unpack class info, to get nicer variable names
         if "__class__" not in serialized:

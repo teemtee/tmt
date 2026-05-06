@@ -2,8 +2,9 @@ import re
 from collections.abc import Iterable, Sequence
 from typing import ClassVar, Optional, cast
 
-from tmt._compat.pathlib import Path
-from tmt.package_managers import (
+from .._compat.pathlib import Path
+from ..utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from . import (
     YUM_REPOS_DIR,
     FileSystemPath,
     Installable,
@@ -16,8 +17,7 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.package_managers._rpm import RpmVersion
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from ._rpm import RpmVersion
 
 
 class DnfEngine(PackageManagerEngine):

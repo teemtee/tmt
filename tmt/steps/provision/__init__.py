@@ -21,17 +21,18 @@ import tmt.options
 import tmt.queue
 import tmt.steps
 import tmt.utils
-from tmt._compat.typing import Self
-from tmt.ansible import AnsibleInventory
-from tmt.container import (
+
+from ..._compat.typing import Self
+from ...ansible import AnsibleInventory
+from ...container import (
     SerializableContainer,
     container,
     field,
 )
-from tmt.log import Logger
-from tmt.plugins import PluginRegistry
-from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
-from tmt.utils import Path
+from ...log import Logger
+from ...plugins import PluginRegistry
+from ...utils import Path
+from .. import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 
 if TYPE_CHECKING:
     import tmt.base.core

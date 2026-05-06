@@ -29,15 +29,15 @@ import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.templates
 import tmt.utils
-from tmt.base.core import Tree
-from tmt.container import (
+
+from ..container import (
     SerializableContainer,
     container,
     field,
 )
-from tmt.recipe import RecipeManager
-from tmt.result import Result
-from tmt.utils import (
+from ..recipe import RecipeManager
+from ..result import Result
+from ..utils import (
     Command,
     Environment,
     GeneralError,
@@ -47,11 +47,13 @@ from tmt.utils import (
     StateFormat,
     WorkdirArgumentType,
 )
+from .core import Tree
 
 if TYPE_CHECKING:
     import tmt.cli
     import tmt.steps.provision.local
-    from tmt.base.plan import Plan
+
+    from .plan import Plan
 
 # How many already existing lines should tmt run --follow show
 FOLLOW_LINES = 10
@@ -260,7 +262,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Save metadata tree, handle the default plan
         """
-        from tmt.base.plan import Plan
+        from .plan import Plan
 
         default_plan: dict[str, Any] = tmt.utils.yaml_to_dict(
             tmt.templates.MANAGER.render_default_plan()
@@ -400,7 +402,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         clean and status only require the steps to be loaded and
         their status).
         """
-        from tmt.base.plan import Plan
+        from .plan import Plan
 
         self._save_tree(self._tree)
         # with_logfiles=False: This function is currently only called by `tmt.utils.load_run`
@@ -439,7 +441,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Load list of selected plans and enabled steps
         """
-        from tmt.base.plan import Plan
+        from .plan import Plan
 
         assert self.workdir is not None  # narrow type
 
@@ -516,7 +518,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         :param plan: a plan to remove.
         :param others: plans to put into the queue instead of ``plans``.
         """
-        from tmt.base.plan import Plan
+        from .plan import Plan
 
         plans = cast(list[Plan], self.plans)
         plan_queue = cast(list[Plan], self.plan_queue)
@@ -637,7 +639,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Go and do test steps for selected plans
         """
-        from tmt.base.plan import Plan
+        from .plan import Plan
 
         # Create the workdir and save last run
         self._save_tree(self._tree)

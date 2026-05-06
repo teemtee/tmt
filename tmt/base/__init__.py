@@ -2,7 +2,7 @@
 Base Metadata Classes
 """
 
-from tmt.base.core import (
+from .core import (
     Clean,
     Core,
     DependencyFile,
@@ -15,8 +15,8 @@ from tmt.base.core import (
     Test,
     Tree,
 )
-from tmt.base.plan import Plan
-from tmt.base.run import Run
+from .plan import Plan
+from .run import Run
 
 __all__ = [
     "Clean",

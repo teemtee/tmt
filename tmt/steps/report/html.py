@@ -8,8 +8,9 @@ import tmt.steps
 import tmt.steps.report
 import tmt.utils
 import tmt.utils.templates
-from tmt.container import container, field
-from tmt.utils import Path
+
+from ...container import container, field
+from ...utils import Path
 
 HTML_TEMPLATE_RESOURCE = 'steps/report/html/template.html.j2'
 DEFAULT_NAME = 'index.html'

@@ -3,8 +3,8 @@ from uuid import uuid4
 
 import fmf
 
-from tmt.log import Logger
-from tmt.utils import is_key_origin
+from .log import Logger
+from .utils import is_key_origin
 
 if TYPE_CHECKING:
     import tmt.cli

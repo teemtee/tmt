@@ -8,10 +8,11 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 import tmt.utils.git
-from tmt.container import container, field
-from tmt.guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
-from tmt.steps import safe_filename
-from tmt.utils import Command, EnvVarValue, ShellScript, Stopwatch
+
+from ...container import container, field
+from ...guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
+from ...utils import Command, EnvVarValue, ShellScript, Stopwatch
+from .. import safe_filename
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 

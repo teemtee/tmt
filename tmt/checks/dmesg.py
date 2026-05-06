@@ -6,17 +6,19 @@ import tmt.guest
 import tmt.log
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
-from tmt.container import container, field
-from tmt.guest import GuestCapability
-from tmt.result import CheckResult, ResultOutcome, save_failures
-from tmt.utils import Path, Stopwatch
-from tmt.utils.hints import hints_as_notes
+
+from ..container import container, field
+from ..guest import GuestCapability
+from ..result import CheckResult, ResultOutcome, save_failures
+from ..utils import Path, Stopwatch
+from ..utils.hints import hints_as_notes
+from . import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.guest import Guest
-    from tmt.steps.execute import TestInvocation
+
+    from ..guest import Guest
+    from ..steps.execute import TestInvocation
 
 TEST_POST_DMESG_FILENAME = 'dmesg-{event}.txt'
 

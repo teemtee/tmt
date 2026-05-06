@@ -19,10 +19,11 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 import tmt.utils.rest
-from tmt.container import container, simple_field
+
+from ..container import container, simple_field
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import Concatenate, ParamSpec
+    from .._compat.typing import Concatenate, ParamSpec
 
     P = ParamSpec('P')
     R = TypeVar('R')

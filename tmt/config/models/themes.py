@@ -5,9 +5,10 @@ from click import style as _style  # noqa: TID251
 
 import tmt.log
 import tmt.utils
-from tmt._compat.pydantic import ValidationError
-from tmt._compat.typing import TypeAlias
-from tmt.container import MetadataContainer, metadata_field
+
+from ..._compat.pydantic import ValidationError
+from ..._compat.typing import TypeAlias
+from ...container import MetadataContainer, metadata_field
 
 Color: TypeAlias = Union[int, tuple[int, int, int], str, None]
 

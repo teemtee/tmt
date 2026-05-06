@@ -12,14 +12,15 @@ import tmt.result
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
-from tmt._compat.importlib.readers import MultiplexedPath
-from tmt.container import container, field
-from tmt.result import ResultOutcome
-from tmt.utils import Path
-from tmt.utils.templates import default_template_environment, render_template_file
+
+from ..._compat.importlib.readers import MultiplexedPath
+from ...container import container, field
+from ...result import ResultOutcome
+from ...utils import Path
+from ...utils.templates import default_template_environment, render_template_file
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from ..._compat.typing import TypeAlias
 
     XMLElement: TypeAlias = Any
 
@@ -363,7 +364,7 @@ def make_junit_xml(
         from lxml import etree
 
     except ImportError:
-        from tmt.utils.hints import print_hints
+        from ...utils.hints import print_hints
 
         print_hints('report/junit', logger=phase._logger)
 

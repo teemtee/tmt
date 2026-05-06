@@ -6,10 +6,11 @@ import fmf.utils
 import tmt.container
 import tmt.log
 import tmt.utils
-from tmt.checks import CheckEvent, CheckResultInterpret
-from tmt.container import SerializableContainer, container, field
-from tmt.utils import GeneralError, Path
-from tmt.utils.themes import style
+
+from .checks import CheckEvent, CheckResultInterpret
+from .container import SerializableContainer, container, field
+from .utils import GeneralError, Path
+from .utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base.core
@@ -174,7 +175,7 @@ class ResultGuestData(SerializableContainer):
 # This needs to be a stand-alone function because of the import of `tmt.base.core`.
 # It cannot be imported on module level because of circular dependency.
 def _unserialize_fmf_id(serialized: 'tmt.base.core._RawFmfId') -> 'tmt.base.core.FmfId':
-    from tmt.base.core import FmfId
+    from .base.core import FmfId
 
     return FmfId.from_spec(serialized)
 
@@ -578,7 +579,7 @@ class Result(BaseResult):
         Return a nicely colored result with test name (and note)
         """
 
-        from tmt.guest import format_guest_full_name
+        from .guest import format_guest_full_name
 
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
 
@@ -614,7 +615,7 @@ def results_to_exit_code(results: list[Result], execute_enabled: bool = True) ->
     Map results to a tmt exit code
     """
 
-    from tmt.cli import TmtExitCode
+    from .cli import TmtExitCode
 
     stats = Result.total(results)
 

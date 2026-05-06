@@ -80,11 +80,12 @@ import jinja2
 
 import tmt.log
 import tmt.steps
-from tmt.container import container
-from tmt.guest import Guest, TransferOptions
-from tmt.steps import safe_filename
-from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
-from tmt.utils.templates import render_template
+
+from ...container import container
+from ...guest import Guest, TransferOptions
+from ...utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
+from ...utils.templates import render_template
+from .. import safe_filename
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'

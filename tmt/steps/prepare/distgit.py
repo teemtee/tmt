@@ -5,12 +5,13 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
-from tmt.container import container, field
-from tmt.guest import Guest
-from tmt.package_managers import Package
-from tmt.steps.prepare import PreparePlugin
-from tmt.steps.prepare.install import PrepareInstallData
-from tmt.utils import Command, Path, ShellScript, uniq
+
+from ...container import container, field
+from ...guest import Guest
+from ...package_managers import Package
+from ...utils import Command, Path, ShellScript, uniq
+from . import PreparePlugin
+from .install import PrepareInstallData
 
 if TYPE_CHECKING:
     import tmt.base.core

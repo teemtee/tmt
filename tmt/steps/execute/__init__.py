@@ -20,25 +20,19 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.wait
-from tmt.checks import Check, CheckEvent, CheckPlugin
-from tmt.container import container, field, simple_field
-from tmt.guest import Guest
-from tmt.plugins import PluginRegistry
-from tmt.result import (
+
+from ...checks import Check, CheckEvent, CheckPlugin
+from ...container import container, field, simple_field
+from ...guest import Guest
+from ...plugins import PluginRegistry
+from ...result import (
     CheckResult,
     Result,
     ResultGuestData,
     ResultInterpret,
     ResultOutcome,
 )
-from tmt.steps import Action, ActionTask, PluginTask, Step
-from tmt.steps.context.abort import AbortContext, AbortStep
-from tmt.steps.context.pidfile import PidFileContext
-from tmt.steps.context.reboot import RebootContext
-from tmt.steps.context.restart import RestartContext
-from tmt.steps.context.restraint import RestraintContext
-from tmt.steps.discover import Discover, DiscoverPlugin
-from tmt.utils import (
+from ...utils import (
     Command,
     CommandOutput,
     Environment,
@@ -51,12 +45,20 @@ from tmt.utils import (
     Stopwatch,
     configure_bool_constant,
 )
+from .. import Action, ActionTask, PluginTask, Step
+from ..context.abort import AbortContext, AbortStep
+from ..context.pidfile import PidFileContext
+from ..context.reboot import RebootContext
+from ..context.restart import RestartContext
+from ..context.restraint import RestraintContext
+from ..discover import Discover, DiscoverPlugin
 
 if TYPE_CHECKING:
     import tmt.base.plan
     import tmt.result
     import tmt.steps.discover
-    from tmt.steps.discover.fmf import DiscoverFmf
+
+    from ..discover.fmf import DiscoverFmf
 
 # Test data and checks directory names
 TEST_DATA = 'data'

@@ -31,8 +31,23 @@ import tmt.templates
 import tmt.utils
 import tmt.utils.git
 import tmt.utils.jira
-from tmt._compat.pathlib import Path
-from tmt.base.core import (
+
+from .._compat.pathlib import Path
+from ..container import SpecBasedContainer, container, field
+from ..lint import LinterOutcome, LinterReturn
+from ..utils import (
+    Command,
+    Environment,
+    EnvVarValue,
+    FmfContext,
+    GeneralError,
+    HasEnvironment,
+    HasPlanWorkdir,
+    HasRunWorkdir,
+    style,
+    to_yaml,
+)
+from .core import (
     DEFAULT_ORDER,
     EXTRA_KEYS_PREFIX,
     Core,
@@ -45,21 +60,7 @@ from tmt.base.core import (
     _RawLink,
     expand_node_data,
 )
-from tmt.base.run import Run
-from tmt.container import SpecBasedContainer, container, field
-from tmt.lint import LinterOutcome, LinterReturn
-from tmt.utils import (
-    Command,
-    Environment,
-    EnvVarValue,
-    FmfContext,
-    GeneralError,
-    HasEnvironment,
-    HasPlanWorkdir,
-    HasRunWorkdir,
-    style,
-    to_yaml,
-)
+from .run import Run
 
 if TYPE_CHECKING:
     import tmt.cli

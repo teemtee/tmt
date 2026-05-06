@@ -4,8 +4,9 @@ import tmt.log
 import tmt.steps
 import tmt.steps.cleanup
 import tmt.utils
-from tmt.container import container
-from tmt.guest import Guest
+
+from ...container import container
+from ...guest import Guest
 
 
 @container

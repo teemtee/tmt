@@ -4,15 +4,16 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
-from tmt.container import container, field
-from tmt.result import CheckResult, ResultOutcome, save_failures
-from tmt.utils import Path, ShellScript, Stopwatch
-from tmt.utils.hints import hints_as_notes
+
+from ..container import container, field
+from ..result import CheckResult, ResultOutcome, save_failures
+from ..utils import Path, ShellScript, Stopwatch
+from ..utils.hints import hints_as_notes
+from . import Check, CheckPlugin, _RawCheck, provides_check
 
 if TYPE_CHECKING:
-    from tmt.guest import Guest
-    from tmt.steps.execute import TestInvocation
+    from ..guest import Guest
+    from ..steps.execute import TestInvocation
 
 #: The filename of the final check report file.
 TEST_POST_JOURNAL_FILENAME = 'journal.txt'

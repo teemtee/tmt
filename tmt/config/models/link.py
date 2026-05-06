@@ -1,7 +1,7 @@
 from enum import Enum
 
-from tmt._compat.pydantic import HttpUrl
-from tmt.container import MetadataContainer
+from ..._compat.pydantic import HttpUrl
+from ...container import MetadataContainer
 
 
 class IssueTrackerType(str, Enum):

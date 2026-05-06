@@ -5,10 +5,11 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.container import container, field, option_to_key
-from tmt.guest import RebootMode
-from tmt.utils import Command, ShellScript
-from tmt.utils.wait import Waiting
+
+from ...container import container, field, option_to_key
+from ...guest import RebootMode
+from ...utils import Command, ShellScript
+from ...utils.wait import Waiting
 
 
 @container

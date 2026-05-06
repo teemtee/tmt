@@ -12,9 +12,10 @@ import tmt.utils
 import tmt.utils.signals
 import tmt.utils.url
 import tmt.utils.wait
-from tmt.container import container, field
-from tmt.guest import RebootMode
-from tmt.utils import (
+
+from ...container import container, field
+from ...guest import RebootMode
+from ...utils import (
     Command,
     GuestLogError,
     ProvisionError,
@@ -23,7 +24,7 @@ from tmt.utils import (
     retry_session,
     to_yaml,
 )
-from tmt.utils.wait import Deadline, Waiting
+from ...utils.wait import Deadline, Waiting
 
 # List of Artemis API versions supported and understood by this plugin.
 # Since API gains support for new features over time, it is important to

@@ -20,9 +20,9 @@ __all__ = [
     'Tree',
 ]
 
-from tmt.base.core import Clean, Status, Story, Test, Tree
-from tmt.base.plan import Plan
-from tmt.base.run import Run
-from tmt.guest import Guest, GuestSsh
-from tmt.log import Logger
-from tmt.result import Result
+from .base.core import Clean, Status, Story, Test, Tree
+from .base.plan import Plan
+from .base.run import Run
+from .guest import Guest, GuestSsh
+from .log import Logger
+from .result import Result

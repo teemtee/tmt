@@ -18,9 +18,10 @@ import tmt.base.core
 import tmt.identifier
 import tmt.log
 import tmt.utils
-from tmt.utils import ConvertError, GeneralError, Path, format_value
-from tmt.utils.structured_field import StructuredField
-from tmt.utils.themes import style
+
+from .utils import ConvertError, GeneralError, Path, format_value
+from .utils.structured_field import StructuredField
+from .utils.themes import style
 
 log = fmf.utils.Logging('tmt').logger
 

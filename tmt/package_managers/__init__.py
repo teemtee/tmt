@@ -22,13 +22,14 @@ import fmf.utils
 import tmt.log
 import tmt.plugins
 import tmt.utils
-from tmt.container import container, simple_field
-from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
+
+from ..container import container, simple_field
+from ..utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
-    from tmt.guest import Guest
-    from tmt.package_managers._rpm import RpmVersion
+    from .._compat.typing import TypeAlias
+    from ..guest import Guest
+    from ._rpm import RpmVersion
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
@@ -625,7 +626,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             each carrying the NEVRA and source repository. Every requested provide appears
             as a key; provides with no match map to an empty list.
         """
-        from tmt.package_managers._rpm import RpmVersion
+        from ._rpm import RpmVersion
 
         if not provides:
             return {}

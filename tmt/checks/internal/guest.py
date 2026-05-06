@@ -2,11 +2,12 @@ from typing import Optional
 
 import tmt.log
 import tmt.utils
-from tmt.checks import CheckPlugin, provides_check
-from tmt.checks.internal import InternalCheck
-from tmt.container import container
-from tmt.result import CheckResult, ResultOutcome
-from tmt.steps.execute import TestInvocation
+
+from ...container import container
+from ...result import CheckResult, ResultOutcome
+from ...steps.execute import TestInvocation
+from .. import CheckPlugin, provides_check
+from . import InternalCheck
 
 CHECK_NAME = 'internal/guest'
 

@@ -19,7 +19,7 @@ if PYDANTIC_V1:
 
     from pydantic import BaseModel as _BaseModel
 
-    from tmt._compat.typing import Self
+    from .typing import Self
 
     class BaseModel(_BaseModel):
         @classmethod

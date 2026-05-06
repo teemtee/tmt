@@ -8,8 +8,9 @@ import tmt.base.core
 import tmt.base.plan
 import tmt.lint
 import tmt.log
-from tmt.cli import Context, pass_context
-from tmt.cli._root import (
+
+from . import Context, pass_context
+from ._root import (
     filtering_options,
     fix_options,
     fmf_source_options,

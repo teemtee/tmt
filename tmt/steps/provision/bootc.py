@@ -10,14 +10,15 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.steps.provision.testcloud
 import tmt.utils
-from tmt.container import container, field
-from tmt.package_managers.bootc import LOCALHOST_BOOTC_IMAGE_PREFIX
-from tmt.steps.provision.testcloud import GuestTestcloud
-from tmt.utils import Path
-from tmt.utils.templates import render_template
+
+from ...container import container, field
+from ...package_managers.bootc import LOCALHOST_BOOTC_IMAGE_PREFIX
+from ...utils import Path
+from ...utils.templates import render_template
+from .testcloud import GuestTestcloud
 
 if TYPE_CHECKING:
-    from tmt.hardware.constraints import Size
+    from ...hardware.constraints import Size
 
 DEFAULT_TMP_PATH = "/var/tmp/tmt"  # noqa: S108
 

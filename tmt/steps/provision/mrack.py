@@ -24,17 +24,18 @@ import tmt.utils
 import tmt.utils.signals
 import tmt.utils.url
 import tmt.utils.wait
-from tmt.config.models.hardware import MrackTranslation
-from tmt.container import container, field, simple_field
-from tmt.guest import RebootMode
-from tmt.utils import (
+
+from ...config.models.hardware import MrackTranslation
+from ...container import container, field, simple_field
+from ...guest import RebootMode
+from ...utils import (
     Command,
     Path,
     ProvisionError,
     ShellScript,
 )
-from tmt.utils.templates import render_template
-from tmt.utils.wait import Deadline, Waiting
+from ...utils.templates import render_template
+from ...utils.wait import Deadline, Waiting
 
 MRACK_VERSION: Optional[str] = None
 

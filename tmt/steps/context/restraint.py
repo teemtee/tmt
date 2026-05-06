@@ -1,8 +1,9 @@
 from typing import Optional
 
 import tmt.log
-from tmt.container import container
-from tmt.utils import Environment, EnvVarValue, HasEnvironment
+
+from ...container import container
+from ...utils import Environment, EnvVarValue, HasEnvironment
 
 
 @container

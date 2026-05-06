@@ -11,11 +11,12 @@ from typing_extensions import TypedDict
 
 import tmt.log
 import tmt.utils
-from tmt._compat.pathlib import Path
-from tmt.container import SerializableContainer, container, field
+
+from ._compat.pathlib import Path
+from .container import SerializableContainer, container, field
 
 if TYPE_CHECKING:
-    from tmt.guest import Guest
+    from .guest import Guest
 
 
 class _RawGuestAnsible(TypedDict, total=False):

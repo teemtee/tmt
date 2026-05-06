@@ -14,11 +14,12 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt._compat.typing import Self
-from tmt.base.core import _RawAdjustRule
-from tmt.container import SerializableContainer, SpecBasedContainer, container, field
-from tmt.steps.prepare.distgit import insert_to_prepare_step
-from tmt.utils import Command, NormalizationError, Path
+
+from ..._compat.typing import Self
+from ...base.core import _RawAdjustRule
+from ...container import SerializableContainer, SpecBasedContainer, container, field
+from ...utils import Command, NormalizationError, Path
+from ..prepare.distgit import insert_to_prepare_step
 
 
 class _RawTestsWithAdjusts(TypedDict, total=False):

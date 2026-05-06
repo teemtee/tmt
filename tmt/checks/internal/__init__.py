@@ -1,6 +1,7 @@
 import tmt.log
-from tmt.checks import Check, _RawCheck
-from tmt.container import container
+
+from ...container import container
+from .. import Check, _RawCheck
 
 
 @container

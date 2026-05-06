@@ -4,15 +4,16 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 import tmt.container
 import tmt.steps
 import tmt.utils
-from tmt._compat.pydantic import ValidationError
-from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_field
-from tmt.log import Logger, Topic
-from tmt.utils import FieldValueSource, Path, ShellScript
-from tmt.utils.templates import render_template
+
+from ._compat.pydantic import ValidationError
+from .container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_field
+from .log import Logger, Topic
+from .utils import FieldValueSource, Path, ShellScript
+from .utils.templates import render_template
 
 if TYPE_CHECKING:
-    from tmt.base.core import Core, Test
-    from tmt.base.plan import Plan
+    from .base.core import Core, Test
+    from .base.plan import Plan
 
 T = TypeVar('T')
 

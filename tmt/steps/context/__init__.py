@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from tmt.steps.context.reboot import RebootContext
-    from tmt.steps.context.restart import RestartContext
+    from .reboot import RebootContext
+    from .restart import RestartContext
 
 
 def is_guest_healthy(
