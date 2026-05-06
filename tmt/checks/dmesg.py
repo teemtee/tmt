@@ -203,7 +203,11 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         # Avoid circular imports
         import tmt.base.core
 
-        return [tmt.base.core.DependencySimple('/usr/bin/dmesg')]
+        try:
+            guest.execute(tmt.utils.ShellScript('command -v dmesg'), silent=True)
+            return []
+        except tmt.utils.RunError:
+            return [tmt.base.core.DependencySimple('/usr/bin/dmesg')]
 
     @classmethod
     def before_test(
