@@ -18,6 +18,7 @@ import pint
 
 import tmt.log
 import tmt.utils
+from tmt._compat.typing import Self
 from tmt.container import SpecBasedContainer, container
 from tmt.utils import SpecificationError
 
@@ -63,11 +64,11 @@ class Operator(enum.Enum):
     NOTCONTAINS_EXCLUSIVE = 'not contains exclusive'
 
 
-INPUTABLE_OPERATORS = [
+INPUTABLE_OPERATORS = tuple(
     operator
     for operator in Operator.__members__.values()
     if operator not in (Operator.CONTAINS, Operator.NOTCONTAINS, Operator.NOTCONTAINS_EXCLUSIVE)
-]
+)
 
 
 _OPERATOR_PATTERN = '|'.join(operator.value for operator in INPUTABLE_OPERATORS)
@@ -476,7 +477,7 @@ class CompoundConstraint(BaseConstraint):
 
 
 @container(repr=False)
-class Constraint(BaseConstraint):
+class Constraint(BaseConstraint, abc.ABC):
     """
     A constraint imposing a particular limit to one of the guest properties
     """
@@ -514,9 +515,9 @@ class Constraint(BaseConstraint):
         as_quantity: bool = True,
         as_cast: Optional[Callable[[str], ConstraintValue]] = None,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[list[Operator]] = None,
+        allowed_operators: Optional[tuple[Operator, ...]] = None,
         default_unit: Optional[Any] = "bytes",
-    ) -> 'Constraint':
+    ) -> Self:
         """
         Parse raw constraint specification into our internal representation.
 
@@ -587,6 +588,17 @@ class Constraint(BaseConstraint):
             raw_value=raw_value,
             original_constraint=original_constraint,
         )
+
+    @classmethod
+    @abc.abstractmethod
+    def from_specification(
+        cls,
+        name: str,
+        raw_value: str,
+        original_constraint: Optional['Constraint'] = None,
+        allowed_operators: Optional[tuple[Operator, ...]] = None,
+    ) -> Self:
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return f'{self.printable_name}: {self.operator.value} {self.value}'
@@ -684,20 +696,27 @@ class SizeConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[list[Operator]] = None,
+        allowed_operators: Optional[tuple[Operator, ...]] = None,
         default_unit: Optional[Any] = 'bytes',
-    ) -> 'SizeConstraint':
-        constraint = cast(
-            SizeConstraint,
-            cls._from_specification(
-                name,
-                raw_value,
-                as_quantity=True,
-                original_constraint=original_constraint,
-                allowed_operators=allowed_operators,
-                default_unit=default_unit,
-            ),
+    ) -> Self:
+        allowed_operators = allowed_operators or (
+            Operator.EQ,
+            Operator.NEQ,
+            Operator.LT,
+            Operator.LTE,
+            Operator.GT,
+            Operator.GTE,
         )
+
+        constraint = cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=True,
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators,
+            default_unit=default_unit,
+        )
+
         # Validate that the unit is compatible with the expected dimensionality
         # For size constraints (like memory, disk size), validate conversion to bytes
         try:
@@ -724,20 +743,19 @@ class FlagConstraint(Constraint):
     def from_specification(
         cls,
         name: str,
-        raw_value: bool,
+        raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[list[Operator]] = None,
-    ) -> 'FlagConstraint':
-        return cast(
-            FlagConstraint,
-            cls._from_specification(
-                name,
-                str(raw_value),
-                as_quantity=False,
-                as_cast=lambda x: x.lower() == 'true',
-                original_constraint=original_constraint,
-                allowed_operators=allowed_operators,
-            ),
+        allowed_operators: Optional[tuple[Operator, ...]] = None,
+    ) -> Self:
+        allowed_operators = allowed_operators or (Operator.EQ, Operator.NEQ)
+
+        return cls._from_specification(
+            name,
+            str(raw_value),
+            as_quantity=False,
+            as_cast=lambda x: x.lower() == 'true',
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators,
         )
 
 
@@ -754,8 +772,17 @@ class IntegerConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[list[Operator]] = None,
-    ) -> 'IntegerConstraint':
+        allowed_operators: Optional[tuple[Operator, ...]] = None,
+    ) -> Self:
+        allowed_operators = allowed_operators or (
+            Operator.EQ,
+            Operator.NEQ,
+            Operator.LT,
+            Operator.LTE,
+            Operator.GT,
+            Operator.GTE,
+        )
+
         def _cast_int(raw_value: Any) -> int:
             if isinstance(raw_value, int):
                 return raw_value
@@ -770,16 +797,13 @@ class IntegerConstraint(Constraint):
 
             raise SpecificationError(f"Could not convert '{raw_value}' to a number.")
 
-        return cast(
-            IntegerConstraint,
-            cls._from_specification(
-                name,
-                raw_value,
-                as_quantity=False,
-                as_cast=_cast_int,
-                original_constraint=original_constraint,
-                allowed_operators=allowed_operators,
-            ),
+        return cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=False,
+            as_cast=_cast_int,
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators,
         )
 
 
@@ -796,9 +820,9 @@ class NumberConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[list[Operator]] = None,
+        allowed_operators: Optional[tuple[Operator, ...]] = None,
         default_unit: Optional[Any] = None,
-    ) -> 'NumberConstraint':
+    ) -> Self:
         def _cast_number(raw_value: Any) -> float:
             if isinstance(raw_value, float):
                 return raw_value
@@ -809,17 +833,14 @@ class NumberConstraint(Constraint):
 
             raise SpecificationError(f"Could not convert '{raw_value}' to a number.")
 
-        return cast(
-            NumberConstraint,
-            cls._from_specification(
-                name,
-                raw_value,
-                as_quantity=True,
-                as_cast=_cast_number,
-                original_constraint=original_constraint,
-                allowed_operators=allowed_operators,
-                default_unit=default_unit,
-            ),
+        return cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=True,
+            as_cast=_cast_number,
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators,
+            default_unit=default_unit,
         )
 
 
@@ -836,17 +857,21 @@ class TextConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[list[Operator]] = None,
-    ) -> 'TextConstraint':
-        return cast(
-            TextConstraint,
-            cls._from_specification(
-                name,
-                raw_value,
-                as_quantity=False,
-                original_constraint=original_constraint,
-                allowed_operators=allowed_operators,
-            ),
+        allowed_operators: Optional[tuple[Operator, ...]] = None,
+    ) -> Self:
+        allowed_operators = allowed_operators or (
+            Operator.EQ,
+            Operator.NEQ,
+            Operator.MATCH,
+            Operator.NOTMATCH,
+        )
+
+        return cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=False,
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators,
         )
 
 
