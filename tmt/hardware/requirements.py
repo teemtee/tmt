@@ -25,6 +25,8 @@ from tmt.utils import GeneralError, SpecificationError
 BaseConstraintT = TypeVar('BaseConstraintT', bound=BaseConstraint, covariant=True)  # noqa: PLC0105
 ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: PLC0105
 
+BaseConstraintT = TypeVar('BaseConstraintT', bound=BaseConstraint, covariant=True)  # noqa: PLC0105
+ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: PLC0105
 
 #: Type of a requirement parser.
 class RequirementParser(Protocol, Generic[BaseConstraintT]):
