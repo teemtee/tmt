@@ -179,7 +179,7 @@ install -pm 644 tmt.1 %{buildroot}%{_mandir}/man1
 mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
 mkdir -p %{buildroot}/etc/%{name}/
-install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
+install -pm 644 src/%{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 %check
 %pyproject_check_import

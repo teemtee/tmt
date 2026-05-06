@@ -234,7 +234,7 @@ follow_imports = "normal"
 
 python_version = "3.9"
 files = [
-    "tmt/",
+    "src/tmt/",
     "tests/core/about/",
 ]
 
@@ -256,36 +256,36 @@ ignore_missing_imports = true
 
 [tool.pyright]
 include = [
-    "tmt/**/*.py",
+    "src/tmt/**/*.py",
     "tests/core/about/*.py"
 ]
 ignore = [
     "docs/**",
     "examples/**",
     "tests/**",
-    "tmt/_compat/pydantic.py",
-    "tmt/export/*.py",
-    "tmt/plugins/*.py",
-    "tmt/steps/*.py",
-    "tmt/steps/discover/*.py",
-    "tmt/steps/execute/*.py",
-    "tmt/steps/finish/*.py",
-    "tmt/steps/prepare/feature/__init__.py",
-    "tmt/steps/prepare/__init__.py",
-    "tmt/steps/prepare/install.py",
-    "tmt/steps/prepare/artifact/providers/*.py",
-    "tmt/steps/provision/*.py",
-    "tmt/steps/report/__init__.py",
-    "tmt/steps/report/polarion.py",
-    "tmt/steps/report/reportportal.py",
-    "tmt/__init__.py",
-    "tmt/base/core.py",
-    "tmt/convert.py",
-    "tmt/guest/__init__.py",
-    "tmt/lint.py",
-    "tmt/queue.py",
-    "tmt/utils/__init__.py",
-    "tmt/utils/structured_field.py",
+    "src/tmt/_compat/pydantic.py",
+    "src/tmt/export/*.py",
+    "src/tmt/plugins/*.py",
+    "src/tmt/steps/*.py",
+    "src/tmt/steps/discover/*.py",
+    "src/tmt/steps/execute/*.py",
+    "src/tmt/steps/finish/*.py",
+    "src/tmt/steps/prepare/feature/__init__.py",
+    "src/tmt/steps/prepare/__init__.py",
+    "src/tmt/steps/prepare/install.py",
+    "src/tmt/steps/prepare/artifact/providers/*.py",
+    "src/tmt/steps/provision/*.py",
+    "src/tmt/steps/report/__init__.py",
+    "src/tmt/steps/report/polarion.py",
+    "src/tmt/steps/report/reportportal.py",
+    "src/tmt/__init__.py",
+    "src/tmt/base/core.py",
+    "src/tmt/convert.py",
+    "src/tmt/guest/__init__.py",
+    "src/tmt/lint.py",
+    "src/tmt/queue.py",
+    "src/tmt/utils/__init__.py",
+    "src/tmt/utils/structured_field.py",
 ]
 
 pythonVersion = "3.9"
@@ -303,7 +303,7 @@ reportUnnecessaryCast = false  # Unnecessary "cast" call; type is already...
 
 [tool.ruff]
 line-length = 99
-src = ["tmt", "tests"]
+src = ["src/tmt", "tests"]
 target-version = "py39"
 
 [tool.ruff.format]
@@ -417,14 +417,14 @@ typing-modules = ["tmt._compat.typing"]
     "FLY002",  # Use f-string instead of .join
     ]
 # The naming scheme of tmt/_compat will overshadow stdlib modules
-"tmt/_compat/pathlib.py" = ["A005"]
-"tmt/_compat/typing.py" = ["A005"]
-"tmt/_compat/warnings.py" = ["A005"]
+"src/tmt/_compat/pathlib.py" = ["A005"]
+"src/tmt/_compat/typing.py" = ["A005"]
+"src/tmt/_compat/warnings.py" = ["A005"]
 # Following files also overshadow stdlib modules
-"tmt/queue.py" = ["A005"]
-"tmt/steps/report/html.py" = ["A005"]
+"src/tmt/queue.py" = ["A005"]
+"src/tmt/steps/report/html.py" = ["A005"]
 # The purpose of tmt/_compat is to be used with TID251 (banned imports)
-"tmt/_compat/**.py" = ["TID251"]
+"src/tmt/_compat/**.py" = ["TID251"]
 "docs/conf.py" = ["TID251"]
 "docs/ext/*.py" = ["TID251"]
 # Standalone scripts do not depend on tmt package
