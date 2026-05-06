@@ -266,4 +266,5 @@ repos:
           - "--format=pylock.toml"
           - "--output-file=pylock.toml"
           - "--all-extras"
+          - "--all-groups"
           - "--quiet"

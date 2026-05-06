@@ -110,14 +110,42 @@ all = [
     "tmt[report-polarion]",
     "tmt[link-jira]",
     ]
-# Needed for readthedocs and man page build. Not being packaged in rpm.
+
+[dependency-groups]
 docs = [
     "renku-sphinx-theme",
-    "readthedocs-sphinx-ext",
-    "docutils>=0.18.1",
     "Sphinx",
-    "fmf>=1.7.0",
     "sphinx-reredirects",
+    "sphinx-lint"
+    ]
+tests = [
+    "pytest",
+    "pytest-container",
+    "pytest-xdist",
+    "requre",
+    ]
+type-check = [
+    "mypy",
+    "pyright",
+    "types-Markdown",
+    # prevent conflict between types-requests and urllib3
+    "types-requests<2.31.0.7; python_version < '3.10'",
+    "types-requests; python_version >= '3.10'",
+    "types-setuptools",
+    "types-jsonschema",
+    "types-urllib3",
+    "types-jinja2",
+    "types-babel",
+    "types-docutils",
+    "types-lxml",
+]
+dev = [
+    {include-group = "tests"},
+    {include-group = "docs"},
+    {include-group = "type-check"},
+    "ruff",
+    "pre-commit",
+    "python-coveralls",
     ]
 
 [project.scripts]
@@ -136,31 +164,7 @@ platforms = ["linux"]
 
 [tool.hatch.envs.dev]
 description = "Development environment"
-dependencies = [
-    "autopep8",
-    "ruff",
-    "mypy",
-    "pytest",
-    "python-coveralls",
-    "pytest-container",
-    "pytest-xdist",
-    "requre",
-    "pre-commit",
-    # Do not install *types-click* - it's not recommended with Click 8 & newer,
-    # which is the version a developer encounters given the requirements are not
-    # frozen.
-    "types-Markdown",
-    # prevent conflict between types-requests and urllib3
-    "types-requests<2.31.0.7; python_version < '3.10'",
-    "types-requests; python_version >= '3.10'",
-    "types-setuptools",
-    "types-jsonschema",
-    "types-urllib3",
-    "types-jinja2",
-    "types-babel",
-    "types-docutils",
-    "types-lxml",
-    ]
+dependency-groups = ["dev"]
 features = ["all"]
 
 [tool.hatch.envs.dev.scripts]
@@ -191,10 +195,7 @@ template = "dev"
 description = "Test environment"
 
 [tool.hatch.envs.docs]
-dependencies = [
-    "tmt[docs]",
-    "sphinx-lint"
-]
+dependency-groups = ["docs"]
 
 [tool.hatch.envs.docs.scripts]
 # Note that in RTD there are a few additional flags (from RTD's default build
