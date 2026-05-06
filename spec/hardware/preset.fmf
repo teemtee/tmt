@@ -29,24 +29,6 @@ description: |
          hardware:
            memory: ">= 64 GB"
 
-    Preset file schema:
-
-    .. code-block:: yaml
-
-       type: array
-       items:
-         type: object
-         additionalProperties: false
-         required:
-           - name
-           - hardware
-         properties:
-           name:
-             type: string
-             pattern: "^[A-Za-z_][A-Za-z0-9_]*$"
-           hardware:
-             $ref: "/schemas/provision/hardware#/definitions/hardware"
-
     A filter reference expands to all of its defined constraints combined
     with AND, and can be used anywhere a hardware constraint can appear.
 
