@@ -2140,15 +2140,12 @@ class Guest(
         """
 
         if environment is None:
-            # narrow type
-            assert isinstance(self.parent, tmt.steps.Step)
-
             environment = tmt.utils.Environment()
 
-            environment.update(
-                self.environment,
-                self.parent.plan.environment,
-            )
+            environment.update(self.environment)
+
+            if isinstance(self.parent, tmt.steps.Step):
+                environment.update(self.parent.plan)
 
         else:
             # Create a copy of given environment - this prevents any

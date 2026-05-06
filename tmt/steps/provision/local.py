@@ -129,33 +129,27 @@ class GuestLocal(tmt.Guest):
         Execute command on localhost
         """
 
-        sourced_files = sourced_files or []
-
-        # Prepare the environment (plan/cli variables override)
-        environment = tmt.utils.Environment()
-        environment.update(env or {})
-        if self.parent:
-            environment.update(self.parent.plan.environment)
-
         if tty:
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
 
-        for file in reversed(sourced_files):
-            if isinstance(command, Command):
-                command = (
-                    ShellScript(f'source {shlex.quote(str(file))}').to_shell_command()
-                    + Command("&&")
-                    + command
-                )
-            else:
-                command = ShellScript(f'source {shlex.quote(str(file))}') + command
+        # Accumulate all necessary commands - they will form a "shell" script, a single
+        # string passed to a shell executed inside the container.
+        script = ShellScript.from_scripts(
+            self._prepare_command_environment(env).to_shell_exports()
+        )
 
-        actual_command = command if isinstance(command, Command) else command.to_shell_command()
+        for file in reversed(sourced_files or []):
+            script += ShellScript(f'source {shlex.quote(str(file))}')
+
+        if isinstance(command, Command):
+            script += command.to_script()
+
+        else:
+            script += command
 
         # Run the command under the prepared environment
         return self._run_guest_command(
-            actual_command,
-            env=environment,
+            script.to_shell_command(),
             log=log,
             friendly_command=friendly_command or str(command),
             silent=silent,
