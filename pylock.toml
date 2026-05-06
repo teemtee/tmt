@@ -2019,13 +2019,6 @@ wheels = [
 ]
 
 [[packages]]
-name = "readthedocs-sphinx-ext"
-version = "2.2.5"
-index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/e8/ce/38130d8dec600bf5413eb89a3413dd38f204c7c728c4947e12ff8cb793b7/readthedocs-sphinx-ext-2.2.5.tar.gz", upload-time = 2023-12-19T10:00:49Z, size = 12303, hashes = { sha256 = "ee5fd5b99db9f0c180b2396cbce528aa36671951b9526bb0272dbfce5517bd27" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/64/71/c89e7709a0d4f93af1848e9855112299a820b470d84f917b4dd5998bdd07/readthedocs_sphinx_ext-2.2.5-py2.py3-none-any.whl", upload-time = 2023-12-19T10:00:43Z, size = 11332, hashes = { sha256 = "f8c56184ea011c972dd45a90122568587cc85b0127bc9cf064d17c68bc809daa" } }]
-
-[[packages]]
 name = "referencing"
 version = "0.36.2"
 marker = "python_full_version < '3.10'"
