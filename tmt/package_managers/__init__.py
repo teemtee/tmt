@@ -3,8 +3,18 @@ import configparser
 import enum
 import re
 import shlex
-from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Optional, TypeVar, Union
+from collections.abc import Iterable, Iterator, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Generic,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 from urllib.parse import urlparse
 
 import tmt.log
@@ -16,12 +26,22 @@ from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
     from tmt.guest import Guest
+    from tmt.package_managers._rpm import RpmVersion
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
 
     #: A package origin: either an actual repository name or a :class:`SpecialPackageOrigin`.
     PackageOrigin: TypeAlias = Union[str, 'SpecialPackageOrigin']
+
+
+class _ResolvedEntry(TypedDict):
+    """
+    Single entry from the YAML output of :py:meth:`PackageManagerEngine.resolve_provides`.
+    """
+
+    nevra: str
+    repo_id: str
 
 
 @container(frozen=True)
@@ -399,6 +419,36 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def resolve_provides(
+        self,
+        provides: Sequence[str],
+        repo_ids: Iterable[str] = (),
+    ) -> ShellScript:
+        """
+        Resolves each provide to the NEVRAs of packages that provide it.
+
+        The script must emit YAML mapping each provide string to a list of
+        mappings with ``nevra`` and ``repo_id`` keys, or an empty value when
+        nothing provides it, e.g.
+
+        .. code-block:: yaml
+
+            '/usr/bin/cmake':
+                - nevra: 'cmake-0:3.31.6-4.fc43.x86_64'
+                  repo_id: 'updates'
+            '/usr/bin/non-existent-provides':
+            'make':
+                - nevra: 'make-1:4.4.1-8.fc43.x86_64'
+                  repo_id: 'fedora'
+
+        :param provides: Provides to resolve.
+        :param repo_ids: Restrict the query to these repository IDs; searches all enabled
+            repositories when not provided.
+        :returns: A shell script emitting the YAML mapping described above.
+        :raises PrepareError: If the package manager does not support this query.
+        """
+        raise PrepareError("Package manager does not support provides resolution.")
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -532,6 +582,52 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             package = parts[0]
             # Omitted origin field → unknown source repository.
             result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
+        return result
+
+    def resolve_provides(
+        self,
+        provides: Sequence[str],
+        repo_ids: Iterable[str] = (),
+    ) -> dict[str, list['RpmVersion']]:
+        """
+        Map each provide to the :py:class:`RpmVersion` objects of packages that provide it.
+
+        :param provides: Provides to resolve.
+        :param repo_ids: Restrict the query to these repository IDs; searches all enabled
+            repositories when not provided.
+        :returns: Mapping from each provide to a list of :py:class:`RpmVersion` objects,
+            each carrying the NEVRA and source repository. Every requested provide appears
+            as a key; provides with no match map to an empty list.
+        """
+        from tmt.package_managers._rpm import RpmVersion
+
+        if not provides:
+            return {}
+        output = self.guest.execute(self.engine.resolve_provides(provides, repo_ids=repo_ids))
+
+        result: dict[str, list[RpmVersion]] = {provide: [] for provide in provides}
+
+        assert output.stdout is not None  # narrow type
+        provides_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
+            output.stdout
+        )
+
+        for provide, nevras in provides_yaml.items():
+            if nevras is None:
+                self.info(f"Nothing provides '{provide}'.")
+                continue
+            for resolved_provide in nevras:
+                try:
+                    result[provide].append(
+                        RpmVersion.from_nevra(
+                            resolved_provide['nevra'], repo_id=resolved_provide['repo_id']
+                        )
+                    )
+                except ValueError as error:
+                    raise PrepareError(
+                        f"Cannot parse '{resolved_provide}' for provide '{provide}'."
+                    ) from error
+
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:

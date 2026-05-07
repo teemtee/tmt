@@ -355,11 +355,33 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
 
-        # Build package → set of valid repo_ids, filtering to only required packages.
+        provider_repo_ids = {SHARED_REPO_NAME} | {
+            repo_id
+            for provider in providers
+            for repo in provider.get_repositories()
+            for repo_id in repo.repo_ids
+        }
+
+        if not pkg_names:
+            self.debug(
+                'No packages in tmt-managed install phases, skipping artifact verification.'
+            )
+            return
+
+        # Resolve all requirements to canonical package names via whatprovides so
+        # they can be matched against artifact.version.name below.  This handles
+        # plain names, file paths, pkgconfig(...) and package-level provides
+        # Artifact repos are already configured on the guest at this
+        # point even though the packages themselves are not yet installed.
+
+        resolved = guest.package_manager.resolve_provides(list(pkg_names), provider_repo_ids)
+
+        resolved_names = {version.name for versions in resolved.values() for version in versions}
+
         pkgs_to_verify: dict[str, set[str]] = {}
         for provider in providers:
             for artifact in provider.artifacts:
-                if artifact.version.name in pkg_names:
+                if artifact.version.name in resolved_names:
                     pkgs_to_verify.setdefault(artifact.version.name, set()).add(artifact.repo_id)
 
         if not pkgs_to_verify:
