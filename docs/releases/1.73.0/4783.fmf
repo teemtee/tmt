@@ -4,4 +4,4 @@ description: |
   new recipe containing only the tests matching specific outcomes (e.g. ``fail``,
   ``error``, ``warn``) and optionally rerun them immediately using ``tmt``.
 
-  __ https://github.com/teemtee/tools
+  __ https://github.com/teemtee/tools/tree/main/tmt-recipe-tool
