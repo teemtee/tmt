@@ -1594,8 +1594,38 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
             self.step_name, self._logger.descend(logger_name=f'{self.step_name}.queue')
         )
 
+    def _steppify_guest(self, guest: 'Guest') -> 'Guest':
+        """
+        Switch the given guest to this step.
+
+        The guest will behave as if it used this step's setup and
+        logging rather than the setup and logging of their original step,
+        ``provision``.
+        """
+
+        logger = guest._logger
+
+        guest = copy.copy(guest)
+        guest.inject_logger(logger.clone().apply_verbosity_options(**self._cli_options))
+
+        guest.parent = self
+
+        return guest
+
     @functools.cached_property
     def _steppified_guests(self) -> list['Guest']:
+        """
+        Guests with setup and logger switched to this step.
+
+        Returned guests will behave as if they use this step's
+        setup and logging rather than the setup and logging of their
+        original step, ``provision``.
+        """
+
+        return [self._steppify_guest(guest) for guest in self.plan.provision.guests]
+
+    @functools.cached_property
+    def _steppified_ready_guests(self) -> list['Guest']:
         """
         Ready guests with setup and logger switched to this step.
 
@@ -1604,19 +1634,9 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
         original step, ``provision``.
         """
 
-        def _copy_guest(guest: 'Guest') -> 'Guest':
-            logger = guest._logger
+        return [self._steppify_guest(guest) for guest in self.plan.provision.ready_guests]
 
-            guest = copy.copy(guest)
-            guest.inject_logger(logger.clone().apply_verbosity_options(**self._cli_options))
-
-            guest.parent = self
-
-            return guest
-
-        return [_copy_guest(guest) for guest in self.plan.provision.ready_guests]
-
-    def add_phase(self, phase: Phase) -> None:
+    def add_phase(self, phase: Phase, ready_only: bool = True) -> None:
         """
         Add a phase dynamically to the current step.
 
@@ -1630,6 +1650,8 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
             being added to the :py:attr:`data` list.
 
         :param phase: The phase to add.
+        :param ready_only: if set, phase would run on guests that are
+            ready. Otherwise, all guests would be used.
         """
 
         super().add_phase(phase)
@@ -1639,11 +1661,11 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
                 self._queue.enqueue_action(phase=phase)
 
             elif phase.enabled_by_when:
+                guests = self._steppified_ready_guests if ready_only else self._steppified_guests
+
                 self._queue.enqueue_plugin(
                     phase=phase,  # type: ignore[arg-type]
-                    guests=[
-                        guest for guest in self._steppified_guests if phase.enabled_on_guest(guest)
-                    ],
+                    guests=[guest for guest in guests if phase.enabled_on_guest(guest)],
                 )
 
 

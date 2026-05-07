@@ -379,9 +379,9 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             missing='skip',
         )
 
-        if self._steppified_guests:
+        if self._steppified_ready_guests:
             sync_with_guests(
-                self, 'push', PushTask(self._steppified_guests, self._logger), self._logger
+                self, 'push', PushTask(self._steppified_ready_guests, self._logger), self._logger
             )
 
             # To separate "push" from "prepare" queue visually
@@ -398,7 +398,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                     phase=prepare_phase,  # type: ignore[arg-type]
                     guests=[
                         guest
-                        for guest in self._steppified_guests
+                        for guest in self._steppified_ready_guests
                         if prepare_phase.enabled_on_guest(guest)
                     ],
                 )
@@ -479,18 +479,18 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             )
 
         # Notify guests that the prepare step has completed.
-        for guest in self._steppified_guests:
+        for guest in self._steppified_ready_guests:
             guest.on_step_complete(self)
 
         self.info('')
 
         # Pull artifacts created in the plan data directory
         # if there was at least one plugin executed
-        if self.phases() and self._steppified_guests:
+        if self.phases() and self._steppified_ready_guests:
             sync_with_guests(
                 self,
                 'pull',
-                PullTask(self._steppified_guests, self.plan.data_directory, self._logger),
+                PullTask(self._steppified_ready_guests, self.plan.data_directory, self._logger),
                 self._logger,
             )
 
