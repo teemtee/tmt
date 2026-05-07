@@ -19,11 +19,11 @@ jobs:
     - run: |
         wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
         chmod +x /usr/local/bin/hadolint
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         ref: ${{ inputs.ref }}
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v6.2.0
       with:
         # Python 3.9 is for mypy testing the lowest python version
         # Python 3.13 is for ansible-lint hard-coding the python requirement
