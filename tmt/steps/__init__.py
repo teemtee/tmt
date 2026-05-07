@@ -63,6 +63,7 @@ from tmt.utils import (
     Command,
     CommandOutput,
     Environment,
+    EnvVarName,
     EnvVarValue,
     GeneralError,
     HasPhaseWorkdir,
@@ -139,6 +140,11 @@ TEST_TOPOLOGY_FILENAME_BASE = 'tmt-test-topology'
 
 CODE_BLOCK_REGEXP = re.compile(r"^\s*\.\. code-block::.*$\n", re.MULTILINE)
 
+#: A regular expression to cut the special, plugin-specific environment
+#: variable names into their components: step, plugin, and option names.
+PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN = re.compile(
+    r'TMT_PLUGIN_(?P<step>[A-Z]+)_(?P<plugin>[A-Z]+)_(?P<option>[A-Z_]+)'
+)
 
 PHASE_OPTIONS = tmt.options.create_options_decorator(
     [
@@ -501,6 +507,141 @@ class WhereableStepData(SerializableContainer):
         metavar='GUEST|ROLE',
         help='Run this phase on given guest or guests with the given role only.',
     )
+
+
+@container
+class PluginEnvVar:
+    """
+    Represents an environment variable delivering value for a plugin key.
+    """
+
+    #: Name of the environment variable.
+    name: EnvVarName
+
+    #: Value of the environment variable.
+    value: EnvVarValue
+
+    #: Step as detected from the environment variable name using
+    #: :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
+    step: 'Step'
+
+    #: Plugin name a.k.a. "how" as detected from the environment variable
+    #: name using :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN`
+    #: pattern.
+    how: str
+
+    #: Plugin key name as detected from the environment variable name using
+    #: :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` pattern.
+    key: str
+
+    def __str__(self) -> str:
+        return f'{self.name}={self.value} ({self.step}/{self.how}.{self.key})'
+
+    @functools.cached_property
+    def field_name(self) -> str:
+        return self.key.replace('-', '_')
+
+    # We do not want to invent our custom parser for turning an environment
+    # variable into plugin step data value. Instead, we need to reach the
+    # Click command of the plugin, because that command already knows how
+    # to handle its input. This requires a bit of traversal. Get the right
+    # plugin class, then its command, and then its parameters.
+
+    @functools.cached_property
+    def plugin_class(self) -> Optional['Method']:
+        """
+        Plugin class according to :py:attr:`how`, or ``None``.
+        """
+
+        return self.step._plugin_base_class._supported_methods.get_plugin(self.how)
+
+    @functools.cached_property
+    def plugin_command(self) -> click.Command:
+        """
+        Plugin command-line command that owns the option-to-value conversion.
+        """
+
+        assert self.plugin_class is not None  # narrow type
+
+        return self.plugin_class.class_.command()
+
+    @functools.cached_property
+    def plugin_command_params(self) -> dict[str, click.Parameter]:
+        """
+        A mapping between command-line parameter names and instances.
+        """
+
+        # Apparently, Click does not offer a mapping between option names and their
+        # `click.Parameter` descriptions. We shall build our own then, we will need it.
+        return {
+            param.name: param for param in self.plugin_command.params if param.name is not None
+        }
+
+    @functools.cached_property
+    def normalized_value(self) -> Any:
+        """
+        Value as if processed by command-line command.
+        """
+
+        plugin_context = self.plugin_command.make_context(info_name=None, args=[])
+
+        plugin_param = self.plugin_command_params.get(self.field_name)
+
+        if plugin_param is None:
+            raise GeneralError(
+                f"Failed to find the '{self.key}' key of the '{self.step.name}/{self.how}' plugin."
+            )
+
+        if plugin_param.multiple:
+            return plugin_param.process_value(
+                plugin_context, plugin_param.type.split_envvar_value(self.value)
+            )
+
+        return plugin_param.process_value(plugin_context, self.value)
+
+    @classmethod
+    def from_environment(cls, environment: Environment, step: 'Step') -> Iterator[Self]:
+        """
+        Find all plugin-specific environment variables in the given environment.
+
+        Plugin-specific environment variable are those whose name matches
+        :py:data:`PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN` regular
+        expression. Other variables are silently ignored.
+
+        :param environment: environment to scan for plugin-specific
+            variables.
+        :param step: limit the discovery to environment variables matching
+            the given step.
+        :yields: plugin-specific environment variables, each wrapped by
+            ``PluginEnvVar`` instance.
+        """
+
+        for envvar_name, envvar_value in environment.items():
+            # Skip all environment variables not matching the special
+            # pattern or for different step. Neither of these groups is
+            # interesting.
+            if not (match := PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN.match(envvar_name)):
+                continue
+
+            step_name, plugin_name, option_name = tuple(
+                component.lower() for component in match.groups()
+            )
+
+            if not is_step_name(step_name):
+                continue
+
+            if step_name != step.name:
+                continue
+
+            yield cls(
+                name=envvar_name,
+                value=envvar_value,
+                step=step,
+                # Since the environment variable names are upper-cased only,
+                # plugin and option names require a bit of character manipulation.
+                how=plugin_name.replace('_', '-'),
+                key=option_name.replace('_', '-'),
+            )
 
 
 class Step(
@@ -1110,10 +1251,57 @@ class Step(
             self.plan._applied_cli_invocations.append(invocation)
 
         # A bit of logging before we start messing with step data
-        for i, raw_datum in enumerate(raw_data):
-            debug2(f'raw step datum #{i}', str(raw_datum))
+        def _log_raw_data(stage: str, raw_data: list[_RawStepData]) -> None:
+            debug2(f'stage {stage}')
 
-        # The first pass, apply CLI invocations that can be applied
+            for i, raw_datum in enumerate(raw_data):
+                debug3(f'raw step datum #{i}', str(raw_datum))
+
+        how: Optional[str]
+
+        _log_raw_data('before', raw_data)
+
+        # First pass, apply environment variables
+        for i, plugin_envvar in enumerate(
+            PluginEnvVar.from_environment(Environment.from_environ(), self)
+        ):
+            debug2(f'environment invocation #{i}', str(plugin_envvar))
+
+            plugin_label = f'{plugin_envvar.step.name}/{plugin_envvar.how}'
+
+            if plugin_envvar.plugin_class is None:
+                self.warn(
+                    f"Found environment variable for plugin '{plugin_label}',"
+                    " but the plugin was not found. The following environment variable"
+                    f" will have no effect: {plugin_envvar.name}."
+                )
+
+                continue
+
+            # Now, traverse the raw data, skip those for different plugins, and update the suitable
+            # ones with values coming from the environment variables.
+            compatible_raw_data = [
+                raw_datum for raw_datum in raw_data if raw_datum.get('how') == plugin_envvar.how
+            ]
+
+            if not compatible_raw_data:
+                self.warn(
+                    f"Found environment variable for plugin '{plugin_label}',"
+                    f" but the plugin is not used by the plan '{self.plan.name}'. The"
+                    f" following environment variable will have no effect: {plugin_envvar.name}."
+                )
+
+                continue
+
+            for j, raw_datum in enumerate(compatible_raw_data):
+                debug3(f'raw step datum #{j}', str(raw_datum))
+                debug4('raw environment variable', str(plugin_envvar))
+
+                raw_datum[plugin_envvar.key] = plugin_envvar.normalized_value  # type: ignore[literal-required]
+
+        _log_raw_data('after environment invocations', raw_data)
+
+        # Second pass, apply CLI invocations that can be applied
         for i, invocation in enumerate(self.__class__.cli_invocations):
             debug2(f'invocation #{i}', str(invocation.options))
 
@@ -1121,7 +1309,7 @@ class Step(
                 debug3('already applied')
                 continue
 
-            how: Optional[str] = invocation.options.get('how')
+            how = cast(Optional[str], invocation.options.get('how'))
 
             if how is None:
                 debug3('how-less phase (postponed)')
@@ -1197,7 +1385,9 @@ class Step(
 
                 postponed_invocations.append(invocation)
 
-        # The second pass, evaluate postponed CLI invocations
+        _log_raw_data('after targeted CLI invocations', raw_data)
+
+        # Third pass, evaluate postponed CLI invocations
         for i, invocation in enumerate(postponed_invocations):
             debug2(f'postponed invocation #{i}', str(invocation.options))
 
@@ -1208,7 +1398,7 @@ class Step(
             # preferred image name without specifying the provision
             # method, thus the 'how' key can be unset and we respect the
             # provision method specified in the plan.
-            how = invocation.options.get('how')
+            how = cast(Optional[str], invocation.options.get('how'))
 
             for j, raw_datum in enumerate(raw_data):
                 debug2(f'raw step datum #{j}', str(raw_datum))
@@ -1258,8 +1448,7 @@ class Step(
             raw_data = pruned_raw_data
 
         # And bit of logging after re're done with CLI invocations
-        for i, raw_datum in enumerate(raw_data):
-            debug2(f'updated raw step datum #{i}', str(raw_datum))
+        _log_raw_data('after general CLI invocations', raw_data)
 
         raw_data = self._set_default_names(raw_data)
         return self._set_default_how(raw_data)
