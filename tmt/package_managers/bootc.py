@@ -259,7 +259,8 @@ class Bootc(PackageManager[BootcEngine]):
                     )
                 )
                 self.guest.execute(
-                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF')
+                    # Quoted delimiter disables any shell expansions
+                    ShellScript(f'cat <<"EOF" > {containerfile_path!s} \n{containerfile} \nEOF')
                 )
 
                 self.debug(f"containerfile content: {containerfile}")
