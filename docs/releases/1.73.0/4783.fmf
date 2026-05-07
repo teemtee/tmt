@@ -1,0 +1,7 @@
+description: |
+  A new command-line tool ``tmt-recipe-tool`` is available in the `teemtee/tools`__
+  repository. Given a tmt recipe and its associated test results, it can produce a
+  new recipe containing only the tests matching specific outcomes (e.g. ``fail``,
+  ``error``, ``warn``) and optionally rerun them immediately using ``tmt``.
+
+  __ https://github.com/teemtee/tools/tree/main/tmt-recipe-tool
