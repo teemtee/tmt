@@ -51,6 +51,6 @@ jobs:
     needs: [ pre-commit, build-wheel, shellcheck, doc-tests ]
     runs-on: ubuntu-slim
     steps:
-      - uses: re-actors/alls-green@release/v1
+      - uses: re-actors/alls-green@v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}

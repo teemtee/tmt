@@ -18,14 +18,14 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           ref: ${{ inputs.ref }}
-      - uses: redhat-actions/buildah-build@v2
+      - uses: redhat-actions/buildah-build@v2.12
         with:
           image: renovate-tmt
           containerfiles: ./containers/Containerfile.renovate
-      - uses: redhat-actions/push-to-registry@v2
+      - uses: redhat-actions/push-to-registry@v2.8
         with:
           image: renovate-tmt
           tags: latest
