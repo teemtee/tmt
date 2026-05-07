@@ -60,7 +60,7 @@ def test_download_artifact(tmp_path, artifact_provider):
         guest,
         Path("/remote/foo-1.0-1.fc43.x86_64.rpm"),
     )
-    guest.execute.assert_called_once()
+    guest.download.assert_called_once()
 
 
 @pytest.mark.parametrize(

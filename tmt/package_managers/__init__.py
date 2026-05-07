@@ -35,6 +35,10 @@ if TYPE_CHECKING:
     PackageOrigin: TypeAlias = Union[str, 'SpecialPackageOrigin']
 
 
+#: Directory where DNF/YUM repository files are stored.
+YUM_REPOS_DIR = Path("/etc/yum.repos.d")
+
+
 class _ResolvedEntry(TypedDict):
     """
     Single entry from the YAML output of :py:meth:`PackageManagerEngine.resolve_provides`.

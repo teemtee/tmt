@@ -115,6 +115,24 @@ DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
 #: ``TMT_REBOOT_TIMEOUT``.
 REBOOT_TIMEOUT: int = configure_constant(DEFAULT_REBOOT_TIMEOUT, 'TMT_REBOOT_TIMEOUT')
 
+#: Number of attempts to download a file from a URL.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_DOWNLOAD_ATTEMPTS: int = 3
+
+#: Number of attempts to download a file from a URL.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_DOWNLOAD_ATTEMPTS``.
+DOWNLOAD_ATTEMPTS: int = configure_constant(DEFAULT_DOWNLOAD_ATTEMPTS, 'TMT_DOWNLOAD_ATTEMPTS')
+
+#: Number of seconds to wait between download attempts.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_DOWNLOAD_INTERVAL: int = 5
+
+#: Number of seconds to wait between download attempts.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_DOWNLOAD_INTERVAL``.
+DOWNLOAD_INTERVAL: int = configure_constant(DEFAULT_DOWNLOAD_INTERVAL, 'TMT_DOWNLOAD_INTERVAL')
+
 
 def default_reboot_waiting() -> Waiting:
     """
@@ -458,6 +476,12 @@ class RebootMode(enum.Enum):
 
 SoftRebootModes = Literal[RebootMode.SOFT, RebootMode.SYSTEMD_SOFT]
 HardRebootModes = Literal[RebootMode.HARD]
+
+
+class DownloadError(tmt.utils.GeneralError):
+    """
+    Raised when download fails.
+    """
 
 
 class RebootModeNotSupportedError(ProvisionError):
@@ -2386,6 +2410,26 @@ class Guest(
         """
 
         raise NotImplementedError
+
+    def download(self, url: str, destination: Path) -> None:
+        """
+        Download a file from a URL to a path on the guest.
+        :param url: URL to download from.
+        :param destination: path on the guest to save the file to.
+        :raises DownloadError: if the download fails after all attempts.
+        """
+        try:
+            self.execute(
+                ShellScript(
+                    f"{self.facts.sudo_prefix} curl -L --fail"
+                    f" --retry {max(DOWNLOAD_ATTEMPTS - 1, 0)}"
+                    f" --retry-delay {DOWNLOAD_INTERVAL}"
+                    f" -o {quote(str(destination))} {quote(url)}"
+                ),
+                silent=True,
+            )
+        except tmt.utils.RunError as error:
+            raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
 
     @abc.abstractmethod
     def stop(self) -> None:

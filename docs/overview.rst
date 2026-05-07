@@ -536,6 +536,15 @@ TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
 
+TMT_DOWNLOAD_ATTEMPTS
+    Number of attempts to download a file from a URL to guest.
+    By default, 3 attempts are made.
+
+TMT_DOWNLOAD_INTERVAL
+    Number of seconds to wait before retrying after an unsuccessful
+    attempt to download a file from a URL to guest.
+    By default, 5 seconds.
+
 TMT_RETRY_SESSION_RETRIES
     The number of retries for HTTP/HTTPS requests when encountering
     retriable errors (such as 503 Service Unavailable). By default,
