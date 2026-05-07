@@ -1,0 +1,4 @@
+description: |
+  Fixed a regression where the :ref:`prepare shell</plugins/prepare/shell>`
+  and :ref:`provision local</plugins/provision/local>` plugins were
+  missing the plan environment variables during execution.
