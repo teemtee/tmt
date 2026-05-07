@@ -26,14 +26,14 @@ jobs:
             sphinx_builder: html
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: 3.x
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v7.6.0
         with:
           activate-environment: true
       - name: Install tmt[docs]
@@ -45,7 +45,7 @@ jobs:
         if: ${{ matrix.builder == 'lint' }}
 
       - name: Cache linkcheck results
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         with:
           path: docs/_build/linkcheck_cache.json
           key: linkcheck
