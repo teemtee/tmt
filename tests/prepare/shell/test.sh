@@ -44,6 +44,13 @@ rlJournalStart
             assert_image_mode
         rlPhaseEnd
 
+        rlPhaseStartTest "Multiline Shell Scripts"
+            rlRun -s "tmt run -arvvv provision --how=$PROVISION_HOW $image_opt plans -n multiline"
+            rlAssertGrep "stdout: STEP 2/2: RUN <<'_TMT_BUILD_SCRIPT'" "$rlRun_LOG"
+            rlAssertGrep "stdout: This is a multiline script" "$rlRun_LOG"
+            assert_image_mode
+        rlPhaseEnd
+
         # TODO: #4785 Preparing from a remote script is broken in Image Mode
         if [ "$IMAGE_MODE" != "yes" ]; then
             rlPhaseStartTest "Remote Script"

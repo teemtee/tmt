@@ -2907,7 +2907,9 @@ class GuestSsh(Guest, CommandCollector):
 
         # Add to the package manager's engine
         self.package_manager.engine.open_containerfile_directives()
-        self.package_manager.engine.containerfile_directives.append(f"RUN {collected_command}")
+        self.package_manager.engine.containerfile_directives.append("RUN <<'_TMT_BUILD_SCRIPT'")
+        self.package_manager.engine.containerfile_directives.append(f"{collected_command}")
+        self.package_manager.engine.containerfile_directives.append("_TMT_BUILD_SCRIPT")
         self.debug(f"Collected command for Containerfile: {collected_command}")
 
     @property

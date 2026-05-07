@@ -1,0 +1,12 @@
+provision:
+    how: container
+prepare:
+    how: shell
+    script: |
+      test() {
+        echo "This is a multiline script"
+      }
+      test
+execute:
+    how: tmt
+    script: "true"
