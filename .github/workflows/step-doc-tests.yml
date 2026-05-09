@@ -44,11 +44,18 @@ jobs:
         run: uv pip install sphinx-lint
         if: ${{ matrix.builder == 'lint' }}
 
+      - name: Get date
+        id: date
+        run: |
+          echo "date=$(/usr/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
+        if: ${{ matrix.builder == 'linkcheck' }}
       - name: Cache linkcheck results
         uses: actions/cache@v5
         with:
           path: docs/_build/linkcheck_cache.json
-          key: linkcheck
+          key: linkcheck-${{ steps.date.outputs.date }}
+          restore-keys: |
+            linkcheck-
         if: ${{ matrix.builder == 'linkcheck' }}
 
       - name: Run sphinx builder ${{ matrix.sphinx_builder || matrix.builder }}
