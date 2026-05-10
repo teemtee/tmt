@@ -6136,7 +6136,7 @@ def normalize_string_dict(
         return normalized
 
     raise tmt.utils.NormalizationError(
-        key_address, value, 'a dictionary or a list of KEY=VALUE strings'
+        key_address, raw_value, 'a dictionary or a list of KEY=VALUE strings'
     )
 
 
