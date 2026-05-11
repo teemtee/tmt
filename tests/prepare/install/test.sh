@@ -433,7 +433,7 @@ rlJournalStart
         # possible to extend to other distros.
         # TODO: image mode copr support depends on #4748
         if ! is_image_mode "$image" && ((is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"); then
-            if ! is_centos_7 "$image" && ! is_ubi_8 "$image" && ! is_fedora_eln "$image"; then
+            if ! is_centos_7 "$image" && ! is_ubi_8 "$image"; then
                 rlPhaseStartTest "$phase_prefix Just enable copr"
                     rlRun "$tmt execute plan --name copr"
                 rlPhaseEnd
