@@ -38,7 +38,6 @@ def test_maximal_constraint(root_logger: Logger) -> None:
     assert hw.constraint is not None
 
     result = constraint_to_beaker_filter(hw.constraint, root_logger)
-
     assert result.to_mrack() == {
         'and': [
             {},
