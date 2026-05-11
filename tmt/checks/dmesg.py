@@ -203,7 +203,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         # Avoid circular imports
         import tmt.base.core
 
-        return [tmt.base.core.DependencySimple('/usr/bin/dmesg')]
+        return [tmt.base.core.DependencySimple('/bin/dmesg')]
 
     @classmethod
     def before_test(
