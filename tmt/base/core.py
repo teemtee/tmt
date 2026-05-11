@@ -3192,26 +3192,21 @@ class Clean(tmt.utils.Common):
             # the correct one.
             last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
             last_run.load_workdir(with_logfiles=False)
-            success, size = self._clean_workdir(last_run.run_workdir)
-            self.verbose(
-                f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
-                f"{round(tmt.hardware.UNITS(f'{size} bytes').to_compact(), 1)} of disk space.",
-                shift=1,
-            )
-            return success
-        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_, all_=True))
-        if keep is not None:
-            # Sort by change time of the workdirs and keep the newest workdirs
-            all_workdirs.sort(key=lambda workdir: workdir.stat().st_ctime, reverse=True)
-            all_workdirs = all_workdirs[keep:]
+            successful, total_size = self._clean_workdir(last_run.run_workdir)
+        else:
+            all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_, all_=True))
+            if keep is not None:
+                # Sort by change time of the workdirs and keep the newest workdirs
+                all_workdirs.sort(key=lambda workdir: workdir.stat().st_ctime, reverse=True)
+                all_workdirs = all_workdirs[keep:]
 
-        successful = True
-        total_size = 0
-        for workdir in all_workdirs:
-            success, size = self._clean_workdir(workdir)
-            if not success:
-                successful = False
-            total_size += size
+            successful = True
+            total_size = 0
+            for workdir in all_workdirs:
+                success, size = self._clean_workdir(workdir)
+                if not success:
+                    successful = False
+                total_size += size
 
         self.verbose(
             f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
