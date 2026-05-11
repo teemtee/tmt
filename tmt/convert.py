@@ -1291,7 +1291,7 @@ def relevancy_to_adjust(
         # Split rule
         search_result = re.search(RELEVANCY_RULE, line)
         if search_result is None:
-            raise tmt.utils.ConvertError(f"Invalid test case relevancy rule '{line}'.")
+            raise ConvertError(f"Invalid test case relevancy rule '{line}'.")
         condition, decision = search_result.groups()
 
         # Handle the decision
@@ -1301,7 +1301,7 @@ def relevancy_to_adjust(
             try:
                 rule['environment'] = tmt.utils.Environment.from_sequence(decision, logger)
             except tmt.utils.GeneralError as error:
-                raise tmt.utils.ConvertError(
+                raise ConvertError(
                     f"Invalid test case relevancy decision '{decision}'."
                 ) from error
 
@@ -1310,9 +1310,7 @@ def relevancy_to_adjust(
         for expression in re.split(r'\s*&&?\s*', condition):
             search_result = re.search(RELEVANCY_EXPRESSION, expression)
             if search_result is None:
-                raise tmt.utils.ConvertError(
-                    f"Invalid test case relevancy expression '{expression}'."
-                )
+                raise ConvertError(f"Invalid test case relevancy expression '{expression}'.")
             left, operator, right = search_result.groups()
             # Always use double == for equality comparison
             if operator == '=':
@@ -1333,7 +1331,7 @@ def relevancy_to_adjust(
                         '!defined': 'is not defined',
                     }[operator]
                 except KeyError as error:
-                    raise tmt.utils.ConvertError(
+                    raise ConvertError(
                         f"Invalid test case relevancy operator '{operator}'."
                     ) from error
             # Special handling for the '!=' operator with comma-separated

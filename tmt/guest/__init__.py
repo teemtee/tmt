@@ -444,7 +444,9 @@ def essential_ansible_requires() -> list['tmt.base.core.Dependency']:
     Return essential requirements for running Ansible modules
     """
 
-    return [tmt.base.core.DependencySimple('/usr/bin/python3')]
+    from tmt.base.core import DependencySimple
+
+    return [DependencySimple('/usr/bin/python3')]
 
 
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
