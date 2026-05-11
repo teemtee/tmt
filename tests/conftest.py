@@ -58,7 +58,7 @@ def tmppath_factory(tmp_path_factory: _pytest.tmpdir.TempPathFactory) -> TempPat
 
 @pytest.fixture
 def tmppath(tmp_path: pathlib.Path) -> Path:  # noqa: TID251
-    return Path(str(tmp_path))
+    return Path(tmp_path)
 
 
 @pytest.fixture
