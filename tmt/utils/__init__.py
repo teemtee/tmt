@@ -6228,7 +6228,7 @@ def _normalize_structured_blob(
 
             return from_json
 
-        if raw_value.startswith("http"):
+        if is_url(raw_value):
             loader = _detect_loader()
 
             # Create retry session for longer retries, see #1229
