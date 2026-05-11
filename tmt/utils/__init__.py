@@ -1209,6 +1209,13 @@ class Command:
 
         return Command(*self._command, *other)
 
+    # While the outcome of `+=` can be emulated by `__add__`, it would
+    # return new object. Often we just want to add to the existing object,
+    # `__iadd__` would made that action very, very slightly less
+    # memory-consuming.
+    # Plus, it is a clean and explicit in-place modification, and prevents
+    # any confusing outcomes should we begin passing commands between
+    # callables and modify them in said callables.
     def __iadd__(self, other: Union['Command', RawCommand]) -> Self:
         if isinstance(other, Command):
             self._command += other._command
