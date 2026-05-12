@@ -17,6 +17,7 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
         rlRun "results=$run/plan/execute/results.yaml"
+        rlRun "log=$run/log.txt"
         rlRun "harmless=$run/plan/execute/data/guest/default-0/dmesg/harmless-1"
         rlRun "segfault=$run/plan/execute/data/guest/default-0/dmesg/segfault-1"
         rlRun "custom_patterns=$run/plan/execute/data/guest/default-0/dmesg/custom-patterns-1"
@@ -46,6 +47,10 @@ Saving of the kernel ring buffer was skipped because of missing privileges.
 Saving of the kernel ring buffer was skipped because of missing privileges."
 
         else
+            # verify pre-usr-merge compatible path
+            rlAssertGrep "/bin/dmesg" "$log"
+            rlAssertNotGrep "/usr/bin/dmesg" "$log"
+
             assert_check_result "dmesg as a before-test should pass" "pass" "before-test" "harmless"
 
             rlAssertExists "$dump_before"
