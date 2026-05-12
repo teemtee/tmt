@@ -199,7 +199,7 @@ class ConstraintComponents:
         match = CONSTRAINT_COMPONENTS_PATTERN.match(spec)
 
         if match is None:
-            raise tmt.utils.SpecificationError(
+            raise SpecificationError(
                 f"Failed to split hardware requirement '{spec}' into its components."
             )
 
