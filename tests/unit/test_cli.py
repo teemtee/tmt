@@ -8,6 +8,7 @@ import _pytest.monkeypatch
 import pytest
 
 import tmt.log
+import tmt.utils
 from tests import CliRunner
 from tmt.container import container
 from tmt.utils import Path

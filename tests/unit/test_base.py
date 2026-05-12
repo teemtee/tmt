@@ -10,6 +10,7 @@ import pytest
 
 import tmt
 import tmt.result
+import tmt.utils
 from tmt.base.core import FmfId, Link, LinkNeedle, Links, expand_node_data
 from tmt.utils import Path, SpecificationError
 

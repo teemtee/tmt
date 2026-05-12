@@ -1,8 +1,7 @@
 import os
 from tempfile import NamedTemporaryFile
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
-import tmt
 import tmt.log
 import tmt.utils
 from tmt.container import container
@@ -10,6 +9,10 @@ from tmt.utils import (
     Path,
 )
 from tmt.utils.templates import render_template_file
+
+if TYPE_CHECKING:
+    import tmt.guest
+
 
 #: Scripts source resource. Use `tmt.utils.resource_files` to access them.
 SCRIPTS_RESOURCE = 'steps/scripts'

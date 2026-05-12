@@ -5,10 +5,11 @@ from re import Pattern
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast, overload
 
 import requests
-import urllib3
+import urllib3.exceptions
 
 import tmt.hardware
 import tmt.log
+import tmt.result
 import tmt.steps.report
 import tmt.utils
 import tmt.utils.templates

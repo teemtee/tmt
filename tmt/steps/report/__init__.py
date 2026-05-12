@@ -1,5 +1,7 @@
 from typing import Optional, TypeVar, Union, cast
 
+import tmt.log
+import tmt.result
 import tmt.steps
 from tmt.container import container
 from tmt.plugins import PluginRegistry

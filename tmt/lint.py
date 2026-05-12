@@ -75,7 +75,6 @@ from typing import (
     TypeVar,
 )
 
-import tmt
 import tmt.utils
 from tmt.config import Config
 from tmt.container import container
@@ -212,7 +211,7 @@ class Lintable(Generic[LintableT]):
             if not name.startswith('lint_'):
                 continue
 
-            cls.get_linter_registry().append(tmt.lint.Linter(getattr(cls, name)))
+            cls.get_linter_registry().append(Linter(getattr(cls, name)))
 
     @classmethod
     def resolve_enabled_linters(

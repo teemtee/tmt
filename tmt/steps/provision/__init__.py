@@ -17,6 +17,7 @@ import tmt.ansible
 import tmt.guest
 import tmt.hardware
 import tmt.log
+import tmt.options
 import tmt.queue
 import tmt.steps
 import tmt.utils

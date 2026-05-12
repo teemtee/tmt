@@ -5,6 +5,7 @@ import fmf
 import pytest
 
 import tmt
+import tmt.log
 from tests.conftest import create_path_helper
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
 from tmt.utils import Path

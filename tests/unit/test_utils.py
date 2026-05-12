@@ -16,10 +16,13 @@ import fmf
 import pytest
 
 import tmt
+import tmt.base.core
+import tmt.base.plan
 import tmt.log
 import tmt.plugins
 import tmt.steps.discover
 import tmt.utils
+import tmt.utils.git
 import tmt.utils.jira
 from tmt.log import Logger
 from tmt.utils import (

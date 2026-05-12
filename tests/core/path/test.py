@@ -2,6 +2,7 @@ import pytest
 
 import tmt
 import tmt.log
+import tmt.utils
 from tmt.utils import Path
 
 logger = tmt.log.Logger.create()

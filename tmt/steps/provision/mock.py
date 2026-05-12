@@ -12,6 +12,7 @@ from typing import Any, Callable, Optional, Union, cast
 import tmt
 import tmt.guest
 import tmt.log
+import tmt.package_managers
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
