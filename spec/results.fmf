@@ -73,6 +73,10 @@ description: |
        # Integer, serial number of the test in the sequence of all tests of a plan.
        serial-number: 1
 
+       # String, a browsable URL pointing to the test's fmf metadata source.
+       # Matches the value produced by ``tmt test show`` under the ``web`` key.
+       web-link: https://github.com/teemtee/tmt/-/blob/main/tests/core/smoke/main.fmf
+
        # Mapping, describes the guest on which the test was executed.
        guest:
          name: client-1
