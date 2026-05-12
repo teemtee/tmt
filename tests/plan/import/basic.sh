@@ -164,13 +164,13 @@ rlJournalStart
         rlRun -s "tmt -ddd -c distro=fedora-rawhide plan ls /plans/importing/disabled-by-adjust" 0 "List disabled plan"
         rlAssertGrep "Plan '/plans/importing/disabled-by-adjust' importing" $rlRun_LOG
         rlAssertNotGrep "Plan '/plans/importing/disabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
-        rlAssertEquals "Verify last line is the plan" "/plans/importing/disabled-by-adjust" $(tail -1 $rlRun_LOG)
+        rlAssertGrep "^/plans/importing/disabled-by-adjust$" $rlRun_LOG
 
         cleanup
         rlRun -s "tmt -ddd -c distro=fedora-rawhide plan ls /plans/importing/disabled-by-adjust --enabled" 0 "Do not list with --enabled option"
         rlAssertNotGrep "Plan '/plans/importing/disabled-by-adjust' importing" $rlRun_LOG
         rlAssertGrep "Plan '/plans/importing/disabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
-        rlAssertNotEquals "Verify last line is not the plan" "/plans/importing/disabled-by-adjust" $(tail -1 $rlRun_LOG)
+        rlAssertNotGrep "^/plans/importing/disabled-by-adjust$" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Disabled remote plan should be fetched if enabled by adjust"
@@ -193,18 +193,18 @@ rlJournalStart
         rlRun -s "tmt -ddd -c distro=rhel-10 plan ls /plans/importing/enabled-by-adjust" 0 "List disabled plan"
         rlAssertGrep "Plan '/plans/importing/enabled-by-adjust' importing" $rlRun_LOG
         rlAssertNotGrep "Plan '/plans/importing/enabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
-        rlAssertEquals "Verify last line is the plan" "/plans/importing/enabled-by-adjust" $(tail -1 $rlRun_LOG)
+        rlAssertGrep "^/plans/importing/enabled-by-adjust$" $rlRun_LOG
 
         cleanup
         rlRun -s "tmt -d -c distro=rhel-10 plan ls /plans/importing/enabled-by-adjust --enabled" 0 "List enabled plans"
         rlAssertNotGrep "Plan '/plans/importing/enabled-by-adjust' importing" $rlRun_LOG
         rlAssertGrep "Plan '/plans/importing/enabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
-        rlAssertNotEquals "Verify last line is not the plan" "/plans/importing/enabled-by-adjust" $(tail -1 $rlRun_LOG)
+        rlAssertNotGrep "^/plans/importing/enabled-by-adjust$" $rlRun_LOG
 
         rlRun -s "tmt -ddd -c distro=fedora-rawhide plan ls /plans/importing/enabled-by-adjust --enabled" 0 "List enabled plans with correct environment"
         rlAssertGrep "Plan '/plans/importing/enabled-by-adjust' importing" $rlRun_LOG
         rlAssertNotGrep "Plan '/plans/importing/enabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
-        rlAssertEquals "Verify last line is the plan" "/plans/importing/enabled-by-adjust" $(tail -1 $rlRun_LOG)
+        rlAssertGrep "^/plans/importing/enabled-by-adjust$" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
