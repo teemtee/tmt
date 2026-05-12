@@ -1,7 +1,7 @@
 import re
 from collections.abc import Iterator
 from inspect import isclass
-from typing import Optional
+from typing import Optional, Union
 
 import _pytest.logging
 import pytest
@@ -479,7 +479,7 @@ def test_refresh_metadata(
 
 
 def _parametrize_test_assert_config_manager() -> Iterator[
-    tuple[Container, PackageManagerClass, str | Exception]
+    tuple[Container, PackageManagerClass, Union[str, Exception]]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
