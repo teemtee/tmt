@@ -5,7 +5,7 @@ Sphinx extension to cache linkcheck results
 import datetime
 import functools
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
@@ -23,7 +23,7 @@ def get_web_git_url(app: "Sphinx") -> str:
     return web_git_url(gitinfo.url, gitinfo.ref)
 
 
-def linkcheck_cache(app: "Sphinx", uri: str) -> str | None:
+def linkcheck_cache(app: "Sphinx", uri: str) -> Optional[str]:
     # Get the cache result files
     cache_file = app.outdir / "linkcheck_cache.json"
     now = datetime.datetime.now(datetime.UTC)
