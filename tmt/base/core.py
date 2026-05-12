@@ -3165,7 +3165,7 @@ class Clean(tmt.utils.Common):
         Remove a workdir (unless in dry mode)
         """
         size = _dir_size(path)
-        formatted_size = round(tmt.hardware.UNITS(f'{size} bytes').to_compact(), 1)
+        formatted_size = tmt.hardware.format_compact(tmt.hardware.UNITS(f'{size} bytes'))
         if self.is_dry_run:
             self.verbose(f"Would remove workdir '{path}' ({formatted_size}).", shift=1)
         else:
@@ -3210,7 +3210,8 @@ class Clean(tmt.utils.Common):
 
         self.verbose(
             f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
-            f"{round(tmt.hardware.UNITS(f'{total_size} bytes').to_compact(), 1)} of disk space.",
+            f"{tmt.hardware.format_compact(tmt.hardware.UNITS(f'{total_size} bytes'))} "
+            f"of disk space.",
             shift=1,
         )
         return successful

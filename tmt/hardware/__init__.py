@@ -26,6 +26,8 @@ decoupled from the rest, and made available for inspection.
 [1] https://tmt.readthedocs.io/en/stable/spec/hardware.html
 """
 
+from typing import TYPE_CHECKING
+
 from tmt.hardware.constraints import (
     UNITS,
     Constraint,
@@ -38,6 +40,14 @@ from tmt.hardware.constraints import (
 )
 from tmt.hardware.requirements import Hardware
 
+if TYPE_CHECKING:
+    from pint import Quantity
+
+
+def format_compact(quantity: 'Quantity', digits: int = 1) -> str:
+    return str(round(quantity.to_compact(), digits))  # pyright: ignore[reportUnknownArgumentType]
+
+
 __all__ = [
     'UNITS',
     'Constraint',
@@ -48,4 +58,5 @@ __all__ = [
     'Operator',
     'SizeConstraint',
     'TextConstraint',
+    'format_compact',
 ]

@@ -1594,7 +1594,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         for image in testcloud_images.iterdir():
             size = image.stat().st_size
             total_size += size
-            formatted_size = round(tmt.hardware.UNITS(f'{size} bytes').to_compact(), 1)
+            formatted_size = tmt.hardware.format_compact(tmt.hardware.UNITS(f'{size} bytes'))
             if dry:
                 clean.verbose(f"Would remove '{image}' ({formatted_size}).", shift=2)
             else:
@@ -1606,7 +1606,8 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     successful = False
         clean.verbose(
             f"Summary: {'Would free' if dry else 'Freed'} "
-            f"{round(tmt.hardware.UNITS(f'{total_size} bytes').to_compact(), 1)} of disk space.",
+            f"{tmt.hardware.format_compact(tmt.hardware.UNITS(f'{total_size} bytes'))} "
+            f"of disk space.",
             shift=2,
         )
         return successful
