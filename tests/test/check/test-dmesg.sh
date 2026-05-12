@@ -47,7 +47,7 @@ Saving of the kernel ring buffer was skipped because of missing privileges.
 Saving of the kernel ring buffer was skipped because of missing privileges."
 
         else
-            # verify centos-6 compatible path
+            # verify pre-usr-merge compatible path
             rlAssertGrep "/bin/dmesg" "$log"
             rlAssertNotGrep "/usr/bin/dmesg" "$log"
 
