@@ -75,6 +75,8 @@ from tmt.utils import (
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
+    from pint import Quantity
+
     import tmt.cli
     from tmt.base.plan import Plan
     from tmt.base.run import Run
@@ -3008,9 +3010,9 @@ class Status(tmt.utils.Common):
 CleanCallback = Callable[[], bool]
 
 
-def _dir_size(path: Path) -> int:
+def _dir_size(path: Path) -> 'Quantity':
     """Return the total size in bytes of all files under path."""
-    return sum(f.lstat().st_size for f in path.rglob('*'))
+    return tmt.hardware.UNITS(f'{sum(f.lstat().st_size for f in path.rglob("*"))} bytes')
 
 
 class Clean(tmt.utils.Common):
@@ -3160,12 +3162,12 @@ class Clean(tmt.utils.Common):
                 successful = False
         return successful
 
-    def _clean_workdir(self, path: Path) -> tuple[bool, int]:
+    def _clean_workdir(self, path: Path) -> tuple[bool, 'Quantity']:
         """
         Remove a workdir (unless in dry mode)
         """
         size = _dir_size(path)
-        formatted_size = tmt.hardware.format_compact(tmt.hardware.UNITS(f'{size} bytes'))
+        formatted_size = tmt.hardware.format_compact(size)
         if self.is_dry_run:
             self.verbose(f"Would remove workdir '{path}' ({formatted_size}).", shift=1)
         else:
@@ -3174,7 +3176,7 @@ class Clean(tmt.utils.Common):
                 shutil.rmtree(path)
             except OSError as error:
                 self.warn(f"Failed to remove '{path}': {error}.", shift=1)
-                return False, 0
+                return False, tmt.hardware.UNITS('0 bytes')
         return True, size
 
     def runs(self, id_: tuple[str, ...], keep: Optional[int]) -> bool:
@@ -3201,16 +3203,16 @@ class Clean(tmt.utils.Common):
                 all_workdirs = all_workdirs[keep:]
 
             successful = True
-            total_size = 0
+            total_size = tmt.hardware.UNITS('0 bytes')
             for workdir in all_workdirs:
                 success, size = self._clean_workdir(workdir)
                 if not success:
                     successful = False
-                total_size += size
+                total_size += size  # type: ignore[misc]
 
         self.verbose(
             f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
-            f"{tmt.hardware.format_compact(tmt.hardware.UNITS(f'{total_size} bytes'))} "
+            f"{tmt.hardware.format_compact(total_size)} "
             f"of disk space.",
             shift=1,
         )
