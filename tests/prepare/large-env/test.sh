@@ -38,7 +38,7 @@ rlJournalStart
         phase_prefix="$(test_phase_prefix "$image")"
 
         rlPhaseStartTest "$phase_prefix Prepare/install with large environment"
-            rlRun -s "tmt -vvv run --scratch -i \$run --environment-file \$run/large-env.yaml provision --how virtual --image $image"
+            rlRun -s "tmt -vvv run --scratch -i \$run --environment-file \$run/large-env.yaml provision --how $PROVISION_HOW --image $image"
 
             rlAssertGrep "building container image" $rlRun_LOG
             rlAssertGrep "switching to new image" $rlRun_LOG
