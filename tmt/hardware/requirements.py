@@ -1,9 +1,9 @@
 import functools
 from collections.abc import Iterator
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Generic, Optional, Protocol, TypeVar, Union, cast
 
 import tmt.log
-from tmt.container import SpecBasedContainer, container
+from tmt.container import SpecBasedContainer, container, simple_field
 from tmt.hardware.constraints import (
     And,
     BaseConstraint,
@@ -19,512 +19,198 @@ from tmt.hardware.constraints import (
     TextConstraint,
 )
 
+BaseConstraintT = TypeVar('BaseConstraintT', bound=BaseConstraint, covariant=True)  # noqa: PLC0105
+ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: PLC0105
 
-def ungroupify(fn: Callable[[Spec], BaseConstraint]) -> Callable[[Spec], BaseConstraint]:
+
+#: Type of a requirement parser.
+class RequirementParser(Protocol, Generic[BaseConstraintT]):
+    def __call__(self, spec: Spec, peer_index: Optional[int] = None) -> BaseConstraintT:
+        raise NotImplementedError
+
+
+def _flatten(constraint: BaseConstraint) -> BaseConstraint:
     """
-    Swap returned single-child compound constraint and that child.
+    Replace a single-child compound constraint with that child.
 
-    Helps reduce the number of levels in the constraint tree: if the return value
-    is a compound constraint which contains just a single child, return the
-    child instead of the compound constraint.
+    Effectively "flattens" the compound constraint when it contains only
+    a single child.
+    """
 
-    Meant for constraints that do not have an index, e.g. ``memory`` or ``cpu``.
-    For indexable constraints, see :py:func:`ungroupify_indexed`.
+    if isinstance(constraint, CompoundConstraint) and len(constraint.constraints) == 1:
+        return constraint.constraints[0]
+
+    return constraint
+
+
+def flatten(fn: Callable[[Spec], BaseConstraint]) -> Callable[[Spec], BaseConstraint]:
+    """
+    Replace a returned single-child compound constraint with that child.
+
+    Effectively "flattens" the compound constraint when it contains only
+    a single child.
     """
 
     @functools.wraps(fn)
     def wrapper(spec: Spec) -> BaseConstraint:
-        constraint = fn(spec)
-
-        if isinstance(constraint, CompoundConstraint) and len(constraint.constraints) == 1:
-            return constraint.constraints[0]
-
-        return constraint
+        return _flatten(fn(spec))
 
     return wrapper
 
 
-def ungroupify_indexed(
-    fn: Callable[[Spec, int], BaseConstraint],
-) -> Callable[[Spec, int], BaseConstraint]:
+@container
+class _Parser(Generic[BaseConstraintT]):
     """
-    Swap returned single-child compound constraint and that child.
-
-    Helps reduce the number of levels in the constraint tree: if the return value
-    is a compound constraint which contains just a single child, return the
-    child instead of the compound constraint.
-
-    Meant for constraints that have an index, e.g. ``disk`` or ``network``. For
-    non-indexable constraints, see :py:func:`ungroupify`.
+    Base class for requirement parser description.
     """
 
-    @functools.wraps(fn)
-    def wrapper(spec: Spec, index: int) -> BaseConstraint:
-        constraint = fn(spec, index)
-
-        if isinstance(constraint, CompoundConstraint) and len(constraint.constraints) == 1:
-            return constraint.constraints[0]
-
-        return constraint
-
-    return wrapper
+    #: Requirement the parser would process: ``hostname``,
+    #: ``compatible.distro``, ``disk[].size``, and so on.
+    requirement: str
 
 
-def _parse_int_constraints(
-    spec: Spec,
-    prefix: str,
-    constraint_keys: tuple[str, ...],
-) -> list[BaseConstraint]:
+@container
+class _TrivialParser(_Parser[ConstraintT]):
     """
-    Parse number-like constraints defined by a given set of keys, to int
+    Base class for simple parser that can be statically defined.
     """
 
-    return [
-        IntegerConstraint.from_specification(
-            f'{prefix}.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ,
-                Operator.NEQ,
-                Operator.LT,
-                Operator.LTE,
-                Operator.GT,
-                Operator.GTE,
-            ],
+    #: Constraint class whose :py:meth:`Constraint.from_specification`
+    #: method would be used to parse the requirement.
+    constraint_class: type[ConstraintT]
+
+    #: Optional keyword arguments to pass to
+    #: :py:meth:`Constraint.from_specification` method.
+    kwargs: dict[str, Any] = simple_field(default_factory=dict[str, Any])
+
+
+@container
+class SingleLevelParser(_TrivialParser[ConstraintT]):
+    """
+    A single-level parser for requirements that have no child keys.
+    """
+
+    def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
+        return self.constraint_class.from_specification(
+            self.requirement,
+            str(spec[self.requirement]),
+            **self.kwargs,
         )
-        for constraint_name in constraint_keys
-        if constraint_name in spec
-    ]
 
 
-def _parse_number_constraints(
-    spec: Spec,
-    prefix: str,
-    constraint_keys: tuple[str, ...],
-    default_unit: Optional[Any] = None,
-) -> list[BaseConstraint]:
+@container
+class DoubleLevelParser(_TrivialParser[ConstraintT]):
     """
-    Parse number-like constraints defined by a given set of keys, to float
+    A double-level parser for requirements that do have child keys.
     """
 
-    return [
-        NumberConstraint.from_specification(
-            f'{prefix}.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ,
-                Operator.NEQ,
-                Operator.LT,
-                Operator.LTE,
-                Operator.GT,
-                Operator.GTE,
-            ],
-            default_unit=default_unit,
+    @functools.cached_property
+    def constraint_name(self) -> str:
+        return self.requirement.split('.', 1)[0]
+
+    @functools.cached_property
+    def child_constraint_name(self) -> str:
+        return self.requirement.split('.', 1)[1]
+
+    def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
+        return self.constraint_class.from_specification(
+            self.requirement,
+            str(spec[self.child_constraint_name]),
+            **self.kwargs,
         )
-        for constraint_name in constraint_keys
-        if constraint_name in spec
-    ]
 
 
-def _parse_size_constraints(
-    spec: Spec,
-    prefix: str,
-    constraint_keys: tuple[str, ...],
-) -> list[BaseConstraint]:
+@container
+class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
     """
-    Parse size-like constraints defined by a given set of keys
+    A double-level parser for requirements that do have child keys and peers.
     """
 
-    return [
-        SizeConstraint.from_specification(
-            f'{prefix}.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ,
-                Operator.NEQ,
-                Operator.LT,
-                Operator.LTE,
-                Operator.GT,
-                Operator.GTE,
-            ],
+    def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
+        return self.constraint_class.from_specification(
+            f'{self.constraint_name}[{peer_index}].{self.child_constraint_name}',
+            str(spec[self.child_constraint_name]),
+            **self.kwargs,
         )
-        for constraint_name in constraint_keys
-        if constraint_name in spec
-    ]
 
 
-def _parse_text_constraints(
-    spec: Spec,
-    prefix: str,
-    constraint_keys: tuple[str, ...],
-    allowed_operators: Optional[tuple[Operator, ...]] = None,
-) -> list[BaseConstraint]:
+@container
+class CustomParser(_Parser[BaseConstraintT]):
     """
-    Parse text-like constraints defined by a given set of keys
+    A parser with custom code that cannot be statically defined.
     """
 
-    allowed_operators = allowed_operators or (
-        Operator.EQ,
-        Operator.NEQ,
-        Operator.MATCH,
-        Operator.NOTMATCH,
-    )
-
-    return [
-        TextConstraint.from_specification(
-            f'{prefix}.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=list(allowed_operators),
-        )
-        for constraint_name in constraint_keys
-        if constraint_name in spec
-    ]
+    requirement: str
+    parse: RequirementParser[BaseConstraintT]
 
 
-def _parse_flag_constraints(
-    spec: Spec,
-    prefix: str,
-    constraint_keys: tuple[str, ...],
-) -> list[BaseConstraint]:
-    """
-    Parse flag-like constraints defined by a given set of keys
-    """
-
-    return [
-        FlagConstraint.from_specification(
-            f'{prefix}.{constraint_name.replace("-", "_")}',
-            spec[constraint_name],
-            allowed_operators=[Operator.EQ, Operator.NEQ],
-        )
-        for constraint_name in constraint_keys
-        if constraint_name in spec
-    ]
+SLP = SingleLevelParser
+DLP = DoubleLevelParser
+IDLP = IndexedDoubleLevelParser
 
 
-def _parse_device_core(
-    spec: Spec,
+def generate_device_parsers(
     device_prefix: str = 'device',
     include_driver: bool = True,
     include_device: bool = True,
-) -> And:
-    """
-    Parse constraints shared across device classes.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    number_constraints: tuple[str, ...] = ('vendor',)
-    text_constraints: tuple[str, ...] = ('vendor-name',)
+    parser_class: Union[type[DLP[Constraint]], type[IDLP[Constraint]]] = DLP,
+) -> Iterator[Union[DLP[Constraint], IDLP[Constraint]]]:
+    yield parser_class(f'{device_prefix}.vendor', IntegerConstraint)
+    yield parser_class(f'{device_prefix}.vendor-name', TextConstraint)
 
     if include_device:
-        number_constraints = (*number_constraints, 'device')
-        text_constraints = (*text_constraints, 'device-name')
+        yield parser_class(f'{device_prefix}.device', IntegerConstraint)
+        yield parser_class(f'{device_prefix}.device-name', TextConstraint)
 
     if include_driver:
-        text_constraints = (*text_constraints, 'driver')
-
-    group.constraints += _parse_int_constraints(
-        spec,
-        device_prefix,
-        number_constraints,
-    )
-    group.constraints += _parse_text_constraints(
-        spec,
-        device_prefix,
-        text_constraints,
-    )
-
-    return group
+        yield parser_class(f'{device_prefix}.driver', TextConstraint)
 
 
-@ungroupify
-def _parse_boot(spec: Spec) -> BaseConstraint:
+def custom_parser(fn: RequirementParser[BaseConstraint]) -> RequirementParser[BaseConstraint]:
     """
-    Parse a boot-related constraints.
+    A decorator marking a function as a hardware requirement parser.
 
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    Function name is expected to provide the hardware requirement name it
+    parses:
+
+    * the initial ``parser_`` prefix is stripped away,
+    * the first ``_`` is replaced with ``.``,
+    * ``_`` characters are relaced with ``-``.
+
+    .. code-block::
+
+        parse_beaker_pool => beaker.pool
+        parse_memory => memory
+        parse_virtualization_is_supported => virtualization.is-supported
+
+    :param fn: function to decorate.
     """
 
-    group = And()
+    global _REQUIREMENT_PARSERS
 
-    if 'method' in spec:
-        constraint = TextConstraint.from_specification(
-            'boot.method', spec["method"], allowed_operators=[Operator.EQ, Operator.NEQ]
+    # Being a mere callable, special care is needed to get its name. We
+    # *know* it will have a name, as we use functions and methods only,
+    # but in general, not all callables have `__name__`, and linter
+    # cannot tell.
+    fn_name: Optional[str] = getattr(fn, '__name__')  # noqa: B009
+
+    assert isinstance(fn_name, str)  # narrow type
+
+    _REQUIREMENT_PARSERS.append(
+        CustomParser(
+            requirement=fn_name.replace('parse_', '').replace('_', '.', 1).replace('_', '-'),
+            parse=fn,
         )
-
-        if constraint.operator == Operator.EQ:
-            constraint.change_operator(Operator.CONTAINS)
-
-        elif constraint.operator == Operator.NEQ:
-            constraint.change_operator(Operator.NOTCONTAINS_EXCLUSIVE)
-
-        group.constraints += [constraint]
-
-    return group
-
-
-@ungroupify
-def _parse_virtualization(spec: Spec) -> BaseConstraint:
-    """
-    Parse a virtualization-related constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    group.constraints += _parse_flag_constraints(
-        spec,
-        'virtualization',
-        ('is-virtualized', 'is-supported', 'confidential'),
-    )
-    group.constraints += _parse_text_constraints(
-        spec,
-        'virtualization',
-        ('hypervisor',),
     )
 
-    return group
+    @functools.wraps(fn)
+    def _parse(spec: Spec, peer_index: Optional[int] = None) -> BaseConstraint:
+        return _flatten(fn(spec, peer_index=peer_index))
+
+    return _parse
 
 
-@ungroupify
-def _parse_compatible(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the compatible distro parameter.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    for distro in spec.get('distro', []):
-        constraint = TextConstraint.from_specification('compatible.distro', distro)
-
-        constraint.change_operator(Operator.CONTAINS)
-
-        group.constraints += [constraint]
-
-    return group
-
-
-@ungroupify
-def _parse_cpu(spec: Spec) -> BaseConstraint:
-    """
-    Parse a cpu-related constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    group.constraints += _parse_int_constraints(
-        spec,
-        'cpu',
-        (
-            'processors',
-            'sockets',
-            'cores',
-            'threads',
-            'cores-per-socket',
-            'threads-per-core',
-            'model',
-            'family',
-            'vendor',
-            'stepping',
-        ),
-    )
-
-    group.constraints += _parse_number_constraints(
-        spec,
-        'cpu',
-        ('frequency',),
-        default_unit='MHz',
-    )
-
-    group.constraints += _parse_text_constraints(
-        spec,
-        'cpu',
-        (
-            'family-name',
-            'model-name',
-            'vendor-name',
-        ),
-    )
-
-    if 'flag' in spec:
-        flag_group = And()
-
-        for flag_spec in spec['flag']:
-            constraint = TextConstraint.from_specification('cpu.flag', flag_spec)
-
-            if constraint.operator == Operator.EQ:
-                constraint.change_operator(Operator.CONTAINS)
-
-            elif constraint.operator == Operator.NEQ:
-                constraint.change_operator(Operator.NOTCONTAINS)
-
-            flag_group.constraints += [constraint]
-
-        group.constraints += [flag_group]
-
-    if 'hyper-threading' in spec:
-        group.constraints += [
-            FlagConstraint.from_specification(
-                'cpu.hyper_threading',
-                spec['hyper-threading'],
-                allowed_operators=[Operator.EQ, Operator.NEQ],
-            )
-        ]
-
-    return group
-
-
-@ungroupify
-def _parse_device(spec: Spec) -> BaseConstraint:
-    """
-    Parse a device-related constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    return _parse_device_core(spec)
-
-
-@ungroupify_indexed
-def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
-    """
-    Parse a disk-related constraints.
-
-    :param spec: raw constraint block specification.
-    :param disk_index: index of this disk among its peers in specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    group.constraints += _parse_size_constraints(
-        spec,
-        f'disk[{disk_index}]',
-        ('size', 'physical-sector-size', 'logical-sector-size'),
-    )
-    group.constraints += _parse_text_constraints(
-        spec,
-        f'disk[{disk_index}]',
-        ('model-name', 'driver'),
-    )
-
-    return group
-
-
-@ungroupify
-def _parse_disks(spec: Spec) -> BaseConstraint:
-    """
-    Parse a storage-related constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    # The old-style constraint when `disk` was a mapping. Remove once v0.0.26 is gone.
-    if isinstance(spec, dict):
-        return _parse_disk(spec, 0)
-
-    group = And()
-
-    group.constraints += [
-        _parse_disk(disk_spec, disk_index) for disk_index, disk_spec in enumerate(spec)
-    ]
-
-    return group
-
-
-@ungroupify
-def _parse_gpu(spec: Spec) -> BaseConstraint:
-    """
-    Parse a gpu-related constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    return _parse_device_core(spec, device_prefix='gpu')
-
-
-@ungroupify_indexed
-def _parse_network(spec: Spec, network_index: int) -> BaseConstraint:
-    """
-    Parse a network-related constraints.
-
-    :param spec: raw constraint block specification.
-    :param network_index: index of this network among its peers in specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = _parse_device_core(spec, f'network[{network_index}]')
-    group.constraints += _parse_text_constraints(
-        spec,
-        f'network[{network_index}]',
-        ('type',),
-    )
-
-    return group
-
-
-@ungroupify
-def _parse_networks(spec: Spec) -> BaseConstraint:
-    """
-    Parse a network-related constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    group.constraints += [
-        _parse_network(network_spec, network_index)
-        for network_index, network_spec in enumerate(spec)
-    ]
-
-    return group
-
-
-@ungroupify
-def _parse_system(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the ``system`` HW requirement.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = _parse_device_core(
-        spec, device_prefix='system', include_driver=False, include_device=False
-    )
-
-    group.constraints += _parse_int_constraints(
-        spec,
-        'system',
-        ('model', 'numa-nodes'),
-    )
-    group.constraints += _parse_text_constraints(
-        spec,
-        'system',
-        ('model-name', 'type'),
-    )
-
-    return group
-
-
-TPM_VERSION_ALLOWED_OPERATORS: tuple[Operator, ...] = (
+TPM_VERSION_ALLOWED_OPERATORS = (
     Operator.EQ,
     Operator.NEQ,
     Operator.LT,
@@ -534,229 +220,191 @@ TPM_VERSION_ALLOWED_OPERATORS: tuple[Operator, ...] = (
 )
 
 
-@ungroupify
-def _parse_tpm(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the ``tpm`` HW requirement.
+#: Registered hardware requirement parsers.
+#:
+#: .. note::
+#:
+#:    The list is kept sorted by the hardware requirement name. This is not
+#:    needed for tmt to work correctly, but it makes testing easier as
+#:    the YAML representation of parsed hardware requirements have predictable
+#:    order of keys.
+_REQUIREMENT_PARSERS: list[Union[CustomParser[Any], SLP[Any], DLP[Any], IDLP[Any]]] = [
+    # arch
+    SLP('arch', TextConstraint),
+    # beaker
+    DLP('beaker.panic-watchdog', FlagConstraint),
+    DLP('beaker.pool', TextConstraint, {'allowed_operators': (Operator.EQ, Operator.NEQ)}),
+    # cpu
+    DLP('cpu.cores', IntegerConstraint),
+    DLP('cpu.cores-per-socket', IntegerConstraint),
+    DLP('cpu.family', IntegerConstraint),
+    DLP('cpu.hyper-threading', FlagConstraint, {'allowed_operators': (Operator.EQ, Operator.NEQ)}),
+    DLP('cpu.model', IntegerConstraint),
+    DLP('cpu.processors', IntegerConstraint),
+    DLP('cpu.sockets', IntegerConstraint),
+    DLP('cpu.threads', IntegerConstraint),
+    DLP('cpu.threads-per-core', IntegerConstraint),
+    DLP('cpu.vendor', IntegerConstraint),
+    DLP('cpu.stepping', IntegerConstraint),
+    DLP('cpu.frequency', NumberConstraint, {'default_unit': 'MHz'}),
+    DLP('cpu.family-name', TextConstraint),
+    DLP('cpu.model-name', TextConstraint),
+    DLP('cpu.vendor-name', TextConstraint),
+    # device
+    *generate_device_parsers(),
+    # disk
+    IDLP('disk.size', SizeConstraint),
+    IDLP('disk.logical-sector-size', SizeConstraint),
+    IDLP('disk.physical-sector-size', SizeConstraint),
+    IDLP('disk.model-name', TextConstraint),
+    IDLP('disk.driver', TextConstraint),
+    # gpu
+    *generate_device_parsers(device_prefix='gpu'),
+    # hostname
+    SLP('hostname', TextConstraint),
+    # iommu
+    DLP('iommu.is-supported', FlagConstraint),
+    DLP('iommu.model-name', TextConstraint),
+    # location
+    DLP('location.lab-controller', TextConstraint),
+    # memory
+    SLP('memory', SizeConstraint, {'default_unit': 'MiB'}),
+    # network
+    *generate_device_parsers(device_prefix='network', parser_class=IDLP),
+    IDLP('network.type', TextConstraint),
+    # system
+    *generate_device_parsers(device_prefix='system', include_driver=False, include_device=False),
+    DLP('system.model', IntegerConstraint),
+    DLP('system.numa-nodes', IntegerConstraint),
+    DLP('system.model-name', TextConstraint),
+    DLP('system.type', TextConstraint),
+    # tpm
+    DLP(
+        'tpm.version',
+        TextConstraint,
+        {'allowed_operators': TPM_VERSION_ALLOWED_OPERATORS},
+    ),
+    # virtualization
+    DLP('virtualization.is-virtualized', FlagConstraint),
+    DLP('virtualization.is-supported', FlagConstraint),
+    DLP('virtualization.confidential', FlagConstraint),
+    DLP('virtualization.hypervisor', TextConstraint),
+    # zcrypt
+    DLP('zcrypt.adapter', TextConstraint),
+    DLP('zcrypt.mode', TextConstraint),
+]
 
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
 
+@custom_parser
+def parse_boot_method(spec: Spec, peer_index: Optional[int] = None) -> TextConstraint:
+    constraint = TextConstraint.from_specification(
+        'boot.method', spec['method'], allowed_operators=(Operator.EQ, Operator.NEQ)
+    )
+
+    if constraint.operator == Operator.EQ:
+        constraint.change_operator(Operator.CONTAINS)
+
+    elif constraint.operator == Operator.NEQ:
+        constraint.change_operator(Operator.NOTCONTAINS_EXCLUSIVE)
+
+    return constraint
+
+
+@custom_parser
+def parse_compatible_distro(spec: Spec, peer_index: Optional[int] = None) -> And:
     group = And()
 
-    group.constraints += _parse_text_constraints(
-        spec,
-        'tpm',
-        ('version',),
-        allowed_operators=TPM_VERSION_ALLOWED_OPERATORS,
-    )
+    for distro in cast(list[str], (spec['distro'] or [])):
+        constraint = TextConstraint.from_specification('compatible.distro', distro)
+
+        constraint.change_operator(Operator.CONTAINS)
+
+        group.constraints.append(constraint)
 
     return group
 
 
-def _parse_memory(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the ``memory`` HW requirement.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    return SizeConstraint.from_specification(
-        'memory',
-        str(spec['memory']),
-        allowed_operators=[
-            Operator.EQ,
-            Operator.NEQ,
-            Operator.LT,
-            Operator.LTE,
-            Operator.GT,
-            Operator.GTE,
-        ],
-        default_unit='MiB',
-    )
-
-
-def _parse_hostname(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the ``hostname`` HW requirement.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    return TextConstraint.from_specification(
-        'hostname',
-        spec['hostname'],
-        allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH],
-    )
-
-
-@ungroupify
-def _parse_zcrypt(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the ``zcrypt`` HW requirement.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
+@custom_parser
+def parse_cpu_flag(spec: Spec, peer_index: Optional[int] = None) -> And:
     group = And()
 
-    group.constraints += _parse_text_constraints(
-        spec,
-        'zcrypt',
-        ('adapter', 'mode'),
-    )
+    for flag_spec in spec['flag']:
+        constraint = TextConstraint.from_specification('cpu.flag', flag_spec)
+
+        if constraint.operator == Operator.EQ:
+            constraint.change_operator(Operator.CONTAINS)
+
+        elif constraint.operator == Operator.NEQ:
+            constraint.change_operator(Operator.NOTCONTAINS)
+
+        group.constraints.append(constraint)
 
     return group
 
 
-@ungroupify
-def _parse_iommu(spec: Spec) -> BaseConstraint:
+@flatten
+def _parse_requirements(spec: Spec) -> BaseConstraint:
     """
-    Parse constraints related to the ``iommu`` HW requirement.
+    Parse a block of hardware requirements.
 
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    group.constraints += _parse_flag_constraints(
-        spec,
-        'iommu',
-        ('is-supported',),
-    )
-    group.constraints += _parse_text_constraints(
-        spec,
-        'iommu',
-        ('model-name',),
-    )
-
-    return group
-
-
-@ungroupify
-def _parse_location(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the ``location`` HW requirement.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    A block is a mapping that contains one or more hardware requirements
+    as keys and their values. It cannot contain neither ``and`` nor ``or``
+    keys.
     """
 
     group = And()
 
-    group.constraints += _parse_text_constraints(
-        spec,
-        'location',
-        ('lab-controller',),
-    )
+    # Iterate over keys of the ``spec`` mapping. When the corresponding
+    # value is:
+    #
+    # * a mapping: a double-level requirement, like ``cpu`` or ``tpm``.
+    #   We dive into this mapping and convert each key into a distinct
+    #   constraint - ``cpu.cores``, ``tpm.version``, and so on.
+    # * a list:  a double-level requirement multiple peers, like ``disk``
+    #   and ``network``. We dive into individual mappings, and convert
+    #   each into a bunch of distinct constraints with proper peer index
+    #   marking their position in the parent constraint - ``disk[1].size``,
+    #   ``network[0].type``.
+    # * otherwise, a single-level requirement is expected, like ``memory``
+    #   or ``hostname``.
+
+    def _parse(requirement: str, spec: Spec, peer_index: Optional[int] = None) -> None:
+        for parser in _REQUIREMENT_PARSERS:
+            if parser.requirement != requirement:
+                continue
+
+            group.constraints.append(_flatten(parser.parse(spec, peer_index=peer_index)))
+
+            return
+
+        raise Exception(f"Unhandled requirement '{requirement}'.")
+
+    for l1_name in sorted(spec.keys()):
+        l1_value = spec[l1_name]
+
+        if isinstance(l1_value, dict):
+            l1_value = cast(dict[str, Any], l1_value)
+
+            for l2_name in sorted(l1_value.keys()):
+                _parse(f'{l1_name}.{l2_name}', l1_value)
+
+        elif isinstance(l1_value, list):
+            l1_value = cast(list[dict[str, Any]], l1_value)
+
+            for peer_index, l2_value in enumerate(l1_value):
+                for l2_name in sorted(l2_value.keys()):
+                    _parse(f'{l1_name}.{l2_name}', l2_value, peer_index=peer_index)
+
+        else:
+            _parse(l1_name, spec)
 
     return group
 
 
-@ungroupify
-def _parse_beaker(spec: Spec) -> BaseConstraint:
-    """
-    Parse constraints related to the ``beaker`` HW requirement.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    group.constraints += _parse_text_constraints(
-        spec,
-        'beaker',
-        ('pool',),
-        allowed_operators=(Operator.EQ, Operator.NEQ),
-    )
-
-    group.constraints += _parse_flag_constraints(
-        spec,
-        'beaker',
-        ('panic-watchdog',),
-    )
-
-    return group
-
-
-@ungroupify
-def _parse_generic_spec(spec: Spec) -> BaseConstraint:
-    """
-    Parse actual constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
-    """
-
-    group = And()
-
-    if 'arch' in spec:
-        group.constraints += [TextConstraint.from_specification('arch', spec['arch'])]
-
-    if 'beaker' in spec:
-        group.constraints += [_parse_beaker(spec['beaker'])]
-
-    if 'boot' in spec:
-        group.constraints += [_parse_boot(spec['boot'])]
-
-    if 'compatible' in spec:
-        group.constraints += [_parse_compatible(spec['compatible'])]
-
-    if 'cpu' in spec:
-        group.constraints += [_parse_cpu(spec['cpu'])]
-
-    if 'device' in spec:
-        group.constraints += [_parse_device(spec['device'])]
-
-    if 'gpu' in spec:
-        group.constraints += [_parse_gpu(spec['gpu'])]
-
-    if 'memory' in spec:
-        group.constraints += [_parse_memory(spec)]
-
-    if 'disk' in spec:
-        group.constraints += [_parse_disks(spec['disk'])]
-
-    if 'network' in spec:
-        group.constraints += [_parse_networks(spec['network'])]
-
-    if 'hostname' in spec:
-        group.constraints += [_parse_hostname(spec)]
-
-    if 'location' in spec:
-        group.constraints += [_parse_location(spec['location'])]
-
-    if 'system' in spec:
-        group.constraints += [_parse_system(spec['system'])]
-
-    if 'tpm' in spec:
-        group.constraints += [_parse_tpm(spec['tpm'])]
-
-    if 'virtualization' in spec:
-        group.constraints += [_parse_virtualization(spec['virtualization'])]
-
-    if 'zcrypt' in spec:
-        group.constraints += [_parse_zcrypt(spec['zcrypt'])]
-
-    if 'iommu' in spec:
-        group.constraints += [_parse_iommu(spec['iommu'])]
-
-    return group
-
-
-@ungroupify
+@flatten
 def _parse_and(spec: Spec) -> BaseConstraint:
     """
-    Parse an ``and`` clause holding one or more subblocks or constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    Parse an ``and`` clause holding one or more blocks or requirements.
     """
 
     group = And()
@@ -766,13 +414,10 @@ def _parse_and(spec: Spec) -> BaseConstraint:
     return group
 
 
-@ungroupify
+@flatten
 def _parse_or(spec: Spec) -> BaseConstraint:
     """
-    Parse an ``or`` clause holding one or more subblocks or constraints.
-
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    Parse an ``or`` clause holding one or more blocks or requirements.
     """
 
     group = Or()
@@ -782,15 +427,13 @@ def _parse_or(spec: Spec) -> BaseConstraint:
     return group
 
 
-@ungroupify
+@flatten
 def _parse_block(spec: Spec) -> BaseConstraint:
     """
-    Parse a generic block of HW constraints - may contain ``and`` and ``or``
-    subblocks and actual constraints.
+    Parse a generic block of hardware requirements.
 
-    :param spec: raw constraint block specification.
-    :returns: block representation as :py:class:`BaseConstraint` or one of its
-        subclasses.
+    A block may contain either ``and`` or ``or`` clause, or a block
+    of hardware requirements.
     """
 
     if 'and' in spec:
@@ -799,15 +442,12 @@ def _parse_block(spec: Spec) -> BaseConstraint:
     if 'or' in spec:
         return _parse_or(spec['or'])
 
-    return _parse_generic_spec(spec)
+    return _parse_requirements(spec)
 
 
 def parse_hw_requirements(spec: Spec) -> BaseConstraint:
     """
-    Convert raw specification of HW constraints to our internal representation.
-
-    :param spec: raw constraints specification as stored in an environment.
-    :returns: root of HW constraints tree.
+    Convert raw specification of hardware requirements into constraints.
     """
 
     return _parse_block(spec)
