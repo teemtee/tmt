@@ -531,7 +531,7 @@ def test_assert_config_manager(
     container_per_test: ContainerData,
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
-    expected_command_or_exception: str | Exception,
+    expected_command_or_exception: Union[str, Exception],
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
