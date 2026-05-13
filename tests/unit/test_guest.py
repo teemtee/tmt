@@ -15,7 +15,7 @@ from tmt.guest import (
     GuestSshData,
     TransferOptions,
 )
-from tmt.log import Logger, LoggingFunction
+from tmt.log import Logger, VerboseLoggingFunction
 from tmt.steps.provision import Provision
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import (
@@ -71,7 +71,7 @@ class MockGuest(Guest):
         test_session: bool = False,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[LoggingFunction] = None,
+        log: Optional[VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
@@ -85,7 +85,7 @@ class MockGuest(Guest):
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,
-        log: Optional[LoggingFunction] = None,
+        log: Optional[VerboseLoggingFunction] = None,
         silent: bool = False,
     ) -> CommandOutput:
         raise RuntimeError("Mocked but not used")

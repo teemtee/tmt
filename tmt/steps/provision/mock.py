@@ -314,7 +314,7 @@ class MockShell:
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         silent: bool = False,
         logger: tmt.log.Logger,
         join: Optional[bool] = None,
@@ -402,7 +402,7 @@ class MockShell:
             # For command output logging, use either the given logging callback, or
             # use the given logger & emit to verbose log.
             # NOTE Command.run uses debug, not verbose.
-            output_logger: tmt.log.LoggingFunction = (
+            output_logger: tmt.log.VerboseLoggingFunction = (
                 (log or logger.verbose) if not silent else logger.verbose
             )
 
@@ -520,7 +520,7 @@ class GuestMock(tmt.Guest):
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -554,7 +554,7 @@ class GuestMock(tmt.Guest):
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
