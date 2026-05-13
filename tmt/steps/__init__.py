@@ -56,6 +56,7 @@ from tmt.container import (
     option_to_key,
     simple_field,
 )
+from tmt.context import TmtContext
 from tmt.options import ClickOptionDecoratorType, option
 from tmt.result import ResultOutcome
 from tmt.utils import (
@@ -2305,7 +2306,7 @@ class BasePlugin(
         Check if the plugin is enabled by 'when' keyword
         """
 
-        fmf_context = fmf.context.Context(**self.step.plan.fmf_context)
+        fmf_context = TmtContext(**self.step.plan.fmf_context)
         when_rules = self.get('when', [])
         if not when_rules:
             # No 'when' -> enabled everywhere
