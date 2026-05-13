@@ -33,7 +33,6 @@ import fmf.utils
 
 import tmt.ansible
 import tmt.hardware
-import tmt.hardware.constraints
 import tmt.log
 import tmt.options
 import tmt.package_managers
@@ -66,6 +65,7 @@ from tmt.utils import (
     Path,
     ProvisionError,
     ShellScript,
+    _normalize_structured_blob,
     configure_constant,
     effective_workdir_root,
 )
@@ -1136,7 +1136,7 @@ GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
 
 def normalize_hardware(
     key_address: str,
-    raw_hardware: Union[None, tmt.hardware.constraints.Spec, tmt.hardware.Hardware],
+    raw_hardware: Any,
     logger: tmt.log.Logger,
 ) -> Optional[tmt.hardware.Hardware]:
     """
@@ -1153,101 +1153,15 @@ def normalize_hardware(
     if isinstance(raw_hardware, tmt.hardware.Hardware):
         return raw_hardware
 
-    # From command line
-    if isinstance(raw_hardware, (list, tuple)):
-        merged: dict[str, Any] = {}
+    raw_hardware = _normalize_structured_blob(
+        key_address,
+        raw_hardware,
+        "hardware requirements, "
+        "'@' followed by a JSON or YAML filename containing hardware requirements, "
+        "or a JSON blob containing hardware requirements",
+        logger,
+    )
 
-        for raw_datum in raw_hardware:
-            components = tmt.hardware.constraints.ConstraintComponents.from_spec(raw_datum)
-
-            if (
-                components.name not in tmt.hardware.constraints.CHILDLESS_CONSTRAINTS
-                and components.child_name is None
-            ):
-                raise tmt.utils.SpecificationError(
-                    f"Hardware requirement '{raw_datum}' lacks "
-                    f"child property ({components.name}[N].M)."
-                )
-
-            if (
-                components.name in tmt.hardware.constraints.INDEXABLE_CONSTRAINTS
-                and components.peer_index is None
-            ):
-                raise tmt.utils.SpecificationError(
-                    f"Hardware requirement '{raw_datum}' lacks entry index ({components.name}[N])."
-                )
-
-            if components.peer_index is not None:
-                # This should not happen, the test above already ruled
-                # out `child_name` being `None`, but mypy does not know
-                # everything is fine.
-                assert components.child_name is not None  # narrow type
-
-                if components.name not in merged:
-                    merged[components.name] = []
-
-                # Calculate the number of placeholders needed.
-                placeholders = components.peer_index - len(merged[components.name]) + 1
-
-                # Fill in empty spots between the existing ones and the
-                # one we're adding with placeholders.
-                if placeholders > 0:
-                    merged[components.name].extend([{} for _ in range(placeholders)])
-
-                merged[components.name][components.peer_index][components.child_name] = (
-                    f'{components.operator} {components.value}'
-                )
-
-            elif components.name == 'cpu' and components.child_name == 'flag':
-                if components.name not in merged:
-                    merged[components.name] = {}
-
-                if 'flag' not in merged['cpu']:
-                    merged['cpu']['flag'] = []
-
-                merged['cpu']['flag'].append(f'{components.operator} {components.value}')
-
-            elif components.child_name:
-                if components.name not in merged:
-                    merged[components.name] = {}
-
-                merged[components.name][components.child_name] = (
-                    f'{components.operator} {components.value}'
-                )
-
-            else:
-                merged[components.name] = f'{components.operator} {components.value}'
-
-        # Very crude, we will need something better to handle `and` and
-        # `or` and nesting.
-        def _drop_placeholders(data: dict[str, Any]) -> dict[str, Any]:
-            new_data: dict[str, Any] = {}
-
-            for key, value in data.items():
-                if isinstance(value, list):
-                    new_data[key] = []
-
-                    for item in value:
-                        if isinstance(item, dict) and not item:
-                            continue
-
-                        new_data[key].append(item)
-
-                else:
-                    new_data[key] = value
-
-            return new_data
-
-        # TODO: if the index matters - and it does, because `disk[0]` is
-        # often a "root disk" - we need sparse list. Cannot prune
-        # placeholders now, because it would turn `disk[1]` into `disk[0]`,
-        # overriding whatever was set for the root disk.
-        # https://github.com/teemtee/tmt/issues/3004 for tracking.
-        # merged = _drop_placeholders(merged)
-
-        return tmt.hardware.Hardware.from_spec(merged)
-
-    # From fmf
     return tmt.hardware.Hardware.from_spec(raw_hardware)
 
 
@@ -1324,7 +1238,6 @@ class GuestData(
              Hardware requirements the provisioned guest must satisfy.
              """,
         metavar='KEY=VALUE',
-        multiple=True,
         normalize=normalize_hardware,
         serialize=lambda hardware: hardware.to_spec() if hardware else None,
         unserialize=lambda serialized: (
