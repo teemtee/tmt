@@ -2388,7 +2388,6 @@ class Tree(tmt.utils.Common):
             # Adjust metadata for current fmf context
             self._tree.adjust(
                 fmf.context.Context(**self.fmf_context),
-                case_sensitive=False,
                 decision_callback=create_adjust_callback(self._logger),
                 additional_rules=self._additional_rules,
             )
@@ -3533,7 +3532,6 @@ def resolve_dynamic_ref(
         raise tmt.utils.FileError("Cannot get plan fmf context to evaluate dynamic ref.")
     reference_tree.adjust(
         fmf.context.Context(**plan.fmf_context),
-        case_sensitive=False,
         decision_callback=create_adjust_callback(logger),
     )
     # Also temporarily build a plan so that env and context variables are expanded

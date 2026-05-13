@@ -306,7 +306,6 @@ class Try(tmt.utils.Common):
                 for user_plan in user_plans:
                     user_plan.adjust(
                         fmf.context.Context(**self.tree.fmf_context),
-                        case_sensitive=False,
                         decision_callback=tmt.base.core.create_adjust_callback(self._logger),
                         additional_rules=self.tree._additional_rules,
                     )

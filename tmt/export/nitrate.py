@@ -291,7 +291,7 @@ def enabled_for_environment(test: 'tmt.base.core.Test', tcms_notes: str) -> bool
     try:
         context = fmf.context.Context(**context_dict)
         test_node = test.node.copy()
-        test_node.adjust(context, case_sensitive=False)
+        test_node.adjust(context)
         return tmt.Test(node=test_node, logger=test._logger).enabled
     except BaseException as exception:
         log.debug(f"Failed to process adjust: {exception}")

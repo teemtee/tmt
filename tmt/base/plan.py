@@ -1531,7 +1531,6 @@ class Plan(
             # action, including the adjust-plans rules.
             node.adjust(
                 fmf.context.Context(**alteration_fmf_context),
-                case_sensitive=False,
                 additional_rules=reference.adjust_plans,
             )
 
