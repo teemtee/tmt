@@ -3346,6 +3346,7 @@ class GuestSsh(Guest, CommandCollector):
             return
         if not self.facts.is_superuser and self.become:
             self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
+            self.package_manager.finalize_installation()
             workdir_root = effective_workdir_root()
             self.execute(
                 ShellScript(

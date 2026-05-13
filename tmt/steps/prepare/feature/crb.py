@@ -60,6 +60,7 @@ class Crb(ToggleableFeature):
             return
 
         guest.package_manager.install(Package("dnf-command(config-manager)"))
+        guest.package_manager.finalize_installation()
 
         logger.info(f"{action.capitalize()} CRB repository.")
 
