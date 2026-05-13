@@ -41,16 +41,12 @@ def test_maximal_constraint(root_logger: Logger) -> None:
     print(result.to_mrack())
     assert result.to_mrack() == {
         'and': [
+            {},
             {
-                'and': [
-                    {
-                        'pool': {
-                            '_op': '!=',
-                            '_value': 'foo.*',
-                        },
-                    },
-                    {},
-                ],
+                'pool': {
+                    '_op': '!=',
+                    '_value': 'foo.*',
+                },
             },
             {},
             {'and': [{}, {}]},
@@ -275,25 +271,25 @@ def test_cpu_stepping(root_logger: Logger) -> None:
 
 
 def test_cpu_vendor_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
         _parse_requirements({'cpu': {'vendor-name': 'GenuineIntel'}}), root_logger
     )
 
     assert result.to_mrack() == {'cpu': {'vendor': {'_op': '==', '_value': 'GenuineIntel'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
         _parse_requirements({'cpu': {'vendor-name': '!= GenuineIntel'}}), root_logger
     )
 
     assert result.to_mrack() == {'cpu': {'vendor': {'_op': '!=', '_value': 'GenuineIntel'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
         _parse_requirements({'cpu': {'vendor-name': '~ .*Intel'}}), root_logger
     )
 
     assert result.to_mrack() == {'cpu': {'vendor': {'_op': 'like', '_value': '%Intel'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
         _parse_requirements({'cpu': {'vendor-name': '!~ .*Intel'}}), root_logger
     )
 
@@ -343,25 +339,25 @@ def test_disk_size(root_logger: Logger) -> None:
 
 
 def test_disk_model_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
         _parse_requirements({'disk': {'model-name': 'PERC H310'}}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '==', '_value': 'PERC H310'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
         _parse_requirements({'disk': {'model-name': '!= PERC H310'}}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '!=', '_value': 'PERC H310'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
         _parse_requirements({'disk': {'model-name': '~ PERC.*'}}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': 'like', '_value': 'PERC%'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
         _parse_requirements({'disk': {'model-name': '!~ PERC.*'}}), root_logger
     )
 
@@ -397,13 +393,13 @@ def test_hostname(root_logger: Logger) -> None:
 
 
 def test_virtualization_is_virtualized(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['virtualization.is_virtualized'](
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.is-virtualized'](
         _parse_requirements({'virtualization': {'is-virtualized': True}}), root_logger
     )
 
     assert result.to_mrack() == {'system': {'hypervisor': {'_op': '!=', '_value': ''}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['virtualization.is_virtualized'](
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.is-virtualized'](
         _parse_requirements({'virtualization': {'is-virtualized': False}}), root_logger
     )
 
@@ -508,7 +504,7 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
 
 def test_iommu_is_supported(root_logger: Logger) -> None:
     for value in True, False:
-        result = _CONSTRAINT_TRANSFORMERS['iommu.is_supported'](
+        result = _CONSTRAINT_TRANSFORMERS['iommu.is-supported'](
             _parse_requirements({'iommu': {"is-supported": value}}), root_logger
         )
 
@@ -518,13 +514,13 @@ def test_iommu_is_supported(root_logger: Logger) -> None:
 
 
 def test_location_lab_controller(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
+    result = _CONSTRAINT_TRANSFORMERS['location.lab-controller'](
         _parse_requirements({'location': {"lab-controller": "lab-01.bar.redhat.com"}}), root_logger
     )
 
     assert result.to_mrack() == {'labcontroller': {'_op': '==', '_value': 'lab-01.bar.redhat.com'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
+    result = _CONSTRAINT_TRANSFORMERS['location.lab-controller'](
         _parse_requirements({'location': {"lab-controller": "!= lab-01.bar.redhat.com"}}),
         root_logger,
     )
@@ -547,7 +543,7 @@ def test_tpm_version(root_logger: Logger) -> None:
 
 
 def test_system_numa_nodes(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['system.numa_nodes'](
+    result = _CONSTRAINT_TRANSFORMERS['system.numa-nodes'](
         _parse_requirements({'system': {'numa-nodes': '2'}}), root_logger
     )
 
@@ -555,7 +551,7 @@ def test_system_numa_nodes(root_logger: Logger) -> None:
 
 
 def test_system_model_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['system.model_name'](
+    result = _CONSTRAINT_TRANSFORMERS['system.model-name'](
         _parse_requirements({'system': {'model-name': '!~ PowerEdge R750.*'}}), root_logger
     )
 
@@ -660,25 +656,25 @@ def test_device_vendor(root_logger: Logger) -> None:
 
 
 def test_device_device_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
         _parse_requirements({'device': {'device-name': 'Genoa CCP'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '==', '_description': 'Genoa CCP'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
         _parse_requirements({'device': {'device-name': '!= Genoa CCP'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '!=', '_description': 'Genoa CCP'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
         _parse_requirements({'device': {'device-name': '~ Genoa.*'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': 'like', '_description': 'Genoa%'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
         _parse_requirements({'device': {'device-name': '!~ Genoa.*'}}), root_logger
     )
 

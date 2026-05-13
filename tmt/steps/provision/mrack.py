@@ -934,9 +934,11 @@ def constraint_to_beaker_filter(
     ) or _translate_constraint_by_transformer(constraint, logger)
 
     if not transformed and constraint.name != 'beaker.panic-watchdog':
-        print(f'{constraint=}')
         # Make sure user is aware constraint would have no effect.
         logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
+
+    print(f'{constraint=} -> {transformed=}')
+
     return transformed
 
 
