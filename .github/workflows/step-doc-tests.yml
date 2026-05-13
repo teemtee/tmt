@@ -37,12 +37,7 @@ jobs:
         with:
           activate-environment: true
       - name: Install tmt[docs]
-        run: uv sync --frozen --extra docs
-
-      # TODO: Move this to its own extra/group
-      - name: Install other test dependencies
-        run: uv pip install sphinx-lint
-        if: ${{ matrix.builder == 'lint' }}
+        run: uv sync --frozen --group docs
 
       - name: Get date
         id: date
