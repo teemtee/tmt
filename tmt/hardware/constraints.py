@@ -100,7 +100,7 @@ CONSTRAINT_NAME_PATTERN = re.compile(
     r"""
     (?P<name>[a-z_+]+)                   # constraint name is mandatory
     (?:\[(?P<peer_index>[+-]?\d+)\])?    # index is optional
-    (?:\.(?P<child_name>[a-z_]+))?       # child constraint name is also optional'
+    (?:\.(?P<child_name>[a-z_-]+))?      # child constraint name is also optional'
     """,
     re.VERBOSE,
 )

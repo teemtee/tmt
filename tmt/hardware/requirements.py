@@ -210,6 +210,16 @@ def custom_parser(fn: RequirementParser[BaseConstraint]) -> RequirementParser[Ba
     return _parse
 
 
+TPM_VERSION_ALLOWED_OPERATORS = (
+    Operator.EQ,
+    Operator.NEQ,
+    Operator.LT,
+    Operator.LTE,
+    Operator.GT,
+    Operator.GTE,
+)
+
+
 #: Registered hardware requirement parsers.
 #:
 #: .. note::
@@ -222,7 +232,7 @@ _REQUIREMENT_PARSERS: list[Union[CustomParser[Any], SLP[Any], DLP[Any], IDLP[Any
     # arch
     SLP('arch', TextConstraint),
     # beaker
-    DLP('beaker.panic-watchdog', TextConstraint),
+    DLP('beaker.panic-watchdog', FlagConstraint),
     DLP('beaker.pool', TextConstraint, {'allowed_operators': (Operator.EQ, Operator.NEQ)}),
     # cpu
     DLP('cpu.cores', IntegerConstraint),
@@ -272,16 +282,7 @@ _REQUIREMENT_PARSERS: list[Union[CustomParser[Any], SLP[Any], DLP[Any], IDLP[Any
     DLP(
         'tpm.version',
         TextConstraint,
-        {
-            'allowed_operators': (
-                Operator.EQ,
-                Operator.NEQ,
-                Operator.LT,
-                Operator.LTE,
-                Operator.GT,
-                Operator.GTE,
-            )
-        },
+        {'allowed_operators': TPM_VERSION_ALLOWED_OPERATORS},
     ),
     # virtualization
     DLP('virtualization.is-virtualized', FlagConstraint),
