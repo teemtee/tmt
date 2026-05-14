@@ -86,6 +86,7 @@ def test_link_config_invalid(config_path: Path, root_logger: Logger):
           - type: jiRA
             url: invalid_url
             tmt-web-url: https://
+            email: email@example.com
             unknown: value
         additional_key:
           foo: bar
@@ -120,6 +121,7 @@ def test_link_config_valid(config_path: Path, root_logger: Logger):
           - type: jira
             url: https://issues.redhat.com
             tmt-web-url: https://tmt-web-url.com
+            email: email@example.com
             token: secret
         """).strip()
     fmf.Tree.init(path=config_path)
