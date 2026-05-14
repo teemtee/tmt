@@ -9,6 +9,10 @@ result: custom
 /missing-custom-results:
     summary: Test provides custom results but results.yaml or results.json are not present
     test: 'true'
+/timed-out-custom-results:
+    summary: Test times out before results.yaml is created, output.txt should still be referenced
+    duration: 1s
+    test: sleep 2
 /empty-custom-results-file:
     summary: results.yaml is empty
     test: touch ${TMT_TEST_DATA}/results.yaml
