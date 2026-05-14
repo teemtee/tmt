@@ -5,16 +5,23 @@ description: |
     .. code-block:: yaml
 
        provision:
-           # Define the hardware preset source (URL or local path)
-           # Required when using filter in hardware
-           hardware-preset:
-               url: https://github.com/my-team/project/presets.yml
-               # path: /home/user/.presets.yml
-
            hardware:
-               # Reference a named preset
-               filter: AMD__ROME
+               import-preset:
+                   - url: https://github.com/my-team/project/presets.yml
+                   - path: ~/.config/tmt/presets.yml
+               and:
+                   - preset: AMD__ROME
+                   - preset: MEMORY_MIN_64G
+                   - cpu:
+                       model: 97
 
+    Rules:
+    * ``import-preset`` is allowed only at the top level of the ``hardware``
+      key.
+    * ``import-preset`` accepts a single mapping or a list of mappings,
+      where each mapping has either a ``url`` or a ``path``.
+    * ``preset`` is a string referencing a single named preset. To apply
+      multiple presets, combine them with ``and`` (or ``or``).
     Preset files use YAML format with named configurations:
 
     .. code-block:: yaml
@@ -29,40 +36,34 @@ description: |
          hardware:
            memory: ">= 64 GB"
 
-    A filter reference expands to all of its defined constraints combined
-    with AND, and can be used anywhere a hardware constraint can appear.
-
-    .. versionadded:: 1.73
 
 example:
   - |
     # Use a remote preset
     provision:
-        hardware-preset:
-            url: https://github.com/my-team/presets.yml
         hardware:
-            filter: AMD__ROME
-
+            import-preset:
+                url: https://github.com/my-team/presets.yml
+            preset: AMD__ROME
   - |
     # Use a local preset file
     provision:
-        hardware-preset:
-            path: ~/.config/tmt/presets.yml
         hardware:
-            filter: MEMORY_MIN_64G
-            disk:
-                - size: ">= 500 GB"
-
+            import-preset:
+                path: ~/.config/tmt/presets.yml
+            preset: BIG_MEMORY
   - |
-    # Use a preset filter inside OR logic
+    # Combine multiple presets and additional constraints
     provision:
-        hardware-preset:
-            url: https://example.com/presets.yml
         hardware:
-            or:
+            import-preset:
+                - url: https://github.com/my-team/project/presets.yml
+                - path: ~/.config/tmt/presets.yml
+            and:
+                - preset: AMD__ROME
+                - preset: BIG_MEMORY
                 - cpu:
                     model: 97
-                - filter: AMD__ROME
 
 # NOTE: not yet supported
 # link:
