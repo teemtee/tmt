@@ -1,14 +1,19 @@
 # tmt AI Instructions
 
-This file contains instructions for AI assistants (Claude Code, Gemini CLI, GitHub Copilot, etc.) when working with the tmt codebase. Different sections cover different tasks.
+This file contains instructions for AI assistants (Claude Code, Gemini CLI, GitHub Copilot, etc.)
+when working with the tmt codebase. Different sections cover different tasks.
 
 ## Overview
 
 TMT (Test Management Tool) is a comprehensive Python-based testing framework that provides
 a user-friendly way to work with tests. It implements the Metadata Specification using the Flexible
-Metadata Format (FMF) for storing test execution data directly within git repositories.
+Metadata Format (FMF, which extends YAML syntax with special features) for storing test execution
+data directly within git repositories.
 
 ## Development Commands
+
+When tasked with executing builds or tests in the terminal, use the following commands. Follow
+the purpose of each command listed below.
 
 ### Setup and Dependencies
 
@@ -172,12 +177,11 @@ TMT heavily uses the Flexible Metadata Format (fmf) for:
 
 ### Code Standards
 
-- Python 3.9+ required
-- Type hints enforced via mypy and pyright with strict settings
-- Comprehensive linting via ruff (configured in `pyproject.toml`)
-- Code formatting via ruff (configured in `pyproject.toml`)
-- Comprehensive docstring requirements
-- Security-focused linting with bandit checks provided by ruff
+- **Target Python 3.9+:** Use syntax compatible with Python 3.9 and newer.
+- **Use strict type hints:** Fully type all values, including function signatures, class attributes,
+  and module-level constants. tmt code must pass validation by `mypy` and `pyright` linters.
+- **Adhere to `ruff`:** Format and lint code strictly according to `pyproject.toml`.
+- **Write comprehensive docstrings:** Document modules, classes, and functions.
 
 
 ## Release Notes Generation
