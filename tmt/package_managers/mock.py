@@ -92,7 +92,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
     """
 
     probe_command = Command('/usr/bin/false')
-    probe_priority = 130
+    probe_priority = 140
     _engine_class = MockEngine
 
     # Implementation "stolen" from the dnf package manager family. It should
