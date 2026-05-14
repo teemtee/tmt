@@ -213,6 +213,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
 
         # Install required packages for rpm-build to work
         guest.package_manager.install(*explicit_requires)
+        guest.package_manager.finalize_installation()
 
         source_dir = self.data.source_dir
         assert source_dir

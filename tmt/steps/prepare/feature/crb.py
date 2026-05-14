@@ -59,6 +59,7 @@ class Crb(ToggleableFeature):
             return
 
         guest.package_manager.assert_config_manager()
+        guest.package_manager.finalize_installation()
 
         logger.info(f"{action.capitalize()} CRB repository.")
 

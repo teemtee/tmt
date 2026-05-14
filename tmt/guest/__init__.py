@@ -3346,6 +3346,7 @@ class GuestSsh(Guest, CommandCollector):
             return
         if not self.facts.is_superuser and self.become:
             self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
+            self.package_manager.finalize_installation()
             workdir_root = effective_workdir_root()
             self.execute(
                 ShellScript(
@@ -3532,6 +3533,7 @@ class GuestSsh(Guest, CommandCollector):
             # this is needed for example on fresh Debian installs.
             self.package_manager.refresh_metadata()
             self.package_manager.install(Package('rsync'))
+            self.package_manager.finalize_installation()
 
         except Exception as exc:
             raise tmt.utils.GeneralError(
