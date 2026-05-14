@@ -1606,7 +1606,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     successful = False
                 else:
                     total_size += size  # type: ignore[misc]
-        clean.verbose(
+        clean.info(
             f"Summary: {'Would free' if dry else 'Freed'} "
             f"{tmt.hardware.format_compact(total_size)} "
             f"of disk space.",

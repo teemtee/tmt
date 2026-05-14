@@ -3210,7 +3210,7 @@ class Clean(tmt.utils.Common):
                     successful = False
                 total_size += size  # type: ignore[misc]
 
-        self.verbose(
+        self.info(
             f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "
             f"{tmt.hardware.format_compact(total_size)} "
             f"of disk space.",
