@@ -905,6 +905,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                     invocation=invocation,
                     note=[f"custom results file not found in '{invocation.test_data_path}'"],
                     result=ResultOutcome.ERROR,
+                    log=[invocation.relative_path / TEST_OUTPUT_FILENAME],
                 )
             ]
 
@@ -914,6 +915,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                     invocation=invocation,
                     note=["no custom results were provided"],
                     result=ResultOutcome.ERROR,
+                    log=[invocation.relative_path / TEST_OUTPUT_FILENAME],
                 )
             ]
 

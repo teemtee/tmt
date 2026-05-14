@@ -55,6 +55,13 @@ rlJournalStart
         rlAssertGrep "custom results file not found in '/tmp/.*/default/plan/execute/data/guest/default-0/test/missing-custom-results-1/data" $rlRun_LOG
     rlPhaseEnd
 
+    testName="/test/timed-out-custom-results"
+    rlPhaseStartTest "${testName}"
+        rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test times out before 'results.yaml' is provided"
+        rlAssertGrep "data/guest/default-0/test/timed-out-custom-results-1/output.txt" ${run}/default/plan/execute/results.yaml
+    rlPhaseEnd
+
+
     testName="/test/empty-custom-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides empty 'results.yaml' file"
