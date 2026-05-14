@@ -802,8 +802,9 @@ the following format:
 
     issue-tracker:
       - type: jira
-        url: https://issues.redhat.com
+        url: https://redhat.atlassian.net
         tmt-web-url: https://tmt.testing-farm.io/
+        email: <EMAIL_ADDRESS_USED_FOR_LOGIN>
         token: <YOUR_PERSONAL_JIRA_TOKEN>
 
 The ``type`` key specifies the type of the issue tracking service

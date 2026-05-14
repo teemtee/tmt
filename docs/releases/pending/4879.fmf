@@ -1,0 +1,6 @@
+description:
+    The Jira integration has been updated so that the ``tmt link``
+    and the ``tmt test create`` commands correctly link tests or
+    plans to related issues in the new Jira Cloud instance. The
+    ``email`` key is now required in the ``issue-tracker`` config
+    file. See the :ref:`link-issues` section for an example.
