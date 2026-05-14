@@ -143,7 +143,7 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
                         phase=phase,  # type: ignore[arg-type]
                         guests=[
                             guest
-                            for guest in self._steppified_guests
+                            for guest in self._steppified_ready_guests
                             if phase.enabled_on_guest(guest)
                         ],
                     )
@@ -227,11 +227,13 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
 
             # Pull artifacts created in the plan data directory
             # if there was at least one plugin executed
-            if self.phases() and self._steppified_guests:
+            if self.phases() and self._steppified_ready_guests:
                 sync_with_guests(
                     self,
                     'pull',
-                    PullTask(self._steppified_guests, self.plan.data_directory, self._logger),
+                    PullTask(
+                        self._steppified_ready_guests, self.plan.data_directory, self._logger
+                    ),
                     self._logger,
                 )
 

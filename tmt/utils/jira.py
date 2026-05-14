@@ -75,6 +75,7 @@ class JiraInstance:
 
         self.url = str(issue_tracker.url)
         self.tmt_web_url = str(issue_tracker.tmt_web_url)
+        self.email = issue_tracker.email
         self.token = issue_tracker.token
 
         self.logger = logger
@@ -83,7 +84,7 @@ class JiraInstance:
         # ignore[attr-defined]: it is defined, but mypy seems to fail
         # detecting it correctly.
         self.jira = jira_module.JIRA(  # type: ignore[attr-defined]
-            server=self.url, token_auth=self.token
+            server=self.url, basic_auth=(self.email, self.token)
         )
 
     @classmethod

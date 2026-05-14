@@ -650,6 +650,12 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.install(*installables, options=options)
 
+    def assert_config_manager(self) -> None:
+        """
+        Make sure the ``config-manager`` plugin for repository management is installed.
+        """
+        raise PrepareError(f"Package manager '{self.NAME}' does not support config-manager.")
+
     def enable_copr(self, *repositories: str) -> None:
         """
         Enable requested copr repositories

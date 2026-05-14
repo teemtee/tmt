@@ -12,6 +12,7 @@ class IssueTracker(MetadataContainer):
     type: IssueTrackerType
     url: HttpUrl
     tmt_web_url: HttpUrl
+    email: str
     token: str
 
 
