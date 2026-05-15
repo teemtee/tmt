@@ -2560,20 +2560,6 @@ wheels = [
 ]
 
 [[package]]
-name = "readthedocs-sphinx-ext"
-version = "2.2.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jinja2" },
-    { name = "packaging" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e8/ce/38130d8dec600bf5413eb89a3413dd38f204c7c728c4947e12ff8cb793b7/readthedocs-sphinx-ext-2.2.5.tar.gz", hash = "sha256:ee5fd5b99db9f0c180b2396cbce528aa36671951b9526bb0272dbfce5517bd27", size = 12303, upload-time = "2023-12-19T10:00:49.573Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/71/c89e7709a0d4f93af1848e9855112299a820b470d84f917b4dd5998bdd07/readthedocs_sphinx_ext-2.2.5-py2.py3-none-any.whl", hash = "sha256:f8c56184ea011c972dd45a90122568587cc85b0127bc9cf064d17c68bc809daa", size = 11332, upload-time = "2023-12-19T10:00:43.972Z" },
-]
-
-[[package]]
 name = "referencing"
 version = "0.36.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3481,7 +3467,6 @@ ansible = [
 docs = [
     { name = "docutils" },
     { name = "fmf" },
-    { name = "readthedocs-sphinx-ext" },
     { name = "renku-sphinx-theme" },
     { name = "sphinx", version = "7.4.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
@@ -3563,7 +3548,6 @@ requires-dist = [
     { name = "pylero", marker = "extra == 'report-polarion'", specifier = ">=0.1.0" },
     { name = "python-bugzilla", marker = "extra == 'all'", specifier = ">=3.2.0" },
     { name = "python-bugzilla", marker = "extra == 'test-convert'", specifier = ">=3.2.0" },
-    { name = "readthedocs-sphinx-ext", marker = "extra == 'docs'" },
     { name = "renku-sphinx-theme", marker = "extra == 'docs'" },
     { name = "requests", specifier = ">=2.25.1" },
     { name = "ruamel-yaml", specifier = ">=0.16.6" },
