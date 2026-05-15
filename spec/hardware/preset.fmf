@@ -16,12 +16,14 @@ description: |
                        model: 97
 
     Rules:
+
     * ``import-preset`` is allowed only at the top level of the ``hardware``
       key.
     * ``import-preset`` accepts a single mapping or a list of mappings,
       where each mapping has either a ``url`` or a ``path``.
     * ``preset`` is a string referencing a single named preset. To apply
       multiple presets, combine them with ``and`` (or ``or``).
+
     Preset files use YAML format with named configurations:
 
     .. code-block:: yaml
@@ -35,7 +37,6 @@ description: |
        - name: MEMORY_MIN_64G
          hardware:
            memory: ">= 64 GB"
-
 
 example:
   - |
