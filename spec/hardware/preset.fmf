@@ -1,0 +1,71 @@
+summary: |
+    Reference predefined hardware configurations from external preset files.
+
+description: |
+    .. code-block:: yaml
+
+       provision:
+           hardware:
+               import-preset:
+                   - url: https://github.com/my-team/project/presets.yml
+                   - path: ~/.config/tmt/presets.yml
+               and:
+                   - preset: AMD__ROME
+                   - preset: MEMORY_MIN_64G
+                   - cpu:
+                       model: 97
+
+    Rules:
+
+    * ``import-preset`` is allowed only at the top level of the ``hardware``
+      key.
+    * ``import-preset`` accepts a single mapping or a list of mappings,
+      where each mapping has either a ``url`` or a ``path``.
+    * ``preset`` is a string referencing a single named preset. To apply
+      multiple presets, combine them with ``and`` (or ``or``).
+
+    Preset files use YAML format with named configurations:
+
+    .. code-block:: yaml
+
+       # presets.yml
+       - name: AMD__ROME
+         hardware:
+           cpu:
+             family: 23
+             model: 49
+       - name: MEMORY_MIN_64G
+         hardware:
+           memory: ">= 64 GB"
+
+example:
+  - |
+    # Use a remote preset
+    provision:
+        hardware:
+            import-preset:
+                url: https://github.com/my-team/presets.yml
+            preset: AMD__ROME
+  - |
+    # Use a local preset file
+    provision:
+        hardware:
+            import-preset:
+                path: ~/.config/tmt/presets.yml
+            preset: BIG_MEMORY
+  - |
+    # Combine multiple presets and additional constraints
+    provision:
+        hardware:
+            import-preset:
+                - url: https://github.com/my-team/project/presets.yml
+                - path: ~/.config/tmt/presets.yml
+            and:
+                - preset: AMD__ROME
+                - preset: BIG_MEMORY
+                - cpu:
+                    model: 97
+
+# NOTE: not yet supported
+# link:
+#   - implemented-by: /tmt/steps/provision/artemis.py
