@@ -333,7 +333,7 @@ class Result(BaseResult):
     context: tmt.utils.FmfContext = field(
         default_factory=tmt.utils.FmfContext,
         serialize=lambda context: context.to_spec(),
-        unserialize=lambda serialized: tmt.utils.FmfContext(serialized),
+        unserialize=lambda serialized: tmt.utils.FmfContext(**serialized),
     )
     ids: ResultIds = field(default_factory=cast(Callable[[], ResultIds], dict))
     guest: ResultGuestData = field(
