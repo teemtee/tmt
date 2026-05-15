@@ -350,8 +350,8 @@ class FmfContext(Mapping[str, list[str]]):
 
     _data: dict[str, list[str]]
 
-    def __init__(self, data: Optional[dict[str, list[str]]] = None) -> None:
-        self._data = data or {}
+    def __init__(self, **kwargs: list[str]) -> None:
+        self._data = kwargs
 
     def __getitem__(self, key: str) -> list[str]:
         return self._data[key]
@@ -381,7 +381,7 @@ class FmfContext(Mapping[str, list[str]]):
                     f"Use 'KEY=VALUE' format or remove the dimension entirely."
                 )
             raw_fmf_context[key] = value.split(',')
-        return FmfContext(raw_fmf_context)
+        return FmfContext(**raw_fmf_context)
 
     @classmethod
     def _normalize_fmf(
@@ -400,7 +400,7 @@ class FmfContext(Mapping[str, list[str]]):
         """
 
         return FmfContext(
-            {
+            **{
                 str(dimension): [str(v) for v in values]
                 if isinstance(values, list)
                 else [str(values)]
@@ -443,7 +443,7 @@ class FmfContext(Mapping[str, list[str]]):
         Convert from a serialized form.
         """
 
-        return FmfContext(serialized)
+        return FmfContext(**serialized)
 
 
 # Workdir argument type, can be True, a string, a path or None
