@@ -198,7 +198,7 @@ def find_jira_issues(
         return sort_by_key(results)
 
     # Fall back to title search and verify via remote links
-    title = github_item.title.replace('\\', '\\\\').replace("'", "\\'").replace('"', '')
+    title = " ".join(re.findall(r'\w+', github_item.title))
     query = f'project = "{JIRA_PROJECT}" AND summary ~ "{title}"'
     candidates = jira.search_issues(query, maxResults=False, json_result=False)
     assert isinstance(candidates, list)
