@@ -601,7 +601,7 @@ class Plan(
         """
 
         return FmfContext(
-            {**self.context, **self._fmf_context_from_importing, **self._fmf_context_from_cli}
+            **self.context, **self._fmf_context_from_importing, **self._fmf_context_from_cli
         )
 
     @property
@@ -617,10 +617,8 @@ class Plan(
         """
 
         return FmfContext(
-            {
-                **self.context,
-                **self._fmf_context_from_importing,
-            }
+            **self.context,
+            **self._fmf_context_from_importing,
         )
 
     @property
@@ -1516,15 +1514,13 @@ class Plan(
             # For final context inheritance, respect inherit_context setting
             if reference.inherit_context:
                 alteration_fmf_context = FmfContext(
-                    {
-                        **imported_fmf_context,
-                        **self._inheritable_fmf_context,
-                        **self._noninheritable_fmf_context,
-                    }
+                    **imported_fmf_context,
+                    **self._inheritable_fmf_context,
+                    **self._noninheritable_fmf_context,
                 )
             else:
                 alteration_fmf_context = FmfContext(
-                    {**imported_fmf_context, **self._noninheritable_fmf_context}
+                    **imported_fmf_context, **self._noninheritable_fmf_context
                 )
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
