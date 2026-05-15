@@ -129,13 +129,15 @@ class GuestLocal(tmt.Guest):
         Execute command on localhost
         """
 
+        sourced_files = sourced_files or []
+
         if tty:
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
 
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to a shell executed on the local host.
         script = ShellScript.from_scripts(
-            self._prepare_command_environment(env).to_shell_exports()
+            self._prepare_command_environment(environment=env).to_shell_exports()
         )
 
         for file in reversed(sourced_files or []):

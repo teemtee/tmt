@@ -471,7 +471,6 @@ class Plan(
 
         if self.my_run:
             environment['TMT_PLAN_DATA'] = EnvVarValue(self.data_directory)
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_file)
             environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script)
 
         return environment
@@ -505,25 +504,6 @@ class Plan(
         )
 
     @property
-    def _environment_from_plan_environment_file(self) -> Environment:
-        """
-        Environment sourced from the :ref:`plan environment file <step-variables>`.
-        """
-
-        if (
-            self.my_run
-            and self.plan_environment_file.exists()
-            and self.plan_environment_file.stat().st_size > 0
-        ):
-            return tmt.utils.Environment.from_file(
-                filename=self.plan_environment_file.name,
-                root=self.plan_environment_file.parent,
-                logger=self._logger,
-            )
-
-        return Environment()
-
-    @property
     def environment(self) -> Environment:
         """
         Environment variables of the plan.
@@ -531,7 +511,6 @@ class Plan(
         Contains all environment variables collected from multiple
         sources (in the following order):
 
-        * :ref:`plan environment file <step-variables>`,
         * plan's ``environment`` and ``environment-file`` keys,
         * importing plan's environment,
         * ``--environment`` and ``--environment-file`` options,
@@ -542,7 +521,6 @@ class Plan(
         if self.my_run:
             return Environment(
                 {
-                    **self._environment_from_plan_environment_file,
                     **self._environment_from_fmf,
                     **self._environment_from_importing,
                     **self._environment_from_cli,
@@ -710,17 +688,6 @@ class Plan(
         self.data_directory = self.plan_workdir / "data"
         self.debug(f"Create the data directory '{self.data_directory}'.", level=2)
         self.data_directory.mkdir(exist_ok=True, parents=True)
-
-    @functools.cached_property
-    def plan_environment_file(self) -> Path:
-        assert self.data_directory is not None  # narrow type
-
-        plan_environment_file_path = self.data_directory / "variables.env"
-        plan_environment_file_path.touch(exist_ok=True)
-
-        self.debug(f"Create the environment file '{plan_environment_file_path}'.", level=2)
-
-        return plan_environment_file_path
 
     @functools.cached_property
     def plan_source_script(self) -> Path:
