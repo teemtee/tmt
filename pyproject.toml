@@ -74,7 +74,7 @@ provision-beaker = [
     "mrack>=1.25.0",
     # Needed because beaker-client uses pkg_resources which are deprecated
     # https://github.com/beaker-project/beaker/issues/232
-    "setuptools<81",
+    "setuptools<83",
     ]
 provision-mock = [
     # mockbuild
@@ -151,7 +151,7 @@ dependencies = [
     # frozen.
     "types-Markdown",
     # prevent conflict between types-requests and urllib3
-    "types-requests<2.31.0.7; python_version < '3.10'",
+    "types-requests<2.33.0.20260409; python_version < '3.10'",
     "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
