@@ -284,11 +284,15 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         self.info('url', url, 'green')
         if self.data.url_content_type == "git":
             self.debug(f"Clone '{url}' to '{self.test_dir}'.")
+
+            environment = Environment.from_environ()
+            environment["GIT_ASKPASS"] = EnvVarValue("echo")
+
             tmt.utils.git.git_clone(
                 url=url,
                 destination=self.test_dir,
                 shallow=self.data.ref is None,
-                environment=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                environment=environment,
                 logger=self._logger,
             )
         elif self.data.url_content_type == "archive":

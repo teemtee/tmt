@@ -1451,7 +1451,6 @@ class Plan(
                     url=str(reference.url),
                     destination=tmpdirname,
                     shallow=True,
-                    environment=None,
                     logger=self._logger,
                 )
 

@@ -159,7 +159,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                         url=self.data.url,
                         destination=repo_path,
                         shallow=False,
-                        environment=environment,
                         logger=self._logger,
                     )
 
