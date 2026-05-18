@@ -37,14 +37,13 @@ from tmt.base.core import (
     EXTRA_KEYS_PREFIX,
     Core,
     FmfId,
-    Links,
     Test,
     Tree,
     _RawAdjustRule,
     _RawFmfId,
-    _RawLink,
     expand_node_data,
 )
+from tmt.base.links import Links, _RawLink
 from tmt.base.run import Run
 from tmt.container import SpecBasedContainer, container, field
 from tmt.lint import LinterOutcome, LinterReturn

@@ -15,6 +15,7 @@ from tmt.plugins import ModuleImporter
 if TYPE_CHECKING:
     import jira
 
+    import tmt.base.links
     import tmt.base.plan
 
 # Test, plan or story
@@ -183,7 +184,7 @@ def save_link_to_metadata(
 def link(
     *,
     tmt_objects: Sequence[TmtObject],
-    links: 'tmt.base.core.Links',
+    links: 'tmt.base.links.Links',
     separate: bool = False,
     logger: tmt.log.Logger,
 ) -> None:

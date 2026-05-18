@@ -21,12 +21,11 @@ from tmt.utils import Common, Environment, FmfContext, NormalizeKeysMixin, Path,
 if TYPE_CHECKING:
     from tmt.base.core import (
         Dependency,
-        Links,
         Test,
         _RawAdjustRule,
         _RawDependency,
-        _RawLinks,
     )
+    from tmt.base.links import Links, _RawLinks
     from tmt.base.plan import Plan
     from tmt.base.run import Run
 
@@ -39,7 +38,7 @@ DEFAULT_TEST_DURATION_L1 = '5m'
 
 
 def _normalize_link(value: Optional['_RawLinks']) -> 'Links':
-    from tmt.base.core import Links
+    from tmt.base.links import Links
 
     return Links(data=value)
 
