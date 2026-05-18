@@ -12,7 +12,7 @@ from tmt.utils import ShellScript
 SUPPORTED_DISTRO_PATTERNS = tuple(
     re.compile(pattern)
     for pattern in (
-        r'Red Hat Enterprise Linux ([8-9]|[1-9][0-9]+)',
+        r'Red Hat Enterprise Linux ([6-9]|[1-9][0-9]+)',
         r'CentOS Stream ([8-9]|[1-9][0-9]+)',
     )
 )
@@ -83,9 +83,7 @@ class Epel(ToggleableFeature):
         cls, guest: Guest, distro: str, version: int, logger: tmt.log.Logger
     ) -> None:
         """Enable EPEL repositories via config-manager."""
-        # NOTE: RHEL/CentOS 7 is not matched by SUPPORTED_DISTRO_PATTERNS,
-        # this branch is currently unreachable (EPEL 7 archived June 2024).
-        if version == 7:
+        if version in [6, 7]:
             guest.execute(
                 ShellScript(
                     f"{guest.facts.sudo_prefix} yum-config-manager"
@@ -122,7 +120,7 @@ class Epel(ToggleableFeature):
         except tmt.utils.RunError:
             pass
         else:
-            if version == 7:
+            if version in [6, 7]:
                 guest.execute(
                     ShellScript(f"{guest.facts.sudo_prefix} yum-config-manager --disable {repos}")
                 )
