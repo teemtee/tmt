@@ -1,0 +1,17 @@
+discover:
+    how: shell
+    tests:
+      - name: /smoke
+        test: /usr/bin/true
+
+provision:
+    how: virtual
+
+prepare:
+  - how: shell
+    script: echo "prepare phase 1"
+  - how: shell
+    script: echo "prepare phase 2"
+
+execute:
+    how: tmt
