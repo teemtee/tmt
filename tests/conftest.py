@@ -111,7 +111,9 @@ def target_dir(tmppath_factory: TempPathFactory) -> Path:
     return tmppath_factory.mktemp('target')
 
 
-def _construct_fixture_guest(container: 'ContainerData', logger: Logger) -> GuestContainer:
+def _construct_fixture_guest(
+    container: 'ContainerData', plan_workdir: Path, logger: Logger
+) -> GuestContainer:
     """
     Construct a container guest for ``guest`` and ``guest_per_test`` fixtures.
 
@@ -124,7 +126,9 @@ def _construct_fixture_guest(container: 'ContainerData', logger: Logger) -> Gues
     # We need a significant group of internal objects: a plan to host
     # the `provision` step to hold the guest. Without this, some
     # functionality will not work correctly, e.g. dry-run detection.
-    plan = Plan(node=fmf.base.Tree(data={'execute': {'how': 'tmt'}}), logger=logger)
+    plan = Plan(
+        node=fmf.base.Tree(data={'execute': {'how': 'tmt'}}), workdir=plan_workdir, logger=logger
+    )
 
     step = Provision(plan=plan, raw_data=[], logger=logger)
 
@@ -138,12 +142,14 @@ def _construct_fixture_guest(container: 'ContainerData', logger: Logger) -> Gues
 
 
 @pytest.fixture(name='guest')
-def fixture_guest(container: 'ContainerData', root_logger: Logger) -> GuestContainer:
-    return _construct_fixture_guest(container, root_logger)
+def fixture_guest(
+    container: 'ContainerData', tmppath: Path, root_logger: Logger
+) -> GuestContainer:
+    return _construct_fixture_guest(container, tmppath, root_logger)
 
 
 @pytest.fixture(name='guest_per_test')
 def fixture_guest_per_test(
-    container_per_test: 'ContainerData', root_logger: Logger
+    container_per_test: 'ContainerData', tmppath: Path, root_logger: Logger
 ) -> GuestContainer:
-    return _construct_fixture_guest(container_per_test, root_logger)
+    return _construct_fixture_guest(container_per_test, tmppath, root_logger)
