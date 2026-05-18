@@ -362,11 +362,15 @@ class BeakerLibFromUrl(BeakerLib):
             )
         else:
             self.parent.debug(f"Cloning '{self.identifier}' for '{self}'.", level=3)
+
+            environment = Environment.from_environ()
+            environment["GIT_ASKPASS"] = EnvVarValue("echo")
+
             tmt.utils.git.git_clone(
                 url=self.url,
                 destination=clone_dir,
                 shallow=self.ref is None,
-                environment=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                environment=environment,
                 logger=self._logger,
             )
             self._git_clone_cache[clone_dir] = self

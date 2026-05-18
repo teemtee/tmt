@@ -1285,8 +1285,10 @@ class Command:
         :param cwd: if set, command would be executed in the given directory,
             otherwise the current working directory is used.
         :param shell: if set, the command would be executed in a shell.
-        :param environment: environment variables to combine with the current environment
-            before running the command.
+        :param environment: if set, expose these environment variables
+            to the command. If not set, an empty environment is used,
+            resulting in command running with no environment variables
+            in its environment.
         :param dry: if set, the command would not be actually executed.
         :param join: if set, stdout and stderr of the command would be merged into
             a single output text.
@@ -1343,14 +1345,8 @@ class Command:
         # use the given logger & emit to debug log.
         output_logger = (log or logger.debug) if not silent else logger.debug
 
-        # Prepare the environment: use the current process environment, but do
-        # not modify it if caller wants something extra, make a copy.
-        actual_environment: Optional[Environment] = None
-
-        # Do not modify current process environment
-        if environment is not None:
-            actual_environment = Environment.from_environ()
-            actual_environment.update(environment)
+        # Prepare the environment: create an empty one if needed.
+        actual_environment = environment if environment is not None else Environment()
 
         logger.debug('environment', actual_environment, level=4)
 
@@ -1364,7 +1360,7 @@ class Command:
                     self.to_popen(),
                     cwd=cwd,
                     shell=shell,
-                    env=actual_environment.to_popen() if actual_environment is not None else None,
+                    env=actual_environment.to_popen(),
                     # Disabling for now: When used together with the
                     # local provision this results into errors such as:
                     # 'cannot set terminal process group: Inappropriate
@@ -1384,7 +1380,7 @@ class Command:
                     self.to_popen(),
                     cwd=cwd,
                     shell=shell,
-                    env=actual_environment.to_popen() if actual_environment is not None else None,
+                    env=actual_environment.to_popen(),
                     start_new_session=True,
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE,
