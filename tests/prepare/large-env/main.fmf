@@ -5,7 +5,7 @@ description: |
     the generated Containerfile was passed as a cat heredoc SSH
     command-line argument, exceeding the OS ARG_MAX limit.
 link:
-  - verifies: https://github.com/teemtee/tmt/issues/4518
+  - relates: https://github.com/teemtee/tmt/issues/4518
 tag+:
   - provision-only
   - provision-virtual

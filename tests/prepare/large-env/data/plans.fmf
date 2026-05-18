@@ -8,9 +8,10 @@ provision:
     how: virtual
 
 prepare:
-    how: install
-    package:
-      - tree
+  - how: shell
+    script: echo "prepare phase 1"
+  - how: shell
+    script: echo "prepare phase 2"
 
 execute:
     how: tmt
