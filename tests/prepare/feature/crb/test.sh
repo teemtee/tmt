@@ -30,7 +30,6 @@ rlJournalStart "CRB Feature Test"
         rlRun "pushd data"
     rlPhaseEnd
 
-    # CRB
     while IFS= read -r image; do
         image="$TEST_IMAGE_PREFIX/$image"
 
@@ -57,13 +56,11 @@ rlJournalStart "CRB Feature Test"
                 rlRun "tmt run --all provision --how $PROVISION_HOW --image $image plan --name /crb/disabled" 0 "Run /crb/disabled plan for $image"
             rlPhaseEnd
 
-            # Run the '/crb_package' only on c9s
-            if is_centos_stream_9 "$image"; then
-                rlPhaseStartTest "Test /crb/crb_package on $image"
-                    # This plan enables CRB and tries to install a package from it.
-                    rlRun "tmt run --all provision --how $PROVISION_HOW --image $image prepare execute plan --name /crb/crb_package" 0 "Run /crb/crb_package plan for $image"
-                rlPhaseEnd
-            fi
+            # Run the '/crb_package'
+            rlPhaseStartTest "Test /crb/crb_package on $image"
+                # This plan enables CRB and tries to install a package from it.
+                rlRun "tmt run -vvv --all provision --how $PROVISION_HOW --image $image prepare execute plan --name /crb/crb_package" 0 "Run /crb/crb_package plan for $image"
+            rlPhaseEnd
         fi
     done <<< "$IMAGES"
 

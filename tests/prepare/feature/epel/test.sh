@@ -29,7 +29,6 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    # EPEL
     while IFS= read -r image; do
         image="$TEST_IMAGE_PREFIX/$image"
 

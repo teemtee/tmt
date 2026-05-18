@@ -257,9 +257,10 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
 
     .. note::
 
-       Some features (such as ``fips``) require a working Ansible
-       to be available on the test runner. Other features (such as
-       ``epel`` and ``crb``) do not require Ansible.
+       Python is the preferred implementation language for feature
+       plugins as it avoids injecting an Ansible dependency on the
+       test runner. The ``fips`` feature currently still requires a
+       working Ansible.
 
     .. code-block:: yaml
 
