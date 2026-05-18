@@ -52,7 +52,10 @@ rlJournalStart
     rlPhaseStartTest "Epel"
         rlRun -s "./epel.exp"
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
-        rlAssertGrep "PLAY \[Enable EPEL repositories\]" $rlRun_LOG
+        rlAssertGrep "Enable EPEL" $rlRun_LOG
+        rlAssertGrep "cmd: dnf config-manager --enable epel" $rlRun_LOG
+        rlAssertGrep "Enable CRB (EPEL dependency)" $rlRun_LOG
+        rlAssertGrep "stdout: CRB repo is enabled and named: crb" $rlRun_LOG
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
