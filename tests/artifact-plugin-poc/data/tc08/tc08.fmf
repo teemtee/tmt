@@ -3,7 +3,7 @@ summary: "TC 08 - Obsoletes: installing foo-1.1 requires --allowerasing when foo
 /plan:
     discover:
         how: fmf
-        test: /tc08/test
+        test: /tc08/tc08/test
     provision:
         how: container
     execute:

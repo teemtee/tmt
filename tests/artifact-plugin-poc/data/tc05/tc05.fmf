@@ -1,9 +1,9 @@
-summary: "TC 02 - Upgrade: older version installed with unknown origin, artifact has newer"
+summary: "TC 05 - Same NVRA with unknown origin: dnf reinstall fixes origin"
 
 /plan:
     discover:
         how: fmf
-        test: /tc02/test
+        test: /tc05/tc05/test
     provision:
         how: container
     execute:
@@ -13,22 +13,23 @@ summary: "TC 02 - Upgrade: older version installed with unknown origin, artifact
           how: shell
           script: |
               mkdir -p /tmp/artifact-test
-              cp -r system preinstall tc02 /tmp/artifact-test/
+              cp -r system preinstall tc05 /tmp/artifact-test/
         - name: Install repo files
           how: shell
           script: |
               cp repos/system.repo /etc/yum.repos.d/poc-system.repo
-              cp repos/tc02.repo  /etc/yum.repos.d/poc-artifact-test.repo
+              cp repos/tc05.repo  /etc/yum.repos.d/poc-artifact-test.repo
               dnf clean all
 
 /test:
     description: |
         foo-1.1-1 is pre-installed with unknown origin (rpm -i --force).
-        The system repo (priority=99) provides foo-1.4-1 and the artifact repo
-        (priority=50) provides foo-2.2-1.
+        The artifact repo also provides foo-1.1-1 (same NVRA).
 
-        Expected: dnf install foo-2.2-1.noarch upgrades foo from 1.1 to 2.2,
-        and the origin is recorded as poc-artifact-test.
+        Expected: dnf reinstall foo re-installs the package from the artifact
+        repo and updates the from_repo annotation to poc-artifact-test.
+        This is the solution for the same-NVRA case where dnf install is
+        a no-op (demonstrated by TC 04).
     test: |
         set -ex
         command -v dnf5 &>/dev/null && DNF=dnf5 || DNF=dnf
@@ -36,6 +37,6 @@ summary: "TC 02 - Upgrade: older version installed with unknown origin, artifact
         rpm -i --force /tmp/artifact-test/preinstall/foo-1.1-1.noarch.rpm
         rpm -q foo | grep -E '^foo-1\.1-1'
 
-        $DNF install -y --repo='poc-*' foo-2.2-1.noarch
-        rpm -q foo | grep -E '^foo-2\.2-1'
+        $DNF reinstall -y --repo='poc-*' foo
+        rpm -q foo | grep -E '^foo-1\.1-1'
         $DNF repoquery --installed foo --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'

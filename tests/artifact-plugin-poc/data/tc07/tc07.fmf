@@ -3,7 +3,7 @@ summary: "TC 07 - Repo filter: --repo (DNF4) and --from-repo (DNF5) install from
 /plan:
     discover:
         how: fmf
-        test: /tc07/test
+        test: /tc07/tc07/test
     provision:
         how: container
     execute:

@@ -3,7 +3,7 @@ summary: TC 06 - Transitive dep forces downgrade (foo-devel-1.1 requires foo = 1
 /plan:
     discover:
         how: fmf
-        test: /tc06/test
+        test: /tc06/tc06/test
     provision:
         how: container
     execute:

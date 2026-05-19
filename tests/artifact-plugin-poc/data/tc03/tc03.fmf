@@ -3,7 +3,7 @@ summary: "TC 03 - Downgrade: newer version installed with unknown origin, explic
 /plan:
     discover:
         how: fmf
-        test: /tc03/test
+        test: /tc03/tc03/test
     provision:
         how: container
     execute:

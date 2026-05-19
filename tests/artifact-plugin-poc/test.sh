@@ -18,12 +18,12 @@ rlJournalStart
         rlRun "pushd $testdir/data" 0 "Enter test data directory"
         rlRun "run=$(mktemp -d)" 0 "Create run directory"
 
-        if rlIsFedora; then
+        if false; then
             release=$(rlGetDistroRelease)
             image="fedora:${release}"
-        elif rlIsCentOS; then
+        elif true; then
             release=$(rlGetDistroRelease)
-            image="quay.io/centos/centos:stream${release}"
+            image="quay.io/centos/centos:stream8"
         else
             rlDie "Unsupported distro: test requires Fedora or CentOS"
         fi

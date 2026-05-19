@@ -3,7 +3,7 @@ summary: TC 10 - DNF4 must not support --allow-downgrade; DNF5 must support it
 /plan:
     discover:
         how: fmf
-        test: /tc10/test
+        test: /tc10/tc10/test
     provision:
         how: container
     execute:

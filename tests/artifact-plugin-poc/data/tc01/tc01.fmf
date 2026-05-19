@@ -3,7 +3,7 @@ summary: TC 01 - Fresh install from artifact repo when system repo also has the 
 /plan:
     discover:
         how: fmf
-        test: /tc01/test
+        test: /tc01/tc01/test
     provision:
         how: container
     execute:

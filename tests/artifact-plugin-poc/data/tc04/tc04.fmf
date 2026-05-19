@@ -3,7 +3,7 @@ summary: "TC 04 - Same NVRA already installed with unknown origin: dnf install i
 /plan:
     discover:
         how: fmf
-        test: /tc04/test
+        test: /tc04/tc04/test
     provision:
         how: container
     execute:

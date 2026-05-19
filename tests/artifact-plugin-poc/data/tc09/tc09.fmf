@@ -3,7 +3,7 @@ summary: "TC 09 - Two-command pattern: install + reinstall handles downgrade and
 /plan:
     discover:
         how: fmf
-        test: /tc09/test
+        test: /tc09/tc09/test
     provision:
         how: container
     execute:
