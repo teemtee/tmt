@@ -79,14 +79,13 @@ class Epel(ToggleableFeature):
         return distro, version
 
     @classmethod
-    def _disable_if_installed(cls, guest: Guest, package: str, *repo_ids: str) -> None:
-        """Disable repositories if the given package is installed."""
+    def _is_installed(cls, guest: Guest, package: str) -> bool:
+        """Check if a package is installed on the guest."""
         try:
             guest.execute(ShellScript(f"rpm -q {package}"))
         except tmt.utils.RunError:
-            pass
-        else:
-            guest.package_manager.disable_repo(*repo_ids)
+            return False
+        return True
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
@@ -111,7 +110,7 @@ class Epel(ToggleableFeature):
             if version == 9:
                 guest.package_manager.install(Package("epel-next-release"))
 
-        logger.info('Enable EPEL')
+        logger.verbose('Enable EPEL')
         guest.package_manager.enable_repo('epel', 'epel-debuginfo', 'epel-source')
 
         # EPEL Next is only available for CentOS Stream 9
@@ -135,15 +134,12 @@ class Epel(ToggleableFeature):
 
         distro, version = cls._assert_distro_facts(guest)
 
-        logger.info('Disable EPEL')
-        cls._disable_if_installed(guest, "epel-release", "epel", "epel-debuginfo", "epel-source")
+        logger.verbose('Disable EPEL')
+        if cls._is_installed(guest, "epel-release"):
+            guest.package_manager.disable_repo('epel', 'epel-debuginfo', 'epel-source')
 
         # EPEL Next is only available for CentOS Stream 9
-        if distro == 'centos' and version == 9:
-            cls._disable_if_installed(
-                guest,
-                "epel-next-release",
-                "epel-next",
-                "epel-next-debuginfo",
-                "epel-next-source",
+        if distro == 'centos' and version == 9 and cls._is_installed(guest, "epel-next-release"):
+            guest.package_manager.disable_repo(
+                'epel-next', 'epel-next-debuginfo', 'epel-next-source'
             )

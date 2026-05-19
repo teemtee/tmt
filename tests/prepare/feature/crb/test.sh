@@ -41,27 +41,29 @@ rlJournalStart "CRB Feature Test"
                 rlRun -s "tmt run provision --how $PROVISION_HOW --image $image prepare finish plan --name /crb/enabled" 0 "Run plan on fedora and capture output"
                 rlAssertGrep "CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10." $rlRun_LOG
             rlPhaseEnd
-        else
-            # Run the '/crb/enabled' plan, overriding the provision image.
-            # The plan itself contains the check (dnf repolist enabled | grep ...).
-            # Expecting tmt run to succeed (exit code 0) as the check should pass.
-            rlPhaseStartTest "Test /crb/enabled on $image"
-                rlRun "tmt run --all provision --how $PROVISION_HOW --image $image plan --name /crb/enabled" 0 "Run /crb/enabled plan for $image"
-            rlPhaseEnd
 
-            # Run the '/crb/disabled' plan, overriding the provision image.
-            # The plan itself contains the checks (! dnf repolist enabled ... && dnf repolist disabled ...).
-            # Expecting tmt run to succeed (exit code 0) as the checks should pass.
-            rlPhaseStartTest "Test /crb/disabled on $image"
-                rlRun "tmt run --all provision --how $PROVISION_HOW --image $image plan --name /crb/disabled" 0 "Run /crb/disabled plan for $image"
-            rlPhaseEnd
-
-            # Run the '/crb_package'
-            rlPhaseStartTest "Test /crb/crb_package on $image"
-                # This plan enables CRB and tries to install a package from it.
-                rlRun "tmt run -vvv --all provision --how $PROVISION_HOW --image $image prepare execute plan --name /crb/crb_package" 0 "Run /crb/crb_package plan for $image"
-            rlPhaseEnd
+            continue
         fi
+
+        # Run the '/crb/enabled' plan, overriding the provision image.
+        # The plan itself contains the check (dnf repolist enabled | grep ...).
+        # Expecting tmt run to succeed (exit code 0) as the check should pass.
+        rlPhaseStartTest "Test /crb/enabled on $image"
+            rlRun "tmt run --all provision --how $PROVISION_HOW --image $image plan --name /crb/enabled" 0 "Run /crb/enabled plan for $image"
+        rlPhaseEnd
+
+        # Run the '/crb/disabled' plan, overriding the provision image.
+        # The plan itself contains the checks (! dnf repolist enabled ... && dnf repolist disabled ...).
+        # Expecting tmt run to succeed (exit code 0) as the checks should pass.
+        rlPhaseStartTest "Test /crb/disabled on $image"
+            rlRun "tmt run --all provision --how $PROVISION_HOW --image $image plan --name /crb/disabled" 0 "Run /crb/disabled plan for $image"
+        rlPhaseEnd
+
+        # Run the '/crb_package'
+        rlPhaseStartTest "Test /crb/crb_package on $image"
+            # This plan enables CRB and tries to install a package from it.
+            rlRun "tmt run -vvv --all provision --how $PROVISION_HOW --image $image prepare execute plan --name /crb/crb_package" 0 "Run /crb/crb_package plan for $image"
+        rlPhaseEnd
     done <<< "$IMAGES"
 
     rlPhaseStartCleanup

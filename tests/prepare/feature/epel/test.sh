@@ -33,7 +33,14 @@ rlJournalStart
         [ "$PROVISION_HOW" = "container" ] && image="$TEST_IMAGE_PREFIX/$image"
 
         if is_fedora "$image"; then
-            rlLogInfo "Skipping Fedora for testing EPEL"
+            # Test Fedora for the warning message
+            rlPhaseStartTest "Test warning on $image"
+                # Run a epel plan (just provision, prepare and finish) on fedora and verify the warning is shown
+                # We expect the tmt run to succeed (exit code 0) because it's a warning, not an error.
+                rlRun -s "tmt run provision --how $PROVISION_HOW --image $image prepare finish plan --name /epel/enabled/default" 0 "Run plan on fedora and capture output"
+                rlAssertGrep "EPEL·prepare·feature·is·supported·on·RHEL/CentOS-Stream·8+." $rlRun_LOG
+            rlPhaseEnd
+
             continue
         fi
 
@@ -49,11 +56,9 @@ rlJournalStart
             rlRun -s "tmt -vvv run -a plan --name '/epel/disabled' provision --how $PROVISION_HOW --image $image"
         rlPhaseEnd
 
-        if is_centos_stream_9 "$image"; then
-            rlPhaseStartTest "Check CRB on $image"
-                rlRun -s "tmt -vvv run -a plan --name '/flac' provision --how $PROVISION_HOW --image $image"
-            rlPhaseEnd
-        fi
+        rlPhaseStartTest "Check if CRB enabled with EPEL on $image"
+            rlRun -s "tmt -vvv run -a plan --name '/gdbm' provision --how $PROVISION_HOW --image $image"
+        rlPhaseEnd
     done <<< "$IMAGES"
 
     # Environment profiles

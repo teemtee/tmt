@@ -38,16 +38,16 @@ execute:
         environment+:
             STATE: disabled
 
-/flac:
-    summary: Install flac
+/gdbm:
+    summary: Install gdbm available only in crb
     description: Check that crb repo is enabled
     prepare:
       - how: feature
         epel: enabled
       - how: install
-        package: flac
+        package: gdbm
     execute:
-        script: flac --help
+        script: gdbmtool --help
 
 /profile:
     discover:
