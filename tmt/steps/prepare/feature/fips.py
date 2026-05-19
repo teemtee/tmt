@@ -49,7 +49,9 @@ class Fips(ToggleableFeature):
 
     .. note::
 
-       This feature plugin is not supported in Image Mode.
+       This feature plugin is not supported with container provisioner
+       or with ostree-based distributions, e.g. Image Mode RHEL,
+       Fedora CoreOS, etc.
     """
 
     _data_class = FipsStepData
