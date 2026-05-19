@@ -3761,9 +3761,10 @@ class GuestSsh(Guest, CommandCollector):
                 f"Guest '{self.multihost_name}' does not support hard reboot."
             )
 
-        default_reboot_command = ShellScript(
-            f'{self.facts.sudo_prefix} {default_reboot_command.to_shell_command()}'
-        )
+        if self.become and not self.facts.is_superuser:
+            default_reboot_command = ShellScript(
+                f'{self.facts.sudo_prefix} {default_reboot_command.to_shell_command()}'
+            )
 
         command = command or default_reboot_command
         waiting = waiting or default_reboot_waiting()
