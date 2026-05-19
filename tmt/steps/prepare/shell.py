@@ -277,9 +277,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             pull_options = DEFAULT_PULL_OPTIONS.copy()
             pull_options.exclude.append(str(script_log_filepath))
 
-            if guest.become and not guest.facts.is_superuser:
-                script = ShellScript(f'sudo -E {script.to_shell_command()}')
-
             script = ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
 
             _, outer_wrapper_filepath = pidfile_context.create_wrappers(
@@ -289,9 +286,16 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 ACTION=script,
             )
 
+            # Prepare the actual remote command
+            remote_command: ShellScript
+            if guest.become and not guest.facts.is_superuser:
+                remote_command = ShellScript(f'sudo -E ./{outer_wrapper_filepath.name}')
+            else:
+                remote_command = ShellScript(f'./{outer_wrapper_filepath.name}')
+
             output, error, timer = Stopwatch.measure(
                 _invoke_script,
-                ShellScript(str(outer_wrapper_filepath)),
+                remote_command,
                 script_environment,
             )
 
