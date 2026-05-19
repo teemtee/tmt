@@ -255,6 +255,11 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     and disable some commonly used functionality such as enabling
     and disabling the ``epel`` repository or the ``fips`` mode.
 
+    .. note::
+
+       Some of the plugins require a working Ansible to be available
+       on the test runner.
+
     .. warning::
 
        The plugin may be a subject of various limitations, imposed by
