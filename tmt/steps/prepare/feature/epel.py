@@ -79,57 +79,14 @@ class Epel(ToggleableFeature):
         return distro, version
 
     @classmethod
-    def _enable_repos(
-        cls, guest: Guest, distro: str, version: int, logger: tmt.log.Logger
-    ) -> None:
-        """Enable EPEL repositories via config-manager."""
-        if version in [6, 7]:
-            guest.execute(
-                ShellScript(
-                    f"{guest.facts.sudo_prefix} yum-config-manager"
-                    " --enable epel epel-debuginfo epel-source"
-                )
-            )
-        else:
-            guest.execute(
-                ShellScript(
-                    f"{guest.facts.sudo_prefix} dnf config-manager"
-                    " --enable epel epel-debuginfo epel-source"
-                )
-            )
-
-            # EPEL Next is only available for CentOS Stream 9
-            if distro == 'centos' and version == 9:
-                guest.execute(
-                    ShellScript(
-                        f"{guest.facts.sudo_prefix} dnf config-manager"
-                        " --enable epel-next epel-next-debuginfo epel-next-source"
-                    )
-                )
-
-            # Enable CRB repository (needed for EPEL dependencies).
-            # FORCE_DNF=1 skips subscription-manager, not configured in test environments.
-            logger.info('Enable CRB (EPEL dependency)')
-            guest.execute(
-                ShellScript(f"FORCE_DNF=1 {guest.facts.sudo_prefix} crb enable"), immediately=False
-            )
-
-    @classmethod
-    def _disable_repo(cls, guest: Guest, version: int, package: str, repos: str) -> None:
+    def _disable_if_installed(cls, guest: Guest, package: str, *repo_ids: str) -> None:
         """Disable repositories if the given package is installed."""
         try:
             guest.execute(ShellScript(f"rpm -q {package}"))
         except tmt.utils.RunError:
             pass
         else:
-            if version in [6, 7]:
-                guest.execute(
-                    ShellScript(f"{guest.facts.sudo_prefix} yum-config-manager --disable {repos}")
-                )
-            else:
-                guest.execute(
-                    ShellScript(f"{guest.facts.sudo_prefix} dnf config-manager --disable {repos}")
-                )
+            guest.package_manager.disable_repo(*repo_ids)
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
@@ -154,10 +111,21 @@ class Epel(ToggleableFeature):
             if version == 9:
                 guest.package_manager.install(Package("epel-next-release"))
 
-        guest.package_manager.assert_config_manager()
-
         logger.info('Enable EPEL')
-        cls._enable_repos(guest, distro, version, logger)
+        guest.package_manager.enable_repo('epel', 'epel-debuginfo', 'epel-source')
+
+        # EPEL Next is only available for CentOS Stream 9
+        if distro == 'centos' and version == 9:
+            guest.package_manager.enable_repo(
+                'epel-next', 'epel-next-debuginfo', 'epel-next-source'
+            )
+
+        # Enable CRB repository (needed for EPEL dependencies).
+        # FORCE_DNF=1 skips subscription-manager, not configured in test environments.
+        logger.info('Enable CRB (EPEL dependency)')
+        guest.execute(
+            ShellScript(f"FORCE_DNF=1 {guest.facts.sudo_prefix} crb enable"), immediately=False
+        )
 
     @classmethod
     def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
@@ -167,16 +135,15 @@ class Epel(ToggleableFeature):
 
         distro, version = cls._assert_distro_facts(guest)
 
-        guest.package_manager.assert_config_manager()
-
         logger.info('Disable EPEL')
-        cls._disable_repo(guest, version, "epel-release", "epel epel-debuginfo epel-source")
+        cls._disable_if_installed(guest, "epel-release", "epel", "epel-debuginfo", "epel-source")
 
         # EPEL Next is only available for CentOS Stream 9
         if distro == 'centos' and version == 9:
-            cls._disable_repo(
+            cls._disable_if_installed(
                 guest,
-                version,
                 "epel-next-release",
-                "epel-next epel-next-debuginfo epel-next-source",
+                "epel-next",
+                "epel-next-debuginfo",
+                "epel-next-source",
             )
