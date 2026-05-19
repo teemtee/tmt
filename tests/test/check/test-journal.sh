@@ -145,7 +145,7 @@ rlJournalStart
                   rlAssertGrep "Configured persistent journal storage with sudo" $rlRun_LOG
                 fi
 
-                rlFileExists "$config_test/checks/journal.txt"
+                rlAssertExists "$config_test/checks/journal.txt"
 
                 rlRun -s "cat $config_test_check/output.txt"
                 rlAssertGrep "^\[Journal\]$" $rlRun_LOG
