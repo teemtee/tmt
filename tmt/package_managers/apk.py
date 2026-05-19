@@ -98,6 +98,16 @@ class ApkEngine(PackageManagerEngine):
     def refresh_metadata(self) -> ShellScript:
         return ShellScript(f'{self.command.to_script()} update')
 
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        raise tmt.utils.PrepareError(
+            "Package manager 'apk' does not support enabling repositories."
+        )
+
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        raise tmt.utils.PrepareError(
+            "Package manager 'apk' does not support disabling repositories."
+        )
+
     def install(
         self,
         *installables: Installable,

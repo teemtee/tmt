@@ -128,6 +128,12 @@ class DnfEngine(PackageManagerEngine):
             f'{self.command.to_script()} makecache {self.options.to_script()} --refresh'
         )
 
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        return (self.command + Command('config-manager', '--enable', *repo_ids)).to_script()
+
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        return (self.command + Command('config-manager', '--disable', *repo_ids)).to_script()
+
     def install(
         self,
         *installables: Installable,
@@ -408,6 +414,20 @@ class Dnf5(Dnf):
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+
+    def _yum_config_manager_command(self) -> Command:
+        command = Command('yum-config-manager')
+
+        if self.guest.facts.sudo_prefix:
+            command = Command(self.guest.facts.sudo_prefix) + command
+
+        return command
+
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        return (self._yum_config_manager_command() + Command('--enable', *repo_ids)).to_script()
+
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        return (self._yum_config_manager_command() + Command('--disable', *repo_ids)).to_script()
 
     def resolve_provides(
         self,

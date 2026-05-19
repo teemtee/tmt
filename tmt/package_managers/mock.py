@@ -13,7 +13,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.steps.provision.mock import GuestMock
-from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
 
 
 class MockEngine(PackageManagerEngine):
@@ -81,6 +81,12 @@ class MockEngine(PackageManagerEngine):
 
     def refresh_metadata(self) -> ShellScript:
         return self._prepare_mock_command_script('makecache --refresh')
+
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        raise PrepareError("Package manager 'mock' does not support enabling repositories.")
+
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        raise PrepareError("Package manager 'mock' does not support disabling repositories.")
 
 
 class _MockPackageManager(PackageManager[MockEngine]):
