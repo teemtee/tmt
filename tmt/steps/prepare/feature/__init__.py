@@ -255,13 +255,6 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     and disable some commonly used functionality such as enabling
     and disabling the ``epel`` repository or the ``fips`` mode.
 
-    .. note::
-
-       Python is the preferred implementation language for feature
-       plugins as it avoids injecting an Ansible dependency on the
-       test runner. The ``fips`` feature currently still requires a
-       working Ansible.
-
     .. warning::
 
        The plugin may be a subject of various limitations, imposed by
