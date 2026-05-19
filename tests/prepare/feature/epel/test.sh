@@ -4,7 +4,8 @@
 
 CONTAINER_IMAGES="centos/stream9/upstream:latest
 ubi/8/upstream:latest
-ubi/9/upstream:latest"
+ubi/9/upstream:latest
+fedora/latest:latest"
 
 rlJournalStart
     rlPhaseStartSetup
@@ -38,7 +39,7 @@ rlJournalStart
                 # Run a epel plan (just provision, prepare and finish) on fedora and verify the warning is shown
                 # We expect the tmt run to succeed (exit code 0) because it's a warning, not an error.
                 rlRun -s "tmt run provision --how $PROVISION_HOW --image $image prepare finish plan --name /epel/enabled/default" 0 "Run plan on fedora and capture output"
-                rlAssertGrep "EPEL·prepare·feature·is·supported·on·RHEL/CentOS-Stream·8+." $rlRun_LOG
+                rlAssertGrep "EPEL prepare feature is supported on RHEL/CentOS-Stream 8+." $rlRun_LOG
             rlPhaseEnd
 
             continue
