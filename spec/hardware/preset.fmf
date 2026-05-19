@@ -1,0 +1,80 @@
+summary: |
+    Reference predefined hardware configurations from external preset files.
+
+description: |
+    .. code-block:: yaml
+
+       provision:
+           hardware:
+              import-preset:
+                   - https://github.com/my-team/project/presets.yaml
+                   - file:///home/user/config/tmt/presets.yaml
+                   - ~/.config/tmt/presets.yaml
+               and:
+                   - preset: AMD__ROME
+                   - preset: MEMORY_MIN_64G
+                   - cpu:
+                       model: 97
+
+    Rules:
+
+    * ``import-preset`` is allowed only at the top level of the ``hardware``
+      key.
+    * ``import-preset`` accepts a single string or a list of strings. Each
+      string identifies a preset source and is interpreted automatically:
+      * An ``http://`` or ``https://`` URL — fetched remotely.
+      * A ``file://`` URL — read from the given absolute local path.
+      * Any other string — treated as a local file path (absolute, relative,
+        or using ``~`` for the home directory).
+    * ``preset`` is a string referencing a single named preset. To apply
+      multiple presets, combine them with ``and`` (or ``or``).
+
+    Preset files use YAML format with a dictionary mapping preset names to
+    their hardware definitions:
+
+    .. code-block:: yaml
+
+       # presets.yaml
+       AMD__ROME:
+           cpu:
+               family: 23
+               model: 49
+       MEMORY_MIN_64G:
+           memory: ">= 64 GB"
+
+example:
+  - |
+    # Use a remote preset
+    provision:
+        hardware:
+            import-preset: https://github.com/my-team/presets.yaml
+            preset: AMD__ROME
+  - |
+    # Use a local preset file
+    provision:
+        hardware:
+            import-preset: ~/.config/tmt/presets.yaml
+            preset: BIG_MEMORY
+  - |
+    # Use a local preset file via file:// URL
+    provision:
+        hardware:
+            import-preset: file:///home/user/config/tmt/presets.yaml
+            preset: BIG_MEMORY
+  - |
+    # Combine multiple presets and additional constraints
+    provision:
+        hardware:
+            import-preset:
+                - https://github.com/my-team/project/presets.yaml
+                - file:///home/user/config/tmt/presets.yaml
+                - ~/.config/tmt/presets.yaml
+            and:
+                - preset: AMD__ROME
+                - preset: BIG_MEMORY
+                - cpu:
+                    model: 97
+
+# NOTE: not yet supported
+# link:
+#   - implemented-by: /tmt/steps/provision/artemis.py
