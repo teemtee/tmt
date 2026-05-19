@@ -2469,7 +2469,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                 filepath.write_text(data, encoding='utf-8', errors='replace')
 
             if permissions is not None:
-                path.chmod(permissions)
+                filepath.chmod(permissions)
 
         except OSError as error:
             raise FileError(f"Failed to write into '{filepath}'.") from error
