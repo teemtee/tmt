@@ -102,13 +102,8 @@ INNER_WRAPPER_TEMPLATE = jinja2.Template("""
 OUTER_WRAPPER_TEMPLATE = jinja2.Template("""
 {% macro log_to_dmesg(msg) %}
     {%- if not GUEST.facts.is_superuser %}
-        {%- if GUEST.become %}
 # Logging test into kernel log
-sudo bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
-        {%- else %}
-# Not logging into kernel log: not a superuser, 'become' not enabled
-# echo \"{{ msg }}\" > /dev/kmsg
-        {%- endif %}
+{{ GUEST.facts.sudo_prefix }} bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
     {%- else %}
 # Logging test into kernel log
 echo "{{ msg }}" > /dev/kmsg

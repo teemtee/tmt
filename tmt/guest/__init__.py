@@ -1309,8 +1309,10 @@ class GuestData(
         is_flag=True,
         option=('-b', '--become'),
         help="""
-             Whether to run tests and shell scripts in prepare and
-             finish steps with ``sudo``.
+             If set, user-provided commands - ``prepare`` and ``finish``
+             scripts and tests - will be invoked with elevated, superuser
+             privileges. If the access plugin has is not a superuser
+             already, passwordless ``sudo`` will be used.
              """,
     )
 
@@ -3759,10 +3761,9 @@ class GuestSsh(Guest, CommandCollector):
                 f"Guest '{self.multihost_name}' does not support hard reboot."
             )
 
-        if self.become:
-            default_reboot_command = ShellScript(
-                f'sudo {default_reboot_command.to_shell_command()}'
-            )
+        default_reboot_command = ShellScript(
+            f'{self.facts.sudo_prefix} {default_reboot_command.to_shell_command()}'
+        )
 
         command = command or default_reboot_command
         waiting = waiting or default_reboot_waiting()
