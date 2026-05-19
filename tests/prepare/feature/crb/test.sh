@@ -31,7 +31,7 @@ rlJournalStart "CRB Feature Test"
     rlPhaseEnd
 
     while IFS= read -r image; do
-        image="$TEST_IMAGE_PREFIX/$image"
+        [ "$PROVISION_HOW" = "container" ] && image="$TEST_IMAGE_PREFIX/$image"
 
         if is_fedora "$image"; then
             # Test Fedora for the warning message

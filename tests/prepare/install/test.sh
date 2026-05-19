@@ -134,6 +134,10 @@ rlJournalStart
                 rlRun "distro=rhel-8"
                 rlRun "package_manager=dnf"
 
+            elif is_ubi_9 "$image"; then
+                rlRun "distro=rhel-9"
+                rlRun "package_manager=dnf"
+
             elif is_fedora "$image"; then
                 rlRun "distro=fedora"
                 rlRun "package_manager=dnf5"

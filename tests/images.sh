@@ -168,6 +168,10 @@ function is_ubi_8 () {
     [[ "$1" =~ ^.*ubi/8.* ]] && return 0 || return 1
 }
 
+function is_ubi_9 () {
+    [[ "$1" =~ ^.*ubi/9.* ]] && return 0 || return 1
+}
+
 function is_image_mode () {
     [[ "$1" =~ image-mode ]]
 }
