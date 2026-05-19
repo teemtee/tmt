@@ -1,0 +1,6 @@
+[poc-system]
+name=POC System Repo (test)
+baseurl=file:///tmp/artifact-test/system
+enabled=1
+gpgcheck=0
+priority=99

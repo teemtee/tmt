@@ -1,0 +1,49 @@
+summary: TC 06 - Transitive dep forces downgrade (foo-devel-1.1 requires foo = 1.1-1)
+
+/plan:
+    discover:
+        how: fmf
+        test: /tc06/test
+    provision:
+        how: container
+    execute:
+        how: tmt
+    prepare:
+        - name: Copy repo directories to container
+          how: shell
+          script: |
+              mkdir -p /tmp/artifact-test
+              cp -r system preinstall tc06 /tmp/artifact-test/
+        - name: Install repo files
+          how: shell
+          script: |
+              cp repos/system.repo /etc/yum.repos.d/poc-system.repo
+              cp repos/tc06.repo  /etc/yum.repos.d/poc-artifact-test.repo
+              dnf clean all
+
+/test:
+    description: |
+        foo-1.4-1 is pre-installed with unknown origin (rpm -i --force).
+        The artifact repo provides foo-1.1-1 and foo-devel-1.1-1, where
+        foo-devel-1.1-1 has a strict Requires: foo = 1.1-1.
+
+        Expected: installing foo-devel-1.1-1.noarch triggers a transitive
+        downgrade of foo from 1.4 to 1.1.  On DNF5 this requires
+        --allow-downgrade; DNF4 handles the transitive downgrade without it.
+        Both foo and foo-devel are recorded as coming from poc-artifact-test.
+    test: |
+        set -ex
+        command -v dnf5 &>/dev/null && DNF=dnf5 || DNF=dnf
+
+        rpm -i --force /tmp/artifact-test/preinstall/foo-1.4-1.noarch.rpm
+        rpm -q foo | grep -E '^foo-1\.4-1'
+
+        if [ "$DNF" = "dnf5" ]; then
+            $DNF install -y --allow-downgrade --repo='poc-*' foo-devel-1.1-1.noarch
+        else
+            $DNF install -y --repo='poc-*' foo-devel-1.1-1.noarch
+        fi
+        rpm -q foo | grep -E '^foo-1\.1-1'
+        rpm -q foo-devel | grep -E '^foo-devel-1\.1-1'
+        $DNF repoquery --installed foo --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'
+        $DNF repoquery --installed foo-devel --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'
