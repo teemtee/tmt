@@ -1,0 +1,6 @@
+[poc-artifact-test]
+name=POC Artifact Repo (test)
+baseurl=file:///tmp/artifact-test/tc08
+enabled=1
+gpgcheck=0
+priority=50

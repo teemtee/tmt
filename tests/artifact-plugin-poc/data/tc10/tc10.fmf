@@ -1,0 +1,26 @@
+summary: TC 10 - DNF4 must not support --allow-downgrade; DNF5 must support it
+
+/plan:
+    discover:
+        how: fmf
+        test: /tc10/tc10/test
+    provision:
+        how: container
+    execute:
+        how: tmt
+
+/test:
+    description: |
+        The --allow-downgrade flag for dnf install is a DNF5-only feature.
+        DNF4 (CentOS Stream 9) does not support it.  The artifact plugin
+        must only pass --allow-downgrade when running on DNF5.
+
+        Expected: on DNF4, dnf install --help does not mention
+        --allow-downgrade.  On DNF5, dnf5 install --help does mention it.
+    test: |
+        set -ex
+        if command -v dnf5 &>/dev/null; then
+            dnf5 install --help | grep -q '\-\-allow-downgrade'
+        else
+            ! dnf install --help | grep -q '\-\-allow-downgrade'
+        fi

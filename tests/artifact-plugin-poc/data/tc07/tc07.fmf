@@ -1,0 +1,46 @@
+summary: "TC 07 - Repo filter: --repo (DNF4) and --from-repo (DNF5) install from specific repo"
+
+/plan:
+    discover:
+        how: fmf
+        test: /tc07/tc07/test
+    provision:
+        how: container
+    execute:
+        how: tmt
+    prepare:
+        - name: Copy repo directories to container
+          how: shell
+          script: |
+              mkdir -p /tmp/artifact-test
+              cp -r system tc07 /tmp/artifact-test/
+        - name: Install repo files
+          how: shell
+          script: |
+              cp repos/system.repo /etc/yum.repos.d/poc-system.repo
+              cp repos/tc07.repo  /etc/yum.repos.d/poc-artifact-test.repo
+              dnf clean all
+
+/test:
+    description: |
+        foo is not pre-installed.  The system repo (priority=99) provides
+        foo-1.4-1 and the artifact repo (priority=50) provides foo-1.1-1.
+
+        DNF4 uses --repo to restrict which repos participate in the
+        transaction.  DNF5 additionally supports --from-repo which restricts
+        which repo packages are downloaded from (while still using all repos
+        for dependency resolution).
+
+        Expected: using the appropriate repo-filter flag installs foo-1.1-1
+        and the origin is recorded as poc-artifact-test.
+    test: |
+        set -ex
+        command -v dnf5 &>/dev/null && DNF=dnf5 || DNF=dnf
+
+        if [ "$DNF" = "dnf5" ]; then
+            $DNF install -y --from-repo='poc-artifact-test' foo-1.1-1.noarch
+        else
+            $DNF install -y --repo='poc-artifact-test' foo-1.1-1.noarch
+        fi
+        rpm -q foo | grep -E '^foo-1\.1-1'
+        $DNF repoquery --installed foo --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'

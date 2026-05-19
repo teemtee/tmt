@@ -1,0 +1,45 @@
+summary: "TC 04 - Same NVRA already installed with unknown origin: dnf install is a no-op"
+
+/plan:
+    discover:
+        how: fmf
+        test: /tc04/tc04/test
+    provision:
+        how: container
+    execute:
+        how: tmt
+    prepare:
+        - name: Copy repo directories to container
+          how: shell
+          script: |
+              mkdir -p /tmp/artifact-test
+              cp -r system preinstall tc04 /tmp/artifact-test/
+        - name: Install repo files
+          how: shell
+          script: |
+              cp repos/system.repo /etc/yum.repos.d/poc-system.repo
+              cp repos/tc04.repo  /etc/yum.repos.d/poc-artifact-test.repo
+              dnf clean all
+
+/test:
+    description: |
+        foo-1.1-1 is pre-installed with unknown origin (rpm -i --force).
+        The artifact repo also provides foo-1.1-1 (same NVRA).
+
+        Expected: dnf install foo-1.1-1.noarch is a no-op — the package is
+        already installed at the requested version so DNF performs no
+        transaction, and the from_repo annotation is NOT updated to
+        poc-artifact-test.  This demonstrates why a plain install is
+        insufficient when the same NVRA is already present with unknown origin.
+    test: |
+        set -ex
+        command -v dnf5 &>/dev/null && DNF=dnf5 || DNF=dnf
+
+        rpm -i --force /tmp/artifact-test/preinstall/foo-1.1-1.noarch.rpm
+        rpm -q foo | grep -E '^foo-1\.1-1'
+
+        $DNF install -y --repo='poc-*' foo-1.1-1.noarch
+
+        rpm -q foo | grep -E '^foo-1\.1-1'
+        # Origin must NOT have been updated to the artifact repo (no-op install)
+        $DNF repoquery --installed foo --qf '%{from_repo}' | grep -vF 'poc-artifact-test'

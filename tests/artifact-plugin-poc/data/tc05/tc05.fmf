@@ -1,0 +1,42 @@
+summary: "TC 05 - Same NVRA with unknown origin: dnf reinstall fixes origin"
+
+/plan:
+    discover:
+        how: fmf
+        test: /tc05/tc05/test
+    provision:
+        how: container
+    execute:
+        how: tmt
+    prepare:
+        - name: Copy repo directories to container
+          how: shell
+          script: |
+              mkdir -p /tmp/artifact-test
+              cp -r system preinstall tc05 /tmp/artifact-test/
+        - name: Install repo files
+          how: shell
+          script: |
+              cp repos/system.repo /etc/yum.repos.d/poc-system.repo
+              cp repos/tc05.repo  /etc/yum.repos.d/poc-artifact-test.repo
+              dnf clean all
+
+/test:
+    description: |
+        foo-1.1-1 is pre-installed with unknown origin (rpm -i --force).
+        The artifact repo also provides foo-1.1-1 (same NVRA).
+
+        Expected: dnf reinstall foo re-installs the package from the artifact
+        repo and updates the from_repo annotation to poc-artifact-test.
+        This is the solution for the same-NVRA case where dnf install is
+        a no-op (demonstrated by TC 04).
+    test: |
+        set -ex
+        command -v dnf5 &>/dev/null && DNF=dnf5 || DNF=dnf
+
+        rpm -i --force /tmp/artifact-test/preinstall/foo-1.1-1.noarch.rpm
+        rpm -q foo | grep -E '^foo-1\.1-1'
+
+        $DNF reinstall -y --repo='poc-*' foo
+        rpm -q foo | grep -E '^foo-1\.1-1'
+        $DNF repoquery --installed foo --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'

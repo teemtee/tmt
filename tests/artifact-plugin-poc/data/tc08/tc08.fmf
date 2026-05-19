@@ -1,0 +1,49 @@
+summary: "TC 08 - Obsoletes: installing foo-1.1 requires --allowerasing when foo-ng is installed"
+
+/plan:
+    discover:
+        how: fmf
+        test: /tc08/tc08/test
+    provision:
+        how: container
+    execute:
+        how: tmt
+    prepare:
+        - name: Copy repo directories to container
+          how: shell
+          script: |
+              mkdir -p /tmp/artifact-test
+              cp -r system preinstall tc08 /tmp/artifact-test/
+        - name: Install repo files
+          how: shell
+          script: |
+              cp repos/system.repo /etc/yum.repos.d/poc-system.repo
+              cp repos/tc08.repo  /etc/yum.repos.d/poc-artifact-test.repo
+              dnf clean all
+
+/test:
+    description: |
+        foo-ng-1.4-1 is pre-installed with unknown origin (rpm -i --force).
+        foo-ng provides foo = 1.4-1 and obsoletes foo < 1.4.
+        The artifact repo provides foo-1.1-1 alongside foo-ng-1.4-1.
+
+        Expected: dnf install foo-1.1-1.noarch without --allowerasing fails
+        because foo-ng satisfies the foo provide and removing it requires
+        explicit erasure consent.  With --allowerasing the install succeeds,
+        foo-ng is removed, and foo-1.1-1 is recorded as coming from
+        poc-artifact-test.
+    test: |
+        set -ex
+        command -v dnf5 &>/dev/null && DNF=dnf5 || DNF=dnf
+
+        rpm -i --force /tmp/artifact-test/preinstall/foo-ng-1.4-1.noarch.rpm
+        rpm -q foo-ng | grep -E '^foo-ng-1\.4-1'
+
+        # Without --allowerasing this must fail
+        ! $DNF install -y --repo='poc-*' foo-1.1-1.noarch
+
+        # With --allowerasing it must succeed
+        $DNF install -y --allowerasing --repo='poc-*' foo-1.1-1.noarch
+        rpm -q foo | grep -E '^foo-1\.1-1'
+        ! rpm -q foo-ng
+        $DNF repoquery --installed foo --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'

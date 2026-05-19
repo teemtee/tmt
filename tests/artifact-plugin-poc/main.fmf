@@ -1,0 +1,34 @@
+summary: Test DNF install/downgrade/reinstall behaviour for artifact plugin
+test: ./test.sh
+
+description: |
+    Outer beakerlib test that detects the current distro, picks the matching
+    container image, copies the inner fmf tree from data/ into a temp directory,
+    and runs the 10 DNF behaviour scenarios via an inner tmt run.
+
+    Scenarios covered (run inside the inner container):
+      01 - Fresh install from artifact repo
+      02 - Upgrade: older version installed, artifact has newer
+      03 - Downgrade: newer version installed, explicit NVRA
+      04 - Same NVRA, unknown origin: dnf install is a no-op for origin
+      05 - Same NVRA, unknown origin: dnf reinstall fixes origin
+      06 - Transitive dep downgrade (--allow-downgrade on DNF5, auto on DNF4)
+      07 - --repo / --from-repo flag behaviour
+      08 - Obsoletes + --allowerasing
+      09 - Full two-command pattern (install + reinstall)
+      10 - DNF4-only: --allow-downgrade flag must not exist
+
+tag+:
+  - provision-only
+  - provision-container
+
+require+:
+  - beakerlib
+  - tmt+plugins
+  - rpm-build
+  - createrepo_c
+
+adjust:
+  - when: distro != centos and distro != fedora
+    enabled: false
+    because: Tests target dnf4 (CentOS Stream 9) and dnf5 (Fedora 43+)

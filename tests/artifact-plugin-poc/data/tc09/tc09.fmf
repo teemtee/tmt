@@ -1,0 +1,62 @@
+summary: "TC 09 - Two-command pattern: install + reinstall handles downgrade and same-NVRA cases"
+
+/plan:
+    discover:
+        how: fmf
+        test: /tc09/tc09/test
+    provision:
+        how: container
+    execute:
+        how: tmt
+    prepare:
+        - name: Copy repo directories to container
+          how: shell
+          script: |
+              mkdir -p /tmp/artifact-test
+              cp -r system preinstall tc09 /tmp/artifact-test/
+        - name: Install repo files
+          how: shell
+          script: |
+              cp repos/system.repo /etc/yum.repos.d/poc-system.repo
+              cp repos/tc09.repo  /etc/yum.repos.d/poc-artifact-test.repo
+              dnf clean all
+
+/test:
+    description: |
+        The two-command pattern (install [--allow-downgrade] + reinstall) is
+        the correct way to ensure both the right version AND the right origin
+        (from_repo) are recorded, regardless of whether the currently
+        installed version is higher, lower, or equal to the target.
+
+        Sub-case A (downgrade): foo-2.4-1 is pre-installed; artifact has foo-1.1-1.
+        Sub-case B (same NVRA): foo-1.1-1 is pre-installed; artifact has foo-1.1-1.
+
+        Expected: in both sub-cases, after the two-command pattern,
+        foo-1.1-1 is installed and from_repo = poc-artifact-test.
+    test: |
+        set -ex
+        command -v dnf5 &>/dev/null && DNF=dnf5 || DNF=dnf
+
+        # Sub-case A: downgrade (2.4 → 1.1)
+        rpm -i --force /tmp/artifact-test/preinstall/foo-2.4-1.noarch.rpm
+        rpm -q foo | grep -E '^foo-2\.4-1'
+
+        if [ "$DNF" = "dnf5" ]; then
+            $DNF install -y --allow-downgrade --repo='poc-*' foo-1.1-1.noarch
+        else
+            $DNF install -y --repo='poc-*' foo-1.1-1.noarch
+        fi
+        $DNF reinstall -y --repo='poc-*' foo
+        rpm -q foo | grep -E '^foo-1\.1-1'
+        $DNF repoquery --installed foo --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'
+
+        $DNF remove -y foo
+
+        # Sub-case B: same NVRA (1.1 already installed with unknown origin)
+        rpm -i --force /tmp/artifact-test/preinstall/foo-1.1-1.noarch.rpm
+        rpm -q foo | grep -E '^foo-1\.1-1'
+
+        $DNF install -y --repo='poc-*' foo-1.1-1.noarch
+        $DNF reinstall -y --repo='poc-*' foo
+        rpm -q foo | grep -E '^foo-1\.1-1'
+        $DNF repoquery --installed foo --qf '%{from_repo}' | grep -Fx 'poc-artifact-test'
