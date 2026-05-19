@@ -3,7 +3,43 @@
 This file contains instructions for AI assistants (Claude Code, Gemini CLI, GitHub Copilot, etc.)
 when working with the tmt codebase. Different sections cover different tasks.
 
-## Overview
+## Communication Style
+
+Provide matter-of-fact technical communication without praise or enthusiasm.
+
+**Avoid**:
+
+- Exclamations: "Perfect!", "Excellent!", "Great!", "That's wonderful!"
+- Praise: "Good catch", "Nice work", "Well done"
+- Enthusiasm markers: exclamation points, checkmarks (✓)
+- Commentary on collaboration: "Our analysis shows...", "We've successfully..."
+
+**Instead**:
+
+- State facts directly: "The file is now 132 lines" (not "Successfully reduced to 132 lines!")
+- Confirm completion: "Done" or "Updated" (not "Done! Looking good!")
+- Report results: "Test passes" (not "Test passes ✓")
+- Be matter-of-fact: "The mechanism is present" (not "Perfect! The mechanism is confirmed!")
+
+## Investigation Principles
+
+### Correlation vs Causation
+
+- When debugging tmt/fmf behavior, distinguish between correlation and causation
+- If a state change correlates with a behavioral difference, explicitly investigate whether it's
+  causal or coincidental before presenting conclusions
+- For each causal claim, provide: (1) supporting evidence, (2) a falsification test, (3) confidence
+  level
+
+### Evidence-Based Analysis
+
+- Work bottom-up from concrete evidence (logs, test/plan/story metadata, reproducers) rather than
+  top-down from assumptions
+- When investigating why a tool/analyzer misses a bug, systematically enumerate all possible root
+  causes before deep-diving into any single hypothesis
+- Expect multiple independent root causes - don't stop at the first plausible explanation
+
+## Project Overview
 
 tmt (Test Management Tool) is a comprehensive Python-based testing framework that provides
 a user-friendly way to work with tests. It implements the Metadata Specification using the Flexible
