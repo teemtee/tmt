@@ -65,8 +65,8 @@ class Epel(ToggleableFeature):
         )
 
     @classmethod
-    def _get_distro_facts(cls, guest: Guest) -> tuple[str, int]:
-        """Return validated distro id and major version from guest facts."""
+    def _assert_distro_facts(cls, guest: Guest) -> tuple[str, int]:
+        """Assert and return distro id and major version from guest facts."""
         distro = guest.facts.distro_id
         version = guest.facts.distro_major_version
 
@@ -137,7 +137,7 @@ class Epel(ToggleableFeature):
             logger.warning('EPEL prepare feature is supported on RHEL/CentOS-Stream 8+.')
             return
 
-        distro, version = cls._get_distro_facts(guest)
+        distro, version = cls._assert_distro_facts(guest)
 
         if distro == 'rhel':
             guest.package_manager.install(
@@ -165,7 +165,7 @@ class Epel(ToggleableFeature):
             logger.warning('EPEL prepare feature is supported on RHEL/CentOS-Stream 8+.')
             return
 
-        distro, version = cls._get_distro_facts(guest)
+        distro, version = cls._assert_distro_facts(guest)
 
         guest.package_manager.assert_config_manager()
 
