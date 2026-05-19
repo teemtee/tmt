@@ -28,8 +28,8 @@ Provide matter-of-fact technical communication without praise or enthusiasm.
 - When debugging tmt/fmf behavior, distinguish between correlation and causation
 - If a state change correlates with a behavioral difference, explicitly investigate whether it's
   causal or coincidental before presenting conclusions
-- For each causal claim, provide: (1) supporting evidence, (2) a falsification test, (3) confidence
-  level
+- For each causal claim, provide: (1) supporting evidence, (2) a falsification test,
+  (3) confidence level
 
 ### Evidence-Based Analysis
 
