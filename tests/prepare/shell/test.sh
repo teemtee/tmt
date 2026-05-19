@@ -53,7 +53,8 @@ rlJournalStart
             if [ "$IMAGE_MODE" = "yes" ]; then
                 rlAssertGrep "Collected command for Containerfile:.*export DUMMY_ENVVAR=dummy_value; .*/bin/true" "$run/log.txt"
             else
-                rlAssertGrep "Run command: .*export DUMMY_ENVVAR=dummy_value;.*/bin/true" "$run/log.txt"
+                rlAssertGrep "inner wrapper: set -eo pipefail; /bin/true" "$run/log.txt"
+                rlAssertGrep "Run command: .*export DUMMY_ENVVAR=dummy_value;.*./outer-tmt-prepare-wrapper.sh-prepare-Run-preparation-script-default-0" "$run/log.txt"
             fi
         rlPhaseEnd
 
