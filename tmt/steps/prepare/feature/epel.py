@@ -110,7 +110,9 @@ class Epel(ToggleableFeature):
             # Enable CRB repository (needed for EPEL dependencies).
             # FORCE_DNF=1 skips subscription-manager, not configured in test environments.
             logger.info('Enable CRB (EPEL dependency)')
-            guest.execute(ShellScript(f"FORCE_DNF=1 {guest.facts.sudo_prefix} crb enable"))
+            guest.execute(
+                ShellScript(f"FORCE_DNF=1 {guest.facts.sudo_prefix} crb enable"), immediately=False
+            )
 
     @classmethod
     def _disable_repo(cls, guest: Guest, version: int, package: str, repos: str) -> None:

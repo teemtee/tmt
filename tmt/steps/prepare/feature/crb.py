@@ -69,7 +69,7 @@ class Crb(ToggleableFeature):
             grep -v -i -e debug -e source -e eus -e virt -e rhui | \
             sed 's/^\s*\([^ ]*\).*/\1/')
         """
-        guest.execute(ShellScript(script_content))
+        guest.execute(ShellScript(script_content), immediately=False)
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
