@@ -1088,6 +1088,7 @@ class Logger:
     def warn(
         self,
         message: str,
+        *,
         shift: int,
         stacklevel: int = 1,
     ) -> None:
