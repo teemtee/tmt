@@ -257,8 +257,8 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
 
     .. note::
 
-       The plugin requires a working Ansible to be available on the
-       test runner.
+       Some of the plugins require a working Ansible to be available
+       on the test runner.
 
     .. warning::
 

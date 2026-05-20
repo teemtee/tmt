@@ -24,10 +24,10 @@ rlJournalStart
             rlRun -s "tmt -vvv run -a plan -n /plans/fips/disabled provision --how container --image $TEST_IMAGE_PREFIX/$CONTAINER" 2
             rlAssertGrep "FIPS prepare feature does not support 'disabled'." $rlRun_LOG
             rlRun -s "tmt -vvv run -a plan -n /plans/fips/enabled provision --how container --image $TEST_IMAGE_PREFIX/$CONTAINER" 2
-            rlAssertGrep "FIPS prepare feature is not supported on ostree or container systems." $rlRun_LOG
+            rlAssertGrep "FIPS prepare feature is not supported on container, ostree, or image mode systems." $rlRun_LOG
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun -s "tmt -vvv run -a plan --name /plans/fips/enabled provision --how virtual --image fedora-coreos" 2
-            rlAssertGrep "FIPS prepare feature is not supported on ostree or container systems." $rlRun_LOG
+            rlAssertGrep "FIPS prepare feature is not supported on container, ostree, or image mode systems." $rlRun_LOG
             rlRun -s "tmt -vvv run -a plan --name /fips/enabled provision --how virtual --image fedora-rawhide" 2
             rlAssertGrep "FIPS prepare feature is supported on RHEL 7 and RHEL/CentOS-Stream 8, 9 or 10." $rlRun_LOG
         fi

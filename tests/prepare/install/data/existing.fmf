@@ -8,15 +8,15 @@ adjust:
         script: apt-get update
 
     # Applies to every distro...
-  - when: distro != rhel-8
+  - when: distro != rhel
     prepare+:
       - how: install
         package:
           - tree
           - diffutils
 
-    # ... except UBI8 which is a RHEL-8.
-  - when: distro == rhel-8
+    # ... except UBI8 and UBI9 which do not ship tree and diffutils
+  - when: distro == rhel
     prepare+:
       - how: install
         package:
