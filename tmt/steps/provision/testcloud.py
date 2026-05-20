@@ -931,7 +931,7 @@ class GuestTestcloud(tmt.GuestSsh):
             if key_type is not None:
                 command += Command("-t", key_type)
             self._run_guest_command(command, silent=True)
-            self.verbose('key', self.key[0], 'green')
+            self.verbose('key', self.key[0], color='green')
             public_key = (self.guest_workdir / f'{key_name}.pub').read_text()
 
         return public_key
@@ -1145,9 +1145,9 @@ class GuestTestcloud(tmt.GuestSsh):
         # error later. Validate the image after download and retry if needed.
         def prepare_image() -> None:
             self._image = testcloud.image.Image(self.image_url)
-            self.verbose('qcow', self._image.name, 'green')
+            self.verbose('qcow', self._image.name, color='green')
             if not Path(self._image.local_path).exists():
-                self.info('progress', 'downloading...', 'cyan')
+                self.info('progress', 'downloading...', color='cyan')
             try:
                 self._image.prepare()
             except FileNotFoundError as error:
@@ -1223,12 +1223,12 @@ class GuestTestcloud(tmt.GuestSsh):
         self.info(
             'memory',
             f'{int(tmt.hardware.UNITS(f"{self._domain.memory_size} kB").to("MB").magnitude)} MB',
-            'green',
+            color='green',
         )
         self.info(
             'disk',
             f'{tmt.hardware.UNITS(f"{self._domain.storage_devices[0].size} GB").to("GB")}',
-            'green',
+            color='green',
         )
 
         for i, device in enumerate(self._domain.storage_devices):
@@ -1273,7 +1273,7 @@ class GuestTestcloud(tmt.GuestSsh):
             workarounds=self._workarounds,
         )
 
-        self.verbose('name', self.instance_name, 'green')
+        self.verbose('name', self.instance_name, color='green')
 
         # Decide if we want to multiply timeouts when emulating an architecture
         time_coeff = NON_KVM_TIMEOUT_COEF if not self.is_kvm else 1
@@ -1294,7 +1294,7 @@ class GuestTestcloud(tmt.GuestSsh):
             )
 
         # Boot the virtual machine
-        self.info('progress', 'booting...', 'cyan')
+        self.info('progress', 'booting...', color='cyan')
         self.verbose("console log", self.logdir / CONSOLE_LOG_FILE, level=2, color="cyan")
         assert libvirt is not None
 
@@ -1306,9 +1306,9 @@ class GuestTestcloud(tmt.GuestSsh):
             raise ProvisionError("Failed to boot testcloud instance.") from error
         self.primary_address = self.topology_address = self._instance.get_ip()
         self.port = int(self._instance.get_instance_port())
-        self.verbose('primary address', self.primary_address, 'green')
-        self.verbose('topology address', self.topology_address, 'green')
-        self.verbose('port', self.port, 'green')
+        self.verbose('primary address', self.primary_address, color='green')
+        self.verbose('topology address', self.topology_address, color='green')
+        self.verbose('port', self.port, color='green')
         self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
@@ -1331,7 +1331,7 @@ class GuestTestcloud(tmt.GuestSsh):
             except testcloud.exceptions.TestcloudInstanceError as error:
                 raise tmt.utils.ProvisionError("Failed to stop testcloud instance.") from error
 
-            self.info('guest', 'stopped', 'green')
+            self.info('guest', 'stopped', color='green')
 
     def remove(self) -> None:
         """
@@ -1345,7 +1345,7 @@ class GuestTestcloud(tmt.GuestSsh):
             except FileNotFoundError as error:
                 raise tmt.utils.ProvisionError("Failed to remove testcloud instance.") from error
 
-            self.info('guest', 'removed', 'green')
+            self.info('guest', 'removed', color='green')
 
     def reboot(
         self,

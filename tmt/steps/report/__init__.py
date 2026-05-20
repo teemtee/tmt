@@ -80,7 +80,7 @@ class Report(tmt.steps.Step):
         """
 
         summary = tmt.result.Result.summary(self.plan.execute.results())
-        self.info('summary', summary, 'green', shift=1)
+        self.info('summary', summary, color='green', shift=1)
 
     def go(self, force: bool = False) -> None:
         """
@@ -91,7 +91,7 @@ class Report(tmt.steps.Step):
 
         # Nothing more to do if already done
         if self.status() == 'done':
-            self.info('status', 'done', 'green', shift=1)
+            self.info('status', 'done', color='green', shift=1)
             self.summary()
             self.actions()
             return

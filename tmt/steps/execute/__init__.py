@@ -697,8 +697,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         logger: tmt.log.Logger,
     ) -> None:
         self.go_prolog(logger)
-        logger.verbose('ignore-duration', self.data.ignore_duration, 'green', level=2)
-        logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
+        logger.verbose('ignore-duration', self.data.ignore_duration, color='green', level=2)
+        logger.verbose('exit-first', self.data.exit_first, color='green', level=2)
 
     @property
     def discover(self) -> Union[Discover, 'DiscoverFmf']:
@@ -1161,7 +1161,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
         if pending_tests:
             message.append(fmf.utils.listed(pending_tests, 'test') + ' pending')
 
-        self.info('summary', ', '.join(message), 'green', shift=1)
+        self.info('summary', ', '.join(message), color='green', shift=1)
 
     def update_results(self, results: list['Result']) -> None:
         """
@@ -1251,7 +1251,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
 
         # Nothing more to do if already done
         if self.status() == 'done':
-            self.info('status', 'done', 'green', shift=1)
+            self.info('status', 'done', color='green', shift=1)
             self.summary()
             self.actions()
             return

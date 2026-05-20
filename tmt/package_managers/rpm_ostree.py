@@ -239,7 +239,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         required, recommended = self.sort_packages(*installables, options=options)
 
         for package in recommended:
-            self.info('package', str(package), 'green')
+            self.info('package', str(package), color='green')
             try:
                 super().install(package, options=options)
             except RunError as error:

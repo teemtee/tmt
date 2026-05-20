@@ -196,7 +196,7 @@ class FeatureBase(tmt.utils.Common):
         if filepath.exists():
             return filepath
 
-        logger.warning(f"Cannot find any suitable playbook for '{filename}'.", 0)
+        logger.warning(f"Cannot find any suitable playbook for '{filename}'.")
         return None
 
     @classmethod

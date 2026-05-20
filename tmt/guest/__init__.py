@@ -2101,7 +2101,7 @@ class Guest(
             matched = re.search(rf'^.*\s:\s.*{key}=(\d+).*$', output, re.MULTILINE)
             if matched and int(matched.group(1)) > 0:
                 tasks = fmf.utils.listed(matched.group(1), 'task')
-                self.verbose(key, tasks, 'green')
+                self.verbose(key, tasks, color='green')
 
     def _sanitize_ansible_playbook_path(
         self, playbook: AnsibleApplicable, playbook_root: Optional[Path]

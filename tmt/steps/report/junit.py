@@ -425,7 +425,7 @@ def make_junit_xml(
         try:
             tree_root = etree.fromstring(xml_data, xml_parser)
         except etree.XMLSyntaxError as error:
-            phase.verbose('rendered XML', xml_data, 'red')
+            phase.verbose('rendered XML', xml_data, color='red')
             raise tmt.utils.ReportError(
                 'The generated XML output is not a valid XML file. Use `--verbose` argument '
                 'to show the output.'
@@ -586,6 +586,6 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
         )
         try:
             f_path.write_text(xml_data)
-            self.info('output', f_path, 'yellow')
+            self.info('output', f_path, color='yellow')
         except Exception as error:
             raise tmt.utils.ReportError(f"Failed to write the output '{f_path}'.") from error

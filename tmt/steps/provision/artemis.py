@@ -591,10 +591,10 @@ class GuestArtemis(tmt.GuestSsh):
                     'Failed to create', response=response, request_data=data
                 )
 
-            self.info('guest', 'has been requested', 'green')
+            self.info('guest', 'has been requested', color='green')
             self.guestname = response.json()['guestname']
 
-        self.info('guestname', self.guestname, 'green')
+        self.info('guestname', self.guestname, color='green')
 
         # Track the previous state to only log when it changes
         previous_state = None
@@ -657,8 +657,8 @@ class GuestArtemis(tmt.GuestSsh):
         if self.guestname is None or self.primary_address is None:
             self._create()
 
-        self.verbose('primary address', self.primary_address, 'green')
-        self.verbose('topology address', self.topology_address, 'green')
+        self.verbose('primary address', self.primary_address, color='green')
+        self.verbose('topology address', self.topology_address, color='green')
 
         self.assert_reachable()
 
@@ -673,10 +673,10 @@ class GuestArtemis(tmt.GuestSsh):
         response = self.api.delete(f'/guests/{self.guestname}')
 
         if response.status_code == 404:
-            self.info('guest', 'no longer exists', 'red')
+            self.info('guest', 'no longer exists', color='red')
 
         elif response.ok:
-            self.info('guest', 'has been removed', 'green')
+            self.info('guest', 'has been removed', color='green')
 
         else:
             self.info(
@@ -700,7 +700,7 @@ class GuestArtemis(tmt.GuestSsh):
             def trigger_reboot() -> None:
                 response = self.api.query(f'/guests/{self.guestname}/reboot', method='post')
                 if response.status_code == 202:
-                    self.info('guest', 'reboot requested', 'green')
+                    self.info('guest', 'reboot requested', color='green')
                 else:
                     raise ArtemisProvisionError('Failed to reboot guest', response=response)
 
@@ -854,7 +854,7 @@ class GuestLogArtemis(tmt.guest.GuestLog):
                 f"Failed to initialize, API responded with HTTP {response.status_code} code.", self
             )
 
-        logger.info(f'{self.name} log', 'requested', 'green')
+        logger.info(f'{self.name} log', 'requested', color='green')
 
     def update(self, *, logger: tmt.log.Logger) -> None:
         if self.guest.guestname is None:

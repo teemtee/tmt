@@ -286,14 +286,14 @@ class GuestContainer(tmt.Guest):
         if self.container:
             self.primary_address = self.topology_address = self.container
 
-            self.verbose('primary address', self.primary_address, 'green')
-            self.verbose('topology address', self.topology_address, 'green')
+            self.verbose('primary address', self.primary_address, color='green')
+            self.verbose('topology address', self.topology_address, color='green')
 
             return
 
         self.container = self.primary_address = self.topology_address = self._tmt_name()
-        self.verbose('primary address', self.primary_address, 'green')
-        self.verbose('topology address', self.topology_address, 'green')
+        self.verbose('primary address', self.primary_address, color='green')
+        self.verbose('topology address', self.topology_address, color='green')
 
         # Check if the image is available
         assert self.image is not None
@@ -318,7 +318,7 @@ class GuestContainer(tmt.Guest):
                 self._logger,
             )
 
-        self.verbose('name', self.container, 'green')
+        self.verbose('name', self.container, color='green')
 
         additional_args = []
 
@@ -637,7 +637,7 @@ class GuestContainer(tmt.Guest):
             self.podman(
                 Command('container', 'stop', '--time', str(self.stop_time), self.container)
             )
-            self.info('container', 'stopped', 'green')
+            self.info('container', 'stopped', color='green')
 
     def remove(self) -> None:
         """
@@ -646,7 +646,7 @@ class GuestContainer(tmt.Guest):
 
         if self.container:
             self.podman(Command('container', 'rm', '-f', self.container))
-            self.info('container', 'removed', 'green')
+            self.info('container', 'removed', color='green')
 
         if self.network:
             # Will remove the network if there are no more containers attached to it.
@@ -655,7 +655,7 @@ class GuestContainer(tmt.Guest):
                     Command('network', 'rm', self.network),
                     message=f"Remove network '{self.network}'.",
                 )
-                self.info('container', 'network removed', 'green')
+                self.info('container', 'network removed', color='green')
             except tmt.utils.RunError as err:
                 if err.stderr and 'network is being used' in err.stderr:
                     # error string:

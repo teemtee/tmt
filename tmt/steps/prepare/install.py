@@ -203,7 +203,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         # Check rpm packages in local directories
         for directory in directories:
-            self.info('directory', directory, 'green')
+            self.info('directory', directory, color='green')
             if not directory.is_dir():
                 raise tmt.utils.PrepareError(f"Packages directory '{directory}' not found.")
             for filepath in directory.iterdir():
@@ -237,11 +237,11 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         # Show a brief summary by default
         if not self.verbosity_level:
             summary = fmf.utils.listed(installables, max=3)
-            self.info(title, summary, 'green')
+            self.info(title, summary, color='green')
         # Provide a full list of packages in verbose mode
         else:
             summary = fmf.utils.listed(installables, 'package')
-            self.info(title, summary + ' requested', 'green')
+            self.info(title, summary + ' requested', color='green')
             for package in sorted(installables):
                 self.verbose(str(package), shift=1)
 
@@ -270,7 +270,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 )
             )
             summary = fmf.utils.listed([str(p) for p in self.local_packages], 'local package')
-            self.info('total', f"{summary} installed", 'green')
+            self.info('total', f"{summary} installed", color='green')
 
         if self.remote_packages:
             install_outputs.append(

@@ -472,4 +472,4 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 'curl -k -u <USER>:<PASSWORD> -X POST -F file=@<XUNIT_XML_FILE_PATH> '
                 '<POLARION_URL>/polarion/import/xunit'
             )
-        self.info('xUnit file saved at', f_path, 'yellow')
+        self.info('xUnit file saved at', f_path, color='yellow')

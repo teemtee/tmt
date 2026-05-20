@@ -267,7 +267,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                 # Note the missing Optional for values - to_minimal_dict() would
                 # not include unset keys, therefore all values should be valid.
                 for key, value in cast(dict[str, str], remote_plan_id.to_minimal_spec()).items():
-                    self.verbose(f'import {key}', value, 'green')
+                    self.verbose(f'import {key}', value, color='green')
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """
@@ -281,7 +281,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         :param url: URL of the remote source.
         :returns: Potential path to the metadata tree root within the fetched source.
         """
-        self.info('url', url, 'green')
+        self.info('url', url, color='green')
         if self.data.url_content_type == "git":
             self.debug(f"Clone '{url}' to '{self.test_dir}'.")
             tmt.utils.git.git_clone(
@@ -323,7 +323,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
         if path is None or path.resolve() == Path.cwd().resolve():
             return Path('')
-        self.info('path', path, 'green')
+        self.info('path', path, color='green')
         return path
 
     def checkout_ref(self) -> None:
@@ -351,7 +351,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             raise tmt.utils.DiscoverError("Could not resolve dynamic reference") from error
 
         if ref:
-            self.info('ref', ref, 'green')
+            self.info('ref', ref, color='green')
             self.debug(f"Checkout ref '{ref}'.")
             self.run(Command('git', 'checkout', '-f', ref), cwd=self.test_dir)
 
@@ -361,7 +361,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                 self.verbose(
                     'commit-hash',
                     tmt.utils.git.git_hash(directory=self.test_dir, logger=self._logger),
-                    'green',
+                    color='green',
                 )
 
     def prune_tree(
@@ -881,7 +881,7 @@ class Discover(tmt.steps.Step):
 
         # Summary of selected tests
         text = listed(len(self.tests(enabled=True)), 'test') + ' selected'
-        self.info('summary', text, 'green', shift=1)
+        self.info('summary', text, color='green', shift=1)
         # Test list in verbose mode
         for test_origin in self.tests(enabled=True):
             self.verbose(test_origin.test.name, color='red', shift=2)
@@ -897,7 +897,7 @@ class Discover(tmt.steps.Step):
 
         # Nothing more to do if already done
         if self.status() == 'done':
-            self.info('status', 'done', 'green', shift=1)
+            self.info('status', 'done', color='green', shift=1)
             self.summary()
             self.actions()
             return

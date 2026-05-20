@@ -279,7 +279,7 @@ class MockShell:
             for fileno, _ in events:
                 if fileno == self.mock_shell_stderr_fd:
                     for line in self.mock_shell.stderr.readlines():
-                        self.parent._logger.debug('stderr', line.rstrip(), 'yellow')
+                        self.parent._logger.debug('stderr', line.rstrip(), color='yellow')
 
         if mock_shell_result is not None:
             raise tmt.utils.ProvisionError(
@@ -407,10 +407,10 @@ class MockShell:
             )
 
             stream_out = _DecodingStream(
-                lambda text: output_logger('stdout', text, 'yellow', level=3)
+                lambda text: output_logger('stdout', text, color='yellow', level=3)
             )
             stream_err = _DecodingStream(
-                lambda text: output_logger('stderr', text, 'yellow', level=3)
+                lambda text: output_logger('stderr', text, color='yellow', level=3)
             )
             returncode = None
 
