@@ -10,11 +10,13 @@ description: |
                    - https://github.com/my-team/project/presets.yaml
                    - file:///home/user/config/tmt/presets.yaml
                    - ~/.config/tmt/presets.yaml
-               and:
-                   - preset: AMD__ROME
-                   - preset: MEMORY_MIN_64G
-                   - cpu:
-                       model: 97
+              preset: BIG_MEMORY
+              cpu:
+                  model: 97
+
+    In the example above, both the ``BIG_MEMORY`` preset and the
+    ``cpu.model: 97`` constraint must be satisfied — sibling keys under
+    ``hardware`` are combined with implicit ``and`` glue.
 
     Rules:
 
