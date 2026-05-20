@@ -417,7 +417,7 @@ class BeakerLibFromUrl(BeakerLib):
         self.parent.verbose(
             'commit-hash',
             tmt.utils.git.git_hash(directory=clone_dir, logger=self._logger),
-            'green',
+            color='green',
         )
 
         # Copy only the required library
@@ -432,7 +432,7 @@ class BeakerLibFromUrl(BeakerLib):
         self.parent.verbose(
             'using remote git library',
             cast(dict[str, str], self.identifier.to_minimal_dict()),
-            'green',
+            color='green',
             level=3,
         )
 
