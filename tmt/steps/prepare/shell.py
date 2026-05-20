@@ -281,8 +281,8 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
             _, outer_wrapper_filepath = pidfile_context.create_wrappers(
                 worktree,
-                f'inner-{PREPARE_WRAPPER_FILENAME}',
-                f'outer-{PREPARE_WRAPPER_FILENAME}',
+                f'script-{script_index}-inner-{PREPARE_WRAPPER_FILENAME}',
+                f'script-{script_index}-outer-{PREPARE_WRAPPER_FILENAME}',
                 ACTION=script,
             )
 

@@ -50,11 +50,11 @@ rlJournalStart
         rlPhaseStartTest "Make sure plan environment is exposed to scripts"
             rlRun -s "tmt run --id $run --scratch -v provision --how=$PROVISION_HOW $image_opt prepare cleanup plan -n environment" 0
 
+            rlAssertGrep "inner wrapper: set -eo pipefail; /bin/true" "$run/log.txt"
             if [ "$IMAGE_MODE" = "yes" ]; then
-                rlAssertGrep "Collected command for Containerfile:.*export DUMMY_ENVVAR=dummy_value; .*/bin/true" "$run/log.txt"
+                rlAssertGrep "Collected command for Containerfile:.*export DUMMY_ENVVAR=dummy_value; .*./script-0-outer-tmt-prepare-wrapper.sh-prepare-Run-preparation-script-default-0" "$run/log.txt"
             else
-                rlAssertGrep "inner wrapper: set -eo pipefail; /bin/true" "$run/log.txt"
-                rlAssertGrep "Run command: .*export DUMMY_ENVVAR=dummy_value;.*./outer-tmt-prepare-wrapper.sh-prepare-Run-preparation-script-default-0" "$run/log.txt"
+                rlAssertGrep "Run command: .*export DUMMY_ENVVAR=dummy_value;.*./script-0-outer-tmt-prepare-wrapper.sh-prepare-Run-preparation-script-default-0" "$run/log.txt"
             fi
         rlPhaseEnd
 
