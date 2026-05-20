@@ -218,8 +218,8 @@ class GuestConnect(tmt.guest.GuestSsh):
 
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
-        self.verbose('primary address', self.primary_address, 'green')
-        self.verbose('topology address', self.topology_address, 'green')
+        self.verbose('primary address', self.primary_address, color='green')
+        self.verbose('topology address', self.topology_address, color='green')
 
         self.assert_reachable()
 
