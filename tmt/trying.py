@@ -29,7 +29,7 @@ import tmt.utils
 from tmt import Plan
 from tmt.base.run import RunData
 from tmt.steps.prepare import PreparePlugin
-from tmt.utils import Command, GeneralError, MetadataError, Path
+from tmt.utils import Command, GeneralError, MetadataError, NormalizationError, Path
 from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
