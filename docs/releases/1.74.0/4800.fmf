@@ -1,0 +1,6 @@
+description: |
+    The ``epel`` and ``crb`` feature plugins now work in image
+    mode as well. Their Ansible playbook implementations have been
+    replaced with native Python code to support the
+    Containerfile-based workflow.
+order: 10

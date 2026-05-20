@@ -1,0 +1,4 @@
+description: |
+    Fixed the display of the ``ansible`` key in plan and guest
+    output to show the actual specification data instead of an
+    internal object representation.

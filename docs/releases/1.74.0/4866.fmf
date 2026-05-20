@@ -1,0 +1,6 @@
+description: |
+    The cleanup step now runs for all provisioned guests,
+    including those that failed to become ready, ensuring
+    resources are properly released even after provision
+    failures.
+order: 11

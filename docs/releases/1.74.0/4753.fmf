@@ -1,0 +1,4 @@
+description: |
+    When custom results are missing, the execute plugin now
+    references ``output.txt`` in ``results.yaml`` so that the
+    test output is still available for inspection.

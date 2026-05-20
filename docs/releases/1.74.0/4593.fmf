@@ -1,3 +1,4 @@
 description: |
     The ``tmt clean`` command now shows the size of each workdir
     and a summary of total disk space freed.
+order: 12

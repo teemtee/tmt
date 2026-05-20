@@ -1,0 +1,4 @@
+description: |
+    The ``dmesg`` check plugin now requires ``/bin/dmesg``,
+    ensuring the check works correctly on pre-usr-merge systems
+    where ``/usr/bin/dmesg`` is not available.

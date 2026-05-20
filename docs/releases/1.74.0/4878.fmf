@@ -1,6 +1,7 @@
 description: |
-  Test results now include a ``web-link`` field containing a browsable
-  URL that points to the test's fmf metadata source. This is the same
-  URL shown by ``tmt test show`` under the ``web`` key. Downstream
-  consumers such as reporting tools can use this link directly instead
-  of reconstructing it from the ``fmf-id`` mapping.
+    Test results now include a ``web-link`` field containing a
+    browsable URL that points to the test's fmf metadata source.
+    This is the same URL shown by ``tmt test show`` under the
+    ``web`` key. Downstream consumers such as reporting tools can
+    use this link directly instead of reconstructing it from the
+    ``fmf-id`` mapping.
