@@ -14,11 +14,12 @@ from typing import (
     cast,
 )
 
-import fmf.context
+import fmf.utils
 from click import echo
 
 import tmt.export
 import tmt.utils
+from tmt.context import TmtContext
 from tmt.utils import ConvertError, Path
 from tmt.utils.structured_field import StructuredField
 from tmt.utils.themes import style
@@ -289,9 +290,9 @@ def enabled_for_environment(test: 'tmt.base.core.Test', tcms_notes: str) -> bool
         return True
 
     try:
-        context = fmf.context.Context(**context_dict)
+        context = TmtContext(**context_dict)
         test_node = test.node.copy()
-        test_node.adjust(context, case_sensitive=False)
+        test_node.adjust(context)
         return tmt.Test(node=test_node, logger=test._logger).enabled
     except BaseException as exception:
         log.debug(f"Failed to process adjust: {exception}")

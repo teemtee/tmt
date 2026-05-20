@@ -28,7 +28,6 @@ from typing import (
 
 import fmf
 import fmf.base
-import fmf.context
 import fmf.utils
 import jsonschema
 from click import confirm, echo
@@ -61,6 +60,7 @@ from tmt.container import (
     container_fields,
     field,
 )
+from tmt.context import TmtContext
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import ResultInterpret
 from tmt.utils import (
@@ -2390,8 +2390,7 @@ class Tree(tmt.utils.Common):
                 raise tmt.utils.GeneralError("Invalid yaml syntax.") from error
             # Adjust metadata for current fmf context
             self._tree.adjust(
-                fmf.context.Context(**self.fmf_context),
-                case_sensitive=False,
+                TmtContext(**self.fmf_context),
                 decision_callback=create_adjust_callback(self._logger),
                 additional_rules=self._additional_rules,
             )
@@ -3552,8 +3551,7 @@ def resolve_dynamic_ref(
     if not plan:
         raise tmt.utils.FileError("Cannot get plan fmf context to evaluate dynamic ref.")
     reference_tree.adjust(
-        fmf.context.Context(**plan.fmf_context),
-        case_sensitive=False,
+        TmtContext(**plan.fmf_context),
         decision_callback=create_adjust_callback(logger),
     )
     # Also temporarily build a plan so that env and context variables are expanded

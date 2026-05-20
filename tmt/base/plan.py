@@ -9,7 +9,6 @@ from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union, cast
 
 import fmf
-import fmf.context
 import fmf.utils
 from click import echo
 from fmf.utils import listed  # pyright: ignore[reportUnknownVariableType]
@@ -47,6 +46,7 @@ from tmt.base.core import (
 )
 from tmt.base.run import Run
 from tmt.container import SpecBasedContainer, container, field
+from tmt.context import TmtContext
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.utils import (
     Command,
@@ -1530,8 +1530,7 @@ class Plan(
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action, including the adjust-plans rules.
             node.adjust(
-                fmf.context.Context(**alteration_fmf_context),
-                case_sensitive=False,
+                TmtContext(**alteration_fmf_context),
                 additional_rules=reference.adjust_plans,
             )
 
