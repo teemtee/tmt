@@ -104,7 +104,7 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
             val = self.get(opt)
             # You can hide some not important information about provisioning.
             if opt != 'switch':
-                self.info(opt, val, 'green')
+                self.info(opt, val, color='green')
             data[opt] = val
 
         self._guest = GuestExample(data, name=self.name, parent=self.step)
@@ -212,7 +212,7 @@ class GuestExample(tmt.Guest):
         if self.opt('dry'):
             return
 
-        self.verbose('what', self.what, 'green')
+        self.verbose('what', self.what, color='green')
 
         if self._some_your_internal_stuff():
             return
@@ -265,6 +265,6 @@ class GuestExample(tmt.Guest):
         """
 
         if self.what:
-            self.info('guest', 'removed', 'green')
+            self.info('guest', 'removed', color='green')
             self.delete()
             self.what = None

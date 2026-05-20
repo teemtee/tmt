@@ -188,7 +188,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
         # Apply each playbook on the guest
         for playbook_index, _playbook in enumerate(self.data.playbook):
-            logger.info('playbook', _playbook, 'green')
+            logger.info('playbook', _playbook, color='green')
 
             playbook_name = f'{self.name} / {_playbook}'
             lowercased_playbook = _playbook.lower()

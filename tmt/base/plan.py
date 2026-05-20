@@ -1259,7 +1259,7 @@ class Plan(
         self.info('')
         self.info(self.name, color='red')
         if self.summary:
-            self.verbose('summary', self.summary, 'green')
+            self.verbose('summary', self.summary, color='green')
 
     def go(self) -> None:
         """
@@ -1270,8 +1270,8 @@ class Plan(
         # Additional debug info like plan environment
         self.debug('info', color='cyan', shift=0, level=3)
         # TODO: something better than str()?
-        self.debug('environment', self.environment, 'magenta', level=3)
-        self.debug('context', self.fmf_context, 'magenta', level=3)
+        self.debug('environment', self.environment, color='magenta', level=3)
+        self.debug('context', self.fmf_context, color='magenta', level=3)
 
         # Wake up all steps
         self.wake()

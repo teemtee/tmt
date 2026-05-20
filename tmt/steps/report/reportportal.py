@@ -906,10 +906,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             if not create_launch:
                 launch_name = yaml_to_dict(response.text).get("name") or ""
                 self.verbose("launch", launch_name, color="green")
-                self.verbose("id", launch_id, "yellow", shift=1)
+                self.verbose("id", launch_id, color="yellow", shift=1)
 
             assert launch_uuid is not None
-            self.verbose("uuid", launch_uuid, "yellow", shift=1)
+            self.verbose("uuid", launch_uuid, color="yellow", shift=1)
             self.data.launch_uuid = launch_uuid
 
             launch_url = f"{self.data.url}/ui/#{self.data.project}/launches/all/{launch_id}"
@@ -935,10 +935,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
             elif suite_name:
                 self.info("suite", suite_name, color="green")
-                self.verbose("id", suite_id, "yellow", shift=1)
+                self.verbose("id", suite_id, color="yellow", shift=1)
 
             if suite_uuid:
-                self.verbose("uuid", suite_uuid, "yellow", shift=1)
+                self.verbose("uuid", suite_uuid, color="yellow", shift=1)
                 self.data.suite_uuid = suite_uuid
 
             # The first test starts with the launch (at the worst case)
@@ -1013,7 +1013,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                     item_uuid = yaml_to_dict(response.text).get("id")
                     assert item_uuid is not None
-                    self.verbose("uuid", item_uuid, "yellow", shift=1)
+                    self.verbose("uuid", item_uuid, color="yellow", shift=1)
                     self.data.test_uuids[serial_number] = item_uuid
                 else:
                     item_uuid = self.data.test_uuids[serial_number]
@@ -1088,7 +1088,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 },
                             )
 
-                            self.verbose("uuid", child_item_uuid, "yellow", shift=2)
+                            self.verbose("uuid", child_item_uuid, color="yellow", shift=2)
 
                 # Finish the parent test item
                 response = self.rp_api_put(
@@ -1129,7 +1129,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 launch_url = str(yaml_to_dict(response.text).get("link"))
 
             assert launch_url is not None
-            self.info("url", launch_url, "magenta")
+            self.info("url", launch_url, color="magenta")
             self.data.launch_url = launch_url
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:

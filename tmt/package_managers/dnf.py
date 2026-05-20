@@ -349,7 +349,7 @@ class Dnf(PackageManager[DnfEngine]):
         self.debug('Make sure the copr plugin is available.')
         self.install(Package(self.copr_plugin))
         for repository in repositories:
-            self.info('copr', repository, 'green')
+            self.info('copr', repository, color='green')
             self.guest.execute(
                 ShellScript(
                     f"{self.engine.command.to_script()} copr "

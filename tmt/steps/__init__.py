@@ -1549,7 +1549,7 @@ class Step(
         self.info(self.name, color='blue')
         # Show workdir in verbose mode
         if self.workdir:
-            self.debug('workdir', self.workdir, 'magenta')
+            self.debug('workdir', self.workdir, color='magenta')
 
     def prune(self, logger: tmt.log.Logger) -> None:
         """
@@ -2400,15 +2400,15 @@ class BasePlugin(
         logger = logger or self._logger
 
         # Show the method
-        logger.info('how', self.get('how'), 'magenta')
+        logger.info('how', self.get('how'), color='magenta')
         # Give summary if provided
         if self.get('summary'):
-            logger.info('summary', self.get('summary'), 'magenta')
+            logger.info('summary', self.get('summary'), color='magenta')
         # Show name only if it's not the default one
         if not self.name.startswith(tmt.utils.DEFAULT_NAME):
-            logger.info('name', self.name, 'magenta')
+            logger.info('name', self.name, color='magenta')
         # Include order in verbose mode
-        logger.verbose('order', self.order, 'magenta', level=3)
+        logger.verbose('order', self.order, color='magenta', level=3)
 
     def essential_requires(self) -> list['tmt.base.core.Dependency']:
         """

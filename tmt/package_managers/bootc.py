@@ -274,7 +274,7 @@ class Bootc(PackageManager[BootcEngine]):
 
                 self.debug(f"containerfile content: {containerfile}")
                 # Build the container image
-                self.info("package", "building container image with dependencies", "green")
+                self.info("package", "building container image with dependencies", color="green")
 
                 assert self.guest.parent is not None
 
@@ -287,14 +287,14 @@ class Bootc(PackageManager[BootcEngine]):
                 )
 
                 # Switch to the new image for next boot
-                self.info("package", f"switching to new image {image_tag}", "green")
+                self.info("package", f"switching to new image {image_tag}", color="green")
 
                 bootc_command, _ = self.engine.prepare_command()
                 bootc_command += Command('switch', '--transport', 'containers-storage', image_tag)
                 self.guest.execute(bootc_command)
 
                 # Reboot into the new image
-                self.info("package", "rebooting to apply new image", "green")
+                self.info("package", "rebooting to apply new image", color="green")
                 self.guest.reboot()
 
                 return build_output

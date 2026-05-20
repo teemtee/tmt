@@ -115,7 +115,7 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
 
         # TODO Provide a number of stopped guests
         tasks = fmf.utils.listed(self.phases(), 'task')
-        self.info('summary', f'{tasks} completed', 'green', shift=1)
+        self.info('summary', f'{tasks} completed', color='green', shift=1)
 
     def go(self, force: bool = False) -> None:
         """
@@ -126,7 +126,7 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
 
         # Nothing more to do if already done
         if self.status() == 'done':
-            self.info('status', 'done', 'green', shift=1)
+            self.info('status', 'done', color='green', shift=1)
             self.summary()
             self.actions()
             return

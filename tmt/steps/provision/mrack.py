@@ -1092,7 +1092,7 @@ EOF
 
             logger.debug('mrack request', req, level=4)
 
-            logger.info('whiteboard', host.whiteboard, 'green')
+            logger.info('whiteboard', host.whiteboard, color='green')
 
             return req
 
@@ -1627,10 +1627,10 @@ class GuestBeaker(tmt.guest.GuestSsh):
             if not response:
                 raise ProvisionError(f"Failed to create, response: '{response}'.")
 
-            self.info('guest', 'has been requested', 'green')
+            self.info('guest', 'has been requested', color='green')
             self.job_id = f'J:{response["id"]}'
 
-        self.info('job id', self.job_id, 'green')
+        self.info('job id', self.job_id, color='green')
 
         # Track the previous state to only log when it changes
         previous_state = None
@@ -1682,8 +1682,8 @@ class GuestBeaker(tmt.guest.GuestSsh):
 
         self.primary_address = self.topology_address = guest_info['system']
 
-        self.verbose('primary address', self.primary_address, 'green')
-        self.verbose('topology address', self.topology_address, 'green')
+        self.verbose('primary address', self.primary_address, color='green')
+        self.verbose('topology address', self.topology_address, color='green')
 
         self.assert_reachable()
 

@@ -297,7 +297,7 @@ class ExecuteUpgrade(ExecuteInternal):
             value = self.get(key)
             if value:
                 if key == "test":
-                    self.info('test', fmf.utils.listed(value), 'green')
+                    self.info('test', fmf.utils.listed(value), color='green')
                 else:
                     self.info(key, value, color='green')
 
