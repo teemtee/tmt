@@ -1,3 +1,4 @@
+import contextlib
 import re
 from collections.abc import Iterator
 from inspect import isclass
@@ -548,6 +549,90 @@ def test_assert_config_manager(
             match=re.escape(str(expected_command_or_exception)),
         ):
             package_manager.assert_config_manager()
+
+
+def _parametrize_test_enable_disable_repo() -> Iterator[
+    tuple[Container, PackageManagerClass, str, Union[str, Exception]]
+]:
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        for action in ('enable', 'disable'):
+            if package_manager_class is tmt.package_managers.dnf.Yum:
+                yield (
+                    container,
+                    package_manager_class,
+                    action,
+                    rf"yum-config-manager --{action} test-repo",
+                )
+
+            elif package_manager_class is tmt.package_managers.dnf.Dnf:
+                yield (
+                    container,
+                    package_manager_class,
+                    action,
+                    rf"dnf config-manager --{action} test-repo",
+                )
+
+            elif package_manager_class is tmt.package_managers.dnf.Dnf5:
+                yield (
+                    container,
+                    package_manager_class,
+                    action,
+                    rf"dnf5 config-manager --{action} test-repo",
+                )
+
+            elif package_manager_class in (
+                tmt.package_managers.apt.Apt,
+                tmt.package_managers.rpm_ostree.RpmOstree,
+                tmt.package_managers.apk.Apk,
+            ):
+                yield (
+                    container,
+                    package_manager_class,
+                    action,
+                    PrepareError(
+                        f"Package manager '{package_manager_class.NAME}'"
+                        " does not support config-manager."
+                    ),
+                )
+
+            else:
+                pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers
+@pytest.mark.parametrize(
+    ('container_per_test', 'package_manager_class', 'action', 'expected_command_or_exception'),
+    list(_parametrize_test_enable_disable_repo()),
+    indirect=["container_per_test"],
+)
+def test_enable_disable_repo(
+    container_per_test: ContainerData,
+    guest_per_test: GuestContainer,
+    package_manager_class: PackageManagerClass,
+    action: str,
+    expected_command_or_exception: Union[str, Exception],
+    root_logger: tmt.log.Logger,
+    caplog: _pytest.logging.LogCaptureFixture,
+) -> None:
+    package_manager = create_package_manager(
+        container_per_test, guest_per_test, package_manager_class, root_logger
+    )
+
+    method = package_manager.enable_repo if action == 'enable' else package_manager.disable_repo
+
+    if isinstance(expected_command_or_exception, str):
+        # The command will fail because 'test-repo' does not exist in the
+        # container, but we only care about verifying the correct command
+        # was constructed — the log records it regardless of exit code.
+        with contextlib.suppress(tmt.utils.RunError):
+            method('test-repo')
+        assert_expected_command(caplog, expected_command_or_exception)
+    else:
+        with pytest.raises(
+            type(expected_command_or_exception),
+            match=re.escape(str(expected_command_or_exception)),
+        ):
+            method('test-repo')
 
 
 def _parametrize_test_install_nonexistent() -> Iterator[
