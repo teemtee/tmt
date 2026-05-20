@@ -20,12 +20,15 @@ description: |
 
     * ``import-preset`` is allowed only at the top level of the ``hardware``
       key.
+
     * ``import-preset`` accepts a single string or a list of strings. Each
       string identifies a preset source and is interpreted automatically:
+
       * An ``http://`` or ``https://`` URL — fetched remotely.
       * A ``file://`` URL — read from the given absolute local path.
       * Any other string — treated as a local file path (absolute, relative,
         or using ``~`` for the home directory).
+
     * ``preset`` is a string referencing a single named preset. To apply
       multiple presets, combine them with ``and`` (or ``or``).
 
