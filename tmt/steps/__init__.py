@@ -123,7 +123,7 @@ PHASE_ORDER_PREPARE_VERIFY_INSTALLATION = 79
 TRY_PHASE_ORDER_PREPARE_FEATURE_FIPS = PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS + 10
 
 # Supported steps and actions
-StepName = Literal['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
+StepName = Literal['discover', 'provision', 'prepare', 'execute', 'finish', 'report', 'cleanup']
 STEPS: list[StepName] = list(typing.get_args(StepName))
 ActionName = Literal['login', 'reboot']
 ACTIONS: list[ActionName] = list(typing.get_args(ActionName))
