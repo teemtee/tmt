@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Optional, TypeVar, cast
 
 import fmf
 
@@ -17,6 +17,9 @@ from tmt.steps import (
     PullTask,
     sync_with_guests,
 )
+
+if TYPE_CHECKING:
+    from tmt.base.plan import Plan
 
 
 @container
@@ -62,6 +65,8 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
 
     _plugin_base_class = FinishPlugin
 
+    results: list[PhaseResult]
+
     @property
     def _preserved_workdir_members(self) -> set[str]:
         """
@@ -79,6 +84,32 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
             }
 
         return members
+
+    def __init__(
+        self,
+        *,
+        plan: 'Plan',
+        raw_data: list[tmt.steps._RawStepData],
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Initialize finish step data
+        """
+
+        super().__init__(plan=plan, raw_data=raw_data, logger=logger)
+
+        self.results = []
+        self.finalizations_applied = 0
+
+    def load(self) -> None:
+        super().load()
+
+        self.results = self._load_results(PhaseResult, allow_missing=True)
+
+    def save(self) -> None:
+        super().save()
+
+        self._save_results(self.results)
 
     def wake(self) -> None:
         """
@@ -148,7 +179,7 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
                         ],
                     )
 
-            results: list[PhaseResult] = []
+            self.results: list[PhaseResult] = []
             exceptions: list[Exception] = []
 
             def _record_exception(
@@ -161,7 +192,7 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
             def _is_failed() -> bool:
                 return bool(exceptions) or any(
                     result.result in (ResultOutcome.ERROR, ResultOutcome.FAIL)
-                    for result in results
+                    for result in self.results
                 )
 
             for outcome in self._queue.run():
@@ -181,7 +212,7 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
 
                     _record_exception(outcome, outcome.exc)
 
-                    results.append(
+                    self.results.append(
                         PhaseResult(
                             name=outcome.phase.name,
                             result=ResultOutcome.ERROR,
@@ -201,7 +232,7 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
                 # log them and save them, but do not emit any special result.
                 # Plugin was alive till the very end, and returned results.
                 if outcome.result:
-                    results += outcome.result.results
+                    self.results += outcome.result.results
 
                     if outcome.result.exceptions:
                         for exc in outcome.result.exceptions:
@@ -214,7 +245,7 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
 
                     break
 
-            self._save_results(results)
+            self._save_results(self.results)
 
             if _is_failed():
                 raise tmt.utils.GeneralError(
