@@ -38,7 +38,7 @@ dependencies = [
     "importlib-resources; python_version < '3.12'",  # MultiplexedPath is broken on earlier versions
     "click>=8.0.3",
     "docutils>=0.16",
-    "fmf>=1.7.0",
+    "fmf>=1.8.0",
     "jinja2>=2.11.3",
     "packaging>=20.9",
     "pint>=0.16.1",

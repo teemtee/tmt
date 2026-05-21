@@ -50,7 +50,7 @@ _:
   - &copr-under-packit
     job: copr_build
     additional_repos:
-      - copr://@teemtee/stable
+      - copr://packit/teemtee-fmf-293
 
   # Copr jobs under the teemtee project
   - &copr-under-teemtee

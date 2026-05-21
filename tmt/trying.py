@@ -12,7 +12,6 @@ from itertools import groupby
 from typing import Any, Callable, ClassVar, Optional, Union, cast
 
 import fmf
-import fmf.context
 import fmf.utils
 
 import tmt
@@ -28,6 +27,7 @@ import tmt.templates
 import tmt.utils
 from tmt import Plan
 from tmt.base.run import RunData
+from tmt.context import TmtContext
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
@@ -305,8 +305,7 @@ class Try(tmt.utils.Common):
                 # each user plan in separation and merge them to the main tree.
                 for user_plan in user_plans:
                     user_plan.adjust(
-                        fmf.context.Context(**self.tree.fmf_context),
-                        case_sensitive=False,
+                        TmtContext(**self.tree.fmf_context),
                         decision_callback=tmt.base.core.create_adjust_callback(self._logger),
                         additional_rules=self.tree._additional_rules,
                     )
