@@ -1,0 +1,5 @@
+description: |
+    Shebangs in tmt helper scripts such as ``tmt-reboot`` or
+    ``tmt-report-result`` are no longer mangled during RPM
+    packaging, ``/bin/bash`` is kept intact which fixes
+    execution failures on older systems such as ``rhel-6``.

@@ -1,0 +1,7 @@
+description: |
+    Added specification for reusable hardware configurations
+    through :tmt:story:`/spec/hardware/preset` files. Presets
+    allow users to define named hardware profiles in YAML files
+    and reference them via the ``preset`` key under ``hardware``.
+    Specification is ready for early user feedback.
+order: 14

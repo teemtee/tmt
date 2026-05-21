@@ -1,0 +1,4 @@
+description: |
+    The ``dmesg`` check plugin now requires ``/bin/dmesg``,
+    ensuring the check works correctly also on older systems such
+    as ``rhel-6`` where ``/usr/bin/dmesg`` is not available.
