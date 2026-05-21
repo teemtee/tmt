@@ -1,0 +1,16 @@
+name: Sync github labels
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: srealmoreno/label-sync-action@v2.0.0
+        with:
+          config-file: https://raw.githubusercontent.com/teemtee/tmt/main/.github/labels.yaml
