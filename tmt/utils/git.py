@@ -738,7 +738,6 @@ def git_clone(
     destination: Path,
     shallow: bool = False,
     can_change: bool = True,
-    environment: Optional[Environment] = None,
     attempts: Optional[int] = None,
     interval: Optional[int] = None,
     timeout: Optional[int] = None,
@@ -754,9 +753,6 @@ def git_clone(
         the whole history.
     :param can_change: URL can be modified with hardcoded rules. Use
         ``can_change=False`` to disable rewrite rules.
-    :param environment: if set, expose these environment variables
-        to the ``git clone`` command. If not set, environment of the
-        tmt process is used.
     :param attempts: Number of tries to call the function.
     :param interval: Amount of seconds to wait before a new try.
     :param timeout: Overall maximum time in seconds to clone the repo.
@@ -764,8 +760,7 @@ def git_clone(
     :returns: Command output, bundled in a :py:class:`CommandOutput` tuple.
     """
 
-    environment = environment if environment is not None else Environment.from_environ()
-
+    environment = Environment.from_environ()
     environment["GIT_ASKPASS"] = EnvVarValue("echo")
 
     def clone_the_repo(
