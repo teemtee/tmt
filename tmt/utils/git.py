@@ -20,6 +20,7 @@ from tmt.utils import (
     CommandOutput,
     Common,
     Environment,
+    EnvVarValue,
     GeneralError,
     GitUrlError,
     MetadataError,
@@ -764,6 +765,8 @@ def git_clone(
     """
 
     environment = environment if environment is not None else Environment.from_environ()
+
+    environment["GIT_ASKPASS"] = EnvVarValue("echo")
 
     def clone_the_repo(
         url: str,

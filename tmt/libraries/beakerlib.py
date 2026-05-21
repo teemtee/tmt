@@ -14,7 +14,7 @@ from tmt.base.core import Dependency, DependencyFmfId, DependencySimple
 from tmt.container import container, simple_field
 from tmt.convert import write
 from tmt.steps.discover import Discover
-from tmt.utils import Command, Environment, EnvVarValue, Path
+from tmt.utils import Command, Path
 
 from . import Library, LibraryError
 
@@ -363,14 +363,10 @@ class BeakerLibFromUrl(BeakerLib):
         else:
             self.parent.debug(f"Cloning '{self.identifier}' for '{self}'.", level=3)
 
-            environment = Environment.from_environ()
-            environment["GIT_ASKPASS"] = EnvVarValue("echo")
-
             tmt.utils.git.git_clone(
                 url=self.url,
                 destination=clone_dir,
                 shallow=self.ref is None,
-                environment=environment,
                 logger=self._logger,
             )
             self._git_clone_cache[clone_dir] = self
