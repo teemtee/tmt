@@ -11,86 +11,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import importlib
-import os
 import sys
 from pathlib import Path
-from typing import Optional
-
-import tmt.utils
-
-_POSSIBLE_THEMES: list[tuple[Optional[str], str]] = [
-    # Use renku as the default theme
-    ('renku_sphinx_theme', 'renku'),
-    # Fall back to sphinx_rtd_theme if available
-    ('sphinx_rtd_theme', 'sphinx_rtd_theme'),
-    # The default theme
-    (None, 'default'),
-]
-
-# NOTE: this one is defined somewhere below, among original Sphinx config fields,
-# but we need it as early as possible to be set when loading themes.
-# Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = []
-
-
-def _load_theme(theme_package_name: str, theme_name: str) -> bool:
-    try:
-        theme_package = importlib.import_module(theme_package_name)
-
-    except ModuleNotFoundError:
-        return False
-
-    global HTML_THEME
-
-    HTML_THEME = theme_name
-
-    if hasattr(theme_package, 'get_html_theme_path'):
-        global html_theme_path
-
-        path = theme_package.get_html_theme_path()
-
-        html_theme_path = path if isinstance(path, list) else [path]
-
-        return True
-
-    return True
-
-
-if 'TMT_DOCS_THEME' in os.environ:
-    theme_package_name: Optional[str]
-    theme_name: str
-
-    theme_specs = os.environ['TMT_DOCS_THEME']
-
-    try:
-        theme_package_name, theme_name = theme_specs.split(':', 1)
-
-    except ValueError as error:
-        raise tmt.utils.GeneralError(
-            f"Cannot split TMT_DOCS_THEME '{theme_specs}' into theme package and theme name."
-        ) from error
-
-    if not _load_theme(theme_package_name, theme_name):
-        raise tmt.utils.GeneralError(f"Cannot load theme from TMT_DOCS_THEME, '{theme_specs}'.")
-
-else:
-    for theme_package_name, theme_name in _POSSIBLE_THEMES:
-        if not theme_package_name:
-            HTML_THEME = theme_name
-            break
-
-        if _load_theme(theme_package_name, theme_name):
-            break
-
-    else:
-        raise tmt.utils.GeneralError('Cannot find usable theme.')
-
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../'))
 
 # -- General configuration ------------------------------------------------
 
@@ -103,7 +25,6 @@ sys.path.insert(0, os.path.abspath('../'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autodoc.typehints',
-    'sphinx_rtd_theme',
     'sphinx_reredirects',
     # Custom extensions defined in ext
     'tmt_setup',
@@ -201,7 +122,7 @@ autodoc_typehints_description_target = 'all'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = HTML_THEME
+html_theme = "renku"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -231,7 +152,7 @@ html_favicon = (
 html_static_path = ['_static']
 
 # Include custom style.
-html_style = os.getenv('TMT_DOCS_CUSTOM_HTML_STYLE', 'tmt-custom.css')
+html_style = 'tmt-custom.css'
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
