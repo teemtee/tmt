@@ -325,6 +325,7 @@ class Result(BaseResult):
     """
 
     serial_number: int = 0
+    web_link: Optional[str] = None
     fmf_id: Optional['tmt.base.core.FmfId'] = field(
         default=cast(Optional['tmt.base.core.FmfId'], None),
         serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
@@ -395,6 +396,7 @@ class Result(BaseResult):
         _result = Result(
             name=invocation.test.name,
             serial_number=invocation.test.serial_number,
+            web_link=invocation.test.web_link(),
             fmf_id=invocation.test.fmf_id,
             context=invocation.phase.step.plan.fmf_context,
             result=result,

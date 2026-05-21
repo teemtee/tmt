@@ -1013,3 +1013,101 @@ GitHub integration.
 
 __ https://claude.ai/download
 __ https://github.com/google-gemini/gemini-cli
+
+
+Code Assistants
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prompts and instructions for code assistants are stored in the ``agents``
+directory, with ``agents/AGENTS.md`` as the primary starting point. For
+assistants that understand the `AGENTS.md`__ workflow, ``agents/AGENTS.md``
+is symlinked to ``AGENTS.md`` in the repository root, to be automatically
+discovered and loaded by said assistants.
+
+__ https://agents.md/
+
+Adding Custom Instructions
+------------------------------------------------------------------
+
+For personal or additional use cases you can typically create a personal
+instruction file (e.g., ``agents/my-custom-prompts.md``), and reference
+it alongside project instructions in your prompts.
+
+Using This Instruction with Different Code Assistants
+------------------------------------------------------------------
+
+In general, all code assistants looking for ``AGENTS.md`` should ingest
+instructions and prompts automatically.
+
+Claude Code
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since Claude Code does not seem to support ``AGENTS.md`` file yet, the
+file is symlinked into ``.claude/CLAUDE.md`` file. This file is automatically
+loaded when running Claude Code in this repository.
+
+GitHub MCP Server Setup
+------------------------------------------------------------------
+
+The GitHub MCP (Model Context Protocol) server provides enhanced GitHub
+integration for code assistants, enabling direct interaction with GitHub
+APIs for searching PRs, reading issues, and browsing repository contents.
+
+.. note::
+
+    Examples below use ``podman``, but you can substitute ``docker`` if
+    that is your container engine of choice.
+
+Required Token Scopes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a GitHub Personal Access Token at https://github.com/settings/tokens
+with these scopes:
+
+================  =========================================================
+Scope             Description
+================  =========================================================
+``repo``          Full control of private repositories
+``public_repo``   Access public repositories only (alternative to ``repo``)
+``read:org``      Read organization membership
+``read:project``  Read access to projects
+================  =========================================================
+
+For read-only access to public repositories, ``public_repo``, ``read:org``,
+and ``read:project`` are sufficient.
+
+Claude Code
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a ``secretfile`` file with value of your GitHub personal access token:
+
+.. code-block:: shell
+
+    podman secret create github_token secretfile
+    claude mcp add github -- podman run --secret=github_token,type=env,target=GITHUB_PERSONAL_ACCESS_TOKEN --rm -i ghcr.io/github/github-mcp-server
+
+Verify with:
+
+.. code-block:: shell
+
+    claude mcp list
+
+Gemini CLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Expose your personal access token via ``GITHUB_TOKEN`` environment variable,
+and add the following to your ``~/.gemini/settings.json``:
+
+.. code-block:: json
+
+    {
+      "mcpServers": {
+        "github": {
+          "command": "podman",
+          "args": ["run", "--rm", "-i", "ghcr.io/github/github-mcp-server"],
+          "env": {
+            "GITHUB_PERSONAL_ACCESS_TOKEN": "$GITHUB_TOKEN"
+          }
+        }
+      }
+    }

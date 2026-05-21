@@ -17,6 +17,8 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+import fmf.utils
+
 import tmt.log
 import tmt.plugins
 import tmt.utils
@@ -383,6 +385,26 @@ class PackageManagerEngine(tmt.utils.Common):
     def refresh_metadata(self) -> ShellScript:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        """
+        Enable specified repositories.
+
+        :param repo_ids: repository IDs to enable.
+        :returns: a shell script to enable the repositories.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        """
+        Disable specified repositories.
+
+        :param repo_ids: repository IDs to disable.
+        :returns: a shell script to disable the repositories.
+        """
+        raise NotImplementedError
+
     def install_repository(self, repository: "Repository") -> ShellScript:
         """
         Install a repository by placing its configuration in /etc/yum.repos.d/.
@@ -640,16 +662,6 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.guest.execute(self.engine.create_repository(directory))
 
-    def install_from_repository(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        """
-        Install packages from a repository
-        """
-        return self.install(*installables, options=options)
-
     def install_local(
         self,
         *installables: Installable,
@@ -660,21 +672,39 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.install(*installables, options=options)
 
-    def install_from_url(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        """
-        Install packages stored on a remote URL
-        """
-        return self.install(*installables, options=options)
-
     def assert_config_manager(self) -> None:
         """
         Make sure the ``config-manager`` plugin for repository management is installed.
         """
         raise PrepareError(f"Package manager '{self.NAME}' does not support config-manager.")
+
+    def enable_repo(self, *repo_ids: str) -> None:
+        """
+        Enable specified repositories.
+
+        :param repo_ids: repository IDs to enable.
+        """
+        if not repo_ids:
+            return
+
+        self.assert_config_manager()
+
+        self.verbose('enable repo', fmf.utils.listed(repo_ids), 'green')
+        self.guest.execute(self.engine.enable_repo(*repo_ids))
+
+    def disable_repo(self, *repo_ids: str) -> None:
+        """
+        Disable specified repositories.
+
+        :param repo_ids: repository IDs to disable.
+        """
+        if not repo_ids:
+            return
+
+        self.assert_config_manager()
+
+        self.verbose('disable repo', fmf.utils.listed(repo_ids), 'green')
+        self.guest.execute(self.engine.disable_repo(*repo_ids))
 
     def enable_copr(self, *repositories: str) -> None:
         """

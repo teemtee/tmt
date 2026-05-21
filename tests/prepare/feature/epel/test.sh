@@ -2,44 +2,65 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../../images.sh || exit 1
 
+CONTAINER_IMAGES="centos/stream9/upstream:latest
+ubi/8/upstream:latest
+ubi/9/upstream:latest
+fedora/latest:latest"
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+        rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
 
-        build_container_image "centos/stream9/upstream\:latest"
-        build_container_image "ubi/8/upstream\:latest"
+        if [ "$PROVISION_HOW" = "container" ]; then
+            for image in $CONTAINER_IMAGES; do
+                build_container_image "$image"
+            done
+            rlRun "IMAGES='$CONTAINER_IMAGES'"
+        elif [ "$PROVISION_HOW" = "virtual" ]; then
+            if [ "$IMAGE_MODE" = "yes" ]; then
+                rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
+            else
+                rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
+            fi
+        else
+            rlDie "Test supported only on containers or VMs"
+        fi
 
         rlRun "pushd data"
     rlPhaseEnd
 
-    images="$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest ubi9"
+    while IFS= read -r image; do
+        [ "$PROVISION_HOW" = "container" ] && image="$TEST_IMAGE_PREFIX/$image"
 
-    # EPEL
-    for image in $images; do
-        if rlIsFedora ">=42" && is_centos_7 "$image"; then
-            rlLogInfo "Skipping because Ansible shipped with Fedora does not support Python 3.6"
+        if is_fedora "$image"; then
+            # Test Fedora for the warning message
+            rlPhaseStartTest "Test warning on $image"
+                # Run a epel plan (just provision, prepare and finish) on fedora and verify the warning is shown
+                # We expect the tmt run to succeed (exit code 0) because it's a warning, not an error.
+                rlRun -s "tmt run provision --how $PROVISION_HOW --image $image prepare finish plan --name /epel/enabled/default" 0 "Run plan on fedora and capture output"
+                rlAssertGrep "EPEL prepare feature is supported on RHEL/CentOS-Stream 8+." $rlRun_LOG
+            rlPhaseEnd
 
             continue
         fi
 
         rlPhaseStartTest "Enable EPEL on $image"
-            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/default' provision --how container --image $image"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/default' provision --how $PROVISION_HOW --image $image"
         rlPhaseEnd
 
         rlPhaseStartTest "Enable EPEL on $image (epel pre-installed)"
-            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/with-epel-preinstalled' provision --how container --image $image"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/with-epel-preinstalled' provision --how $PROVISION_HOW --image $image"
         rlPhaseEnd
 
         rlPhaseStartTest "Disable EPEL on $image"
-            rlRun -s "tmt -vvv run -a plan --name '/epel/disabled' provision --how container --image $image"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/disabled' provision --how $PROVISION_HOW --image $image"
         rlPhaseEnd
 
-        if is_centos_stream_9 "$image"; then
-            rlPhaseStartTest "Check CRB on $image"
-                rlRun -s "tmt -vvv run -a plan --name '/flac' provision --how container --image $image"
-            rlPhaseEnd
-        fi
-    done
+        rlPhaseStartTest "Check if CRB enabled with EPEL on $image"
+            rlRun -s "tmt -vvv run -a plan --name '/gdbm' provision --how $PROVISION_HOW --image $image"
+        rlPhaseEnd
+    done <<< "$IMAGES"
 
     # Environment profiles
     # TODO: chicken and egg: we need profile to test whether tmt can apply it, and we need tmt
@@ -47,9 +68,8 @@ rlJournalStart
     # Once we get the tmt, we can continue with profiles and eventually enable the test below.
     #
     # rlPhaseStartTest "Enable EPEL on $image"
-    #     rlRun -s "tmt -vvv run -a plan --name '/profile' provision --how container --image fedora"
+    #     rlRun -s "tmt -vvv run -a plan --name '/profile' provision --how $PROVISION_HOW --image fedora"
     # rlPhaseEnd
-
 
     rlPhaseStartCleanup
         rlRun "popd"

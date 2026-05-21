@@ -74,7 +74,10 @@ class ApkEngine(PackageManagerEngine):
                 packages.append(self.path_to_package(installable))
 
             else:
-                raise GeneralError(f"Package specification '{installable}' is not supported.")
+                raise tmt.utils.PrepareError(
+                    f"Package manager 'apk' does not support installing from a remote "
+                    f"URL '{installable}'."
+                )
 
         return packages
 
@@ -94,6 +97,16 @@ class ApkEngine(PackageManagerEngine):
 
     def refresh_metadata(self) -> ShellScript:
         return ShellScript(f'{self.command.to_script()} update')
+
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        raise tmt.utils.PrepareError(
+            "Package manager 'apk' does not support enabling repositories."
+        )
+
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        raise tmt.utils.PrepareError(
+            "Package manager 'apk' does not support disabling repositories."
+        )
 
     def install(
         self,
@@ -206,13 +219,3 @@ class Apk(PackageManager[ApkEngine]):
         options.allow_untrusted = True
         options.check_first = False
         return self.install(*installables, options=options)
-
-    def install_from_url(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        raise tmt.utils.PrepareError(
-            f'Package manager "{self.guest.facts.package_manager}" '
-            'does not support installing from a remote URL.'
-        )

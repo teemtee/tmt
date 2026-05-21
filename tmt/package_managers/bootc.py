@@ -3,8 +3,11 @@ import uuid
 from collections.abc import Iterator
 from typing import Any, Optional
 
+import fmf.utils
+
 import tmt.utils
 from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer
+from tmt.guest import TransferOptions
 from tmt.package_managers import (
     Installable,
     Options,
@@ -174,6 +177,20 @@ class BootcEngine(PackageManagerEngine):
         self.containerfile_directives.append(f'RUN {script}')
         return script
 
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        self.open_containerfile_directives()
+
+        script = self.aux_engine.enable_repo(*repo_ids)
+        self.containerfile_directives.append(f'RUN {script}')
+        return script
+
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        self.open_containerfile_directives()
+
+        script = self.aux_engine.disable_repo(*repo_ids)
+        self.containerfile_directives.append(f'RUN {script}')
+        return script
+
 
 @provides_package_manager('bootc')
 class Bootc(PackageManager[BootcEngine]):
@@ -258,8 +275,17 @@ class Bootc(PackageManager[BootcEngine]):
                         ')"'
                     )
                 )
-                self.guest.execute(
-                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF')
+                # Write Containerfile via push() to avoid exceeding
+                # the OS ARG_MAX limit on the SSH command line.
+                local_containerfile = self.guest.guest_workdir / 'Containerfile'
+                local_containerfile.write_text(containerfile)
+                self.guest.push(
+                    source=local_containerfile,
+                    destination=containerfile_path,
+                    options=TransferOptions(
+                        recursive=False,
+                        compress=True,
+                    ),
                 )
 
                 self.debug(f"containerfile content: {containerfile}")
@@ -311,7 +337,6 @@ class Bootc(PackageManager[BootcEngine]):
 
         if missing_installables:
             self.engine.install(*missing_installables, options=options)
-            return self.build_container() or CommandOutput(stdout=None, stderr=None)
 
         return CommandOutput(stdout=None, stderr=None)
 
@@ -322,7 +347,7 @@ class Bootc(PackageManager[BootcEngine]):
     ) -> CommandOutput:
         self.engine.reinstall(*installables, options=options)
 
-        return self.build_container() or CommandOutput(stdout=None, stderr=None)
+        return CommandOutput(stdout=None, stderr=None)
 
     def install_debuginfo(
         self,
@@ -330,35 +355,6 @@ class Bootc(PackageManager[BootcEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         self.engine.install_debuginfo(*installables, options=options)
-        return CommandOutput(stdout=None, stderr=None)
-
-    def install_from_repository(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-
-        # Check presence to avoid unnecessary container rebuilds
-        presence = self.check_presence(*installables)
-
-        missing_installables = {i for i, present in presence.items() if not present}
-        if missing_installables:
-            self.engine.install(*missing_installables, options=options)
-
-        return CommandOutput(stdout=None, stderr=None)
-
-    def install_from_url(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-
-        presence = self.check_presence(*installables)
-
-        missing_installables = {i for i, present in presence.items() if not present}
-        if missing_installables:
-            self.engine.install(*missing_installables, options=options)
-
         return CommandOutput(stdout=None, stderr=None)
 
     def install_local(
@@ -373,6 +369,25 @@ class Bootc(PackageManager[BootcEngine]):
         self.engine.reinstall(*installables, options=options)
 
         return CommandOutput(stdout=None, stderr=None)
+
+    def assert_config_manager(self) -> None:
+        self.guest.bootc_builder.assert_config_manager()
+
+    def enable_repo(self, *repo_ids: str) -> None:
+        if not repo_ids:
+            return
+
+        self.assert_config_manager()
+        self.verbose('enable repo', fmf.utils.listed(repo_ids), 'green')
+        self.engine.enable_repo(*repo_ids)
+
+    def disable_repo(self, *repo_ids: str) -> None:
+        if not repo_ids:
+            return
+
+        self.assert_config_manager()
+        self.verbose('disable repo', fmf.utils.listed(repo_ids), 'green')
+        self.engine.disable_repo(*repo_ids)
 
     def finalize_installation(self) -> CommandOutput:
         """

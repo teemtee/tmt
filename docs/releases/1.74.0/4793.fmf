@@ -1,0 +1,5 @@
+description: |
+    The generated Containerfile for bootc image-mode builds is now
+    transferred via ``push()`` instead of being inlined on the SSH
+    command line, preventing ``ARG_MAX`` overflow when plan environment
+    contains large values.

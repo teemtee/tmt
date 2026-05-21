@@ -1,0 +1,12 @@
+---
+
+#
+# JSON Schema definition for tmt hardware preset files
+#
+
+$id: /schemas/hardware-preset
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties:
+  $ref: "/schemas/provision/hardware#/definitions/hardware"

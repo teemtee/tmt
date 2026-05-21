@@ -2,6 +2,7 @@ import re
 from typing import Any, Optional
 
 import tmt.log
+import tmt.utils
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
@@ -10,6 +11,14 @@ from tmt.utils import ShellScript
 SUPPORTED_DISTRO_PATTERNS = tuple(
     re.compile(pattern)
     for pattern in (r'Red Hat Enterprise Linux (8|9|10)', r'CentOS Stream (8|9|10)')
+)
+
+# Inspired by crb executable from https://src.fedoraproject.org/rpms/epel-release
+CRB_REPO_DISCOVERY = ShellScript(
+    "dnf repolist --all"
+    " | grep -i -e crb -e powertools -e codeready"
+    " | grep -v -i -e debug -e source -e eus -e virt -e rhui"
+    r" | sed 's/^\s*\([^ ]*\).*/\1/'"
 )
 
 
@@ -47,10 +56,20 @@ class Crb(ToggleableFeature):
         super().__init__(*args, **kwargs)
 
     @classmethod
+    def _discover_crb_repos(cls, guest: Guest) -> list[str]:
+        """Discover CRB repository IDs on the guest."""
+        try:
+            output = guest.execute(CRB_REPO_DISCOVERY)
+        except tmt.utils.RunError:
+            return []
+        if not output.stdout:
+            return []
+        return output.stdout.strip().splitlines()
+
+    @classmethod
     def _manage_repo(cls, guest: Guest, logger: tmt.log.Logger, action: str) -> None:
         """Enable or disable the repository"""
 
-        # Check if we're running on supported distro
         if not (
             guest.facts.distro
             and any(pattern.match(guest.facts.distro) for pattern in SUPPORTED_DISTRO_PATTERNS)
@@ -58,18 +77,17 @@ class Crb(ToggleableFeature):
             logger.warning('CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.')
             return
 
-        guest.package_manager.assert_config_manager()
-
         logger.info(f"{action.capitalize()} CRB repository.")
 
-        # Inspired by crb executable from https://src.fedoraproject.org/rpms/epel-release
-        script_content = rf"""
-            {guest.facts.sudo_prefix} dnf config-manager --{action} $(dnf repolist --all | \
-            grep -i -e crb -e powertools -e codeready | \
-            grep -v -i -e debug -e source -e eus -e virt -e rhui | \
-            sed 's/^\s*\([^ ]*\).*/\1/')
-        """
-        guest.execute(ShellScript(script_content))
+        repo_ids = cls._discover_crb_repos(guest)
+        if not repo_ids:
+            logger.warning('No CRB repositories found.')
+            return
+
+        if action == 'enable':
+            guest.package_manager.enable_repo(*repo_ids)
+        else:
+            guest.package_manager.disable_repo(*repo_ids)
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:

@@ -27,6 +27,7 @@ $TEST_IMAGE_PREFIX/fedora/43/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/eln/upstream:latest
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
+$TEST_IMAGE_PREFIX/ubi/9/upstream:latest
 $TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
 $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
 
@@ -165,6 +166,10 @@ function is_ubi () {
 
 function is_ubi_8 () {
     [[ "$1" =~ ^.*ubi/8.* ]] && return 0 || return 1
+}
+
+function is_ubi_9 () {
+    [[ "$1" =~ ^.*ubi/9.* ]] && return 0 || return 1
 }
 
 function is_image_mode () {

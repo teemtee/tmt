@@ -123,6 +123,12 @@ items:
     serial-number:
       type: integer
 
+    web-link:
+      oneOf:
+        - type: "null"
+        - type: string
+          format: uri
+
     result:
       $ref: "/schemas/common#/definitions/result_outcome"
 

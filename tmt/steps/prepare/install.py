@@ -274,7 +274,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         if self.remote_packages:
             install_outputs.append(
-                guest.package_manager.install_from_url(
+                guest.package_manager.install(
                     *self._list_installables('remote package', *self.remote_packages),
                     options=options,
                 )
@@ -282,7 +282,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         if self.packages:
             install_outputs.append(
-                guest.package_manager.install_from_repository(
+                guest.package_manager.install(
                     *self._list_installables('package', *self.packages),
                     options=options,
                 )

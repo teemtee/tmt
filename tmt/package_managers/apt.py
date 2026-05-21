@@ -156,6 +156,16 @@ class AptEngine(PackageManagerEngine):
             f'export DEBIAN_FRONTEND=noninteractive; {self.command.to_script()} update'
         )
 
+    def enable_repo(self, *repo_ids: str) -> ShellScript:
+        raise tmt.utils.PrepareError(
+            "Package manager 'apt' does not support enabling repositories."
+        )
+
+    def disable_repo(self, *repo_ids: str) -> ShellScript:
+        raise tmt.utils.PrepareError(
+            "Package manager 'apt' does not support disabling repositories."
+        )
+
     def install(
         self,
         *installables: Installable,

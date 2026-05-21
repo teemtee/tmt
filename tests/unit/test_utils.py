@@ -1683,6 +1683,7 @@ class TestJiraLink(unittest.TestCase):
                   - type: jira
                     url: https://issues.redhat.com
                     tmt-web-url: https://tmt.testing-farm.io/
+                    email: email@example.com
                     token: secret
             """.strip()
         self.config_tree = fmf.Tree(data=tmt.utils.yaml_to_dict(config_yaml))

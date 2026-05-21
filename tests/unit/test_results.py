@@ -1045,3 +1045,42 @@ def test_save_failures(tmppath: Path, root_logger) -> None:
     assert tmt.utils.from_yaml(read_yaml) == ['foo', _GOOD_STRING, 'bar']
     assert tmt.utils.from_yaml(read_yaml, yaml_type='safe') == ['foo', _GOOD_STRING, 'bar']
     assert tmt.utils.yaml_to_list(read_yaml) == ['foo', _GOOD_STRING, 'bar']
+
+
+def test_result_web_link_default() -> None:
+    """Verify that web_link defaults to None for backward compatibility."""
+    result = Result(name="/test", result=ResultOutcome.PASS)
+    assert result.web_link is None
+
+
+def test_result_web_link_roundtrip() -> None:
+    """Verify that web_link survives serialization and deserialization."""
+    url = "https://gitlab.example.com/repo/-/blob/main/tests/test.fmf"
+    result = Result(name="/test", result=ResultOutcome.PASS, web_link=url)
+
+    serialized = result.to_serialized()
+    assert serialized["web-link"] == url
+
+    restored = Result.from_serialized(serialized)
+    assert restored.web_link == url
+
+
+def test_result_web_link_none_roundtrip() -> None:
+    """Verify that web_link=None serializes and deserializes correctly."""
+    result = Result(name="/test", result=ResultOutcome.PASS, web_link=None)
+
+    serialized = result.to_serialized()
+    assert serialized["web-link"] is None
+
+    restored = Result.from_serialized(serialized)
+    assert restored.web_link is None
+
+
+def test_result_web_link_missing_in_serialized() -> None:
+    """Verify backward compat: old results without web-link deserialize with None."""
+    result = Result(name="/test", result=ResultOutcome.PASS)
+    serialized = result.to_serialized()
+    del serialized["web-link"]
+
+    restored = Result.from_serialized(serialized)
+    assert restored.web_link is None
