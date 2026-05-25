@@ -1311,8 +1311,7 @@ class GuestData(
         help="""
              If set, user-provided commands - ``prepare`` and ``finish``
              scripts and tests - will be invoked with elevated, superuser
-             privileges. If the access plugin has is not a superuser
-             already, passwordless ``sudo`` will be used.
+             privileges via passwordless ``sudo`` if necessary.
              """,
     )
 
