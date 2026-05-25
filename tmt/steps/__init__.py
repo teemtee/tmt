@@ -3783,6 +3783,6 @@ def safe_filename(
         rendering the filename.
     """
 
-    template += '-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
+    template += '-{{ PHASE.step.step_name }}-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
 
     return Path(render_template(template, PHASE=phase, GUEST=guest, **variables))
