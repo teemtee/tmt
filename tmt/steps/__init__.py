@@ -2984,7 +2984,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
             # Default to the last enabled step if no completed step found
             # (skip the cleanup step as no actions are expected there)
             if login_during is None:
-                login_during = list(step.plan.steps(skip=["cleanup"]))[-1]
+                login_during = list(step.plan.steps(skip=["report", "cleanup"]))[-1]
             # Only login if the error occurred after provision
             if login_during != step.plan.discover:
                 phases[login_during.name] = [PHASE_END]

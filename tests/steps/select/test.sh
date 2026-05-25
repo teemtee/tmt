@@ -50,18 +50,18 @@ rlJournalStart
         for step in discover provision prepare execute; do
             rlAssertGrep $step output
         done
-        for step in report finish; do
+        for step in finish report cleanup; do
             rlAssertNotGrep $step output
         done
         rlAssertGrep '1 test executed' output
     rlPhaseEnd
 
     rlPhaseStartTest "Since"
-        rlRun "tmt run --last --since report finish -h shell 2>&1 >/dev/null | tee output"
-        for step in discover provision prepare execute; do
+        rlRun "tmt run --last --since report 2>&1 >/dev/null | tee output"
+        for step in discover provision prepare execute finish; do
             rlAssertNotGrep $step output
         done
-        for step in report finish; do
+        for step in report cleanup; do
             rlAssertGrep $step output
         done
         rlAssertGrep '1 test passed' output
@@ -69,10 +69,10 @@ rlJournalStart
 
     rlPhaseStartTest "Before"
         rlRun "tmt run $options --before report discover -h shell 2>&1 >/dev/null | tee output"
-        for step in discover provision prepare execute; do
+        for step in discover provision prepare execute finish; do
             rlAssertGrep $step output
         done
-        for step in report finish; do
+        for step in report cleanup; do
             rlAssertNotGrep $step output
         done
         rlAssertGrep '1 test executed' output
@@ -83,7 +83,7 @@ rlJournalStart
         for step in discover provision prepare execute; do
             rlAssertNotGrep $step output
         done
-        for step in report finish; do
+        for step in finish report cleanup; do
             rlAssertGrep $step output
         done
         rlAssertGrep '1 test passed' output
