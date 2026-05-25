@@ -3778,6 +3778,6 @@ def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any)
         rendering the filename.
     """
 
-    template += '-{{ PHASE.parent.name }}-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
+    template += '-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
 
     return Path(render_template(template, PHASE=phase, GUEST=guest, **variables))
