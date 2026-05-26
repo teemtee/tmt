@@ -387,9 +387,9 @@ EOF
             rlRun 'pushd tmt'
             WORKDIR=/var/tmp/tmt/XXX
             rlRun -s "tmt run --keep --scratch --id $WORKDIR plans --default discover -v --how fmf \
-            --dist-git-source --ref 518edd9 --dist-git-extract ${prefix}tmt-1.74.0/tests/execute/framework/data \
-            tests --name ^/tests/beakerlib/with-framework\$ prepare provision -h local"
-            assert_tests $WORKDIR /tests/beakerlib/with-framework
+            --dist-git-source --ref 518edd9 --dist-git-extract ${prefix}tmt-1.74.0/tests/execute/basic/data \
+            tests --name ^/test/shell/good\$ prepare provision -h local"
+            assert_tests $WORKDIR /test/shell/good
 
             rlRun 'popd'
         rlPhaseEnd
@@ -398,10 +398,10 @@ EOF
     rlPhaseStartTest "Specify URL and REF of DistGit repo (Fedora)"
         WORKDIR=/var/tmp/tmt/XXX
         rlRun -s 'tmt run --keep --scratch --id $WORKDIR plans --default discover -v --how fmf \
-        --dist-git-source --ref 518edd9  --dist-git-init \
+        --dist-git-source --ref 518edd9 \
         --url https://src.fedoraproject.org/rpms/tmt.git \
-        tests --name tests/prepare/install$  prepare provision -h local'
-        assert_tests $WORKDIR "/tmt-1.74.0/tests/prepare/install"
+        tests --name ^/tests/prepare/install$  prepare provision -h local'
+        assert_tests $WORKDIR "/tests/prepare/install"
     rlPhaseEnd
 
     rlPhaseStartTest "fmf and git root don't match"
