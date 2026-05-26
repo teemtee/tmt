@@ -18,3 +18,9 @@ order: 60
     Test that the verify-installation phase is injected
     when verify=true (default) and suppressed when verify=false.
   test: ./verify-installation.sh
+
+/install-cases:
+  summary: Test installation scenarios
+  description: |
+    See the plans in `install-cases` for more details.
+  test: ./install-cases.sh
