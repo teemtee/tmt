@@ -228,6 +228,8 @@ class Link(SpecBasedContainer[Any, _RawLinkRelation]):
         [1] https://tmt.readthedocs.io/en/stable/spec/core.html#link
         """
 
+        from tmt.base.core import FmfId
+
         spec: _RawLinkRelation = {
             self.relation: self.target.to_spec() if isinstance(self.target, FmfId) else self.target
         }

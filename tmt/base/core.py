@@ -670,6 +670,8 @@ CoreT = TypeVar('CoreT', bound='Core')
 
 
 def _normalize_link(key_address: str, value: '_RawLinks', logger: tmt.log.Logger) -> 'Links':
+    from tmt.base.links import Links
+
     return Links(data=value)
 
 
@@ -1412,6 +1414,8 @@ class Test(
             script_content = _get_template_content(template, 'script')
 
         # Append link with appropriate relation
+        from tmt.base.links import Links
+
         links = Links(data=list(cast(list[_RawLink], Test._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
             metadata_content += to_yaml({'link': links.to_spec()})
@@ -2062,6 +2066,8 @@ class Story(
                 raise tmt.utils.GeneralError(f"Invalid template '{template}'.") from error
 
         # Append link with appropriate relation
+        from tmt.base.links import Links
+
         links = Links(data=list(cast(list['_RawLink'], Story._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
             story_content += to_yaml({'link': links.to_spec()})
@@ -2385,6 +2391,8 @@ class Tree(tmt.utils.Common):
         """
         Search available tests
         """
+        from tmt.base.links import LinkNeedle
+
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
         keys = (keys or []) + ['test']
@@ -2495,6 +2503,7 @@ class Tree(tmt.utils.Common):
         """
         Search available plans
         """
+        from tmt.base.link import LinkNeedle
         from tmt.base.plan import Plan
 
         # Handle defaults, apply possible command line options
