@@ -671,9 +671,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     raise tmt.utils.DiscoverError(
                         f"Directory '{fmf_root}' is not a git repository."
                     )
-
-                distgit_dir = self.test_dir if self.data.ref else git_root
-                self.process_distgit_source(distgit_dir)
+                self.process_distgit_source(git_root)
                 return
             except Exception as error:
                 raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
@@ -693,7 +691,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         )
 
         # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
-        # FIXME 'worktree' could be used as source_dir when 'url' is not set
         tmt.utils.filesystem.copy_tree(
             distgit_dir,
             self.source_dir,
