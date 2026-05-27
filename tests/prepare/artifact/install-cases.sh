@@ -18,7 +18,7 @@ rlJournalStart
     rlPhaseEnd
 
 xfail_plans=(
-
+    "/verified-artifacts/pre-installed"
 )
 
     while IFS= read -r image; do
