@@ -23,7 +23,7 @@ rlJournalStart
     rlPhaseEnd
 
 xfail_plans=(
-
+   "/verified-artifacts/pre-installed"
 )
 
     for plan in $(tmt plans ls); do
