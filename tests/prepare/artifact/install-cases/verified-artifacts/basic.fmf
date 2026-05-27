@@ -1,0 +1,21 @@
+summary: Basic case
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: None
+  Artifacts: foo-2.4 or foo-1.1
+
+  Normal installation case with an artifact
+
+/upgrade:
+  summary: " (upgrading)"
+  context+:
+    verified_artifact: foo-2.4
+  environment+:
+    EXPECTED_PACKAGE: foo-2.4
+
+/downgrade:
+  summary: " (downgrading)"
+  context+:
+    verified_artifact: foo-1.1
+  environment+:
+    EXPECTED_PACKAGE: foo-1.1
