@@ -49,6 +49,7 @@ from . import (  # noqa: E402
     CONTAINER_DEBIAN_127,
     CONTAINER_FEDORA_42,
     CONTAINER_FEDORA_43,
+    CONTAINER_FEDORA_44,
     CONTAINER_FEDORA_ELN,
     # CONTAINER_FEDORA_COREOS,
     # CONTAINER_FEDORA_COREOS_OSTREE,
@@ -80,6 +81,7 @@ def has_legacy_dnf(container: ContainerData) -> bool:
 
     return container.image_url_or_id not in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_44.url,
         CONTAINER_FEDORA_43.url,
         CONTAINER_FEDORA_42.url,
         CONTAINER_FEDORA_ELN.url,
@@ -95,6 +97,7 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
 
     return container.image_url_or_id in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_44.url,
         CONTAINER_FEDORA_43.url,
         CONTAINER_FEDORA_42.url,
         CONTAINER_FEDORA_ELN.url,
@@ -132,6 +135,7 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_42, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_43, PACKAGE_MANAGER_DNF5),
+    (CONTAINER_FEDORA_44, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_ELN, PACKAGE_MANAGER_DNF5),
     # CentOS Stream
     (CONTAINER_CENTOS_STREAM_10, PACKAGE_MANAGER_DNF),

@@ -89,6 +89,10 @@ rlJournalStart
                 rlRun "distro=fedora-43"
                 rlRun "package_manager=dnf5"
 
+            elif is_fedora_44 "$image"; then
+                rlRun "distro=fedora-44"
+                rlRun "package_manager=dnf5"
+
             elif is_centos_stream_9 "$image"; then
                 rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"

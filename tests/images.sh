@@ -24,6 +24,7 @@ $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/42/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/43/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/44/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/eln/upstream:latest
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
@@ -45,6 +46,7 @@ TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
 centos-stream-10
 fedora-42
 fedora-43
+fedora-44
 fedora-rawhide
 fedora-coreos}"
 
