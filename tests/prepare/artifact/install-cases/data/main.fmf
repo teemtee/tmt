@@ -1,0 +1,56 @@
+discover:
+  - how: fmf
+    test:
+      - /test
+prepare:
+  - name: Setup system
+    order: 20
+    how: shell
+    script: |
+      # Prepare the system repo
+      mkdir system_repo
+      for pkg in $SYSTEM_PACKAGE; do
+        cp rpms/$pkg/*.rpm system_repo/
+      done
+
+      # Running dnf/createrepo commands manually to bypass prepare/install handling
+      $DNF_CMD install -y createrepo
+      createrepo system_repo
+      cat > /etc/yum.repos.d/system-test-repo.repo <<EOF
+      [system-test-repo]
+      baseurl=file://$(pwd)/system_repo
+      gpgcheck=0
+      EOF
+
+      # Install packages expected to be pre-installed (if any)
+      if [[ -n "$PRE_INSTALLED_PACKAGE" ]]; then
+        $DNF_CMD install -y $PRE_INSTALLED_PACKAGE
+      fi
+  - name: Main artifact to test and verify
+    order: 40
+    how: artifact
+    provide:
+      - file:rpms/$@{verified_artifact}/*.rpm
+    verify: true
+    when: verified_artifact is defined
+  - name: Secondary artifacts made available (not verified)
+    order: 40
+    how: artifact
+    provide:
+      - file:rpms/$@{available_artifact}/*.rpm
+    verify: false
+    when: available_artifact is defined
+
+execute:
+  how: tmt
+
+context:
+  want_devel: "false"
+  with_bar: "false"
+  xfail: "false"
+
+environment:
+  SYSTEM_PACKAGE: foo-1.4
+  EXPECTED_PACKAGE: ""
+  PRE_INSTALLED_PACKAGE: ""
+  DNF_CMD: dnf

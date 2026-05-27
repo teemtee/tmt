@@ -1,0 +1,7 @@
+summary: Test installation scenarios
+description: |
+  See the plans in data for more details.
+
+require+:
+  - rpm-build
+  - createrepo
