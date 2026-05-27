@@ -24,6 +24,9 @@ rlJournalStart
 
 xfail_plans=(
    "/verified-artifacts/pre-installed"
+   "/verified-artifacts/transitive-downgrade"
+   "/verified-artifacts/obsoletes"
+   "/no-artifacts/best-true"
 )
 
     for plan in $(tmt plans ls); do

@@ -26,6 +26,11 @@ prepare:
       if [[ -n "$PRE_INSTALLED_PACKAGE" ]]; then
         $DNF_CMD install -y $PRE_INSTALLED_PACKAGE
       fi
+
+      # Override best= in dnf.conf when the test requires it (e.g. to simulate RHEL defaults)
+      if [[ -n "$BEST_ENABLED" ]]; then
+        echo "best=$BEST_ENABLED" >> /etc/dnf/dnf.conf
+      fi
   - name: Main artifact to test and verify
     order: 40
     how: artifact
@@ -53,4 +58,5 @@ environment:
   SYSTEM_PACKAGE: foo-1.4
   EXPECTED_PACKAGE: ""
   PRE_INSTALLED_PACKAGE: ""
+  BEST_ENABLED: ""
   DNF_CMD: dnf

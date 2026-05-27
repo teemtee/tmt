@@ -1,0 +1,19 @@
+summary: Obsoletes conflict — foo-ng must be replaced by artifact foo
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: foo-ng-1.4 (Provides: foo, Obsoletes: foo < 3.0-1)
+  Artifacts: foo-1.1
+
+  foo-ng-1.4 satisfies the foo require via virtual provides, so the
+  presence check skips installation.  verify-installation then fails
+  because the installed provider (foo-ng) did not come from the artifact
+  repository.  The fix requires --allowerasing so that foo-ng is removed
+  and foo-1.1 is installed from the artifact.
+
+context+:
+  verified_artifact: foo-1.1
+  xfail: "true"
+
+environment+:
+  PRE_INSTALLED_PACKAGE: rpms/foo-ng-1.4/foo-ng-1.4*.rpm
+  EXPECTED_PACKAGE: foo-1.1

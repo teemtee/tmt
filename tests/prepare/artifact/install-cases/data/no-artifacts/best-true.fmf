@@ -1,0 +1,25 @@
+summary: Pre-installed package unchanged when best=True in dnf.conf
+description: |
+  System repo: foo-1.4, bar (baseline)
+  Pre-installed: foo-1.0 (lower than system version)
+  Artifacts: None
+  dnf.conf: best=True (simulates RHEL/CentOS defaults)
+
+  When a missing package (bar) forces dnf install to run for the full set,
+  the already-installed foo must not be upgraded even with best=True.
+  Fix must not rely on the distro's best= default.
+
+context+:
+  xfail: "true"
+
+environment+:
+  BEST_ENABLED: "True"
+  PRE_INSTALLED_PACKAGE: rpms/foo-1.0/foo-1.0*.rpm
+  EXPECTED_PACKAGE: foo-1.0
+
+/with-bar:
+  summary+: " (foo and bar requested, bar missing)"
+  context+:
+    with_bar: "true"
+  environment+:
+    SYSTEM_PACKAGE+: " bar"

@@ -1,0 +1,23 @@
+summary: Virtual provides — foo-ng satisfies foo requirement
+description: |
+  System repo: foo-1.4, bar (baseline)
+  Pre-installed: foo-ng-1.4 (Provides: foo, Obsoletes: foo < 3.0-1)
+  Artifacts: None
+
+  foo-ng satisfies the foo requirement via virtual provides.
+  The presence check must use --whatprovides so that foo-ng is recognised.
+  Installing bar must not disturb foo-ng.
+
+environment+:
+  EXPECTED_PACKAGE: foo-ng-1.4
+  PRE_INSTALLED_PACKAGE: rpms/foo-ng-1.4/foo-ng-1.4*.rpm
+
+/only-foo:
+  summary+: " (only foo requested)"
+
+/with-bar:
+  summary+: " (foo and bar requested)"
+  context+:
+    with_bar: "true"
+  environment+:
+    SYSTEM_PACKAGE+: " bar"
