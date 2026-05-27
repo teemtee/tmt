@@ -1,0 +1,10 @@
+summary: Baseline case
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: None
+  Artifacts: None
+
+  Normal installation case with no artifacts or anything special
+
+environment+:
+  EXPECTED_PACKAGE: foo-1.4
