@@ -257,7 +257,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     extra_args=self.data.extra_args,
                 )
 
-            output, exc, timer = Stopwatch.measure(
+            output, exc, timer = Stopwatch().measure(
                 invoke_playbook, playbook_record_dirpath, lowercased_playbook
             )
 

@@ -158,9 +158,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     check_data: dict[str, Any] = simple_field(default_factory=dict)
 
     return_code: Optional[int] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    real_duration: Optional[str] = None
+
+    stopwatch: Stopwatch = simple_field(default_factory=Stopwatch)
 
     #: List of exceptions encountered by the invocation.
     exceptions: list[Exception] = simple_field(default_factory=list)
@@ -410,7 +409,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         return environment
 
     def invoke_check(self, event: CheckEvent, check: Check) -> list[CheckResult]:
-        results, exc, timer = Stopwatch.measure(
+        results, exc, timer = Stopwatch().measure(
             check.go,
             event=event,
             invocation=self,
@@ -529,7 +528,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             Actually invoke the test, and handle its immediate outcome.
             """
 
-            output, error, timer = Stopwatch.measure(
+            output, error, _ = self.stopwatch.measure(
                 self.guest.execute,
                 command,
                 cwd=cwd,
@@ -545,10 +544,6 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 friendly_command=str(self.test.test),
                 sourced_files=[self.phase.step.plan.plan_source_script],
             )
-
-            self.start_time = timer.start_time_formatted
-            self.end_time = timer.end_time_formatted
-            self.real_duration = timer.duration_formatted
 
             if error is not None:
                 self.exceptions.append(error)
@@ -890,9 +885,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # For the result representing the test itself, set the important
             # attributes to reflect the reality.
             if partial_result.name == test.name:
-                partial_result.start_time = invocation.start_time
-                partial_result.end_time = invocation.end_time
-                partial_result.duration = invocation.real_duration
+                partial_result.start_time = invocation.stopwatch.start_time_formatted
+                partial_result.end_time = invocation.stopwatch.end_time_formatted
+                partial_result.duration = invocation.stopwatch.duration_formatted
                 partial_result.context = self.step.plan.fmf_context
 
             custom_results.append(partial_result)
