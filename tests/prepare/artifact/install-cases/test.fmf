@@ -1,0 +1,17 @@
+/:
+  inherit: false
+
+test: |
+  rpm -q $EXPECTED_PACKAGE
+require:
+  - foo
+
+adjust:
+  - when: want_devel == true
+    require:
+      - foo-devel
+  - when: with_bar == true
+    require+:
+      - bar
+  - when: xfail == true
+    result: xfail
