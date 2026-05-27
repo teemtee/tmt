@@ -69,6 +69,8 @@ TEST_IMAGE_MODE_IMAGES="${TEST_IMAGE_MODE_IMAGES:-$(printf "%s\n" "${!IMAGE_MODE
 function is_fedora_rawhide () {
     [[ "$1" =~ ^.*fedora/rawhide[:/].* ]] && return 0
     [[ "$1" = "fedora-rawhide" ]] && return 0
+    [[ "$1" =~ ^.*fedora/45[:/].* ]] && return 0
+    [[ "$1" = "fedora-45" ]] && return 0
 
     return 1
 }
@@ -92,6 +94,17 @@ function is_fedora_43 () {
     [[ "$1" = "fedora-43" ]] && return 0
 
     return 1
+}
+
+function is_fedora_44 () {
+    [[ "$1" =~ ^.*fedora/44[:/].* ]] && return 0
+    [[ "$1" = "fedora-44" ]] && return 0
+
+    return 1
+}
+
+function is_fedora_45 () {
+    is_fedora_rawhide "$1"
 }
 
 function is_centos_stream_9 () {
