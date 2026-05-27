@@ -792,12 +792,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             )
             if output.stdout:
                 directories = [Path(name).parent for name in output.stdout.split('\n')]
-                modified = {
-                    # ($|/): match end of test name or `/` which would be any sub-test
-                    f"^/{re.escape(str(directory))}($|/)"
-                    for directory in directories
-                    if directory
-                }
+                modified = set()
+                for directory in directories:
+                    # Special case for the top-level, otherwise will look for literal `/\.`
+                    if directory == Path("."):
+                        modified.add("^/")
+                    else:
+                        modified.add(f"^/{re.escape(str(directory))}($|/)")
                 if not modified:
                     # Nothing was modified, do not select anything
                     return []
