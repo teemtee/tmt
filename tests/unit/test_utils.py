@@ -1539,7 +1539,7 @@ _test_format_value_big_list = list(range(1, 20))
         (tmt.utils.Environment.from_dict({'FOO': 'BAR'}), None, 'FOO\033[0m: BAR'),
         # fmf context
         (
-            tmt.utils.FmfContext({'foo': ['bar', 'baz']}),
+            tmt.utils.FmfContext(foo=['bar', 'baz']),
             None,
             """
             foo\033[0m:
