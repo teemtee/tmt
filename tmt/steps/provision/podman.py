@@ -52,7 +52,13 @@ class PodmanGuestData(tmt.guest.GuestData):
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all guest operations.',
+        help="""
+             Username to pass to ``podman run`` command when starting the
+             container representing the guest. It will override ``USER``
+             directive from the image. Unless ``become`` is used, tests
+             and other user-provided commands will be invoked under this
+             user account.
+             """,
     )
     force_pull: bool = field(
         default=False,

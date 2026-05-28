@@ -2830,7 +2830,11 @@ class GuestSshData(GuestData):
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='NAME',
-        help='A username to use for all guest operations.',
+        help="""
+             Username to use when connecting to the guest via SSH. Unless
+             ``become`` is used, tests and other user-provided commands
+             will be invoked under this user account.
+             """,
     )
     key: list[Path] = field(
         default_factory=list,
