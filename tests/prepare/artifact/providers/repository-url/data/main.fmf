@@ -1,18 +1,16 @@
 /plan:
     discover:
         how: fmf
-    provision:
-        how: container
     prepare:
         how: artifact
         provide:
-          - repository-url:https://download.docker.com/linux/fedora/43/x86_64/stable/
+          # Taken from enabling copr repo lecris/_tmt_test
+          - repository-url:https://download.copr.fedorainfracloud.org/results/lecris/_tmt_test/fedora-rawhide-x86_64/
     execute:
         how: tmt
 
 /test:
     test: ./test.sh
-    duration: 5m
     summary: Verify code from repository
     require:
-      - docker-ce-cli
+      - bar
