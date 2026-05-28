@@ -259,11 +259,3 @@ repos:
     hooks:
       # Keep pyproject.toml and uv.lock in sync
       - id: uv-lock
-      # Keep pylock.toml in sync
-      - id: uv-export
-        args:
-          - "--frozen"
-          - "--format=pylock.toml"
-          - "--output-file=pylock.toml"
-          - "--all-extras"
-          - "--quiet"
