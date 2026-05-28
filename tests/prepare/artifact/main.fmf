@@ -5,6 +5,9 @@ tag+:
 require+:
   - rpm-build
 
+# Run after install tests to avoid container building cost
+order: 60
+
 /basic:
   summary: Check PrepareArtifact plugin
   test: ./basic.sh
