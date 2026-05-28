@@ -6,7 +6,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "pushd data"
+        rlRun "pushd basic"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
         setup_distro_environment

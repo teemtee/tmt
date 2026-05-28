@@ -1,10 +1,3 @@
-summary: Check PrepareArtifact plugin
-# TODO: Enable the tests for other provision formats
-# TODO: Could we test provision local safely?
-
-/:
-  select: true
-
 tag+:
   - provision-only
   - provision-container
@@ -18,3 +11,14 @@ adjust:
   - when: distro > fedora-43
     enabled: false
     because: docker-ce.repo does not support Fedora 44+
+
+/basic:
+  summary: Check PrepareArtifact plugin
+  test: ./basic.sh
+
+/verify-installation:
+  summary: Test verify-installation injection
+  description: |
+    Test that the verify-installation phase is injected
+    when verify=true (default) and suppressed when verify=false.
+  test: ./verify-installation.sh
