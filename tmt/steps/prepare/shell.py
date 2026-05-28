@@ -250,9 +250,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             pull_options.exclude.append(str(script_log_filepath))
 
             if guest.become and not guest.facts.is_superuser:
-                command = tmt.utils.ShellScript(
-                    f'{guest.facts.sudo_prefix} {script.to_shell_command()}'
-                )
+                command = tmt.utils.ShellScript(f'sudo -E {script.to_shell_command()}')
             else:
                 command = script
 

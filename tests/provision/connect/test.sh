@@ -30,11 +30,11 @@ rlJournalStart
         rlAssertGrep "Reboot finished" $rlRun_LOG
         rlAssertGrep "sudo /bin/bash -c reboot" $rlRun_LOG
 
-        # Test reboot without become (should fail for non-root user)
+        # Test reboot without become (should apply sudo as well, no a user script)
         provision_no_become="provision -h connect --guest localhost --port $guest_port --key $guest_key --user $guest_user"
-        rlRun -s "tmt -vv run --scratch -i $run_connect_no_become $provision_no_become reboot --step provision" 2
-        rlAssertGrep "fail: Command 'reboot' returned 1." $rlRun_LOG
-        rlAssertGrep "Call to Reboot failed: Access denied" $rlRun_LOG
+        rlRun -s "tmt -vv run --scratch -i $run_connect_no_become $provision_no_become reboot --step provision"
+        rlAssertGrep "Reboot finished" $rlRun_LOG
+        rlAssertGrep "sudo /bin/bash -c reboot" $rlRun_LOG
 
         rlRun "tmt run -i $run cleanup"
         rlRun "tmt run -i $run_connect cleanup"

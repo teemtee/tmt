@@ -124,7 +124,7 @@ rlJournalStart
                 0 "Systemd soft-reboot"
             rlAssertGrep "reboot: Rebooting guest using systemd-soft mode." $rlRun_LOG
             rlAssertGrep "reboot: Reboot finished" $rlRun_LOG
-            rlAssertGrep "cmd: systemctl soft-reboot" $rlRun_LOG
+            rlAssertGrep "cmd: /bin/bash -c 'systemctl soft-reboot'" $rlRun_LOG
 
             rlRun -s "tmt -vv run -l reboot --systemd-soft --command 'systemctl soft-reboot'" \
                 0 "Systemd soft-reboot with custom command"
