@@ -15,8 +15,3 @@ require+:
     Test that the verify-installation phase is injected
     when verify=true (default) and suppressed when verify=false.
   test: ./verify-installation.sh
-  adjust+:
-    # TODO: Handle centos artifacts also
-    - when: distro != fedora
-      enabled: false
-      because: Need to dynamically handle centos/brew/epel artifacts somehow also
