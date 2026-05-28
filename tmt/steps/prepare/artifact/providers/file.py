@@ -7,7 +7,7 @@ from typing import ClassVar, Optional
 
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.guest import Guest, TransferOptions
+from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -111,13 +111,10 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             if self._is_url:  # Remote file, download it
                 guest.download(artifact.location, destination)
             else:  # Local file, push it to the guest
-                # When pushing a single file, use recursive=False. The default recursive=True
-                # treats the source as a directory (appending "/."), which only works for
-                # directories and fails when pushing individual files.
+                # Relative paths are normalized to be relative to user_tree
                 guest.push(
-                    tmt.utils.Path(artifact.location),
+                    self.parent.step.plan.user_tree / artifact.location,
                     destination,
-                    options=TransferOptions(recursive=False),
                 )
             self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
