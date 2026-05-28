@@ -1,16 +1,16 @@
 discover:
     how: fmf
-provision:
-    how: container
 prepare:
   - name: Sanity checks before artifact repo setup
     how: shell
     order: 20
     script: ./pre_artifact_check.sh
-  # TODO: Add any other stable prepare artifact steps
+  - name: Main artifact to test
+    how: artifact
+    provide:
+      - file:../rpms/bar/bar-1.0-1.noarch.rpm
   - name: Sanity checks after artifact repo setup
     how: shell
-    # FIXME: What order does this mean to have?
     order: 60
     script: ./post_artifact_check.sh
 execute:
