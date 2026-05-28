@@ -85,7 +85,7 @@ class Crb(ToggleableFeature):
             return
 
         if action == 'enable':
-            guest.package_manager.enable_repo(*repo_ids)
+            guest.package_manager.enable_repository(*repo_ids)
         else:
             guest.package_manager.disable_repo(*repo_ids)
 
