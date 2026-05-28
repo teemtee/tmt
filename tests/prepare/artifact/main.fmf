@@ -2,6 +2,9 @@ tag+:
   - provision-only
   - provision-container
 
+require+:
+  - rpm-build
+
 /basic:
   summary: Check PrepareArtifact plugin
   test: ./basic.sh

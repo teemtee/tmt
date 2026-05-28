@@ -1,6 +1,8 @@
 #!/bin/bash
 # Common helper functions for artifact provider tests
 
+LIB_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+
 # Setup distro test environment
 #
 # This function checks the distro, sets up the release version,
@@ -35,6 +37,22 @@ setup_distro_environment() {
         rlDie "Test requires Fedora or CentOS"
     fi
     build_container_image "$image_name"
+}
+
+function build_rpms() {
+    for rpm_dir in $LIB_DIR/../rpms/*; do
+        build_rpm $(basename $rpm_dir)
+    done
+}
+
+function build_rpm() {
+    local rpm_dir=$LIB_DIR/../rpms/$1
+    if [[ ! -d "$rpm_dir/build" ]]; then
+        rlRun "pushd $rpm_dir"
+        rlRun "rpmbuild --define='_topdir build' -bb *.spec" 0 "Build rpm"
+        rlRun "cp build/RPMS/*/* ./" 0 "Move rpms next to spec file"
+        rlRun "popd"
+    fi
 }
 
 # Get koji build ID from package name (fetch latest for tag, with inheritance)
