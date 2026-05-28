@@ -1,0 +1,7 @@
+description: |
+    The :ref:`plan environment file <step-variables>` is now
+    guest-specific, it is no longer shared by all guests. Being shared
+    made the file open to race conditions, as tmt would fetch it from
+    all guests, saving all input files under the same name - the last
+    one saved wins. The filename is now guest specific, files do not
+    overwrite each other.

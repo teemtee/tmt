@@ -328,14 +328,12 @@ class Plan(
         # Save the run, prepare worktree and plan data directory
         self.my_run = run
         self.worktree: Optional[Path] = None
-        if self.my_run:
+        if self.my_run:  # noqa: SIM102
             # Skip to initialize the work tree if the corresponding option is
             # true. Note that 'tmt clean' consumes the option because it
             # should not initialize the work tree at all.
             if not self.my_run.opt(tmt.utils.PLAN_SKIP_WORKTREE_INIT):
                 self._initialize_worktree()
-
-            self._initialize_data_directory()
 
         # Expand all environment and context variables in the node
         with self.environment.as_environ():
@@ -471,7 +469,6 @@ class Plan(
 
         if self.my_run:
             environment['TMT_PLAN_DATA'] = EnvVarValue(self.data_directory)
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_file)
             environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script)
 
         return environment
@@ -505,25 +502,6 @@ class Plan(
         )
 
     @property
-    def _environment_from_plan_environment_file(self) -> Environment:
-        """
-        Environment sourced from the :ref:`plan environment file <step-variables>`.
-        """
-
-        if (
-            self.my_run
-            and self.plan_environment_file.exists()
-            and self.plan_environment_file.stat().st_size > 0
-        ):
-            return tmt.utils.Environment.from_file(
-                filename=self.plan_environment_file.name,
-                root=self.plan_environment_file.parent,
-                logger=self._logger,
-            )
-
-        return Environment()
-
-    @property
     def environment(self) -> Environment:
         """
         Environment variables of the plan.
@@ -531,7 +509,6 @@ class Plan(
         Contains all environment variables collected from multiple
         sources (in the following order):
 
-        * :ref:`plan environment file <step-variables>`,
         * plan's ``environment`` and ``environment-file`` keys,
         * importing plan's environment,
         * ``--environment`` and ``--environment-file`` options,
@@ -542,7 +519,6 @@ class Plan(
         if self.my_run:
             return Environment(
                 {
-                    **self._environment_from_plan_environment_file,
                     **self._environment_from_fmf,
                     **self._environment_from_importing,
                     **self._environment_from_cli,
@@ -699,33 +675,25 @@ class Plan(
                 )
             )
 
-    def _initialize_data_directory(self) -> None:
-        """
-        Create the plan data directory
-
-        This is used for storing logs and other artifacts created during
-        prepare step, test execution or finish step and which are pulled
-        from the guest for possible future inspection.
-        """
-        self.data_directory = self.plan_workdir / "data"
-        self.debug(f"Create the data directory '{self.data_directory}'.", level=2)
-        self.data_directory.mkdir(exist_ok=True, parents=True)
-
     @functools.cached_property
-    def plan_environment_file(self) -> Path:
-        assert self.data_directory is not None  # narrow type
+    def data_directory(self) -> Path:
+        """
+        Path to the plan data directory.
 
-        plan_environment_file_path = self.data_directory / "variables.env"
-        plan_environment_file_path.touch(exist_ok=True)
+        The directory is used for storing logs and other artifacts created
+        during ``prepare`` step, test execution, or ``finish`` step, and
+        which are pulled from the guest for possible future inspection.
+        """
 
-        self.debug(f"Create the environment file '{plan_environment_file_path}'.", level=2)
+        data_directory = self.plan_workdir / "data"
 
-        return plan_environment_file_path
+        self.debug(f"Create the data directory '{data_directory}'.", level=2)
+        data_directory.mkdir(exist_ok=True, parents=True)
+
+        return data_directory
 
     @functools.cached_property
     def plan_source_script(self) -> Path:
-        assert self.data_directory is not None  # narrow type
-
         plan_sourced_file_path = self.data_directory / PLAN_SOURCE_SCRIPT_NAME
         plan_sourced_file_path.touch(exist_ok=True)
 
