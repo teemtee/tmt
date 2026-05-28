@@ -6,23 +6,29 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
         setup_distro_environment
-
-        # Get koji build ID for make
-        get_koji_build_id "make" "$koji_tag"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test multiple providers with command-line override"
-        rlRun "tmt run -i $run --scratch -vv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
-            prepare --how artifact \
-                --provide koji.build:$KOJI_BUILD_ID \
-                --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with multiple providers"
-    rlPhaseEnd
+    while IFS= read -r image; do
+        if ! is_fedora_rawhide "$image"; then
+            # Running only against rawhide right now due to hard-coded pattern
+            continue
+        fi
+
+        phase_prefix="$(test_phase_prefix $image)"
+
+        rlPhaseStartTest "Test multiple providers with command-line override"
+            get_koji_build_id "make" "rawhide"
+            rlRun "tmt run -i $run --scratch -vv --all \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --how artifact \
+                    --provide koji.build:$KOJI_BUILD_ID \
+                    --provide repository-file:file://test-bar.repo" 0 "Run with multiple providers"
+        rlPhaseEnd
+    done <<< "$IMAGES"
 
     rlPhaseStartCleanup
         rlRun "rm -rf $run"

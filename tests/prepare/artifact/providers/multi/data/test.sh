@@ -7,8 +7,8 @@ rpm -q make
 # Verify make came from the tmt-artifact-shared repository
 dnf info --installed make | grep -Eq "From repo(sitory)?\s*:\s*tmt-artifact-shared"
 
-# Verify docker-ce-cli is installed
-rpm -q docker-ce-cli
+# Verify bar is installed
+rpm -q bar
 
-# Verify docker-ce-cli came from the docker-ce repository
-dnf info --installed docker-ce-cli | grep -Eq "From repo(sitory)?\s*:\s*docker-ce"
+# Verify bar came from the test-bar repository
+dnf info --installed bar | grep -Eq "From repo(sitory)?\s*:\s*test-bar"
