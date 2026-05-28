@@ -1,6 +1,5 @@
-framework: beakerlib
 /require:
   summary: Check package installation via require
   require:
-    - make
+    - bar
   test: ./test_require.sh

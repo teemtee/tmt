@@ -8,11 +8,6 @@ require+:
 /basic:
   summary: Check PrepareArtifact plugin
   test: ./basic.sh
-  adjust+:
-    # TODO: Handle centos artifacts also
-    - when: distro != fedora
-      enabled: false
-      because: Need to dynamically handle centos/brew/epel artifacts somehow also
 
 /verify-installation:
   summary: Test verify-installation injection

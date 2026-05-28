@@ -10,23 +10,23 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
         setup_distro_environment
-
-        # Get koji build ID for make using common function
-        get_koji_build_id "make" "$koji_tag"
+        build_rpm "bar"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test artifact installation on Fedora"
-        rlLog "Using koji build ID: $KOJI_BUILD_ID"
-        rlLog "Using repository URL: https://download.docker.com/linux/fedora/docker-ce.repo"
+    while IFS= read -r image; do
+        if ! is_fedora "$image" && ! is_centos "$image"; then
+            # Can only test rpm artifacts right now
+            continue
+        fi
 
-        # TODO: Handle VM, local and other provision also
-        # Run all phases including execute to test that make gets installed via require
-        rlRun "tmt run -i $run --scratch -vvv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
-            prepare --insert --how artifact \
-               --provide koji.build:$KOJI_BUILD_ID \
-               --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run tmt with artifact providers"
-    rlPhaseEnd
+        phase_prefix="$(test_phase_prefix $image)"
+
+        rlPhaseStartTest "$phase_prefix Test artifact installation"
+            rlRun "tmt run -i $run --scratch -vvv --all \
+                provision -h $PROVISION_HOW --image $image" \
+                0 "Run tmt with artifact providers"
+        rlPhaseEnd
+    done <<< "$IMAGES"
 
     rlPhaseStartCleanup
         rlRun "rm -rf $run" 0 "Removing run directory"
