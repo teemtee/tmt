@@ -94,7 +94,7 @@ class GuestLocal(tmt.Guest):
                     '-i', 'localhost,',
                     playbook,
                 ),
-                env=self._prepare_command_environment(),
+                environment=self._prepare_command_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
@@ -112,7 +112,7 @@ class GuestLocal(tmt.Guest):
         self,
         command: Union[Command, ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,
@@ -135,7 +135,7 @@ class GuestLocal(tmt.Guest):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to a shell executed on the local host.
         script = ShellScript.from_scripts(
-            self._prepare_command_environment(env).to_shell_exports()
+            self._prepare_command_environment(environment).to_shell_exports()
         )
 
         for file in reversed(sourced_files or []):
