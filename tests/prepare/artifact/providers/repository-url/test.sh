@@ -18,6 +18,11 @@ rlJournalStart
             continue
         fi
 
+        if is_centos_7 "$image"; then
+            # Centos 7 not supported because of missing provides resolution on `yum`
+            continue
+        fi
+
         phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Test repository-url provider"
