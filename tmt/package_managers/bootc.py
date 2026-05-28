@@ -177,17 +177,17 @@ class BootcEngine(PackageManagerEngine):
         self.containerfile_directives.append(f'RUN {script}')
         return script
 
-    def enable_repo(self, *repo_ids: str) -> ShellScript:
+    def enable_repository(self, *repo_ids: str) -> ShellScript:
         self.open_containerfile_directives()
 
-        script = self.aux_engine.enable_repo(*repo_ids)
+        script = self.aux_engine.enable_repository(*repo_ids)
         self.containerfile_directives.append(f'RUN {script}')
         return script
 
-    def disable_repo(self, *repo_ids: str) -> ShellScript:
+    def disable_repository(self, *repo_ids: str) -> ShellScript:
         self.open_containerfile_directives()
 
-        script = self.aux_engine.disable_repo(*repo_ids)
+        script = self.aux_engine.disable_repository(*repo_ids)
         self.containerfile_directives.append(f'RUN {script}')
         return script
 
@@ -379,7 +379,7 @@ class Bootc(PackageManager[BootcEngine]):
 
         self.assert_config_manager()
         self.verbose('enable repo', fmf.utils.listed(repo_ids), 'green')
-        self.engine.enable_repo(*repo_ids)
+        self.engine.enable_repository(*repo_ids)
 
     def disable_repo(self, *repo_ids: str) -> None:
         if not repo_ids:
@@ -387,7 +387,7 @@ class Bootc(PackageManager[BootcEngine]):
 
         self.assert_config_manager()
         self.verbose('disable repo', fmf.utils.listed(repo_ids), 'green')
-        self.engine.disable_repo(*repo_ids)
+        self.engine.disable_repository(*repo_ids)
 
     def finalize_installation(self) -> CommandOutput:
         """
