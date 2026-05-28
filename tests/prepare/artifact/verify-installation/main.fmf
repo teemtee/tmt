@@ -2,14 +2,16 @@
     summary: Plan for verify-installation injection tests
     discover:
         how: fmf
-    provision:
-        how: container
+    prepare:
+      - name: artifact
+        how: artifact
+        provide:
+          - file:../rpms/bar/bar-1.0-1.noarch.rpm
     execute:
         how: tmt
 
 /test:
     test: /bin/true
-    duration: 5m
     summary: Verify verify-installation injection behaviour
     require:
-      - make
+      - bar
