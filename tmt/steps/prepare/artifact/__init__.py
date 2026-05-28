@@ -246,6 +246,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                     raw_id,
                     repository_priority=self.data.default_repository_priority,
                     logger=provider_logger,
+                    parent=self,
                 )
 
                 self._detect_duplicate_nvras(provider, seen_nvras)
