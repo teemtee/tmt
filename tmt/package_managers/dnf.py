@@ -81,16 +81,22 @@ class DnfEngine(PackageManagerEngine):
 
         extra_options = self._extra_dnf_options(options)
 
-        script = ShellScript(
-            f'{self.command.to_script()} install '
-            f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*installables))}'
+        install_cmd = (
+            f'{self.command.to_script()} install {self.options.to_script()} {extra_options}'
         )
 
-        if options.check_first:
-            script = self._construct_presence_script(*installables) | script
+        if not options.check_first:
+            return ShellScript(f'{install_cmd} {" ".join(escape_installables(*installables))}')
 
-        return script
+        # Avoid best=True upgrades: set-level || check sends present packages to DNF.
+        pkgs = ' '.join(escape_installables(*installables))
+        return ShellScript(
+            f'_tmt_missing=(); '
+            f'for _tmt_pkg in {pkgs}; do '
+            f'rpm -q --whatprovides "$_tmt_pkg" &>/dev/null || _tmt_missing+=("$_tmt_pkg"); '
+            f'done; '
+            f'[[ ${{#_tmt_missing[@]}} -eq 0 ]] || {install_cmd} "${{_tmt_missing[@]}}"'
+        )
 
     def _construct_reinstall_script(
         self, *installables: Installable, options: Optional[Options] = None
