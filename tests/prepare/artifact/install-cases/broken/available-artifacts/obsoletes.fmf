@@ -1,0 +1,79 @@
+summary: Replacement package is available (broken)
+
+description: |
+
+  Broken `foo-ng` should be ignored and fallback to system package.
+
+
+environment+:
+  EXPECTED_PACKAGE: foo-1.4
+
+/basic:
+  /upgrade:
+    summary+: " (replacement on artifact)"
+    description+<: |
+      System repo: foo-1.4 (baseline)
+      Pre-installed: None
+      Artifacts: foo-ng-1.4-bad
+
+    context+:
+      available_artifact: foo-ng-1.4-bad
+  /downgrade:
+    summary+: " (replacement on system)"
+    description+<: |
+      System repo: foo-ng-1.4
+      Pre-installed: None
+      Artifacts: foo-1.2-bad
+
+    context+:
+      available_artifact: foo-1.2-bad
+    environment+:
+      SYSTEM_PACKAGE: foo-ng-1.4
+      EXPECTED_PACKAGE: foo-ng-1.4
+
+/pre-installed:
+  summary+: " (foo pre-installed)"
+  /upgrade:
+    summary+: " (replacement on artifact)"
+    description+<: |
+      System repo: foo-1.4 (baseline)
+      Pre-installed: foo-1.4
+      Artifacts: foo-ng-1.4-bad
+
+    context+:
+      available_artifact: foo-ng-1.4-bad
+    environment+:
+      PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
+
+    /only-foo:
+      summary+: " (only foo requested)"
+
+    /with-devel:
+      summary+: " (requested devel)"
+      context+:
+        want_devel: "true"
+      environment+:
+        EXPECTED_PACKAGE+: " foo-devel-1.4"
+
+  /downgrade:
+    summary+: " (replacement on system)"
+    description+<: |
+      System repo: foo-ng-1.4
+      Pre-installed: foo-ng-1.4
+      Artifacts: foo-1.2-bad
+
+    context+:
+      available_artifact: foo-1.2-bad
+    environment+:
+      SYSTEM_PACKAGE: foo-ng-1.4
+      PRE_INSTALLED_PACKAGE: rpms/foo-ng-1.4/foo-ng-1.4*.rpm
+
+    /only-foo:
+      summary+: " (only foo requested)"
+
+    /with-devel:
+      summary+: " (requested devel)"
+      context+:
+        want_devel: "true"
+      environment+:
+        EXPECTED_PACKAGE+: " foo-ng-devel-1.4"

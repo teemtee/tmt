@@ -19,6 +19,8 @@ rlJournalStart
 
 xfail_plans=(
     "/verified-artifacts/pre-installed"
+    # Intentionally should fail at install or verify stage
+    "/broken/verified-artifacts"
 )
 
     while IFS= read -r image; do
