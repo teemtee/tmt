@@ -701,9 +701,7 @@ def test_run_interactive_not_joined(tmppath, root_logger):
     output = (
         ShellScript("echo abc; echo def >2")
         .to_shell_command()
-        .run(
-            shell=True, interactive=True, cwd=tmppath, environment={}, log=None, logger=root_logger
-        )
+        .run(shell=True, interactive=True, cwd=tmppath, log=None, logger=root_logger)
     )
     assert output.stdout is None
     assert output.stderr is None
@@ -717,7 +715,6 @@ def test_run_interactive_joined(tmppath, root_logger):
             shell=True,
             interactive=True,
             cwd=tmppath,
-            environment={},
             join=True,
             log=None,
             logger=root_logger,
@@ -728,9 +725,7 @@ def test_run_interactive_joined(tmppath, root_logger):
 
 
 def test_run_not_joined_stdout(root_logger):
-    output = Command("ls", "/").run(
-        shell=False, cwd=Path.cwd(), environment={}, log=None, logger=root_logger
-    )
+    output = Command("ls", "/").run(shell=False, cwd=Path.cwd(), log=None, logger=root_logger)
     assert "sbin" in output.stdout
 
 
@@ -738,7 +733,7 @@ def test_run_not_joined_stderr(root_logger):
     output = (
         ShellScript("ls non_existing || true")
         .to_shell_command()
-        .run(shell=False, cwd=Path.cwd(), environment={}, log=None, logger=root_logger)
+        .run(shell=False, cwd=Path.cwd(), log=None, logger=root_logger)
     )
     assert "ls: cannot access" in output.stderr
 
@@ -747,7 +742,7 @@ def test_run_joined(root_logger):
     output = (
         ShellScript("ls non_existing / || true")
         .to_shell_command()
-        .run(shell=False, cwd=Path.cwd(), environment={}, log=None, join=True, logger=root_logger)
+        .run(shell=False, cwd=Path.cwd(), log=None, join=True, logger=root_logger)
     )
     assert "ls: cannot access" in output.stdout
     assert "sbin" in output.stdout
@@ -766,7 +761,7 @@ def test_run_big(root_logger):
     output = (
         ShellScript(textwrap.dedent(script))
         .to_shell_command()
-        .run(shell=False, cwd=Path.cwd(), environment={}, log=None, join=True, logger=root_logger)
+        .run(shell=False, cwd=Path.cwd(), log=None, join=True, logger=root_logger)
     )
     assert "n n" in output.stdout
     assert len(output.stdout) == 200000
