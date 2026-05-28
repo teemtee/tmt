@@ -102,11 +102,11 @@ class Epel(ToggleableFeature):
                 guest.package_manager.install(Package("epel-next-release"))
 
         logger.verbose('Enable EPEL')
-        guest.package_manager.enable_repo('epel', 'epel-debuginfo', 'epel-source')
+        guest.package_manager.enable_repository('epel', 'epel-debuginfo', 'epel-source')
 
         # EPEL Next is only available for CentOS Stream 9
         if distro == 'centos' and version == 9:
-            guest.package_manager.enable_repo(
+            guest.package_manager.enable_repository(
                 'epel-next', 'epel-next-debuginfo', 'epel-next-source'
             )
 
