@@ -30,7 +30,7 @@ adjust+:
 
 /install:
     discover+:
-        test: install
+        test: (install|artifact)
 
 /ansible:
     discover+:
@@ -42,4 +42,4 @@ adjust+:
 
 /the-rest:
     discover+:
-        exclude: (install|ansible|execute)
+        exclude: (install|artifact|ansible|execute)
