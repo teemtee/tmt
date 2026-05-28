@@ -678,7 +678,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         raise PrepareError(f"Package manager '{self.NAME}' does not support config-manager.")
 
-    def enable_repo(self, *repo_ids: str) -> None:
+    def enable_repository(self, *repo_ids: str) -> None:
         """
         Enable specified repositories.
 

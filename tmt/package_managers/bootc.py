@@ -373,7 +373,7 @@ class Bootc(PackageManager[BootcEngine]):
     def assert_config_manager(self) -> None:
         self.guest.bootc_builder.assert_config_manager()
 
-    def enable_repo(self, *repo_ids: str) -> None:
+    def enable_repository(self, *repo_ids: str) -> None:
         if not repo_ids:
             return
 
