@@ -149,6 +149,17 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         return self.workdir
 
+    @property
+    def user_tree(self) -> Path:
+        """
+        Current run's :term:`user tree`.
+        """
+        if self.tree and self.tree.root:
+            # The run has a fmf tree, use its root
+            return self.tree.root
+        # Otherwise it was run without a tree, so take the cwd
+        return Path.cwd()
+
     @functools.cached_property
     def state_format_marker_filepath(self) -> Path:
         return self.run_workdir / 'state-format'
