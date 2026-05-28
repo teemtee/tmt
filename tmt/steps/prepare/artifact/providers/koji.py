@@ -160,6 +160,7 @@ class KojiArtifactProvider(ArtifactProvider):
             f"{prefix}:{self.build_id}",
             repository_priority=self.repository_priority,
             logger=self.logger,
+            parent=self.parent,
         )
 
     @cached_property
