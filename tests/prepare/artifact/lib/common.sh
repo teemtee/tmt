@@ -3,40 +3,19 @@
 
 LIB_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
-# Setup distro test environment
-#
-# This function checks the distro, sets up the release version,
-# image_name, and koji_tag variables, and builds the container image.
-#
-# Sets the following global variables:
-#   release - The distro release version (e.g., "43" for Fedora, "10" for CentOS)
-#   image_name - The container image name (e.g., "fedora/43:latest")
-#   koji_tag - The koji tag for querying builds (e.g., "f43" for Fedora, "epel10" for CentOS)
-#
-# Usage: setup_distro_environment
-#
 setup_distro_environment() {
-    if rlIsFedora; then
-        release=$(rlGetDistroRelease)
-        koji_tag="f${release}"
-        distro="fedora-${release}"
-        # TODO: Rawhide reports numeric release identifiers (e.g., "45") but versioned
-        # container targets (fedora/45/*) don't exist yet. Mapping fedora/45 to rawhide
-        # as a workaround until https://github.com/teemtee/tmt/pull/4775 is merged.
-        if grep -qi "rawhide" /etc/os-release; then
-            image_name="fedora/rawhide:latest"
-        else
-            image_name="fedora/${release}:latest"
-        fi
-    elif rlIsCentOS; then
-        release=$(rlGetDistroRelease)
-        image_name="centos/stream${release}/upstream:latest"
-        koji_tag="epel${release}"
-        distro="centos-stream-${release}"
+    rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+    rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
+    if [ "$IMAGE_MODE" = "yes" ]; then
+        rlDie "Image mode is not covered"
+    elif [ "$PROVISION_HOW" = "container" ]; then
+        rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
+        build_container_images
+    elif [ "$PROVISION_HOW" = "virtual" ]; then
+        rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
     else
-        rlDie "Test requires Fedora or CentOS"
+        rlRun "IMAGES="
     fi
-    build_container_image "$image_name"
 }
 
 function build_rpms() {
