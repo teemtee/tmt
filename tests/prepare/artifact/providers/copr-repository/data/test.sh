@@ -2,7 +2,7 @@
 set -ex
 
 # Verify pyspread is installed
-rpm -q pyspread
+rpm -q bar
 
 # Verify pyspread came from the copr repository
-dnf info --installed pyspread | grep -Eq "From repo(sitory)?\s*:\s*copr:.*:mariobl:pyspread"
+dnf info --installed bar | grep -Eq "From repo(sitory)?\s*:\s*copr:.*:lecris:_tmt_test"
