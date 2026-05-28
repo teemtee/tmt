@@ -380,7 +380,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
-    test_uuids: dict[int, str] = field(default_factory=dict)
+    test_uuids: dict[int, dict[str, str]] = field(default_factory=dict)
 
     def to_spec(self) -> _RawStepData:
         spec = super().to_spec()
@@ -954,10 +954,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 test_link = None
                 test_id = None
                 env_vars = None
+                guest_name = None
 
                 if result:
                     serial_number = result.serial_number
                     test_name = result.name
+                    guest_name = result.guest.name
 
                     # Use the actual timestamp or reuse the old one if missing
                     test_start_time = result.start_time or test_start_time
@@ -1013,10 +1015,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                     item_uuid = yaml_to_dict(response.text).get("id")
                     assert item_uuid is not None
+                    assert guest_name is not None
                     self.verbose("uuid", item_uuid, "yellow", shift=1)
-                    self.data.test_uuids[serial_number] = item_uuid
+                    if serial_number in self.data.test_uuids:
+                        self.data.test_uuids[serial_number][guest_name] = item_uuid
+                    else:
+                        self.data.test_uuids[serial_number] = {guest_name: item_uuid}
                 else:
-                    item_uuid = self.data.test_uuids[serial_number]
+                    assert guest_name is not None
+                    item_uuid = self.data.test_uuids[serial_number][guest_name]
 
                 # If the result end-time is not defined, use the latest result start-time as
                 # default.
