@@ -59,6 +59,9 @@ class DnfEngine(PackageManagerEngine):
             else:
                 raise GeneralError(f"Unhandled package manager command '{command}'.")
 
+        if options.allow_erasing:
+            extra_options += Command('--allowerasing')
+
         return extra_options
 
     def _construct_presence_script(
@@ -397,6 +400,18 @@ class Dnf5Engine(DnfEngine):
     _base_debuginfo_command = Command('dnf5', 'debuginfo-install')
     skip_missing_packages_option = '--skip-unavailable'
     skip_missing_debuginfo_option = skip_missing_packages_option
+
+    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
+        """
+        Collect additional options for ``dnf5`` based on given options.
+        """
+
+        extra_options = super()._extra_dnf_options(options, command)
+
+        if options.allow_downgrade:
+            extra_options += Command('--allow-downgrade')
+
+        return extra_options
 
 
 @provides_package_manager('dnf5')
