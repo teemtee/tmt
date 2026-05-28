@@ -415,6 +415,15 @@ class Plan(
 
         return self.my_run.run_workdir
 
+    @property
+    def user_tree(self) -> Path:
+        """
+        The :term:`user tree` of the current run.
+        """
+        if self.my_run:
+            return self.my_run.user_tree
+        return Path.cwd()
+
     # TODO: better, more elaborate ways of assigning serial numbers to tests
     # can be devised - starting with a really trivial one: each test gets
     # one, starting with `1`.
