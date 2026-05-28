@@ -57,6 +57,7 @@ from tmt.utils import (
     HasEnvironment,
     HasPlanWorkdir,
     HasRunWorkdir,
+    HasUserTree,
     style,
     to_yaml,
 )
@@ -223,6 +224,7 @@ class RemotePlanReference(  # pyright: ignore[reportGeneralTypeIssues]
 @container(repr=False)
 class Plan(
     HasRunWorkdir,
+    HasUserTree,
     HasPlanWorkdir,
     HasEnvironment,
     Core,
@@ -417,9 +419,6 @@ class Plan(
 
     @property
     def user_tree(self) -> Path:
-        """
-        The :term:`user tree` of the current run.
-        """
         if self.my_run:
             return self.my_run.user_tree
         return Path.cwd()

@@ -1591,6 +1591,27 @@ class HasRunWorkdir(abc.ABC):
             yield self.run_tmpdir / path
 
 
+class HasUserTree(abc.ABC):
+    """
+    Exposes easy access to the :term:`user tree`.
+    """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @property
+    @abc.abstractmethod
+    def user_tree(self) -> Path:
+        """
+        Current run's :term:`user tree`.
+
+        If the run is unknown or does not have a fmf tree, the cwd is the user tree.
+        """
+
+        raise NotImplementedError
+
+
 class HasPlanWorkdir(abc.ABC):
     """
     Provides assured access to a plan workdir.
