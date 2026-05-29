@@ -67,8 +67,8 @@ If you do need to investigate test logs after running tests, use
 the ``-vv`` option to display full paths to log files, or ``-vvv``
 to show the complete test output directly in the terminal.
 
-During the run, use ``-vv`` or ``-vvv`` on the ``tmt run``
-command to see log paths or full output as tests are executed:
+To see log paths or full output during the run,  use ``-vv`` or
+``-vvv`` on the ``tmt run`` command:
 
 .. code-block:: shell
 
