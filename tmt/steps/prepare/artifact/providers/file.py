@@ -7,7 +7,7 @@ from typing import ClassVar, Optional
 
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.guest import Guest
+from tmt.guest import Guest, TransferOptions
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -115,6 +115,13 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
                 guest.push(
                     self.parent.step.plan.user_tree / artifact.location,
                     destination,
+                    # Override the flags from DEFAULT_PUSH_OPTIONS, we mainly care about
+                    # - recursive=False: is individual file
+                    # - links=False: we really need the file
+                    # - compress=True: try to make it fast
+                    options=TransferOptions(
+                        compress=True,
+                    ),
                 )
             self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
