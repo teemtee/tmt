@@ -76,7 +76,8 @@ class RepositoryFileProvider(ArtifactProvider):
         self.logger.info(f"Initializing repository provider with URL: {self.id}")
 
         parsed = urlparse(self.id)
-        parsed_path = Path(parsed.path)
+        # If the file is a relative path, we need the netloc part also
+        parsed_path = Path(f"{parsed.netloc}{parsed.path}")
         if parsed.scheme == 'file':
             # Normalize relative paths to be relative to user_tree
             parsed_path = self.parent.step.plan.user_tree / parsed_path
