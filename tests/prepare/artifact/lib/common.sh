@@ -118,7 +118,7 @@ get_koji_nvr() {
 
     # Get the latest tagged build for the package
     # Output format: "make-4.4.1-10.fc42    f42    releng"
-    rlRun -s "koji $profile_option list-tagged --latest $tag $package" 0 "Get the latest $package build"
+    rlRun -s "koji $profile_option list-tagged --latest --inherit $tag $package" 0 "Get the latest $package build"
 
     # The NVR should be the first word in the last line
     if [[ ! "$(tail -1 $rlRun_LOG)" =~ ^([^[:space:]]+) ]]; then
