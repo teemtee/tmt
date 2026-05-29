@@ -21,13 +21,13 @@ rlJournalStart
 
         phase_prefix="$(test_phase_prefix $image)"
 
-        rlPhaseStartTest "Test multiple providers with command-line override"
+        rlPhaseStartTest "$phase_prefix Test multiple providers"
             get_koji_build_id "make" "rawhide"
             rlRun "tmt run -i $run --scratch -vv --all \
                 provision -h $PROVISION_HOW --image $image \
                 prepare --how artifact \
                     --provide koji.build:$KOJI_BUILD_ID \
-                    --provide repository-file:file://test-bar.repo" 0 "Run with multiple providers"
+                    --provide repository-file:file://../test-bar.repo" 0 "Run with multiple providers"
         rlPhaseEnd
     done <<< "$IMAGES"
 
