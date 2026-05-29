@@ -22,7 +22,6 @@ TEST_CONTAINER_IMAGES="${TEST_CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/alpine:latest
 $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/42/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/43/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/44/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
@@ -44,7 +43,6 @@ TEST_CONTAINER_IMAGES_SECONDARY="${TEST_CONTAINER_IMAGES_SECONDARY:-$TEST_IMAGE_
 # TODO: enable centos-7 again with modified repo files
 TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
 centos-stream-10
-fedora-42
 fedora-43
 fedora-44
 fedora-rawhide
