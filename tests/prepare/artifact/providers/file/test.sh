@@ -24,7 +24,19 @@ rlJournalStart
         fi
 
         if is_centos_7 "$image"; then
+            # TODO(#4941):
             # Centos 7 not supported because of missing provides resolution on `yum`
+            continue
+        fi
+
+        if is_centos_stream_9 "$image" || is_centos_stream_10 "$image"; then
+            # TODO(#4941):
+            # dnf repoquery fails
+            # - Error: 'Package' object has no attribute 'full_nevra'
+            # - Or gives an output of
+            #   'bar':
+            #    - nevra: '%{full_nevra}'
+            #      repo_id: 'tmt-artifact-shared'
             continue
         fi
 
