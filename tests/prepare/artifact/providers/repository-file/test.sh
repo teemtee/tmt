@@ -25,7 +25,7 @@ rlJournalStart
 
         phase_prefix="$(test_phase_prefix $image)"
 
-        rlPhaseStartTest "Test repository-file provider with command-line override"
+        rlPhaseStartTest "$phase_prefix Test repository-file provider"
             rlRun "tmt run -i $run --scratch -vv --all \
                 provision -h $PROVISION_HOW --image $image" \
                 0 "Run with repository-file provider"
