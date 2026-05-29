@@ -53,11 +53,11 @@ rlJournalStart
                 0 "Run remote file"
             rlRun "tmt run -i $run --scratch -vvv --all \
                 provision -h $PROVISION_HOW --image $image \
-                prepare --how artifact --provide file:$LIB_DIR/../rpms/bar/bar-1.0-1.rpm" \
+                prepare --how artifact --provide file:$LIB_DIR/../rpms/bar/bar-1.0-1.noarch.rpm" \
                 0 "Run absolute file path"
             rlRun "tmt run -i $run --scratch -vvv --all \
                 provision -h $PROVISION_HOW --image $image \
-                prepare --how artifact --provide file:../../rpms/bar/bar-1.0-1.rpm" \
+                prepare --how artifact --provide file:../../../rpms/bar/bar-1.0-1.noarch.rpm" \
                 0 "Run relative file path"
             rlRun "tmt run -i $run --scratch -vvv --all \
                 provision -h $PROVISION_HOW --image $image \

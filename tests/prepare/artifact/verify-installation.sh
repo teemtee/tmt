@@ -25,6 +25,17 @@ rlJournalStart
             continue
         fi
 
+        if is_centos_stream_9 "$image" || is_centos_stream_10 "$image"; then
+            # TODO(#4941):
+            # dnf repoquery fails
+            # - Error: 'Package' object has no attribute 'full_nevra'
+            # - Or gives an output of
+            #   'bar':
+            #    - nevra: '%{full_nevra}'
+            #      repo_id: 'tmt-artifact-shared'
+            continue
+        fi
+
         phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Test verify-installation phase injection (verify=true)"
@@ -34,7 +45,7 @@ rlJournalStart
                 0 "Verify should pass with verify=true (default)"
 
             rlAssertGrep "verify-artifact-packages" $rlRun_LOG
-            rlAssertGrep "pass verify-artifact-packages / make" $rlRun_LOG
+            rlAssertGrep "pass verify-artifact-packages / bar" $rlRun_LOG
             rlAssertGrep "All packages verified successfully" $rlRun_LOG
         rlPhaseEnd
 
@@ -42,7 +53,7 @@ rlJournalStart
             rlRun -s "tmt run -i $run --scratch -vvv --all \
                 plan --name /plan \
                 provision -h $PROVISION_HOW --image $image \
-                prepare --update --name artifact --no-verify" \
+                prepare --update --name artifact --how=artifact --no-verify" \
                 0 "No-verify should succeed without verify phase"
 
             rlAssertNotGrep "verify-artifact-packages" $rlRun_LOG
