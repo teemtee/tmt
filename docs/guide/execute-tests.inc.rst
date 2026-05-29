@@ -60,6 +60,36 @@ the execution is finished:
     tmt run -r
 
 
+Access Test Logs
+------------------------------------------------------------------
+
+If you do need to investigate test logs after running tests, use
+the ``-vv`` option to display full paths to log files, or ``-vvv``
+to show the complete test output directly in the terminal.
+
+During the run, use ``-vv`` or ``-vvv`` on the ``tmt run``
+command to see log paths or full output as tests are executed:
+
+.. code-block:: shell
+
+    # Show paths to test log files during the run
+    $ tmt run -vv
+
+    # Show complete test output directly during the run
+    $ tmt run -vvv
+
+After the run is finished, use ``--last`` to access results from
+the most recent run without re-executing it:
+
+.. code-block:: shell
+
+    # Show paths to test log files from the last run
+    $ tmt run --last report -vv
+
+    # Show complete test output from the last run
+    $ tmt run --last report -vvv
+
+
 Select Plans
 ------------------------------------------------------------------
 
