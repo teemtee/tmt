@@ -50,5 +50,7 @@ which can be used by tests for special actions:
 
 By default these are installed under ``/usr/local/bin``, use
 ``TMT_SCRIPTS_DIR`` environment variable to choose a different
-scripts path. See also :ref:`restraint-compatibility` for
+scripts path. On Image Mode (bootc) guests, scripts are deployed
+to ``/var/lib/tmt/scripts`` instead — see :ref:`image-mode` for
+more details. See also :ref:`restraint-compatibility` for
 alternative script aliases which can be used as well.
