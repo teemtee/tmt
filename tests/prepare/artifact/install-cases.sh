@@ -27,6 +27,24 @@ xfail_plans=(
             continue
         fi
 
+        extra_env=""
+        if is_centos_7 "$image"; then
+             extra_env="-e DNF_CMD=yum"
+            # TODO: centos7 is hard
+            continue
+        fi
+
+        if is_centos_stream_9 "$image" || is_centos_stream_10 "$image"; then
+            # TODO(#4941):
+            # dnf repoquery fails
+            # - Error: 'Package' object has no attribute 'full_nevra'
+            # - Or gives an output of
+            #   'bar':
+            #    - nevra: '%{full_nevra}'
+            #      repo_id: 'tmt-artifact-shared'
+            continue
+        fi
+
         phase_prefix="$(test_phase_prefix $image)"
 
         for plan in $(tmt plans ls); do
@@ -40,7 +58,7 @@ xfail_plans=(
                 fi
             done
             rlPhaseStartTest "$phase_prefix $plan $xfail"
-                rlRun "tmt run -i $run --scratch -vvv --all \
+                rlRun "tmt run $extra_env -i $run --scratch -vvv --all \
                     plan --name $plan \
                     provision -h $PROVISION_HOW --image $image" \
                     $expected_result "Run test case $plan $xfail"
