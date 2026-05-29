@@ -13,7 +13,14 @@ import tmt.utils
 from tmt.container import container
 from tmt.guest import RebootMode, TransferOptions
 from tmt.steps.provision import Provision
-from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
+from tmt.utils import (
+    Command,
+    EnvVarValue,
+    OnProcessEndCallback,
+    OnProcessStartCallback,
+    Path,
+    ShellScript,
+)
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
@@ -49,6 +56,36 @@ class GuestLocal(tmt.Guest):
         """
 
         return True
+
+    # TODO: the existence of this method is very questionable, it may
+    # go away while works on https://github.com/teemtee/tmt/pull/4364
+    # continue.
+    #
+    # `local` plugin has its own implementation as it needs to populate
+    # the environment with the tmt process environment, since the guest
+    # is the same as the runner.
+    def _prepare_command_environment(
+        self, environment: Optional[tmt.utils.Environment] = None
+    ) -> tmt.utils.Environment:
+        if environment is None:
+            environment = tmt.utils.Environment.from_environ()
+
+            environment.update(self.environment)
+
+            if isinstance(self.parent, tmt.steps.Step):
+                environment.update(self.parent.plan)
+
+            # TODO: this was owned by plan, but at wrong position, and it will
+            # be owned by plan again once the dust of environment untangling
+            # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
+            # more.
+            if self.plan_environment_path:
+                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+
+        else:
+            environment = super()._prepare_command_environment(environment=environment)
+
+        return environment
 
     def _run_ansible(
         self,
