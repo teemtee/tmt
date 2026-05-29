@@ -36,9 +36,12 @@ actions: &base-actions
     - hatch version
 
 targets: &all-targets
-  - fedora-all
-  - epel-9
-  - epel-10
+  - fedora-all-x86_64
+  - fedora-all-aarch64
+  - epel-9-x86_64
+  - epel-9-aarch64
+  - epel-10-x86_64
+  - epel-10-aarch64
 
 # Uncomment below line if OpenScanHub scans are failing
 # osh_diff_scan_after_copr_build: false
@@ -80,14 +83,17 @@ _:
 
   # Latest fedora & epel targets
   - &latest-targets
-    - fedora-latest-stable
-    - epel-10
+    - fedora-latest-stable-x86_64
+    - fedora-latest-stable-aarch64
+    - epel-10-x86_64
+    - epel-10-aarch64
 
   # Internal jobs
   - &internal
     use_internal_tf: true
     targets:
-      - fedora-latest-stable
+      - fedora-latest-stable-x86_64
+      - fedora-latest-stable-aarch64
     tf_extra_params:
       environments:
         - &tmt-cloud-resources
