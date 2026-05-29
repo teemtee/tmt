@@ -78,11 +78,9 @@ class RepositoryFileProvider(ArtifactProvider):
         parsed = urlparse(self.id)
         parsed_path = Path(parsed.path)
         if parsed.scheme == 'file':
-            # Read .repo file from the local (controller) filesystem.
-            self.logger.info(f"Reading repository file from local path: {parsed_path}")
-            self.logger.debug(f"Absolute path of the repository file: '{parsed_path.resolve()}'")
             # Normalize relative paths to be relative to user_tree
             parsed_path = self.parent.step.plan.user_tree / parsed_path
+            self.logger.info(f"Reading repository file from local path: {parsed_path}")
             self.repository = Repository.from_file_path(file_path=parsed_path, logger=self.logger)
         else:
             repo_filename = parsed_path.name
