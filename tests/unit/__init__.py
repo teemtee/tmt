@@ -200,9 +200,6 @@ CONTAINER_FEDORA_44 = Container(
 CONTAINER_FEDORA_43 = Container(
     url='containers-storage:localhost/tmt/container/test/fedora/43/upstream:latest'
 )
-CONTAINER_FEDORA_42 = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/42/upstream:latest'
-)
 CONTAINER_FEDORA_ELN = Container(
     url='containers-storage:localhost/tmt/container/test/fedora/eln/upstream:latest'
 )
