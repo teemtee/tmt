@@ -571,6 +571,60 @@ __ https://github.com/tldr-pages/tldr/blob/main/CONTRIBUTING.md
    not be reflected in the tldr pages collection.
 
 
+.. _dry-mode:
+
+Dry Mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Dry mode, activated by the option ``--dry``, lets users preview
+the test execution plan — which steps, phases and plugins would
+run, with what configuration — without provisioning any resources
+or making any changes outside the local workdir. It answers "what
+would tmt do?" before committing time and infrastructure to an
+actual run.
+
+When implementing new features or modifying existing code, follow
+these rules to determine what is allowed and what must be skipped
+when ``is_dry_run`` is true. See `#4443`__ for background.
+
+**In scope** (allowed during dry run):
+
+* Reading and modifying the local workdir
+* Parsing and validating metadata
+* Showing what steps and phases would be executed
+* Importing local plans and files
+
+**Out of scope** (skipped during dry run):
+
+* Creating or modifying external resources (guests, containers,
+  images)
+* Executing commands on guests
+* Submitting tasks or tests results to external services
+* Network access (git clone, fetching remote plans or images)
+* Removing provisioned guests, cleaning up run workdirs, images
+
+For individual steps and commands the following behavior is
+expected:
+
+* ``discover`` — skip git clone and remote repository operations,
+  just show what would be discovered
+* ``provision`` — no pulling images, no images creation, no
+  starting guests
+* ``prepare`` — skip package installation and guest commands,
+  just show which prepare phases would run
+* ``execute`` — skip test execution, show the execute method
+* ``report`` — skip submission to external services, just show
+  which reports steps would be run
+* ``finish`` — skip executing finishing tasks, just show which
+  finish phases would run
+* ``cleanup`` — skip guest removal, just show which cleanup
+  phases would run
+* ``export`` — skip writes to Nitrate and Polarion, compute and
+  show what would be changed
+
+__ https://github.com/teemtee/tmt/issues/4443
+
+
 .. _issues:
 
 Issues
