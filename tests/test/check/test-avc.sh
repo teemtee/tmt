@@ -23,7 +23,7 @@ rlJournalStart
         if [ "$method" = "checkpoint" ] && [ "$PROVISION_HOW" = "local" ]; then continue; fi
 
         rlPhaseStartTest "Run /avc tests with $PROVISION_HOW ($method method)"
-            rlRun "tmt -c provision_method=$PROVISION_HOW run --id $run --scratch -a -vvv provision -h $PROVISION_HOW test -n /avc/$method" "1"
+            rlRun "tmt -c provision_method=$PROVISION_HOW run --id $run --scratch -a -vvvvdddd provision -h $PROVISION_HOW test -n /avc/$method" "1"
             rlRun "cat $results"
         rlPhaseEnd
 
