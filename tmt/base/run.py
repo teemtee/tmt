@@ -153,7 +153,7 @@ class Run(HasRunWorkdir, HasUserTree, HasEnvironment, tmt.utils.Common):
     @property
     def user_tree(self) -> Path:
         if self.tree and self.tree.root:
-            # The run has a fmf tree, use its root
+            # The run has an fmf tree, use its root
             return self.tree.root
         # Otherwise it was run without a tree, so take the cwd
         return Path.cwd()

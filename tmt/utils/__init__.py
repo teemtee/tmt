@@ -1606,7 +1606,7 @@ class HasUserTree(abc.ABC):
         """
         Current run's :term:`user tree`.
 
-        If the run is unknown or does not have a fmf tree, the cwd is the user tree.
+        If the run is unknown or does not have an fmf tree, the cwd is the user tree.
         """
 
         raise NotImplementedError
