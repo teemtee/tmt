@@ -1597,7 +1597,7 @@ class HasRunWorkdir(abc.ABC):
 
 class HasUserTree(abc.ABC):
     """
-    Exposes easy access to the :term:`user tree`.
+    Provides easy access to the :term:`user tree`.
     """
 
     # Keep this method around, to correctly support Python's method resolution order.
