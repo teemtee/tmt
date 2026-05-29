@@ -6,33 +6,23 @@
     discover:
         how: fmf
         test: /test
-    prepare:
-      - how: artifact
-        verify: false
-        provide:
-          - koji.build:KOJI_BUILD_ID
-
-    adjust+:
-      - when: distro == centos
-        prepare+:
-          - how: feature
-            epel: enabled
-            order: 40
 
 /plan/success:
     prepare+:
       - how: verify-installation
+        order: 79
         verify:
-            centpkg: tmt-artifact-shared
+            bar: tmt-artifact-shared
 
 /plan/failure:
     prepare+:
       - how: verify-installation
+        order: 79
         verify:
-            centpkg: SOME_NON_EXISTENT_REPO
+            bar: SOME_NON_EXISTENT_REPO
             random-non-existent-package: some-repo
 
 /test:
     test: /bin/true
     require:
-      - centpkg
+      - bar
