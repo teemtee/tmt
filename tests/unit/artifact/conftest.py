@@ -60,10 +60,15 @@ def mock_copr_build_session():
 
 @pytest.fixture
 def artifact_provider(root_logger, _load_plugins):
+    mock_prepare_artifact = MagicMock()
+
     def get_provider(provider_id: str, repository_priority: int = 50):
         provider_class = get_artifact_provider(provider_id)
         return provider_class(
-            provider_id, repository_priority=repository_priority, logger=root_logger
+            provider_id,
+            repository_priority=repository_priority,
+            logger=root_logger,
+            parent=mock_prepare_artifact,
         )
 
     return get_provider
