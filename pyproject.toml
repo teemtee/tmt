@@ -233,6 +233,7 @@ python_version = "3.9"
 files = [
     "tmt/",
     "tests/core/about/",
+    "tests/plan/select/",
 ]
 
 [[tool.mypy.overrides]]
@@ -254,7 +255,8 @@ ignore_missing_imports = true
 [tool.pyright]
 include = [
     "tmt/**/*.py",
-    "tests/core/about/*.py"
+    "tests/core/about/*.py",
+    "tests/plan/select/*.py",
 ]
 ignore = [
     "docs/**",

@@ -1,11 +1,22 @@
-from collections.abc import Mapping
-from typing import IO, Any, Optional, Protocol, Union
+import contextlib
+import functools
+import importlib.metadata
+import os
+from collections.abc import Iterator, Mapping
+from typing import IO, Any, Callable, Optional, Protocol, TypeVar, Union
 
 import click.core
 import click.testing
 
 import tmt.__main__
 import tmt.cli._root
+from tmt._compat.typing import ParamSpec
+from tmt.utils import Path
+
+_CLICK_VERSION = tuple(int(_s) for _s in importlib.metadata.version('click').split('.'))
+
+T = TypeVar('T')
+P = ParamSpec('P')
 
 
 def reset_common() -> None:
@@ -31,6 +42,59 @@ def reset_common() -> None:
         klass.cli_invocation = None
 
 
+@contextlib.contextmanager
+def cwd(*, path: Optional[Path] = None, dirname: Optional[str] = None) -> Iterator[Path]:
+    """
+    A context manager switching the current working directory to a given path.
+
+    .. warning::
+
+        Changing the current working directory can have unexpected
+        consequences in a multithreaded environment.
+    """
+
+    if path is not None:
+        pass
+
+    elif dirname is not None:
+        current_test = os.getenv("PYTEST_CURRENT_TEST")
+        assert current_test is not None
+
+        test_filename, _ = current_test.split(':', maxsplit=1)
+        path = Path(test_filename).absolute().parent / dirname
+
+    else:
+        raise ValueError('Either path or dirname must be given.')
+
+    cwd = Path.cwd()
+
+    os.chdir(path)
+
+    try:
+        yield path
+
+    finally:
+        os.chdir(cwd)
+
+
+def with_cwd(
+    *, path: Optional[Path] = None, dirname: Optional[str] = None
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """
+    Decorate a test to have it run in the given path as its CWD.
+    """
+
+    def _with_cwd(fn: Callable[P, T]) -> Callable[P, T]:
+        @functools.wraps(fn)
+        def __with_cwd(*args: P.args, **kwargs: P.kwargs) -> T:
+            with cwd(path=path, dirname=dirname):
+                return fn(*args, **kwargs)
+
+        return __with_cwd
+
+    return _with_cwd
+
+
 class RunTmt(Protocol):
     """
     A type representing :py:meth:`CliRunner.invoke`.
@@ -41,7 +105,7 @@ class RunTmt(Protocol):
 
     def __call__(
         self,
-        *args: str,
+        *args: Union[str, Path],
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
@@ -54,15 +118,19 @@ class RunTmt(Protocol):
 
 class CliRunner(click.testing.CliRunner):
     def __init__(self) -> None:
-        super().__init__(charset='utf-8', echo_stdin=False)
+        if _CLICK_VERSION >= (8, 2, 0):
+            super().__init__(charset='utf-8', echo_stdin=False)
+
+        else:
+            super().__init__(charset='utf-8', echo_stdin=False, mix_stderr=False)
 
     def invoke(  # type: ignore[override]
         self,
-        *args: str,
+        *args: Union[str, Path],
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
-        catch_exceptions: bool = True,
+        catch_exceptions: bool = False,
         color: bool = False,
         **kwargs: Any,
     ) -> click.testing.Result:
@@ -74,7 +142,7 @@ class CliRunner(click.testing.CliRunner):
 
         return super().invoke(
             command,
-            args=args,
+            args=[str(arg) for arg in args],
             input=input,
             env=env,
             catch_exceptions=catch_exceptions,
