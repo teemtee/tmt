@@ -1,1 +1,4 @@
 summary: Checks whether plan context works correctly
+
+framework: shell
+test: $PYTEST ./test_context.py
