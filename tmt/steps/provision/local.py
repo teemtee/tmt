@@ -13,7 +13,6 @@ import tmt.utils
 from tmt.container import container
 from tmt.guest import RebootMode, TransferOptions
 from tmt.steps import Step
-from tmt.steps.provision import Provision
 from tmt.utils import (
     Command,
     EnvVarValue,
