@@ -557,6 +557,7 @@ POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
         metavar='PATH',
         type=Path(),
         envvar='TMT_POLICY_FILE',
+        multiple=True,
         help="""
              Location of a file with policy rules for modification of
              test metadata keys. Both absolute and relative paths are
@@ -569,6 +570,7 @@ POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
         '--policy-name',
         metavar='NAME',
         envvar='TMT_POLICY_NAME',
+        multiple=True,
         help="""
              Name of the file with policy rules for modification of test
              metadata keys. The name would be extended with ``.yaml``

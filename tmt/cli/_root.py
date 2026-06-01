@@ -71,8 +71,8 @@ recipe_options = create_options_decorator(tmt.options.RECIPE_OPTIONS)
 
 
 def _load_policies(
-    policy_name: Optional[str],
-    policy_path: Optional[Path],
+    policy_name: list[str],
+    policy_path: list[Path],
     policy_root: Optional[Path],
 ) -> list[tmt.policy.Policy]:
     """
@@ -86,30 +86,32 @@ def _load_policies(
         directory.
     """
 
-    if policy_name is not None:
+    if policy_name:
         if policy_root is None:
             raise GeneralError(
                 "Policy can be loaded by its name only when '--policy-root' is specified."
             )
 
-        if policy_path is not None:
+        if policy_path:
             raise GeneralError(
                 "Options '--policy-name' and '--policy-file' are mutually exclusive."
             )
 
         return [
             tmt.policy.Policy.load_by_name(
-                name=policy_name,
+                name=name,
                 root=policy_root,
             )
+            for name in policy_name
         ]
 
-    if policy_path is not None:
+    if policy_path:
         return [
             tmt.policy.Policy.load_by_filepath(
-                path=policy_path,
+                path=path,
                 root=policy_root,
             )
+            for path in policy_path
         ]
 
     return []
@@ -354,8 +356,8 @@ def run(
     context: Context,
     id_: Optional[str],
     workdir_root: Optional[Path],
-    policy_file: Optional[Path],
-    policy_name: Optional[str],
+    policy_file: list[Path],
+    policy_name: list[str],
     policy_root: Optional[Path],
     recipe: Optional[Path],
     **kwargs: Any,
@@ -965,8 +967,8 @@ def tests_export(
     nitrate: bool,
     bugzilla: bool,
     template: Optional[str],
-    policy_file: Optional[Path],
-    policy_name: Optional[str],
+    policy_file: list[Path],
+    policy_name: list[str],
     policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
@@ -1228,8 +1230,8 @@ def plans_export(
     how: str,
     format: str,
     template: Optional[str],
-    policy_file: Optional[Path],
-    policy_name: Optional[str],
+    policy_file: list[Path],
+    policy_name: list[str],
     policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
