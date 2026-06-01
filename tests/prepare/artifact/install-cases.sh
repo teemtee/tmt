@@ -9,8 +9,8 @@ rlJournalStart
 
         build_rpms
 
-        rlRun "cp -a rpms $testdir/" 0 "Copy rpms data"
         rlRun "cp -a install-cases $testdir/data" 0 "Copy test data"
+        rlRun "cp -a rpms $testdir/data/" 0 "Copy rpms data"
         rlRun "pushd $testdir/data" 0 "Enter test directory"
         rlRun "run=$(mktemp -d)" 0 "Create run directory"
 
