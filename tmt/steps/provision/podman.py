@@ -485,7 +485,13 @@ class GuestContainer(tmt.Guest):
         """
 
         try:
-            return self._run_guest_command(Command('podman') + command, silent=silent, **kwargs)
+            return self._run_guest_command(
+                Command('podman') + command,
+                environment=tmt.utils.Environment.from_environ(),
+                silent=silent,
+                **kwargs,
+            )
+
         except tmt.utils.RunError as error:
             if (
                 "File 'podman' not found." in error.message

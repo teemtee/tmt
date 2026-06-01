@@ -753,7 +753,9 @@ def git_clone(
         the whole history.
     :param can_change: URL can be modified with hardcoded rules. Use
         ``can_change=False`` to disable rewrite rules.
-    :param environment: Environment provided to the ``git clone`` process.
+    :param environment: if set, expose these environment variables
+        to the ``git clone`` command. If not set, environment of the
+        tmt process is used.
     :param attempts: Number of tries to call the function.
     :param interval: Amount of seconds to wait before a new try.
     :param timeout: Overall maximum time in seconds to clone the repo.
@@ -761,11 +763,13 @@ def git_clone(
     :returns: Command output, bundled in a :py:class:`CommandOutput` tuple.
     """
 
+    environment = environment if environment is not None else Environment.from_environ()
+
     def clone_the_repo(
         url: str,
         destination: Path,
+        environment: Environment,
         shallow: bool = False,
-        environment: Optional[Environment] = None,
         timeout: Optional[int] = None,
     ) -> CommandOutput:
         """
