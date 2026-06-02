@@ -667,7 +667,6 @@ a list of names, exported metadata, or formatted details meant
 for further processing or inspection:
 
 * ``tmt test ls``
-* ``tmt plan show``
 * ``tmt story export``
 * ``tmt run provision --how minute --list-images``
 
