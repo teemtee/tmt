@@ -147,14 +147,20 @@ class _MockPackageManager(PackageManager[MockEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        if options is not None and options.check_first:
-            try:
-                return self.guest.execute(self.engine.check_presence(*installables))
-            except RunError:
-                pass
-        return self.guest.run(
-            self.engine.install(*installables, options=options).to_shell_command()
-        )
+        options = options or Options()
+
+        if not options.check_first or not installables:
+            return self.guest.run(
+                self.engine.install(*installables, options=options).to_shell_command()
+            )
+
+        presence = self.check_presence(*installables)
+        missing = tuple(p for p, present in presence.items() if not present)
+
+        if not missing:
+            return CommandOutput(stdout=None, stderr=None)
+
+        return self.guest.run(self.engine.install(*missing, options=options).to_shell_command())
 
     def reinstall(
         self,
