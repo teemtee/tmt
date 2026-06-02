@@ -1,5 +1,6 @@
 import abc
 import configparser
+import dataclasses
 import enum
 import re
 import shlex
@@ -552,7 +553,20 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.execute(self.engine.install(*installables, options=options))
+        options = options or Options()
+
+        if not options.check_first or not installables:
+            return self.guest.execute(self.engine.install(*installables, options=options))
+
+        presence = self.check_presence(*installables)
+        missing = tuple(p for p, present in presence.items() if not present)
+
+        if not missing:
+            return CommandOutput(stdout=None, stderr=None)
+
+        return self.guest.execute(
+            self.engine.install(*missing, options=dataclasses.replace(options, check_first=False))
+        )
 
     def reinstall(
         self,

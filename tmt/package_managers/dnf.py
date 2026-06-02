@@ -282,6 +282,7 @@ class Dnf(PackageManager[DnfEngine]):
     probe_priority = 50
 
     def list_packages(self, repository: Repository) -> list[Version]:
+
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)
         stdout = output.stdout
@@ -337,25 +338,6 @@ class Dnf(PackageManager[DnfEngine]):
 
         return results
 
-    def install(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        options = options or Options()
-
-        if not options.check_first or not installables:
-            return super().install(*installables, options=options)
-
-        presence = self.check_presence(*installables)
-        missing = tuple(p for p, present in presence.items() if not present)
-
-        if not missing:
-            return CommandOutput(stdout=None, stderr=None)
-
-        options.check_first = False
-        return super().install(*missing, options=options)
-
     def assert_config_manager(self) -> None:
         self.debug('Make sure the config-manager plugin is available.')
         self.install(Package(self.config_manager_plugin))
@@ -385,6 +367,7 @@ class Dnf(PackageManager[DnfEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
+
         options = options or Options()
         options.check_first = False
         # Use both install/reinstall to get all packages refreshed
@@ -398,6 +381,7 @@ class Dnf(PackageManager[DnfEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
+
         output = super().install_debuginfo(*installables, options=options)
 
         # Check the packages are installed because 'debuginfo-install'
