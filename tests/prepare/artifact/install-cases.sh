@@ -53,7 +53,7 @@ xfail_plans=(
             for check_pattern in ${xfail_plans[@]}; do
                 if [[ "$plan" =~ $check_pattern ]]; then
                     xfail="(XFAIL)"
-                    expected_result=1
+                    expected_result=2
                     break
                 fi
             done
