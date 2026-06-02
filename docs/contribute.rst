@@ -607,13 +607,13 @@ expected:
 
 * ``discover`` — skip git clone and remote repository operations,
   just show what would be discovered
-* ``provision`` — no pulling images, no images creation, no
+* ``provision`` — no pulling images, no image creation, no
   starting guests
 * ``prepare`` — skip package installation and guest commands,
   just show which prepare phases would run
 * ``execute`` — skip test execution, show the execute method
 * ``report`` — skip submission to external services, just show
-  which reports steps would be run
+  which report steps would be run
 * ``finish`` — skip executing finishing tasks, just show which
   finish phases would run
 * ``cleanup`` — skip guest removal, just show which cleanup
