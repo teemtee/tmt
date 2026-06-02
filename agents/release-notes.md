@@ -18,6 +18,7 @@ When creating release notes for tmt, use the milestone name as input (e.g., "1.6
    - Be concise but descriptive
    - Skip PRs that already have release notes added
    - Focus on user-facing changes and improvements
+   - Include notable contributor-facing documentation (e.g. new guidelines in the contributor guide)
 
 4. **Content guidelines**:
    - Include new features and enhancements
