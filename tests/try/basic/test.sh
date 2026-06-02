@@ -62,7 +62,8 @@ rlJournalStart
     rlPhaseStartTest "Install"
         rlRun -s "./install.exp"
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
-        rlAssertGrep "cmd: rpm -q --whatprovides tree || dnf.* install -y  tree" $rlRun_LOG
+        rlAssertGrep "cmd: rpm -q --whatprovides tree" $rlRun_LOG
+        rlAssertGrep "cmd: dnf.* install -y  tree" $rlRun_LOG
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
         rlAssertGrep "container: stopped" $rlRun_LOG
         rlAssertGrep "container: removed" $rlRun_LOG
