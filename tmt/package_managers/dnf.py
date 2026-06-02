@@ -296,41 +296,40 @@ class Dnf(PackageManager[DnfEngine]):
         return result
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
+        if not installables:
+            return {}
+
+        # Assume all present; mark missing ones identified from rpm error output.
+        results: dict[Installable, bool] = dict.fromkeys(installables, True)
+
         try:
-            output = self.guest.execute(self.engine.check_presence(*installables))
-            stdout = output.stdout
+            self.guest.execute(self.engine.check_presence(*installables))
 
         except RunError as exc:
-            stdout = exc.stdout
+            # rpm exits non-zero when any installable is missing. When checking
+            # multiple installables in one command, stdout only contains lines for
+            # found packages (so zip-based parsing silently drops missing ones).
+            # Error messages for missing packages always go to stderr parse that
+            # to correctly identify each absent installable.
+            stderr = exc.stderr or ''
 
-        if stdout is None:
-            raise GeneralError("rpm presence check provided no output")
+            for installable in installables:
+                installable_str = re.escape(str(installable))
+                pattern = re.compile(
+                    # rpm -q PACKAGE
+                    rf'package {installable_str} is not installed'
+                    # rpm -q --whatprovides CAPABILITY
+                    rf'|no package provides {installable_str}'
+                    # rpm -q --whatprovides /path
+                    rf'|error: file {installable_str}: No such file or directory'
+                )
+                if pattern.search(stderr):
+                    results[installable] = False
 
-        results: dict[Installable, bool] = {}
-
-        for line, installable in zip(stdout.strip().splitlines(), installables):
-            # Match for packages not installed, when "rpm -q PACKAGE" used
-            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
-            if match is not None:
-                results[installable] = False
-                continue
-
-            # Match for provided rpm capabilities (packages, commands, etc.),
-            # when "rpm -q --whatprovides CAPABILITY" used
-            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
-            if match is not None:
-                results[installable] = False
-                continue
-
-            # Match for filesystem paths, when "rpm -q --whatprovides PATH" used
-            match = re.match(
-                rf'error: file {re.escape(str(installable))}: No such file or directory', line
-            )
-            if match is not None:
-                results[installable] = False
-                continue
-
-            results[installable] = True
+            # rpm exited non-zero but no missing packages were identified
+            # this signals an unexpected failure (db corruption, permission error, etc.)
+            if all(results.values()):
+                raise
 
         return results
 
