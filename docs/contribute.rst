@@ -577,31 +577,30 @@ Dry Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Dry mode, activated by the option ``--dry``, lets users preview
-the test execution plan — which steps, phases and plugins would
-run, with what configuration — without provisioning any resources
-or making any changes outside the local workdir. It answers "what
-would tmt do?" before committing time and infrastructure to an
-actual run.
+"what would tmt do" without actually performing the actions. For
+example the ``tmt clean --dry`` command shows which files would be
+removed and ``tmt run --dry`` shows the test execution plan: which
+steps, phases and plugins would run, with what configuration
+without provisioning guests.
 
 When implementing new features or modifying existing code, follow
 these rules to determine what is allowed and what must be skipped
-when ``is_dry_run`` is true. See `#4443`__ for background.
+when :py:attr:`tmt.utils.Common.is_dry_run` is true. See `#4443`__
+for background.
 
 **In scope** (allowed during dry run):
 
-* Reading and modifying the local workdir
-* Parsing and validating metadata
+* Reading, parsing and validating metadata
+* Creating and modifying the local :term:`run workdir`
 * Showing what steps and phases would be executed
-* Importing local plans and files
 
 **Out of scope** (skipped during dry run):
 
-* Creating or modifying external resources (guests, containers,
-  images)
-* Executing commands on guests
-* Submitting tasks or tests results to external services
+* Creating or modifying resources (guests, containers, images)
 * Network access (git clone, fetching remote plans or images)
-* Removing provisioned guests, cleaning up run workdirs, images
+* Executing commands on guests (e.g. for provision connect)
+* Submitting tasks or tests results to external services
+* Removing provisioned guests, run workdirs or images
 
 For individual steps and commands the following behavior is
 expected:
