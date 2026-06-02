@@ -1,6 +1,5 @@
 import abc
 import configparser
-import dataclasses
 import enum
 import re
 import shlex
@@ -564,9 +563,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         if not missing:
             return CommandOutput(stdout=None, stderr=None)
 
-        return self.guest.execute(
-            self.engine.install(*missing, options=dataclasses.replace(options, check_first=False))
-        )
+        return self.guest.execute(self.engine.install(*missing, options=options))
 
     def reinstall(
         self,

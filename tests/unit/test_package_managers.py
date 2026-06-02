@@ -343,7 +343,7 @@ def _parametrize_test_install() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -352,7 +352,7 @@ def _parametrize_test_install() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree",  # noqa: E501
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree",
                 'Installing: tree',
             )
 
@@ -361,7 +361,7 @@ def _parametrize_test_install() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"apk info -e tree \|\| apk add tree",
+                r"apk add tree",
                 'Installing tree',
             )
 
@@ -703,7 +703,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'E: Unable to locate package tree-but-spelled-wrong',
             )
 
@@ -711,7 +711,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong",  # noqa: E501
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong",  # noqa: E501
                 'no package provides tree-but-spelled-wrong',
             )
 
@@ -719,7 +719,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"apk info -e tree-but-spelled-wrong \|\| apk add tree-but-spelled-wrong",
+                r"apk add tree-but-spelled-wrong",
                 'ERROR: unable to select packages:\n  tree-but-spelled-wrong (no such package):\n    required by: world[tree-but-spelled-wrong]',  # noqa: E501
             )
 
@@ -815,7 +815,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y --ignore-missing \$installable_packages\s+exit 0",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+apt install -y --ignore-missing \$installable_packages\s+exit 0",  # noqa: E501
                 'E: Unable to locate package tree-but-spelled-wrong',
             )
 
@@ -823,7 +823,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
                 'no package provides tree-but-spelled-wrong',
             )
 
@@ -831,7 +831,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"apk info -e tree-but-spelled-wrong \|\| apk add tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
+                r"apk add tree-but-spelled-wrong \|\| /bin/true",
                 'ERROR: unable to select packages:\n  tree-but-spelled-wrong (no such package):\n    required by: world[tree-but-spelled-wrong]',  # noqa: E501
             )
 
@@ -1592,7 +1592,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 container,
                 package_manager_class,
                 FileSystemPath('/usr/bin/dos2unix'),
-                r".*?set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"\"\s+fs_path_package=\"\$\(apt-file search --package-only /usr/bin/dos2unix\)\"\s+\[ -z \"\$fs_path_package\" \] && echo \"No package found for path /usr/bin/dos2unix\" && exit 1\s+installable_packages=\"\$installable_packages \$fs_path_package\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y\s+\$installable_packages\s+exit \$\?",  # noqa: E501
+                r".*?set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"\"\s+fs_path_package=\"\$\(apt-file search --package-only /usr/bin/dos2unix\)\"\s+\[ -z \"\$fs_path_package\" \] && echo \"No package found for path /usr/bin/dos2unix\" && exit 1\s+installable_packages=\"\$installable_packages \$fs_path_package\"\s+apt install -y\s+\$installable_packages\s+exit \$\?",  # noqa: E501
                 "Setting up dos2unix",
             )
 
@@ -1601,7 +1601,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 container,
                 package_manager_class,
                 FileSystemPath('/usr/bin/dos2unix'),
-                r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /usr/bin/dos2unix",  # noqa: E501
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /usr/bin/dos2unix",  # noqa: E501
                 "Installing 1 packages:\n  dos2unix-",
             )
 
@@ -1610,7 +1610,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 container,
                 package_manager_class,
                 FileSystemPath('/usr/bin/dos2unix'),
-                r"apk info -e dos2unix \|\| apk add dos2unix",
+                r"apk add dos2unix",
                 'Installing dos2unix',
             )
 
@@ -1726,7 +1726,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('tree'), Package('nano')),
-                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree nano\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree nano\"\s+apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -1735,7 +1735,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('tree'), Package('nano')),
-                r"rpm -q --whatprovides tree nano \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree nano",  # noqa: E501
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree nano",  # noqa: E501
                 'Installing: tree',
             )
 
@@ -1744,7 +1744,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('tree'), Package('diffutils')),
-                r"apk info -e tree diffutils \|\| apk add tree diffutils",
+                r"apk add tree diffutils",
                 'Installing tree',
             )
 
@@ -1896,7 +1896,7 @@ def _parametrize_test_install_downloaded() -> Iterator[
                 package_manager_class,
                 (Package('tree'), Package('nano')),
                 ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
-                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
+                r".*?apt install -y  \$installable_packages.*",
                 'Setting up tree',
                 marks=pytest.mark.skip(reason="not supported yet"),
             )
@@ -1907,7 +1907,7 @@ def _parametrize_test_install_downloaded() -> Iterator[
                 package_manager_class,
                 (Package('tree'), Package('nano')),
                 ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
-                r"apk info -e tree nano \|\| apk add tree nano",
+                r"apk add tree nano",
                 'Installing tree',
                 marks=pytest.mark.skip(reason="not supported yet"),
             )

@@ -123,9 +123,6 @@ class ApkEngine(PackageManagerEngine):
             f'{" ".join(escape_installables(*packages))}'
         )
 
-        if options.check_first:
-            script = self._construct_presence_script(*packages)[1] | script
-
         if options.skip_missing:
             script = script | ShellScript('/bin/true')
 

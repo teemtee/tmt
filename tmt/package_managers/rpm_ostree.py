@@ -97,9 +97,6 @@ class RpmOstreeEngine(PackageManagerEngine):
             f'{" ".join(escape_installables(*installables))}'
         )
 
-        if options.check_first:
-            script = self._construct_presence_script(*installables) | script
-
         if options.skip_missing:
             script = script | ShellScript('/bin/true')
 
