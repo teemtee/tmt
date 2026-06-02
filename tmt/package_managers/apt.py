@@ -64,12 +64,10 @@ installable_packages="$installable_packages $fs_path_package"
   {% endfor %}
 {% endif %}
 
-{% if OPTIONS.check_first %}
+{% if OPTIONS.check_first and COMMAND != 'install' -%}
 dpkg-query --show $installable_packages \\
-{% else -%}
-/bin/false \\
-{% endif -%}
-{{ '||' if COMMAND == 'install' else '&&' }} {{ ENGINE.command.to_script() }} {{ COMMAND }} {{ ENGINE.options.to_script() }} {{ EXTRA_OPTIONS }} $installable_packages
+&& {% endif -%}
+{{ ENGINE.command.to_script() }} {{ COMMAND }} {{ ENGINE.options.to_script() }} {{ EXTRA_OPTIONS }} $installable_packages
 
 {% if OPTIONS.skip_missing %}
 exit 0
