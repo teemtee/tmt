@@ -430,6 +430,11 @@ class Dnf5(Dnf):
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
 
+    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
+        if options.allow_erasing:
+            raise PrepareError("Package manager 'yum' does not support '--allowerasing'.")
+        return super()._extra_dnf_options(options, command)
+
     def _yum_config_manager_command(self) -> Command:
         command = Command('yum-config-manager')
 
