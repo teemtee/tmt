@@ -605,21 +605,34 @@ for background.
 For individual steps and commands the following behavior is
 expected:
 
-* ``discover`` — skip git clone and remote repository operations,
-  just show what would be discovered
-* ``provision`` — no pulling images, no image creation, no
-  starting guests
-* ``prepare`` — skip package installation and guest commands,
-  just show which prepare phases would run
-* ``execute`` — skip test execution, show the execute method
-* ``report`` — skip submission to external services, just show
-  which report steps would be run
-* ``finish`` — skip executing finishing tasks, just show which
-  finish phases would run
-* ``cleanup`` — skip guest removal, just show which cleanup
-  phases would run
-* ``export`` — skip writes to Nitrate and Polarion, compute and
-  show what would be changed
+discover
+    skip git clone and remote repository operations, just show
+    what would be discovered
+
+provision
+    no pulling images, no image creation, no starting guests
+
+prepare
+    skip package installation and guest commands, just show which
+    prepare phases would run
+
+execute
+    skip test execution, show the execute method
+
+report
+    skip submission to external services, just show which report
+    steps would be run
+
+finish
+    skip executing finishing tasks, just show which finish phases
+    would run
+
+cleanup
+    skip guest removal, just show which cleanup phases would run
+
+export
+    skip writes to Nitrate and Polarion, compute and show what
+    would be changed
 
 __ https://github.com/teemtee/tmt/issues/4443
 
