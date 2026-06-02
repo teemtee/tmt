@@ -954,7 +954,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 test_link = None
                 test_id = None
                 env_vars = None
-                guest_name = None
+                guest_name = f"{tmt.utils.DEFAULT_NAME}-0"
 
                 if result:
                     serial_number = result.serial_number
@@ -1015,14 +1015,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                     item_uuid = yaml_to_dict(response.text).get("id")
                     assert item_uuid is not None
-                    assert guest_name is not None
                     self.verbose("uuid", item_uuid, "yellow", shift=1)
-                    if serial_number in self.data.test_uuids:
-                        self.data.test_uuids[serial_number][guest_name] = item_uuid
-                    else:
-                        self.data.test_uuids[serial_number] = {guest_name: item_uuid}
+                    self.data.test_uuids.setdefault(serial_number, {})[guest_name] = item_uuid
                 else:
-                    assert guest_name is not None
                     item_uuid = self.data.test_uuids[serial_number][guest_name]
 
                 # If the result end-time is not defined, use the latest result start-time as
