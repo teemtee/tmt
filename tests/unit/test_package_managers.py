@@ -279,7 +279,7 @@ def _parametrize_test_install() -> Iterator[
                     container,
                     package_manager_class,
                     Package('tree'),
-                    r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree",  # noqa: E501
+                    r"yum install -y  tree && rpm -q --whatprovides tree",
                     'Installing:',
                 )
 
@@ -288,7 +288,7 @@ def _parametrize_test_install() -> Iterator[
                     container,
                     package_manager_class,
                     Package('dconf'),
-                    r"rpm -q --whatprovides dconf \|\| yum install -y  dconf && rpm -q --whatprovides dconf",  # noqa: E501
+                    r"yum install -y  dconf && rpm -q --whatprovides dconf",
                     'Installed:\n  dconf',
                 )
 
@@ -297,7 +297,7 @@ def _parametrize_test_install() -> Iterator[
                     container,
                     package_manager_class,
                     Package('tree'),
-                    r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree",  # noqa: E501
+                    r"yum install -y  tree && rpm -q --whatprovides tree",
                     'Installed:\n  tree',
                 )
 
@@ -307,7 +307,7 @@ def _parametrize_test_install() -> Iterator[
                     container,
                     package_manager_class,
                     Package('tree'),
-                    r"rpm -q --whatprovides tree \|\| dnf install -y  tree",
+                    r"dnf install -y  tree",
                     'Installing:',
                 )
 
@@ -316,7 +316,7 @@ def _parametrize_test_install() -> Iterator[
                     container,
                     package_manager_class,
                     Package('dconf'),
-                    r"rpm -q --whatprovides dconf \|\| dnf install -y  dconf",
+                    r"dnf install -y  dconf",
                     'Installed:\n  dconf',
                 )
 
@@ -325,7 +325,7 @@ def _parametrize_test_install() -> Iterator[
                     container,
                     package_manager_class,
                     Package('tree'),
-                    r"rpm -q --whatprovides tree \|\| dnf install -y  tree",
+                    r"dnf install -y  tree",
                     'Installed:\n  tree',
                 )
 
@@ -334,7 +334,7 @@ def _parametrize_test_install() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"rpm -q --whatprovides tree \|\| dnf5 install -y  tree",
+                r"dnf5 install -y  tree",
                 'Installing:',
             )
 
@@ -487,21 +487,21 @@ def _parametrize_test_assert_config_manager() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides yum-utils \|\| yum install -y  yum-utils && rpm -q --whatprovides yum-utils",  # noqa: E501
+                r"yum install -y  yum-utils && rpm -q --whatprovides yum-utils",
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield (
                 container,
                 package_manager_class,
-                r"""rpm -q --whatprovides '"'"'dnf-command\(config-manager\)'"'"' \|\| dnf install -y  '"'"'dnf-command\(config-manager\)'"'"'""",  # noqa: E501
+                r"""dnf install -y  '"'"'dnf-command\(config-manager\)'"'"'""",
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield (
                 container,
                 package_manager_class,
-                r"""rpm -q --whatprovides '"'"'dnf5-command\(config-manager\)'"'"' \|\| dnf5 install -y  '"'"'dnf5-command\(config-manager\)'"'"'""",  # noqa: E501
+                r"""dnf5 install -y  '"'"'dnf5-command\(config-manager\)'"'"'""",
             )
 
         elif package_manager_class in (
@@ -643,7 +643,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf5 install -y  tree-but-spelled-wrong",  # noqa: E501
+                r"dnf5 install -y  tree-but-spelled-wrong",
                 'No match for argument: tree-but-spelled-wrong',
             )
 
@@ -652,7 +652,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong",  # noqa: E501
+                    r"dnf install -y  tree-but-spelled-wrong",
                     'No match for argument: tree-but-spelled-wrong',
                 )
 
@@ -660,7 +660,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong",  # noqa: E501
+                    r"dnf install -y  tree-but-spelled-wrong",
                     'Error: Unable to find a match: tree-but-spelled-wrong',
                 )
 
@@ -669,7 +669,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
+                    r"yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
                     'No match for argument: tree-but-spelled-wrong',
                 )
 
@@ -677,7 +677,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
+                    r"yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
                     'Error: Unable to find a match: tree-but-spelled-wrong',
                 )
 
@@ -687,7 +687,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
+                    r"yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
                     'No match for argument: tree-but-spelled-wrong',
                 )
 
@@ -695,7 +695,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
+                    r"yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
                     'No package tree-but-spelled-wrong available.',
                 )
 
@@ -764,7 +764,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf5 install -y --skip-unavailable tree-but-spelled-wrong",  # noqa: E501
+                r"dnf5 install -y --skip-unavailable tree-but-spelled-wrong",
                 None,
             )
 
@@ -772,7 +772,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y --skip-broken tree-but-spelled-wrong",  # noqa: E501
+                r"dnf install -y --skip-broken tree-but-spelled-wrong",
                 'No match for argument: tree-but-spelled-wrong',
             )
 
@@ -781,7 +781,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
+                    r"yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",
                     'No match for argument: tree-but-spelled-wrong',
                 )
 
@@ -789,7 +789,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
+                    r"yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",
                     'No match for argument: tree-but-spelled-wrong',
                 )
 
@@ -799,7 +799,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
+                    r"yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",
                     'No match for argument: tree-but-spelled-wrong',
                 )
 
@@ -807,7 +807,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
+                    r"yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",
                     'No package tree-but-spelled-wrong available.',
                 )
 
@@ -1555,7 +1555,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 container,
                 package_manager_class,
                 FileSystemPath('/usr/bin/dos2unix'),
-                r"rpm -q --whatprovides /usr/bin/dos2unix \|\| dnf5 install -y  /usr/bin/dos2unix",
+                r"dnf5 install -y  /usr/bin/dos2unix",
                 '[1/1] dos2unix',
             )
 
@@ -1564,7 +1564,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 container,
                 package_manager_class,
                 FileSystemPath('/usr/bin/dos2unix'),
-                r"rpm -q --whatprovides /usr/bin/dos2unix \|\| dnf install -y  /usr/bin/dos2unix",
+                r"dnf install -y  /usr/bin/dos2unix",
                 'Installed:\n  dos2unix-',
             )
 
@@ -1574,7 +1574,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                     container,
                     package_manager_class,
                     FileSystemPath('/usr/bin/dos2unix'),
-                    r"rpm -q --whatprovides /usr/bin/dos2unix \|\| yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix",  # noqa: E501
+                    r"yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix",  # noqa: E501
                     'Installed:\n  dos2unix.',
                 )
 
@@ -1583,7 +1583,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                     container,
                     package_manager_class,
                     FileSystemPath('/usr/bin/dos2unix'),
-                    r"rpm -q --whatprovides /usr/bin/dos2unix \|\| yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix",  # noqa: E501
+                    r"yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix",  # noqa: E501
                     'Installed:\n  dos2unix-',
                 )
 
@@ -1662,7 +1662,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dconf'), Package('libpng')),
-                    r"rpm -q --whatprovides dconf libpng \|\| yum install -y  dconf libpng && rpm -q --whatprovides dconf libpng",  # noqa: E501
+                    r"yum install -y  dconf libpng && rpm -q --whatprovides dconf libpng",
                     'Complete!',
                 )
 
@@ -1671,7 +1671,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('tree'), Package('diffutils')),
-                    r"rpm -q --whatprovides tree diffutils \|\| yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils",  # noqa: E501
+                    r"yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils",
                     'Complete!',
                 )
 
@@ -1680,7 +1680,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('tree'), Package('nano')),
-                    r"rpm -q --whatprovides tree nano \|\| yum install -y  tree nano && rpm -q --whatprovides tree nano",  # noqa: E501
+                    r"yum install -y  tree nano && rpm -q --whatprovides tree nano",
                     'Complete!',
                 )
 
@@ -1690,7 +1690,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dconf'), Package('libpng')),
-                    r"rpm -q --whatprovides dconf libpng \|\| dnf install -y  dconf libpng",
+                    r"dnf install -y  dconf libpng",
                     'Complete!',
                 )
 
@@ -1699,7 +1699,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('tree'), Package('diffutils')),
-                    r"rpm -q --whatprovides tree diffutils \|\| dnf install -y  tree diffutils",
+                    r"dnf install -y  tree diffutils",
                     'Complete!',
                 )
 
@@ -1708,7 +1708,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('tree'), Package('nano')),
-                    r"rpm -q --whatprovides tree nano \|\| dnf install -y  tree nano",
+                    r"dnf install -y  tree nano",
                     'Complete!',
                 )
 
@@ -1717,7 +1717,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('tree'), Package('nano')),
-                r"rpm -q --whatprovides tree nano \|\| dnf5 install -y  tree nano",
+                r"dnf5 install -y  tree nano",
                 None,
             )
 
@@ -2019,7 +2019,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dconf'), Package('libpng')),
-                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
+                    r"dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -2028,7 +2028,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree')),
-                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                    r"dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -2050,7 +2050,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dconf'), Package('libpng')),
-                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
+                    r"yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -2059,7 +2059,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree')),
-                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                    r"yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -2124,7 +2124,7 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"rpm -q --whatprovides /usr/bin/debuginfo-install || dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                r"dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
                 None,
             )
 
@@ -2133,7 +2133,7 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"rpm -q --whatprovides /usr/bin/debuginfo-install || dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                r"dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
                 None,
             )
 
@@ -2142,7 +2142,7 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"rpm -q --whatprovides /usr/bin/debuginfo-install || yum install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                r"yum install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
                 None,
             )
 
@@ -2244,7 +2244,7 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
+                    r"dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
                     None,
                 )
 
@@ -2266,7 +2266,7 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                    r"rpm -q --whatprovides /usr/bin/debuginfo-install || yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
+                    r"yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
                     None,
                 )
 
