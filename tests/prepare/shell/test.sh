@@ -50,10 +50,11 @@ rlJournalStart
         rlPhaseStartTest "Make sure plan environment is exposed to scripts"
             rlRun -s "tmt run --id $run --scratch -v provision --how=$PROVISION_HOW $image_opt prepare cleanup plan -n environment" 0
 
+            rlAssertGrep "inner wrapper: set -eo pipefail; /bin/true" "$run/log.txt"
             if [ "$IMAGE_MODE" = "yes" ]; then
-                rlAssertGrep "Collected command for Containerfile:.*export DUMMY_ENVVAR=dummy_value; .*/bin/true" "$run/log.txt"
+                rlAssertGrep "Collected command for Containerfile:.*export DUMMY_ENVVAR=dummy_value; .*./script-0-outer-tmt-prepare-wrapper.sh-prepare-Run-preparation-script-default-0" "$run/log.txt"
             else
-                rlAssertGrep "Run command: .*export DUMMY_ENVVAR=dummy_value;.*/bin/true" "$run/log.txt"
+                rlAssertGrep "Run command: .*export DUMMY_ENVVAR=dummy_value;.*./script-0-outer-tmt-prepare-wrapper.sh-prepare-Run-preparation-script-default-0" "$run/log.txt"
             fi
         rlPhaseEnd
 
@@ -68,6 +69,24 @@ rlJournalStart
             assert_image_mode
         rlPhaseEnd
     done <<< "$IMAGES"
+
+    rlPhaseStartTest "Reboot"
+        if [ "$PROVISION_HOW" = "local" ]; then
+            rlLogInfo "Reboot is not supported with localhost."
+        else
+            rlRun -s "tmt -vvv run -a provision --how=$PROVISION_HOW plan -n '/reboot'"
+
+            rlAssertGrep "out: TMT_REBOOT_COUNT=0" $rlRun_LOG
+            rlAssertGrep "out: RSTRNT_REBOOTCOUNT=0" $rlRun_LOG
+            rlAssertGrep "out: REBOOTCOUNT=0" $rlRun_LOG
+            rlAssertGrep "out: Before reboot: TMT_REBOOT_COUNT=0" $rlRun_LOG
+            rlAssertGrep "out: Trigger one then!" $rlRun_LOG
+            rlAssertGrep "out: TMT_REBOOT_COUNT=1" $rlRun_LOG
+            rlAssertGrep "out: RSTRNT_REBOOTCOUNT=1" $rlRun_LOG
+            rlAssertGrep "out: REBOOTCOUNT=1" $rlRun_LOG
+            rlAssertGrep "out: After reboot: TMT_REBOOT_COUNT=1" $rlRun_LOG
+        fi
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"
