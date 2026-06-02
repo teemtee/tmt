@@ -12,13 +12,13 @@ environment+:
 /upgrade:
   summary: " (upgrading)"
   context+:
-    verified_artifact: foo-2.2
+    available_artifact: foo-2.2
   environment+:
     EXPECTED_PACKAGE: foo-1.4
 
 /downgrade:
   summary: " (downgrading)"
   context+:
-    verified_artifact: foo-1.2
+    available_artifact: foo-1.2
   environment+:
     EXPECTED_PACKAGE: foo-1.4
