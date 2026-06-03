@@ -73,7 +73,7 @@ class DnfEngine(PackageManagerEngine):
 
     def check_presence(self, *installables: Installable) -> ShellScript:
         parts = [
-            f'rpm -q --whatprovides {escaped} >/dev/null 2>&1 || echo {escaped}'
+            f"rpm -q --whatprovides '{escaped}' >&2 || echo '{escaped}'"
             for escaped in escape_installables(*installables)
         ]
         return ShellScript('\n'.join(parts))
