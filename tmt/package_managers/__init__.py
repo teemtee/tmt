@@ -329,12 +329,10 @@ class Options:
     #: If set, instruct package manager to install from untrusted sources.
     allow_untrusted: bool = False
 
-    #: If set, allow erasing conflicting or obsoleting packages (``--allowerasing``).
-    #: Supported by DNF4 and DNF5.
+    #: If set, allow erasing conflicting or obsoleting packages during install.
     allow_erasing: bool = False
 
-    #: If set, allow downgrades of transitive dependencies (``--allow-downgrade``).
-    #: DNF5 only; DNF4 handles transitive downgrades automatically.
+    #: If set, allow downgrades of transitive dependencies during install.
     allow_downgrade: bool = False
 
 
