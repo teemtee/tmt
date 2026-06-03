@@ -676,7 +676,7 @@ Logging Methods
 
 All logging methods send their output to ``stderr``:
 
-info()
+``info()``
     Communicate progress and status to the user. Supports
     verbosity levels via the ``level`` parameter (see below).
 
@@ -686,16 +686,16 @@ info()
         target state. Currently, use the ``verbose()`` method for
         logging with specific verbosity levels.
 
-debug()
+``debug()``
     Provide diagnostics for tmt developers. Supports debug
     levels via the ``level`` parameter (see below).
 
-warning()
+``warning()``
     Signal a potential problem that does not prevent execution
     but deserves user attention, such as a deprecated feature
     or a missing optional dependency.
 
-fail()
+``fail()``
     Report an error that caused a test, step or operation to
     fail.
 
@@ -704,32 +704,43 @@ Verbosity Levels
 ------------------------------------------------------------------
 
 Verbosity levels control user-facing logging and are incremented
-with ``-v`` on the command line. Focus on _user scenarios_ when
+with ``-v`` on the command line. Focus on *user scenarios* when
 choosing the right level:
 
-* ``info()`` / level 0 — key output: plan names, step names,
-  phase summary, overall summaries
-* ``info(level=1)`` — specific info: individual test names in
-  ``discover`` and ``execute``
-* ``info(level=2)`` — extra context: test log paths in ``report``,
-  console log path, guest facts
-* ``info(level=3)`` — full details: complete output of prepare
-  commands and test execution
+``info(level=0)`` == ``info()``
+    key output: plan names, step names, phase summary, overall
+    summaries
+
+``info(level=1)``
+    specific info: individual test names in ``discover`` and
+    ``execute``
+
+``info(level=2)``
+    extra context: test log paths in ``report``, console log path,
+    guest facts
+
+``info(level=3)``
+    full details: complete output of prepare commands and test
+    execution
 
 
 Debug Levels
 ------------------------------------------------------------------
 
 Debug levels control developer-facing diagnostics and are
-incremented with ``-d`` on the command line. Focus on **tmt
-internals** when choosing the right level:
+incremented with ``-d`` on the command line. Focus on *tmt
+internals* when choosing the right level:
 
-* ``debug(level=1)`` — high-level info: framework choice, policy
-  application, reboot
-* ``debug(level=2)`` — detailed operations: step load, wake up,
-  guest pull/push, playbook path
-* ``debug(level=3)`` — internal plumbing: workdir handling,
-  process termination, key normalization
+``debug(level=1)``
+    high-level info: framework choice, policy application, reboot
+
+``debug(level=2)``
+    detailed operations: step load, wake up, guest pull/push,
+    playbook path
+
+``debug(level=3)``
+    internal plumbing: workdir handling, process termination, key
+    normalization
 
 
 .. _issues:
