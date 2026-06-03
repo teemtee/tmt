@@ -133,7 +133,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
             )
 
         presence = self.check_presence(*installables)
-        missing = tuple(p for p, present in presence.items() if not present)
+        missing = {p for p, present in presence.items() if not present}
 
         if not missing:
             return CommandOutput(stdout=None, stderr=None)
@@ -153,7 +153,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
             )
 
         presence = self.check_presence(*installables)
-        present = tuple(p for p, is_present in presence.items() if is_present)
+        present = {p for p, is_present in presence.items() if is_present}
 
         if not present:
             return CommandOutput(stdout=None, stderr=None)
