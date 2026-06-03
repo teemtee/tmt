@@ -564,7 +564,18 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.execute(self.engine.reinstall(*installables, options=options))
+        options = options or Options()
+
+        if not options.check_first or not installables:
+            return self.guest.execute(self.engine.reinstall(*installables, options=options))
+
+        presence = self.check_presence(*installables)
+        present = tuple(p for p, is_present in presence.items() if is_present)
+
+        if not present:
+            return CommandOutput(stdout=None, stderr=None)
+
+        return self.guest.execute(self.engine.reinstall(*present, options=options))
 
     def install_debuginfo(
         self,
