@@ -43,7 +43,7 @@ from tmt.utils import (
     GeneralError,
     HasEnvironment,
     HasRunWorkdir,
-    HasUserTree,
+    HasUserAnchorPath,
     Path,
     StateFormat,
     WorkdirArgumentType,
@@ -77,7 +77,7 @@ class RunData(SerializableContainer):
     )
 
 
-class Run(HasRunWorkdir, HasUserTree, HasEnvironment, tmt.utils.Common):
+class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
     """
     Test run, a container of plans
     """
@@ -151,7 +151,7 @@ class Run(HasRunWorkdir, HasUserTree, HasEnvironment, tmt.utils.Common):
         return self.workdir
 
     @property
-    def user_tree(self) -> Path:
+    def user_anchor_path(self) -> Path:
         if self.tree and self.tree.root:
             # The run has an fmf tree, use its root
             return self.tree.root

@@ -1591,7 +1591,7 @@ class HasRunWorkdir(abc.ABC):
             yield self.run_tmpdir / path
 
 
-class HasUserTree(abc.ABC):
+class HasUserAnchorPath(abc.ABC):
     """
     Provides easy access to the :term:`user tree`.
     """
@@ -1602,9 +1602,9 @@ class HasUserTree(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def user_tree(self) -> Path:
+    def user_anchor_path(self) -> Path:
         """
-        Current run's :term:`user tree`.
+        Current run's :term:`user tree` root or cwd.
 
         If the run is unknown or does not have an fmf tree, the cwd is the user tree.
         """
