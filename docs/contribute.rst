@@ -681,6 +681,12 @@ info()
     Communicate progress and status to the user. Supports
     verbosity levels via the ``level`` parameter (see below).
 
+    .. note::
+
+        Using the ``level`` parameter with ``info()`` is a planned
+        target state. Currently, use the ``verbose()`` method for
+        logging with specific verbosity levels.
+
 debug()
     Provide diagnostics for tmt developers. Supports debug
     levels via the ``level`` parameter (see below).
@@ -699,7 +705,7 @@ Verbosity Levels
 ------------------------------------------------------------------
 
 Verbosity levels control user-facing logging and are incremented
-with ``-v`` on the command line. Focus on **user scenarios** when
+with ``-v`` on the command line. Focus on _user scenarios_ when
 choosing the right level:
 
 * ``info()`` / level 0 — key output: plan names, step names,
