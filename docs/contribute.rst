@@ -701,6 +701,22 @@ All logging methods send their output to ``stderr``:
     Report an error that caused a test, step or operation to
     fail.
 
+The ``info()``, ``verbose()`` and ``debug()`` methods accept a
+``key`` and an optional ``value`` parameter. The ``key`` is a
+short label (e.g. step name, action) and ``value`` provides the
+detail, optional ``color`` parameter can be used for choosing the
+desired color:
+
+.. code-block:: python
+
+    self.info(key='status', value='done', color='green')
+    self.info('status', 'done', 'green')
+
+They are formatted as ``key: value`` in the output.  The
+``warning()`` and ``fail()`` methods take a single ``message``
+parameter and automatically set the ``key`` to ``warn`` or
+``fail``.
+
 
 Verbosity Levels
 ------------------------------------------------------------------
