@@ -490,7 +490,7 @@ def _parametrize_test_assert_config_manager() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r"rpm -q --whatprovides yum-utils",
+                    r"rpm -q --whatprovides 'yum-utils' >&2 \|\| echo 'yum-utils'",
                 )
             else:
                 yield (
@@ -513,7 +513,7 @@ def _parametrize_test_assert_config_manager() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"""rpm -q --whatprovides '"'"'dnf5-command\(config-manager\)'"'"'""",
+                r"rpm -q --whatprovides 'dnf5-command\(config-manager\)' >&2 \|\| echo 'dnf5-command\(config-manager\)'",  # noqa: E501
             )
 
         elif package_manager_class in (
