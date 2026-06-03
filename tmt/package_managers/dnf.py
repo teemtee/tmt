@@ -309,9 +309,9 @@ class Dnf(PackageManager[DnfEngine]):
             # rpm exits non-zero when any installable is missing. When checking
             # multiple installables in one command, stdout only contains lines for
             # found packages (so zip-based parsing silently drops missing ones).
-            # Error messages for missing packages always go to stderr parse that
-            # to correctly identify each absent installable.
-            stderr = exc.stderr or ''
+            # "no package provides X" messages go to stdout; some errors (e.g.
+            # file-not-found) go to stderr. Search both to be safe.
+            output = (exc.stdout or '') + '\n' + (exc.stderr or '')
 
             for installable in installables:
                 installable_str = re.escape(str(installable))
@@ -323,7 +323,7 @@ class Dnf(PackageManager[DnfEngine]):
                     # rpm -q --whatprovides /path
                     rf'|error: file {installable_str}: No such file or directory'
                 )
-                if pattern.search(stderr):
+                if pattern.search(output):
                     results[installable] = False
 
             # rpm exited non-zero but no missing packages were identified
