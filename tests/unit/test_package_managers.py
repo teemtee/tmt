@@ -915,7 +915,7 @@ def _parametrize_test_install_dont_check_first() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+/bin/false \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
