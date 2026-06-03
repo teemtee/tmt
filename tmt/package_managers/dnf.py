@@ -60,6 +60,7 @@ class DnfEngine(PackageManagerEngine):
                 raise GeneralError(f"Unhandled package manager command '{command}'.")
 
         if options.allow_erasing:
+            # Supported by DNF4 and DNF5; YumEngine raises PrepareError for this flag.
             extra_options += Command('--allowerasing')
 
         return extra_options
@@ -409,6 +410,7 @@ class Dnf5Engine(DnfEngine):
         extra_options = super()._extra_dnf_options(options, command)
 
         if options.allow_downgrade:
+            # DNF4 allows transitive downgrades automatically; this flag is DNF5-specific.
             extra_options += Command('--allow-downgrade')
 
         return extra_options
