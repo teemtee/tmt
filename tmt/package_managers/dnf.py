@@ -17,7 +17,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.package_managers._rpm import RpmVersion
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, ShellScript
 
 
 class DnfEngine(PackageManagerEngine):
@@ -72,7 +72,11 @@ class DnfEngine(PackageManagerEngine):
         return ShellScript(f'rpm -q {" ".join(escape_installables(*installables))}')
 
     def check_presence(self, *installables: Installable) -> ShellScript:
-        return self._construct_presence_script(*installables)
+        parts = [
+            f'rpm -q --whatprovides {escaped} >/dev/null 2>&1 || echo {escaped}'
+            for escaped in escape_installables(*installables)
+        ]
+        return ShellScript('\n'.join(parts))
 
     def _construct_install_script(
         self, *installables: Installable, options: Optional[Options] = None
@@ -299,37 +303,15 @@ class Dnf(PackageManager[DnfEngine]):
         if not installables:
             return {}
 
-        # Assume all present; mark missing ones identified from rpm error output.
         results: dict[Installable, bool] = dict.fromkeys(installables, True)
 
-        try:
-            self.guest.execute(self.engine.check_presence(*installables))
+        # Script always exits 0; stdout contains one line per missing package.
+        output = self.guest.execute(self.engine.check_presence(*installables))
+        missing = {line.strip() for line in (output.stdout or '').splitlines() if line.strip()}
 
-        except RunError as exc:
-            # rpm exits non-zero when any installable is missing. When checking
-            # multiple installables in one command, stdout only contains lines for
-            # found packages (so zip-based parsing silently drops missing ones).
-            # "no package provides X" messages go to stdout; some errors (e.g.
-            # file-not-found) go to stderr. Search both to be safe.
-            output = (exc.stdout or '') + '\n' + (exc.stderr or '')
-
-            for installable in installables:
-                installable_str = re.escape(str(installable))
-                pattern = re.compile(
-                    # rpm -q PACKAGE
-                    rf'package {installable_str} is not installed'
-                    # rpm -q --whatprovides CAPABILITY
-                    rf'|no package provides {installable_str}'
-                    # rpm -q --whatprovides /path
-                    rf'|error: file {installable_str}: No such file or directory'
-                )
-                if pattern.search(output):
-                    results[installable] = False
-
-            # rpm exited non-zero but no missing packages were identified
-            # this signals an unexpected failure (db corruption, permission error, etc.)
-            if all(results.values()):
-                raise
+        for installable in installables:
+            if str(installable) in missing:
+                results[installable] = False
 
         return results
 
