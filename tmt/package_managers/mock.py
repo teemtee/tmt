@@ -54,7 +54,7 @@ class MockEngine(PackageManagerEngine):
 
     def check_presence(self, *installables: Installable) -> ShellScript:
         parts = [
-            f"rpm -q --whatprovides '{installable}' >&2 || echo '{installable}'"
+            f'rpm -q --whatprovides "{installable}" >&2 || echo "{installable}"'
             for installable in installables
         ]
         return ShellScript('\n'.join(parts))
@@ -126,19 +126,10 @@ class _MockPackageManager(PackageManager[MockEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         options = options or Options()
-
-        if not options.check_first or not installables:
-            return self.guest.run(
-                self.engine.install(*installables, options=options).to_shell_command()
-            )
-
-        presence = self.check_presence(*installables)
-        missing = {p for p, present in presence.items() if not present}
-
-        if not missing:
+        to_install = self._check_first_filter(*installables, options=options, present=False)
+        if not to_install:
             return CommandOutput(stdout=None, stderr=None)
-
-        return self.guest.run(self.engine.install(*missing, options=options).to_shell_command())
+        return self.guest.run(self.engine.install(*to_install, options=options).to_shell_command())
 
     def reinstall(
         self,
@@ -146,19 +137,12 @@ class _MockPackageManager(PackageManager[MockEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         options = options or Options()
-
-        if not options.check_first or not installables:
-            return self.guest.run(
-                self.engine.reinstall(*installables, options=options).to_shell_command()
-            )
-
-        presence = self.check_presence(*installables)
-        present = {p for p, is_present in presence.items() if is_present}
-
-        if not present:
+        to_reinstall = self._check_first_filter(*installables, options=options, present=True)
+        if not to_reinstall:
             return CommandOutput(stdout=None, stderr=None)
-
-        return self.guest.run(self.engine.reinstall(*present, options=options).to_shell_command())
+        return self.guest.run(
+            self.engine.reinstall(*to_reinstall, options=options).to_shell_command()
+        )
 
     def install_debuginfo(
         self,
