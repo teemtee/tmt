@@ -650,11 +650,13 @@ essential for consistent and user-friendly behavior.
 Output Types
 ------------------------------------------------------------------
 
-**Logging** goes to ``stderr`` and is handled by methods such as
-``info()``, ``debug()``, ``warning()`` and ``fail()``. Logging
-communicates progress, diagnostics and status information during
-command execution. It is the primary form of communication for
-commands that do not produce structured data, such as:
+**Logging** goes to ``stderr``, for ``tmt run`` and ``tmt try``
+commands it is also stored in the ``log.txt`` file under the
+:term:`run workdir`. It is handled by methods such as ``info()``,
+``debug()``, ``warning()`` and ``fail()``. Logging communicates
+progress, diagnostics and status information during command
+execution. It is the primary form of communication for commands
+that do not produce structured data, such as:
 
 * ``tmt run``
 * ``tmt try``
