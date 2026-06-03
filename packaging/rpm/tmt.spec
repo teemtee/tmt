@@ -49,7 +49,6 @@ metadata specification (L1 and L2) and allows easy test execution.
 %pyproject_extras_subpkg -n tmt report-junit
 %pyproject_extras_subpkg -n tmt report-polarion
 %pyproject_extras_subpkg -n tmt link-jira
-%pyproject_extras_subpkg -n tmt prepare-artifact
 
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
@@ -134,6 +133,14 @@ Requires:       tmt == %{version}-%{release}
 Requires:       mock
 
 %description -n tmt+provision-mock %_metapackage_description
+
+%package -n     tmt+prepare-artifact
+Summary:        Dependencies required for tmt prepare artifact
+Requires:       tmt == %{version}-%{release}
+Requires:       koji
+Requires:       python3-copr
+
+%description -n tmt+prepare-artifact %_metapackage_description
 
 # Replace with pyproject_extras_subpkg at some point
 %package -n     tmt+all
