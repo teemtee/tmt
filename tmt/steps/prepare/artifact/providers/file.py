@@ -111,9 +111,9 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             if self._is_url:  # Remote file, download it
                 guest.download(artifact.location, destination)
             else:  # Local file, push it to the guest
-                # Relative paths are normalized to be relative to user_tree
+                # Relative paths are normalized to be relative to user_anchor_path
                 guest.push(
-                    self.parent.step.plan.user_tree / artifact.location,
+                    self.parent.step.plan.user_anchor_path / artifact.location,
                     destination,
                     # Override the flags from DEFAULT_PUSH_OPTIONS, we mainly care about
                     # - recursive=False: is individual file

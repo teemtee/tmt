@@ -79,8 +79,8 @@ class RepositoryFileProvider(ArtifactProvider):
         # If the file is a relative path, we need the netloc part also
         parsed_path = Path(f"{parsed.netloc}{parsed.path}")
         if parsed.scheme == 'file':
-            # Normalize relative paths to be relative to user_tree
-            parsed_path = self.parent.step.plan.user_tree / parsed_path
+            # Normalize relative paths to be relative to user_anchor_path
+            parsed_path = self.parent.step.plan.user_anchor_path / parsed_path
             self.logger.info(f"Reading repository file from local path: {parsed_path}")
             self.repository = Repository.from_file_path(file_path=parsed_path, logger=self.logger)
         else:
