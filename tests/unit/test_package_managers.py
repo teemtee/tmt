@@ -1051,7 +1051,7 @@ def _parametrize_test_reinstall() -> Iterator[
                 package_manager_class,
                 Package('bash'),
                 True,
-                r"apk info -e bash && apk fix bash",
+                r"apk fix bash",
                 'Reinstalling bash',
             )
 
