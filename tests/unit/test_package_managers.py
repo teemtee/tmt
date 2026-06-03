@@ -1679,11 +1679,13 @@ def _parametrize_test_install_multiple() -> Iterator[
                 )
 
             elif 'centos' in container.url:
+                # diffutils is pre-installed on centos/7 and centos/stream10;
+                # nano is absent from any CentOS minimal image.
                 yield (
                     container,
                     package_manager_class,
-                    (Package('tree'), Package('diffutils')),
-                    r"yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils",
+                    (Package('tree'), Package('nano')),
+                    r"yum install -y  tree nano && rpm -q --whatprovides tree nano",
                     'Complete!',
                 )
 
@@ -1707,11 +1709,13 @@ def _parametrize_test_install_multiple() -> Iterator[
                 )
 
             elif 'centos' in container.url:
+                # diffutils is pre-installed on centos/7 and centos/stream10;
+                # nano is absent from any CentOS minimal image.
                 yield (
                     container,
                     package_manager_class,
-                    (Package('tree'), Package('diffutils')),
-                    r"dnf install -y  tree diffutils",
+                    (Package('tree'), Package('nano')),
+                    r"dnf install -y  tree nano",
                     'Complete!',
                 )
 
