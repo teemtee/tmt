@@ -484,11 +484,20 @@ def _parametrize_test_assert_config_manager() -> Iterator[
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            yield (
-                container,
-                package_manager_class,
-                r"yum install -y  yum-utils && rpm -q --whatprovides yum-utils",
-            )
+            if 'centos/7' in container.url:
+                # yum-utils ships pre-installed on CentOS 7; check_presence returns
+                # True → install is skipped, only the rpm check appears in logs.
+                yield (
+                    container,
+                    package_manager_class,
+                    r"rpm -q --whatprovides yum-utils",
+                )
+            else:
+                yield (
+                    container,
+                    package_manager_class,
+                    r"yum install -y  yum-utils && rpm -q --whatprovides yum-utils",
+                )
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield (
@@ -498,10 +507,13 @@ def _parametrize_test_assert_config_manager() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
+            # dnf5-command(config-manager) ships pre-installed on modern Fedora
+            # via dnf5-plugins; check_presence returns True → install is skipped,
+            # only the rpm presence-check command appears in the logs.
             yield (
                 container,
                 package_manager_class,
-                r"""dnf5 install -y  '"'"'dnf5-command\(config-manager\)'"'"'""",
+                r"""rpm -q --whatprovides '"'"'dnf5-command\(config-manager\)'"'"'""",
             )
 
         elif package_manager_class in (
@@ -1722,11 +1734,13 @@ def _parametrize_test_install_multiple() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
+            # nano is pre-installed on Ubuntu/Debian base images; use nmap instead
+            # so that check_presence finds both packages absent and installs both.
             yield (
                 container,
                 package_manager_class,
-                (Package('tree'), Package('nano')),
-                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree nano\"\s+apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
+                (Package('tree'), Package('nmap')),
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree nmap\"\s+apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -2120,11 +2134,14 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
+            # Dnf5Engine._base_debuginfo_command = Command('dnf5', 'debuginfo-install'),
+            # so install_debuginfo goes straight to the built-in subcommand without a
+            # separate install-tool step.
             yield (
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                r"dnf5 debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
                 None,
             )
 
@@ -2138,11 +2155,12 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
+            # YumEngine.install() always appends a post-install rpm-q presence check.
             yield (
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"yum install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                r"yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
                 None,
             )
 
