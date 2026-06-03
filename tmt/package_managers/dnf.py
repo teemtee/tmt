@@ -77,7 +77,7 @@ class DnfEngine(PackageManagerEngine):
 
     def check_presence(self, *installables: Installable) -> ShellScript:
         parts = [
-            f"rpm -q --whatprovides '{installable}' >&2 || echo '{installable}'"
+            f'rpm -q --whatprovides "{installable}" >&2 || echo "{installable}"'
             for installable in installables
         ]
         return ShellScript('\n'.join(parts))
