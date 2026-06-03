@@ -998,7 +998,7 @@ def _parametrize_test_reinstall() -> Iterator[
                     package_manager_class,
                     Package('tar'),
                     True,
-                    r"rpm -q --whatprovides tar && yum reinstall -y  tar && rpm -q --whatprovides tar",  # noqa: E501
+                    r"yum reinstall -y  tar && rpm -q --whatprovides tar",
                     'Reinstalling:\n tar',
                 )
 
@@ -1008,7 +1008,7 @@ def _parametrize_test_reinstall() -> Iterator[
                     package_manager_class,
                     Package('tar'),
                     True,
-                    r"rpm -q --whatprovides tar && yum reinstall -y  tar && rpm -q --whatprovides tar",  # noqa: E501
+                    r"yum reinstall -y  tar && rpm -q --whatprovides tar",
                     'Reinstalled:\n  tar',
                 )
 
@@ -1018,7 +1018,7 @@ def _parametrize_test_reinstall() -> Iterator[
                 package_manager_class,
                 Package('tar'),
                 True,
-                r"rpm -q --whatprovides tar && dnf reinstall -y  tar",
+                r"dnf reinstall -y  tar",
                 'Reinstalled:\n  tar',
             )
 
@@ -1028,7 +1028,7 @@ def _parametrize_test_reinstall() -> Iterator[
                 package_manager_class,
                 Package('tar'),
                 True,
-                r"rpm -q --whatprovides tar && dnf5 reinstall -y  tar",
+                r"dnf5 reinstall -y  tar",
                 'Reinstalling tar',
             )
 
@@ -1109,59 +1109,26 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
     tuple[Container, PackageManagerClass, Optional[str], Optional[str], Optional[str]]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
-        if package_manager_class is tmt.package_managers.dnf.Dnf5:
+        if (
+            package_manager_class is tmt.package_managers.dnf.Dnf5
+            or package_manager_class is tmt.package_managers.dnf.Dnf
+            or package_manager_class is tmt.package_managers.dnf.Yum
+        ):
             yield (
                 container,
                 package_manager_class,
                 True,
-                r"rpm -q --whatprovides tree-but-spelled-wrong && dnf5 reinstall -y  tree-but-spelled-wrong",  # noqa: E501
-                'no package provides tree-but-spelled-wrong',
+                r"rpm -q --whatprovides 'tree-but-spelled-wrong' >&2 \|\| echo 'tree-but-spelled-wrong'",  # noqa: E501
+                None,
             )
-
-        elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            yield (
-                container,
-                package_manager_class,
-                True,
-                r"rpm -q --whatprovides tree-but-spelled-wrong && dnf reinstall -y  tree-but-spelled-wrong",  # noqa: E501
-                'no package provides tree-but-spelled-wrong',
-            )
-
-        elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'fedora' in container.url:  # noqa: SIM114
-                yield (
-                    container,
-                    package_manager_class,
-                    True,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong && yum reinstall -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
-                    'no package provides tree-but-spelled-wrong',
-                )
-
-            elif 'centos' in container.url and 'centos/7' not in container.url:
-                yield (
-                    container,
-                    package_manager_class,
-                    True,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong && yum reinstall -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
-                    'no package provides tree-but-spelled-wrong',
-                )
-
-            else:
-                yield (
-                    container,
-                    package_manager_class,
-                    True,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong && yum reinstall -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
-                    'no package provides tree-but-spelled-wrong',
-                )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield (
                 container,
                 package_manager_class,
                 True,
-                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+&& apt reinstall -y  \$installable_packages\s+exit \$\?",  # noqa: E501
-                'dpkg-query: no packages found matching tree-but-spelled-wrong',
+                r".*?echo \"PRESENCE-TEST:tree-but-spelled-wrong:tree-but-spelled-wrong:\$\(dpkg-query --show tree-but-spelled-wrong\)\".*?",  # noqa: E501
+                None,
             )
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
@@ -1172,7 +1139,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
                 container,
                 package_manager_class,
                 True,
-                r"apk info -e tree-but-spelled-wrong && apk fix tree-but-spelled-wrong",
+                r"apk info -e tree-but-spelled-wrong",
                 None,
             )
 
@@ -1202,22 +1169,18 @@ def test_reinstall_nonexistent(
     if supported:
         assert expected_command is not None
 
-        with pytest.raises(tmt.utils.RunError) as excinfo:
-            package_manager.reinstall(Package('tree-but-spelled-wrong'))
+        # Package is not installed: check_first detects absence and skips reinstall (no-op).
+        output = package_manager.reinstall(Package('tree-but-spelled-wrong'))
+        assert output.stdout is None
+        assert output.stderr is None
 
         assert_expected_command(caplog, expected_command)
-
-        assert excinfo.type is tmt.utils.RunError
-        assert excinfo.value.returncode != 0
 
     else:
         with pytest.raises(tmt.utils.GeneralError) as excinfo:
             package_manager.reinstall(Package('tree-but-spelled-wrong'))
 
         assert excinfo.value.message == "rpm-ostree does not support reinstall operation."
-
-    if expected_output:
-        assert_output(expected_output, excinfo.value.stdout, excinfo.value.stderr)
 
 
 def _generate_test_check_presence() -> Iterator[

@@ -1,4 +1,3 @@
-import re
 from typing import (
     Optional,
 )
@@ -13,7 +12,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.steps.provision.mock import GuestMock
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, PrepareError, ShellScript
 
 
 class MockEngine(PackageManagerEngine):
@@ -54,7 +53,11 @@ class MockEngine(PackageManagerEngine):
         return (Command('mock'), options)
 
     def check_presence(self, *installables: Installable) -> ShellScript:
-        return ShellScript(f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}')
+        parts = [
+            f"rpm -q --whatprovides '{escaped}' >&2 || echo '{escaped}'"
+            for escaped in escape_installables(*installables)
+        ]
+        return ShellScript('\n'.join(parts))
 
     def install(
         self,
@@ -101,44 +104,19 @@ class _MockPackageManager(PackageManager[MockEngine]):
     probe_priority = 130
     _engine_class = MockEngine
 
-    # Implementation "stolen" from the dnf package manager family. It should
-    # be good enough for mock, at least for now.
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        try:
-            output = self.guest.execute(self.engine.check_presence(*installables))
-            stdout = output.stdout
+        if not installables:
+            return {}
 
-        except RunError as exc:
-            stdout = exc.stdout
+        results: dict[Installable, bool] = dict.fromkeys(installables, True)
 
-        if stdout is None:
-            raise GeneralError("rpm presence check provided no output")
+        # Script always exits 0; stdout contains one line per missing package.
+        output = self.guest.execute(self.engine.check_presence(*installables))
+        missing = {line.strip() for line in (output.stdout or '').splitlines() if line.strip()}
 
-        results: dict[Installable, bool] = {}
-
-        for line, installable in zip(stdout.strip().splitlines(), installables):
-            # Match for packages not installed, when "rpm -q PACKAGE" used
-            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
-            if match is not None:
+        for installable in installables:
+            if str(installable) in missing:
                 results[installable] = False
-                continue
-
-            # Match for provided rpm capabilities (packages, commands, etc.),
-            # when "rpm -q --whatprovides CAPABILITY" used
-            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
-            if match is not None:
-                results[installable] = False
-                continue
-
-            # Match for filesystem paths, when "rpm -q --whatprovides PATH" used
-            match = re.match(
-                rf'error: file {re.escape(str(installable))}: No such file or directory', line
-            )
-            if match is not None:
-                results[installable] = False
-                continue
-
-            results[installable] = True
 
         return results
 
@@ -167,16 +145,20 @@ class _MockPackageManager(PackageManager[MockEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        if options is not None and options.check_first:
-            # TODO implement a more robust check that the package is not installed
-            # other than catching RunError.
-            try:
-                self.guest.execute(self.engine.check_presence(*installables))
-            except RunError as err:
-                return err.output
-        return self.guest.run(
-            self.engine.reinstall(*installables, options=options).to_shell_command()
-        )
+        options = options or Options()
+
+        if not options.check_first or not installables:
+            return self.guest.run(
+                self.engine.reinstall(*installables, options=options).to_shell_command()
+            )
+
+        presence = self.check_presence(*installables)
+        present = tuple(p for p, is_present in presence.items() if is_present)
+
+        if not present:
+            return CommandOutput(stdout=None, stderr=None)
+
+        return self.guest.run(self.engine.reinstall(*present, options=options).to_shell_command())
 
     def install_debuginfo(
         self,

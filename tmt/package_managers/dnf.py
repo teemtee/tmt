@@ -102,16 +102,11 @@ class DnfEngine(PackageManagerEngine):
 
         extra_options = self._extra_dnf_options(options)
 
-        script = ShellScript(
+        return ShellScript(
             f'{self.command.to_script()} reinstall '
             f'{self.options.to_script()} {extra_options} '
             f'{" ".join(escape_installables(*installables))}'
         )
-
-        if options.check_first:
-            script = self._construct_presence_script(*installables) & script
-
-        return script
 
     def _construct_install_debuginfo_script(
         self, *installables: Installable, options: Optional[Options] = None
