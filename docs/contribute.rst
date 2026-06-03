@@ -743,6 +743,49 @@ internals* when choosing the right level:
     normalization
 
 
+Debug Topics
+------------------------------------------------------------------
+
+In addition to levels, debug messages can be tagged with a
+**topic** to group related diagnostics across the codebase. Users
+can selectively enable topics with the ``--log-topic`` option
+without raising the overall debug level:
+
+.. code-block:: shell
+
+    tmt run --log-topic=key-normalization
+    tmt run --log-topic=adjust-decisions --log-topic=command-events
+
+Messages tagged with a topic are hidden by default and only shown
+when the topic is explicitly enabled. The following topics are
+available:
+
+``key-normalization``
+    Metadata key normalization.
+
+``cli-invocations``
+    CLI command invocations and option processing.
+
+``command-events``
+    Command execution events (start, finish, errors).
+
+``adjust-decisions``
+    Decisions made during the context ``adjust`` rule evaluation.
+
+``help-rendering``
+    reStructuredText parsing and rendering for help output.
+
+``policy``
+    Policy rule evaluation and application.
+
+When adding new debug messages that belong to a specific
+subsystem, use the ``topic`` parameter:
+
+.. code-block:: python
+
+    self.debug('key', value, level=3, topic=tmt.log.Topic.KEY_NORMALIZATION)
+
+
 .. _issues:
 
 Issues
