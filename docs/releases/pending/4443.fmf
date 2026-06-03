@@ -1,0 +1,5 @@
+description: |
+    The :ref:`contribute` guide now includes a :ref:`dry-mode`
+    section defining what ``--dry`` should and should not skip,
+    with clear in-scope and out-of-scope rules and per-step
+    behavior guidelines for developers.
