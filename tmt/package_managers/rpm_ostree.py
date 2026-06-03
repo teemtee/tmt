@@ -243,18 +243,18 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         required, recommended = self.sort_packages(*installables, options=options)
 
         # sort_packages already checked presence; skip the check in super().install.
-        no_check = dataclasses.replace(options, check_first=False)
+        no_check_options = dataclasses.replace(options, check_first=False)
 
         for package in recommended:
             self.info('package', str(package), 'green')
             try:
-                super().install(package, options=no_check)
+                super().install(package, options=no_check_options)
             except RunError as error:
                 self.debug(f"Package installation failed: {error}")
                 self.warn(f"Unable to install recommended package '{package}'.")
 
         if required:
-            return super().install(*required, options=no_check)
+            return super().install(*required, options=no_check_options)
 
         return CommandOutput(stdout=None, stderr=None)
 
