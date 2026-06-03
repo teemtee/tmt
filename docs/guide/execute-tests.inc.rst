@@ -59,6 +59,18 @@ the execution is finished:
     tmt run --rm
     tmt run -r
 
+To investigate test logs during the run, use ``tmt run -vvv`` to
+see test progress and results (see :ref:`execute-progress` for
+details on verbosity levels). After the run is finished, review
+logs from the most recent run using the ``report`` step:
+
+.. code-block:: shell
+
+    $ tmt run --last report -vv
+
+See :ref:`check-report` for more options including ``html``
+reports.
+
 
 Select Plans
 ------------------------------------------------------------------
@@ -208,6 +220,8 @@ some of them it is possible to use the ``--all`` option:
     tmt run --all provision --how=local
 
 
+.. _execute-progress:
+
 Execute Progress
 ------------------------------------------------------------------
 
@@ -228,7 +242,7 @@ are printed:
 
 .. code-block:: shell
 
-    $ tmt run --all execute -v
+    $ tmt run -v
 
         execute
             how: tmt
@@ -238,7 +252,7 @@ More verbose mode prints summary of the test being executed first:
 
 .. code-block:: shell
 
-    $ tmt run --all execute -vv
+    $ tmt run -vv
 
         execute
             how: tmt
@@ -250,7 +264,7 @@ The most verbose mode prints also the test output:
 
 .. code-block:: shell
 
-    $ tmt run --all execute -vvv
+    $ tmt run -vvv
 
         execute
             how: tmt
@@ -267,26 +281,17 @@ The most verbose mode prints also the test output:
                     00:00:04 pass /tests/core/adjust [1/16]
 
 
+.. _check-report:
+
 Check Report
 ------------------------------------------------------------------
 
-When a particular step is ``done``, it won't be executed
-repeatedly unless ``--force`` is used:
+To review results of your most recent run, use ``--last`` to
+access the ``report`` step without re-executing the whole run:
 
 .. code-block:: shell
 
-    $ tmt run -l report --verbose
-    /plans/features/core
-        report
-            status: done
-            summary: 10 tests passed
-
-If you need additional information about your already ``done``
-run use ``--force`` together with the ``--verbose`` option:
-
-.. code-block:: shell
-
-    $ tmt run -l report -v --force
+    $ tmt run --last report --verbose
     /plans/features/core
         report
             how: display
@@ -306,7 +311,7 @@ In order to investigate test logs raise verbosity even more:
 
 .. code-block:: shell
 
-    $ tmt run -l report -vv --force
+    $ tmt run -l report -vv
     /plans/features/core
         report
             how: display
@@ -328,8 +333,8 @@ it in your favorite web browser:
 
 .. code-block:: shell
 
-    $ tmt run --last report --how html --open --force
-    $ tmt run -l report -h html -of
+    $ tmt run --last report --how html --open
+    $ tmt run -l report -h html -o
 
 
 Provision Options
