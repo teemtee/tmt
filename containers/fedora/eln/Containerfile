@@ -10,9 +10,10 @@ FROM quay.io/fedora/eln:latest
 RUN <<EOF
 set -ex
 
-# Populate dnf cache
-dnf makecache
+# Populate dnf cache; eln-extras is known to be flaky (metalink checksum mismatches),
+# so treat it as optional the same way other ELN repos are.
+dnf makecache --setopt='eln*.skip_if_unavailable=True'
 
 # Make sure the image is built with the latest packages
-dnf update -y
+dnf update -y --setopt='eln*.skip_if_unavailable=True'
 EOF
