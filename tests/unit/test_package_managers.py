@@ -490,7 +490,7 @@ def _parametrize_test_assert_config_manager() -> Iterator[
                 yield (
                     container,
                     package_manager_class,
-                    r'rpm -q --whatprovides "yum-utils" >&2 \|\| echo "yum-utils"',
+                    r'rpm -q --whatprovides yum-utils >&2 \|\| echo yum-utils',
                 )
             else:
                 yield (
@@ -513,7 +513,7 @@ def _parametrize_test_assert_config_manager() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r'rpm -q --whatprovides "dnf5-command\(config-manager\)" >&2 \|\| echo "dnf5-command\(config-manager\)"',  # noqa: E501
+                r"""rpm -q --whatprovides '"'"'dnf5-command\(config-manager\)'"'"' >&2 \|\| echo '"'"'dnf5-command\(config-manager\)'"'"'""",  # noqa: E501
             )
 
         elif package_manager_class in (
@@ -1118,7 +1118,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
                 container,
                 package_manager_class,
                 True,
-                r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                 None,
             )
 
@@ -1193,7 +1193,7 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 Package('coreutils'),
                 True,
-                r'rpm -q --whatprovides "coreutils" >&2 \|\| echo "coreutils"',
+                r'rpm -q --whatprovides coreutils >&2 \|\| echo coreutils',
                 r'\s+stderr:\s+coreutils-',
             )
 
@@ -1202,7 +1202,7 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 Package('tree-but-spelled-wrong'),
                 False,
-                r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                 r'\s+stdout:\s+tree-but-spelled-wrong',
             )
 
@@ -1211,7 +1211,7 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 FileSystemPath('/usr/bin/arch'),
                 True,
-                r'rpm -q --whatprovides "/usr/bin/arch" >&2 \|\| echo "/usr/bin/arch"',
+                r'rpm -q --whatprovides /usr/bin/arch >&2 \|\| echo /usr/bin/arch',
                 r'\s+stderr:\s+coreutils-',
             )
 
@@ -1222,7 +1222,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('util-linux'),
                     True,
-                    r'rpm -q --whatprovides "util-linux" >&2 \|\| echo "util-linux"',
+                    r'rpm -q --whatprovides util-linux >&2 \|\| echo util-linux',
                     r'\s+stderr:\s+util-linux-',
                 )
 
@@ -1231,7 +1231,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('tree-but-spelled-wrong'),
                     False,
-                    r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                    r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                     r'\s+stdout:\s+tree-but-spelled-wrong',
                 )
 
@@ -1240,7 +1240,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     FileSystemPath('/usr/bin/flock'),
                     True,
-                    r'rpm -q --whatprovides "/usr/bin/flock" >&2 \|\| echo "/usr/bin/flock"',
+                    r'rpm -q --whatprovides /usr/bin/flock >&2 \|\| echo /usr/bin/flock',
                     r'\s+stderr:\s+util-linux-',
                 )
 
@@ -1250,7 +1250,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('coreutils'),
                     True,
-                    r'rpm -q --whatprovides "coreutils" >&2 \|\| echo "coreutils"',
+                    r'rpm -q --whatprovides coreutils >&2 \|\| echo coreutils',
                     r'\s+stderr:\s+coreutils-',
                 )
 
@@ -1259,7 +1259,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('tree-but-spelled-wrong'),
                     False,
-                    r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                    r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                     r'\s+stdout:\s+tree-but-spelled-wrong',
                 )
 
@@ -1268,7 +1268,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     FileSystemPath('/usr/bin/arch'),
                     True,
-                    r'rpm -q --whatprovides "/usr/bin/arch" >&2 \|\| echo "/usr/bin/arch"',
+                    r'rpm -q --whatprovides /usr/bin/arch >&2 \|\| echo /usr/bin/arch',
                     r'\s+stderr:\s+coreutils-',
                 )
 
@@ -1278,7 +1278,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('util-linux-core'),
                     True,
-                    r'rpm -q --whatprovides "util-linux-core" >&2 \|\| echo "util-linux-core"',
+                    r'rpm -q --whatprovides util-linux-core >&2 \|\| echo util-linux-core',
                     r'\s+stderr:\s+util-linux-core-',
                 )
 
@@ -1287,7 +1287,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('tree-but-spelled-wrong'),
                     False,
-                    r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                    r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                     r'\s+stdout:\s+tree-but-spelled-wrong',
                 )
 
@@ -1296,7 +1296,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     FileSystemPath('/usr/bin/flock'),
                     True,
-                    r'rpm -q --whatprovides "/usr/bin/flock" >&2 \|\| echo "/usr/bin/flock"',
+                    r'rpm -q --whatprovides /usr/bin/flock >&2 \|\| echo /usr/bin/flock',
                     r'\s+stderr:\s+util-linux-core-',
                 )
 
@@ -1307,7 +1307,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('util-linux'),
                     True,
-                    r'rpm -q --whatprovides "util-linux" >&2 \|\| echo "util-linux"',
+                    r'rpm -q --whatprovides util-linux >&2 \|\| echo util-linux',
                     r'\s+stderr:\s+util-linux-',
                 )
 
@@ -1316,7 +1316,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('tree-but-spelled-wrong'),
                     False,
-                    r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                    r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                     r'\s+stdout:\s+tree-but-spelled-wrong',
                 )
 
@@ -1325,7 +1325,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     FileSystemPath('/usr/bin/flock'),
                     True,
-                    r'rpm -q --whatprovides "/usr/bin/flock" >&2 \|\| echo "/usr/bin/flock"',
+                    r'rpm -q --whatprovides /usr/bin/flock >&2 \|\| echo /usr/bin/flock',
                     r'\s+stderr:\s+util-linux-',
                 )
 
@@ -1335,7 +1335,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('coreutils'),
                     True,
-                    r'rpm -q --whatprovides "coreutils" >&2 \|\| echo "coreutils"',
+                    r'rpm -q --whatprovides coreutils >&2 \|\| echo coreutils',
                     r'\s+stderr:\s+coreutils-',
                 )
 
@@ -1344,7 +1344,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('tree-but-spelled-wrong'),
                     False,
-                    r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                    r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                     r'\s+stdout:\s+tree-but-spelled-wrong',
                 )
 
@@ -1353,7 +1353,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     FileSystemPath('/usr/bin/arch'),
                     True,
-                    r'rpm -q --whatprovides "/usr/bin/arch" >&2 \|\| echo "/usr/bin/arch"',
+                    r'rpm -q --whatprovides /usr/bin/arch >&2 \|\| echo /usr/bin/arch',
                     r'\s+stderr:\s+coreutils-',
                 )
 
@@ -1363,7 +1363,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('util-linux-core'),
                     True,
-                    r'rpm -q --whatprovides "util-linux-core" >&2 \|\| echo "util-linux-core"',
+                    r'rpm -q --whatprovides util-linux-core >&2 \|\| echo util-linux-core',
                     r'\s+stderr:\s+util-linux-core-',
                 )
 
@@ -1372,7 +1372,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     Package('tree-but-spelled-wrong'),
                     False,
-                    r'rpm -q --whatprovides "tree-but-spelled-wrong" >&2 \|\| echo "tree-but-spelled-wrong"',  # noqa: E501
+                    r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
                     r'\s+stdout:\s+tree-but-spelled-wrong',
                 )
 
@@ -1381,7 +1381,7 @@ def _generate_test_check_presence() -> Iterator[
                     package_manager_class,
                     FileSystemPath('/usr/bin/flock'),
                     True,
-                    r'rpm -q --whatprovides "/usr/bin/flock" >&2 \|\| echo "/usr/bin/flock"',
+                    r'rpm -q --whatprovides /usr/bin/flock >&2 \|\| echo /usr/bin/flock',
                     r'\s+stderr:\s+util-linux-core-',
                 )
 
