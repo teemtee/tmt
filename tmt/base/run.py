@@ -43,6 +43,7 @@ from tmt.utils import (
     GeneralError,
     HasEnvironment,
     HasRunWorkdir,
+    HasUserAnchorPath,
     Path,
     StateFormat,
     WorkdirArgumentType,
@@ -76,7 +77,7 @@ class RunData(SerializableContainer):
     )
 
 
-class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
+class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
     """
     Test run, a container of plans
     """
@@ -148,6 +149,14 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             )
 
         return self.workdir
+
+    @property
+    def user_anchor_path(self) -> Path:
+        if self.tree and self.tree.root:
+            # The run has an fmf tree, use its root
+            return self.tree.root
+        # Otherwise it was run without a tree, so take the cwd
+        return Path.cwd()
 
     @functools.cached_property
     def state_format_marker_filepath(self) -> Path:

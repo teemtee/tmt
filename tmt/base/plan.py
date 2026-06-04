@@ -57,6 +57,7 @@ from tmt.utils import (
     HasEnvironment,
     HasPlanWorkdir,
     HasRunWorkdir,
+    HasUserAnchorPath,
     style,
     to_yaml,
 )
@@ -223,6 +224,7 @@ class RemotePlanReference(  # pyright: ignore[reportGeneralTypeIssues]
 @container(repr=False)
 class Plan(
     HasRunWorkdir,
+    HasUserAnchorPath,
     HasPlanWorkdir,
     HasEnvironment,
     Core,
@@ -414,6 +416,12 @@ class Plan(
             raise GeneralError('Existence of a run was presumed but the run does not exist.')
 
         return self.my_run.run_workdir
+
+    @property
+    def user_anchor_path(self) -> Path:
+        if self.my_run:
+            return self.my_run.user_anchor_path
+        return Path.cwd()
 
     # TODO: better, more elaborate ways of assigning serial numbers to tests
     # can be devised - starting with a really trivial one: each test gets
