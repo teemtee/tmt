@@ -12,38 +12,63 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
-        rlRun "rpm_dir=\$(mktemp -d)" 0 "Create local RPM directory"
 
         setup_distro_environment
-
-        # 1. REMOTE URL (noarch)
-        get_koji_nvr "cowsay" "$koji_tag"
-        COWSAY_NVR="$KOJI_NVR"
-
-        # Construct URL: Parses NVR (Name-Version-Release) and assembles Koji URL
-        # Regex explanation: ^(.*)-([^-]+)-([^-]+)$ captures Name, Version, Release
-        REMOTE_RPM_URL=$(echo "$COWSAY_NVR" | sed -E "s|^(.*)-([^-]+)-([^-]+)$|https://kojipkgs.fedoraproject.org/packages/\1/\2/\3/noarch/&.noarch.rpm|")
-
-        rlLog "Using cowsay URL: $REMOTE_RPM_URL"
-
-        # 2. LOCAL FILE (arch-specific)
-        get_koji_nvr "figlet" "$koji_tag"
-        FIGLET_NVR="$KOJI_NVR"
-
-        rlRun "pushd $rpm_dir && koji download-build --arch=$ARCH $FIGLET_NVR; popd" 0 "Download figlet RPM for local test"
-        LOCAL_RPM=$(ls $rpm_dir/figlet*.rpm)
-        rlAssertExists "$LOCAL_RPM"
-
-        rlRun "multi_rpm_dir=\$(mktemp -d)" 0 "Create directory for multiple RPMs"
-        # Use $release (set by setup_distro_environment) to ensure packages
-        rlRun "dnf download --forcearch=$ARCH --releasever=$release --destdir=$multi_rpm_dir boxes fortune-mod" 0 "Download boxes and fortune-mod RPMs using dnf"
+        build_rpm "bar"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test file provider with remote URL, local RPM, and directory with multiple RPMs"
-        rlRun "tmt run -i $run --scratch -vvv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
-            prepare --how artifact --provide file:$REMOTE_RPM_URL --provide file:$LOCAL_RPM --provide file:$multi_rpm_dir" 0 "Run with file provider (URL + local RPM + directory)"
-    rlPhaseEnd
+    while IFS= read -r image; do
+        if ! is_fedora "$image" && ! is_centos "$image"; then
+            # Can only test rpm artifacts right now
+            continue
+        fi
+
+        if is_centos_7 "$image"; then
+            # TODO(#4941):
+            # Centos 7 not supported because of missing provides resolution on `yum`
+            continue
+        fi
+
+        if is_centos_stream_9 "$image" || is_centos_stream_10 "$image"; then
+            # TODO(#4941):
+            # dnf repoquery fails
+            # - Error: 'Package' object has no attribute 'full_nevra'
+            # - Or gives an output of
+            #   'bar':
+            #    - nevra: '%{full_nevra}'
+            #      repo_id: 'tmt-artifact-shared'
+            continue
+        fi
+
+        phase_prefix="$(test_phase_prefix $image)"
+
+        rlPhaseStartTest "$phase_prefix Test file provider"
+            # Remote rpm taken from https://copr.fedorainfracloud.org/coprs/lecris/_tmt_test/
+            # TODO: get this more dynamically https://github.com/fedora-copr/copr/issues/4119
+            rlRun "REMOTE_RPM_URL=https://packages.redhat.com/api/pulp-content/public-copr/lecris/_tmt_test/fedora-rawhide-x86_64/Packages/b/bar-1.0-1.noarch.rpm"
+
+            rlRun "tmt run -i $run --scratch -vvv --all \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --how artifact --provide file:$REMOTE_RPM_URL" \
+                0 "Run remote file"
+            rlRun "tmt run -i $run --scratch -vvv --all \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --how artifact --provide file:$LIB_DIR/../rpms/bar/bar-1.0-1.noarch.rpm" \
+                0 "Run absolute file path"
+            rlRun "tmt run -i $run --scratch -vvv --all \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --how artifact --provide file:../../../rpms/bar/bar-1.0-1.noarch.rpm" \
+                0 "Run relative file path"
+            rlRun "tmt run -i $run --scratch -vvv --all \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --how artifact --provide file:../../../rpms/bar/bar-*.rpm" \
+                0 "Run glob pattern"
+            rlRun "tmt run -i $run --scratch -vvv --all \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --how artifact --provide file:$LIB_DIR/../rpms/bar" \
+                0 "Run directory"
+        rlPhaseEnd
+    done <<< "$IMAGES"
 
     rlPhaseStartCleanup
         rlRun "rm -rf $run $rpm_dir $multi_rpm_dir"

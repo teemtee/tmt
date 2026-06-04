@@ -1,0 +1,6 @@
+[test-bar]
+name=Equivalent to copr repo of lecris/_tmt_test
+baseurl=https://download.copr.fedorainfracloud.org/results/lecris/_tmt_test/fedora-rawhide-x86_64/
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1

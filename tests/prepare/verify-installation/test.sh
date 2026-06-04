@@ -1,55 +1,64 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../images.sh || exit 1
+. ../artifact/lib/common.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
-
-        . ../artifact/lib/common.sh || exit 1
+        rlRun "pushd data"
 
         setup_distro_environment
-
-        rlRun "image=$TEST_IMAGE_PREFIX/$image_name"
-
-        rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
-        rlRun "cp -r data/. $data_dir/" 0 "Copy test data"
-
-        get_koji_build_id "centpkg" "$koji_tag"
-        rlRun "sed -i 's/KOJI_BUILD_ID/${KOJI_BUILD_ID}/g' $data_dir/main.fmf" 0 "Substitute koji build ID"
-        rlRun "pushd $data_dir"
+        build_rpm "bar"
+        rlRun "BAR_RPM=$LIB_DIR/../rpms/bar/*.rpm"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test successful verification"
-        rlRun -s "tmt -c distro=$distro run -i $run/success --scratch -vvv --all \
-            plan --name /plan/success \
-            provision -h $PROVISION_HOW --image $image" \
-            0 "Run verification test with correct repos"
+    while IFS= read -r image; do
+        if ! is_fedora "$image" && ! is_centos "$image"; then
+            # Can only test rpm artifacts right now
+            continue
+        fi
 
-        rlAssertGrep "pass .* / centpkg" $rlRun_LOG
+        if is_centos_7 "$image"; then
+            # TODO(#4941):
+            # Centos 7 not supported because of missing provides resolution on `yum`
+            continue
+        fi
 
-        rlAssertGrep "All packages verified successfully." $rlRun_LOG
-        rlAssertNotGrep "Package source verification failed for:" $rlRun_LOG
-        rlAssertGrep "1 test passed" $rlRun_LOG
-    rlPhaseEnd
+        phase_prefix="$(test_phase_prefix $image)"
 
-    rlPhaseStartTest "Test verification failure"
-        rlRun -s "tmt -c distro=$distro run -i $run/failure --scratch -vvv --all \
-            plan --name /plan/failure \
-            provision -h $PROVISION_HOW --image $image" \
-            2 "Verification should fail with wrong repo"
+        rlPhaseStartTest "$phase_prefix Test successful verification"
+            rlRun -s "tmt run -i $run/success --scratch -vvv --all \
+                plan --name /plan/success \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --insert -h artifact --provide file:$BAR_RPM" \
+                0 "Run verification test with correct repos"
 
-        rlAssertGrep "fail .* / centpkg" $rlRun_LOG
-        rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
-        rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG
-        rlAssertGrep "random-non-existent-package.*not installed" $rlRun_LOG
-        rlAssertGrep "Package source verification failed for:" $rlRun_LOG
-        rlAssertNotGrep "All packages verified successfully." $rlRun_LOG
-    rlPhaseEnd
+            rlAssertGrep "pass .* / bar" $rlRun_LOG
+
+            rlAssertGrep "All packages verified successfully." $rlRun_LOG
+            rlAssertNotGrep "Package source verification failed for:" $rlRun_LOG
+            rlAssertGrep "1 test passed" $rlRun_LOG
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Test verification failure"
+            rlRun -s "tmt run -i $run/failure --scratch -vvv --all \
+                plan --name /plan/failure \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --insert -h artifact --provide file:$BAR_RPM" \
+                2 "Verification should fail with wrong repo"
+
+            rlAssertGrep "fail .* / bar" $rlRun_LOG
+            rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
+            rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG
+            rlAssertGrep "random-non-existent-package.*not installed" $rlRun_LOG
+            rlAssertGrep "Package source verification failed for:" $rlRun_LOG
+            rlAssertNotGrep "All packages verified successfully." $rlRun_LOG
+        rlPhaseEnd
+    done <<< "$IMAGES"
 
     rlPhaseStartCleanup
-        rlRun "rm -rf $run $data_dir" 0 "Removing run and data directories"
+        rlRun "rm -rf $run" 0 "Removing run and data directories"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
