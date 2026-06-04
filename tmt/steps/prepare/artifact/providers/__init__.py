@@ -8,7 +8,7 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import tmt.log
 import tmt.utils
@@ -19,6 +19,9 @@ from tmt.guest import DownloadError, Guest
 from tmt.package_managers import Repository, Version
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path, ShellScript
+
+if TYPE_CHECKING:
+    from tmt.steps.prepare.artifact import PrepareArtifact
 
 NEVRA_PATTERN = re.compile(
     r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
@@ -108,6 +111,9 @@ class ArtifactProvider(ABC):
     #: All artifacts known to this provider. Populated by
     #: :py:meth:`_download_artifact` and/or :py:meth:`enumerate_artifacts`.
     _artifacts: list[ArtifactInfo] = simple_field(init=False, default_factory=list)
+
+    #: The PrepareArtifact phase that owns this provider.
+    parent: "PrepareArtifact"
 
     def __post_init__(self) -> None:
         self.id = self._extract_provider_id(self.raw_id)

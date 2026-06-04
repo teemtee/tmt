@@ -76,11 +76,12 @@ class RepositoryFileProvider(ArtifactProvider):
         self.logger.info(f"Initializing repository provider with URL: {self.id}")
 
         parsed = urlparse(self.id)
-        parsed_path = Path(parsed.path)
+        # If the file is a relative path, we need the netloc part also
+        parsed_path = Path(f"{parsed.netloc}{parsed.path}")
         if parsed.scheme == 'file':
-            # Read .repo file from the local (controller) filesystem.
+            # Normalize relative paths to be relative to user_anchor_path
+            parsed_path = self.parent.step.plan.user_anchor_path / parsed_path
             self.logger.info(f"Reading repository file from local path: {parsed_path}")
-            self.logger.debug(f"Absolute path of the repository file: '{parsed_path.resolve()}'")
             self.repository = Repository.from_file_path(file_path=parsed_path, logger=self.logger)
         else:
             repo_filename = parsed_path.name

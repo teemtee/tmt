@@ -111,13 +111,17 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             if self._is_url:  # Remote file, download it
                 guest.download(artifact.location, destination)
             else:  # Local file, push it to the guest
-                # When pushing a single file, use recursive=False. The default recursive=True
-                # treats the source as a directory (appending "/."), which only works for
-                # directories and fails when pushing individual files.
+                # Relative paths are normalized to be relative to user_anchor_path
                 guest.push(
-                    tmt.utils.Path(artifact.location),
+                    self.parent.step.plan.user_anchor_path / artifact.location,
                     destination,
-                    options=TransferOptions(recursive=False),
+                    # Override the flags from DEFAULT_PUSH_OPTIONS, we mainly care about
+                    # - recursive=False: is individual file
+                    # - links=False: we really need the file
+                    # - compress=True: try to make it fast
+                    options=TransferOptions(
+                        compress=True,
+                    ),
                 )
             self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:

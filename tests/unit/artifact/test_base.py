@@ -37,7 +37,13 @@ class MockProvider(ArtifactProvider):
 
 @pytest.fixture
 def mock_provider(root_logger):
-    return MockProvider("mock:123", repository_priority=50, logger=root_logger)
+    mock_prepare_artifact = MagicMock()
+    return MockProvider(
+        "mock:123",
+        repository_priority=50,
+        logger=root_logger,
+        parent=mock_prepare_artifact,
+    )
 
 
 def test_filter_artifacts(mock_provider):
@@ -93,8 +99,19 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
 
 def test_duplicate_nvra_detection(tmp_path, root_logger):
     # Two providers with the same NVRA
-    provider1 = MockProvider("mock:provider1", repository_priority=50, logger=root_logger)
-    provider2 = MockProvider("mock:provider2", repository_priority=50, logger=root_logger)
+    mock_prepare_artifact = MagicMock()
+    provider1 = MockProvider(
+        "mock:provider1",
+        repository_priority=50,
+        logger=root_logger,
+        parent=mock_prepare_artifact,
+    )
+    provider2 = MockProvider(
+        "mock:provider2",
+        repository_priority=50,
+        logger=root_logger,
+        parent=mock_prepare_artifact,
+    )
 
     prepare = MagicMock()
     prepare.plan_workdir = tmp_path
