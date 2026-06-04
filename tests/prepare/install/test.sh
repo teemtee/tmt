@@ -292,7 +292,7 @@ rlJournalStart
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_centos_7 "$image"; then
-                rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_image_mode "$image"; then
                 if is_fedora "$image"; then
@@ -340,7 +340,7 @@ rlJournalStart
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_centos_7 "$image"; then
-                rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_image_mode "$image"; then
                 if is_fedora "$image"; then
@@ -388,7 +388,7 @@ rlJournalStart
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_centos_7 "$image"; then
-                rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_image_mode "$image"; then
                 if is_fedora "$image"; then
