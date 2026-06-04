@@ -76,10 +76,10 @@ class DnfEngine(PackageManagerEngine):
         return ShellScript(f'rpm -q {" ".join(escape_installables(*installables))}')
 
     def check_presence(self, *installables: Installable) -> ShellScript:
-        parts = [
-            f'rpm -q --whatprovides "{installable}" >&2 || echo "{installable}"'
-            for installable in installables
-        ]
+        parts: list[str] = []
+        for installable in installables:
+            e = next(escape_installables(installable))
+            parts.append(f'rpm -q --whatprovides {e} >&2 || echo {e}')
         return ShellScript('\n'.join(parts))
 
     def _construct_install_script(
