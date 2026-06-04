@@ -40,7 +40,7 @@ function assert_package_manager () {
     rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
     if is_centos_7 "$image"; then
-        rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
+        rlAssertGrep "stderr: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
     elif is_centos "$image"; then
         rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
