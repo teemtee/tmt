@@ -381,7 +381,7 @@ class Bootc(PackageManager[BootcEngine]):
         self.verbose('enable repo', fmf.utils.listed(repo_ids), 'green')
         self.engine.enable_repository(*repo_ids)
 
-    def disable_repo(self, *repo_ids: str) -> None:
+    def disable_repository(self, *repo_ids: str) -> None:
         if not repo_ids:
             return
 
