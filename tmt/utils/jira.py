@@ -120,7 +120,7 @@ class JiraInstance:
 
     def add_link_to_issue(
         self,
-        link: 'tmt.base.core.Link',
+        link: 'tmt.base.links.Link',
         tmt_objects: Sequence[TmtObject],
     ) -> None:
         """
@@ -151,7 +151,7 @@ class JiraInstance:
 
 def save_link_to_metadata(
     tmt_object: TmtObject,
-    link: 'tmt.base.core.Link',
+    link: 'tmt.base.links.Link',
     logger: tmt.log.Logger,
 ) -> None:
     """

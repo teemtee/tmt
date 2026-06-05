@@ -2503,7 +2503,7 @@ class Tree(tmt.utils.Common):
         """
         Search available plans
         """
-        from tmt.base.link import LinkNeedle
+        from tmt.base.links import LinkNeedle
         from tmt.base.plan import Plan
 
         # Handle defaults, apply possible command line options
