@@ -1,4 +1,3 @@
-import re
 import uuid
 from collections.abc import Iterator
 from typing import Any, Optional
@@ -15,7 +14,7 @@ from tmt.package_managers import (
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, Path, ShellScript
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 
@@ -210,32 +209,18 @@ class Bootc(PackageManager[BootcEngine]):
         return self.guest.bootc_builder.extract_package_name_from_package_manager_output(output)
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
+        if not installables:
+            return {}
+
         script = self.engine.check_presence(*installables)
+        output = self.guest.execute(script)
 
-        try:
-            output = self.guest.execute(script)
-            stdout = output.stdout
+        results: dict[Installable, bool] = dict.fromkeys(installables, True)
+        missing = {line.strip() for line in (output.stdout or '').splitlines() if line.strip()}
 
-        except RunError as exc:
-            stdout = exc.stdout
-
-        if stdout is None:
-            raise GeneralError("rpm presence check provided no output")
-
-        results: dict[Installable, bool] = {}
-
-        for line, installable in zip(stdout.strip().splitlines(), installables):
-            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
-            if match is not None:
+        for installable in installables:
+            if str(installable) in missing:
                 results[installable] = False
-                continue
-
-            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
-            if match is not None:
-                results[installable] = False
-                continue
-
-            results[installable] = True
 
         return results
 
