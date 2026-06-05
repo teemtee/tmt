@@ -1058,10 +1058,25 @@ class GuestFacts(SerializableContainer):
             ``is_container`` - will be synced.
         """
 
-        output = guest.execute(
-            self._create_collection_script(*(facts or self._facts().keys())).to_shell_command(),
-            silent=True,
-        )
+        facts = facts or tuple(self._facts().keys())
+
+        guest.debug('syncing facts', fmf.utils.listed(facts))
+
+        try:
+            output = guest.execute(
+                self._create_collection_script(*facts).to_shell_command(),
+                silent=True,
+            )
+
+        except tmt.utils.RunError as exc:
+            tmt.utils.show_exception_as_warning(
+                exception=exc,
+                message='Guest fact sync failed',
+                include_logfiles=True,
+                logger=guest._logger,
+            )
+
+            return
 
         if not output.stdout:
             return
