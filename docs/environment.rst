@@ -16,8 +16,11 @@ Environment precedence
     __ https://github.com/teemtee/tmt/issues/4241
 
 The following sections describe various sets of environment variables
-exposed by tmt, in their order of precedence from least to greatest: the
-last listed variables override variables from previous set.
+exposed by tmt to various user-provided actions - scripts and commands
+provided by the user via plan and test metadata keys, from
+``prepare/shell`` scripts to individual tests. Sets of environment
+variables are listed in their order of precedence from least to greatest:
+the last listed variables override variables from previous set.
 
 1. User-provided guest environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
