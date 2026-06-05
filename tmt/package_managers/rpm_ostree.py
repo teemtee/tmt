@@ -220,6 +220,9 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
     ) -> CommandOutput:
         options = options or Options()
 
+        if not options.check_first:
+            return super().install(*installables, options=options)
+
         missing = [p for p, present in self.check_presence(*installables).items() if not present]
         no_check_options = dataclasses.replace(options, check_first=False)
 
