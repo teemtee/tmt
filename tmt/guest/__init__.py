@@ -727,6 +727,17 @@ class string_guest_fact(guest_fact[Optional[str]]):  # noqa: N801
         )
 
 
+class int_guest_fact(guest_fact[Optional[int]]):  # noqa: N801
+    """
+    A guest fact whose value is an integer.
+    """
+
+    def __init__(self, probe: str) -> None:
+        super().__init__(
+            probe, lambda output: int(output.strip()) if output.strip() != 'unknown' else None
+        )
+
+
 class flag_guest_fact(guest_fact[Optional[bool]]):  # noqa: N801
     """
     A guest fact whose value is a booleab flag.
@@ -1077,6 +1088,9 @@ class GuestFacts(SerializableContainer):
             elif isinstance(value, bool):
                 yield fact, label, 'yes' if value else 'no'
 
+            elif isinstance(value, int):
+                yield fact, label, str(value)
+
             elif isinstance(value, str):
                 yield fact, label, value
 
@@ -1138,7 +1152,7 @@ class GuestFacts(SerializableContainer):
         """
     )
 
-    distro_major_version = string_guest_fact(
+    distro_major_version = int_guest_fact(
         """
         if [ -f /etc/os-release ] && grep -q 'VERSION_ID=' /etc/os-release; then
             grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2- | sed 's/^\\"\\(.*\\)\\"$/\\1/' | cut -d'.' -f1
@@ -1149,7 +1163,7 @@ class GuestFacts(SerializableContainer):
         else
             echo 'unknown'
         fi
-        """
+        """  # noqa: E501
     )
 
     #: Release of the running kernel, as reported by the ``uname -r``
