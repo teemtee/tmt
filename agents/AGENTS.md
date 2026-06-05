@@ -98,8 +98,8 @@ tmt uses a 7-phase execution model:
 2. **provision**: Prepare testing environment (guests/containers)
 3. **prepare**: Install dependencies and configure environment
 4. **execute**: Run the actual tests
-5. **report**: Generate and publish test results
-6. **finish**: Cleanup and finalization tasks
+5. **finish**: Cleanup and finalization tasks
+6. **report**: Generate and publish test results
 7. **cleanup**: Remove temporary resources
 
 Each step is implemented as a plugin system supporting multiple `how` methods.
