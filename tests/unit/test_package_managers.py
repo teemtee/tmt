@@ -551,7 +551,7 @@ def test_assert_config_manager(
             package_manager.assert_config_manager()
 
 
-def _parametrize_test_enable_disable_repo() -> Iterator[
+def _parametrize_test_enable_disable_repository() -> Iterator[
     tuple[Container, PackageManagerClass, str, Union[str, Exception]]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -602,10 +602,10 @@ def _parametrize_test_enable_disable_repo() -> Iterator[
 @pytest.mark.containers
 @pytest.mark.parametrize(
     ('container_per_test', 'package_manager_class', 'action', 'expected_command_or_exception'),
-    list(_parametrize_test_enable_disable_repo()),
+    list(_parametrize_test_enable_disable_repository()),
     indirect=["container_per_test"],
 )
-def test_enable_disable_repo(
+def test_enable_disable_repository(
     container_per_test: ContainerData,
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
@@ -618,7 +618,11 @@ def test_enable_disable_repo(
         container_per_test, guest_per_test, package_manager_class, root_logger
     )
 
-    method = package_manager.enable_repo if action == 'enable' else package_manager.disable_repo
+    method = (
+        package_manager.enable_repository
+        if action == 'enable'
+        else package_manager.disable_repository
+    )
 
     if isinstance(expected_command_or_exception, str):
         # The command will fail because 'test-repo' does not exist in the
