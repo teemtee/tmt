@@ -1,0 +1,4 @@
+description: |
+    The :ref:`/plugins/prepare/install` plugin should no longer silently
+    upgrade pre-installed packages. The new ``check-first`` option
+    (default: enabled) was added to control this behaviour.
