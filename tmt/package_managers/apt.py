@@ -181,6 +181,7 @@ class AptEngine(PackageManagerEngine):
                     COMMAND='install',
                     OPTIONS=options,
                     EXTRA_OPTIONS=extra_options,
+                    CHECK_FIRST=False,
                     REAL_PACKAGES=escape_installables(*real_packages),
                     FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
                 )
@@ -193,6 +194,7 @@ class AptEngine(PackageManagerEngine):
                 COMMAND='install',
                 OPTIONS=options,
                 EXTRA_OPTIONS=extra_options,
+                CHECK_FIRST=False,
                 REAL_PACKAGES=escape_installables(*real_packages),
                 FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
             )
