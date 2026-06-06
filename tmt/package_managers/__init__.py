@@ -329,6 +329,12 @@ class Options:
     #: If set, instruct package manager to install from untrusted sources.
     allow_untrusted: bool = False
 
+    #: If set, allow erasing conflicting or obsoleting packages during install.
+    allow_erasing: bool = False
+
+    #: If set, allow downgrades of transitive dependencies during install.
+    allow_downgrade: bool = False
+
 
 class PackageManagerEngine(tmt.utils.Common):
     command: Command
