@@ -17,6 +17,7 @@ definitions:
       - i386
       - ppc64
       - ppc64le
+      - riscv64
       - s390x
       - x86_64
 
