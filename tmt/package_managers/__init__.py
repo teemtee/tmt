@@ -589,6 +589,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             )
         return self.guest.execute(self.engine.install(*to_install, options=options))
 
+
     def reinstall(
         self,
         *installables: Installable,
