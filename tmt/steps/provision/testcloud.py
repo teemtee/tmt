@@ -52,6 +52,7 @@ X86_64ArchitectureConfiguration: Any
 AArch64ArchitectureConfiguration: Any
 S390xArchitectureConfiguration: Any
 Ppc64leArchitectureConfiguration: Any
+RISCV64ArchitectureConfiguration: Any
 SystemNetworkConfiguration: Any
 UserNetworkConfiguration: Any
 QCow2StorageDevice: Any
@@ -72,6 +73,7 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
     global AArch64ArchitectureConfiguration
     global S390xArchitectureConfiguration
     global Ppc64leArchitectureConfiguration
+    global RISCV64ArchitectureConfiguration
     global SystemNetworkConfiguration
     global UserNetworkConfiguration
     global QCow2StorageDevice
@@ -88,6 +90,7 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
             Ppc64leArchitectureConfiguration,
             QCow2StorageDevice,
             RawStorageDevice,
+            RISCV64ArchitectureConfiguration,
             S390xArchitectureConfiguration,
             SystemNetworkConfiguration,
             TPMConfiguration,
@@ -372,7 +375,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
     arch: str = field(
         default=DEFAULT_ARCH,
         option=('-a', '--arch'),
-        choices=['x86_64', 'aarch64', 's390x', 'ppc64le'],
+        choices=['x86_64', 'aarch64', 's390x', 'ppc64le', 'riscv64'],
         help="What architecture to virtualize, host arch by default.",
     )
 
@@ -1092,6 +1095,17 @@ class GuestTestcloud(tmt.GuestSsh):
                 self.warn(
                     "The s390x architecture does not support 'uefi' boot, "
                     "using 'bios' boot method instead."
+                )
+        elif self.arch == "riscv64":
+            domain.system_architecture = RISCV64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=True,  # Always enabled
+                model="virt",
+            )
+            if boot_method and not uefi:
+                self.warn(
+                    "The riscv64 architecture requires 'uefi' boot, "
+                    "using 'uefi' boot method instead."
                 )
         else:
             raise tmt.utils.ProvisionError("Unknown architecture requested.")
