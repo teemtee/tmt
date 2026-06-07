@@ -220,6 +220,35 @@ rlJournalStart
             fi
         rlPhaseEnd
 
+        rlPhaseStartTest "$phase_prefix check-first skips already-installed packages (plan)"
+            rlRun -s "$tmt plan --name /check-first"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # 1 extra phase for apt-get update + 2 install phases
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix check-first option via CLI (--no-check-first)"
+            if is_ubi "$image"; then
+                rlRun -s "$tmt --insert --how install --package dconf --package libpng --no-check-first plan --name /empty"
+            else
+                rlRun -s "$tmt --insert --how install --package tree --package diffutils --no-check-first plan --name /empty"
+            fi
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
         # Limit these test cases to:
         # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
         # * image mode - the code handling is different in this case, so we need to make sure these cases work well

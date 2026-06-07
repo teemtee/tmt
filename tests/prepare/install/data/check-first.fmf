@@ -1,0 +1,40 @@
+summary: Install packages once to populate the system, then again with check-first enabled
+prepare: []
+
+adjust:
+  - when: distro == ubuntu,debian
+    prepare+<:
+      - how: shell
+        script: apt-get update
+
+  - when: distro != rhel
+    prepare+:
+      - how: install
+        check-first: false
+        package:
+          - tree
+          - diffutils
+
+  - when: distro != rhel
+    prepare+:
+      - how: install
+        check-first: true
+        package:
+          - tree
+          - diffutils
+
+  - when: distro == rhel
+    prepare+:
+      - how: install
+        check-first: false
+        package:
+          - dconf
+          - libpng
+
+  - when: distro == rhel
+    prepare+:
+      - how: install
+        check-first: true
+        package:
+          - dconf
+          - libpng
