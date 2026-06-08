@@ -486,25 +486,11 @@ class Plan(
         Environment variables from ``environment`` and ``environment-file`` keys.
         """
 
-        return Environment.from_inputs(
-            raw_fmf_environment_files=self.node.get("environment-file") or [],
-            raw_fmf_environment=self.node.get('environment', {}),
+        return Environment.from_fmf_keys(
+            raw_fmf_environment_files=cast(Optional[list[str]], self.node.get("environment-file"))
+            or [],
+            raw_fmf_environment=cast(Optional[dict[str, Any]], self.node.get('environment')) or {},
             file_root=Path(self.node.root) if self.node.root else None,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
-            key_address=self.node.name,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
-            logger=self._logger,
-        )
-
-    @property
-    def _environment_from_cli(self) -> Environment:
-        """
-        Environment variables from ``--environment`` and ``--environment-file`` options.
-        """
-
-        return Environment.from_inputs(
-            raw_cli_environment_files=self.opt('environment-file') or [],
-            raw_cli_environment=self.opt('environment'),
-            file_root=Path(self.node.root) if self.node.root else None,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
-            key_address=self.node.name,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             logger=self._logger,
         )
 
@@ -528,7 +514,6 @@ class Plan(
                 {
                     **self._environment_from_fmf,
                     **self._environment_from_importing,
-                    **self._environment_from_cli,
                     **self.my_run.environment,
                     **self._environment_from_intrinsics,
                 }
@@ -538,7 +523,6 @@ class Plan(
             {
                 **self._environment_from_fmf,
                 **self._environment_from_importing,
-                **self._environment_from_cli,
                 **self._environment_from_intrinsics,
             }
         )
