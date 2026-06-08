@@ -1416,7 +1416,7 @@ class Test(
         # Append link with appropriate relation
         from tmt.base.links import Links
 
-        links = Links(data=list(cast(list[_RawLink], Test._opt('link', []))))
+        links = Links(data=list(cast(list['_RawLink'], Test._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
             metadata_content += to_yaml({'link': links.to_spec()})
 
