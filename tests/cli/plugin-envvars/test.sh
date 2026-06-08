@@ -23,13 +23,13 @@ rlJournalStart
     rlPhaseStartTest "Verify unknown plugins are reported"
         rlRun -s "TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST=never $run_tmt"
 
-        rlAssertGrep "warn: Found environment variable for plugin 'report/xhtml', but the plugin was not found. The following environment variable will have no effect: TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST" $rlRun_LOG
+        rlAssertGrep "Found environment variable for plugin 'report/xhtml', but the plugin was not found. The following environment variable will have no effect: TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST" $rundir/log.txt
     rlPhaseEnd
 
     rlPhaseStartTest "Verify unused envvars are reported"
         rlRun -s "TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST=never $run_tmt"
 
-        rlAssertGrep "warn: Found environment variable for plugin 'report/display', but the plugin is not used by the plan '/'. The following environment variable will have no effect: TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST" $rlRun_LOG
+        rlAssertGrep "Found environment variable for plugin 'report/display', but the plugin is not used by the plan '/'. The following environment variable will have no effect: TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST" $rundir/log.txt
     rlPhaseEnd
 
     rlPhaseStartTest "Verify unknown options are reported"
