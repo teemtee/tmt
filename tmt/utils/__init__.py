@@ -28,7 +28,7 @@ import unicodedata
 import urllib.parse
 import warnings
 from collections import Counter
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from math import ceil
 from re import Pattern
 from threading import RLock, Thread
@@ -563,7 +563,7 @@ class Environment(dict[str, EnvVarValue]):
     @classmethod
     def from_sequence(
         cls,
-        variables: Union[str, list[str]],
+        raw_variables: Union[str, Sequence[str]],
         logger: tmt.log.Logger,
     ) -> 'Environment':
         """
@@ -578,7 +578,7 @@ class Environment(dict[str, EnvVarValue]):
         a YAML or DOTENV file that contains key/value pairs which are then
         transparently loaded and added to the final environment.
 
-        :param variables: string or a sequence of strings containing
+        :param raw_variables: string or a sequence of strings containing
             variables. The acceptable formats are:
 
             * ``'X=1'``
@@ -591,8 +591,11 @@ class Environment(dict[str, EnvVarValue]):
             * ``@foo.env``
         """
 
-        if not isinstance(variables, (list, tuple)):
-            variables = [variables]
+        if isinstance(raw_variables, str):
+            variables: Iterable[str] = [raw_variables]
+
+        else:
+            variables = raw_variables
 
         result = Environment()
 
@@ -744,113 +747,101 @@ class Environment(dict[str, EnvVarValue]):
         return result
 
     @classmethod
-    def from_inputs(
+    def from_cli_options(
         cls,
         *,
-        raw_fmf_environment: Any = None,
-        raw_fmf_environment_files: Any = None,
-        raw_cli_environment: Any = None,
-        raw_cli_environment_files: Any = None,
+        raw_cli_environment_files: Sequence[str],
+        raw_cli_environment: Sequence[str],
         file_root: Optional[Path] = None,
-        key_address: Optional[str] = None,
         logger: tmt.log.Logger,
-    ) -> 'Environment':
+    ) -> Self:
         """
-        Extract environment variables from various sources.
+        Extract environment variables from CLI options.
 
-        Combines various raw sources into a set of environment variables. Calls
-        necessary functions to process environment files, dictionaries and CLI
-        inputs.
+        Combines ``--environment-file`` and ``--environment`` options
+        into a set of environment variables. Both options are optional,
+        and there is a clear order of preference, which is,
+        from the least preferred:
 
-        All inputs are optional, and there is a clear order of preference, which is,
-        from the most preferred:
+        * ``--environment-file``
+        * ``--environment``
 
-        * ``--environment`` CLI option (``raw_cli_environment``)
-        * ``--environment-file`` CLI option (``raw_cli_environment_files``)
-        * ``environment`` fmf key (``raw_fmf_environment``)
-        * ``environment-file`` fmf key (``raw_fmf_environment_files``)
+          .. note::
 
-        :param raw_fmf_environment: content of ``environment`` fmf key. ``None``
-            and a dictionary are accepted.
-        :param raw_fmf_environment_files: content of ``environment-file`` fmf key.
-            ``None`` and a list of paths are accepted.
-        :param raw_cli_environment: content of ``--environment`` CLI option.
-            ``None``, a tuple or a list are accepted.
-        :param raw_cli_environment_files: content of `--environment-file`` CLI
-            option. ``None``, a tuple or a list are accepted.
-        :raises NormalizationError: when an input is of a type which is not allowed
-            for that particular source.
+             This set includes also files with environment variables
+             when such files are pointed at using the ``@<filepath>``
+             form.
+
+        :param raw_cli_environment_files: content of the `--environment-file``
+            CLI option.
+        :param raw_cli_environment: content of the ``--environment`` CLI
+            option.
         """
 
-        key_address_prefix = f'{key_address}:' if key_address else ''
-
-        from_fmf_files = Environment()
-        from_fmf_dict = Environment()
-        from_cli_files = Environment()
-        from_cli = Environment()
-
-        if raw_fmf_environment_files is None:
-            pass
-        elif isinstance(raw_fmf_environment_files, list):
-            from_fmf_files = cls.from_files(
-                filenames=raw_fmf_environment_files,
-                root=file_root,
-                logger=logger,
-            )
-        else:
-            raise NormalizationError(
-                f'{key_address_prefix}environment-file',
-                raw_fmf_environment_files,
-                'unset or a list of paths',
-            )
-
-        if raw_fmf_environment is None:
-            pass
-        elif isinstance(raw_fmf_environment, dict):
-            from_fmf_dict = Environment.from_dict(raw_fmf_environment)
-        else:
-            raise NormalizationError(
-                f'{key_address_prefix}environment', raw_fmf_environment, 'unset or a dictionary'
-            )
-
-        if raw_cli_environment_files is None:
-            pass
-        elif isinstance(raw_cli_environment_files, (list, tuple)):
-            from_cli_files = Environment.from_files(
-                filenames=raw_cli_environment_files,
-                root=file_root,
-                logger=logger,
-            )
-        else:
-            raise NormalizationError(
-                'environment-file', raw_cli_environment_files, 'unset or a list of paths'
-            )
-
-        if raw_cli_environment is None:
-            pass
-        elif isinstance(raw_cli_environment, (list, tuple)):
-            from_cli = Environment.from_sequence(
-                variables=list(raw_cli_environment),
-                logger=logger,
-            )
-        else:
-            raise NormalizationError(
-                'environment', raw_cli_environment, 'unset or a list of key/value pairs'
-            )
-
-        # Combine all sources into one mapping, honor the order in which they override
-        # other sources.
-        return Environment(
+        # Combine all sources into one mapping, honor the order in which
+        # they override other sources.
+        return cls(
             {
-                **from_fmf_files,
-                **from_fmf_dict,
-                **from_cli_files,
-                **from_cli,
+                **cls.from_files(
+                    filenames=raw_cli_environment_files,
+                    root=file_root,
+                    logger=logger,
+                ),
+                **cls.from_sequence(
+                    raw_variables=raw_cli_environment,
+                    logger=logger,
+                ),
             }
         )
 
     @classmethod
-    def from_dict(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
+    def from_fmf_keys(
+        cls,
+        *,
+        raw_fmf_environment_files: Sequence[str],
+        raw_fmf_environment: Mapping[str, Any],
+        file_root: Optional[Path] = None,
+        logger: tmt.log.Logger,
+    ) -> Self:
+        """
+        Extract environment variables from fmf keys.
+
+        Combines ``environment-file`` and ``environment`` fmf keys
+        into a set of environment variables. Both keys are optional,
+        and there is a clear order of preference, which is,
+        from the least preferred:
+
+        * ``environment-file``
+        * ``environment``
+
+          .. note::
+
+             This set includes also files with environment variables
+             when such files are pointed at using the ``@<filepath>``
+             form.
+
+        :param raw_fmf_environment_files: content of the `environment-file``
+            key.
+        :param raw_fmf_environment: content of the ``environment`` key.
+        """
+
+        # Combine all sources into one mapping, honor the order in which
+        # they override other sources.
+        return cls(
+            {
+                **cls.from_files(
+                    filenames=raw_fmf_environment_files,
+                    root=file_root,
+                    logger=logger,
+                ),
+                **cls.from_dict(
+                    raw_fmf_environment,
+                ),
+            }
+        )
+
+    @classmethod
+    def from_dict(cls, data: Optional[Mapping[str, Any]] = None) -> 'Environment':
         """
         Create environment variables from a dictionary
         """
