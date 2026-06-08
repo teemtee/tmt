@@ -411,10 +411,10 @@ class DataContainer:
             if key != field.name:
                 continue
 
-            if not isinstance(field.default_factory, dataclasses._MISSING_TYPE):
+            if field.default_factory is not dataclasses.MISSING:
                 return field.default_factory()
 
-            if not isinstance(field.default, dataclasses._MISSING_TYPE):
+            if field.default is not dataclasses.MISSING:
                 return field.default
 
         else:
@@ -432,11 +432,11 @@ class DataContainer:
         for field in container_fields(self):
             value = getattr(self, field.name)
 
-            if not isinstance(field.default_factory, dataclasses._MISSING_TYPE):
+            if field.default_factory is not dataclasses.MISSING:
                 if value != field.default_factory():
                     return False
 
-            elif not isinstance(field.default, dataclasses._MISSING_TYPE):
+            elif field.default is not dataclasses.MISSING:
                 if value != field.default:
                     return False
 
