@@ -447,6 +447,10 @@ class MockShell:
                 # guaranteed.
                 if len(events) == 1 and events[0][0] == returncode_fd:
                     content = os.read(returncode_fd, 16)
+                    if not content:
+                        # EPOLLHUP with no data: the writer (echo $?>) has not
+                        # yet opened the FIFO. Keep waiting until it does.
+                        continue
                     try:
                         returncode = int(content.decode('ascii').strip())
                     except ValueError:
