@@ -736,6 +736,20 @@ choosing the right level:
     full details: complete output of prepare commands and test
     execution
 
+When deciding where to place a new message, ask from the user's
+perspective:
+
+* Would a user running plain ``tmt run`` need this information to
+  understand what is happening? ... ``info()`` (level 0)
+* Is the message useful when the user wants details about
+  individual items such as tests, guests, packages and plugins?
+  ...  ``info(level=1)``
+* Does it help investigating results after the run, for example
+  log paths or guest facts?  ... ``info(level=2)``
+* Is it providing the full command or test output? ...
+  ``info(level=3)``
+* Would only a tmt developer care? ... ``debug()``
+
 
 Debug Levels
 ------------------------------------------------------------------
