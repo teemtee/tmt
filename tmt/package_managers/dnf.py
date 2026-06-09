@@ -59,6 +59,10 @@ class DnfEngine(PackageManagerEngine):
             else:
                 raise GeneralError(f"Unhandled package manager command '{command}'.")
 
+        if options.allow_erasing:
+            # Supported by DNF4 and DNF5; YumEngine raises PrepareError for this flag.
+            extra_options += Command('--allowerasing')
+
         return extra_options
 
     def _construct_presence_script(
@@ -370,6 +374,19 @@ class Dnf5Engine(DnfEngine):
     skip_missing_packages_option = '--skip-unavailable'
     skip_missing_debuginfo_option = skip_missing_packages_option
 
+    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
+        """
+        Collect additional options for ``dnf5`` based on given options.
+        """
+
+        extra_options = super()._extra_dnf_options(options, command)
+
+        if options.allow_downgrade:
+            # DNF4 allows transitive downgrades automatically; this flag is DNF5-specific.
+            extra_options += Command('--allow-downgrade')
+
+        return extra_options
+
 
 @provides_package_manager('dnf5')
 class Dnf5(Dnf):
@@ -386,6 +403,11 @@ class Dnf5(Dnf):
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+
+    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
+        if options.allow_erasing:
+            raise PrepareError("Package manager 'yum' does not support '--allowerasing'.")
+        return super()._extra_dnf_options(options, command)
 
     def _yum_config_manager_command(self) -> Command:
         command = Command('yum-config-manager')

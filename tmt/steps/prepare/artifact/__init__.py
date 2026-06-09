@@ -20,7 +20,10 @@ from tmt.steps.prepare.artifact.providers import (
 # ``@provides_method`` causes pyright to lose the class type, which is the
 # root cause of all ``pyright: ignore`` waivers referencing these two classes.
 # This will be fixed by https://github.com/teemtee/tmt/issues/4766.
-from tmt.steps.prepare.install import PrepareInstall  # pyright: ignore[reportUnknownVariableType]
+from tmt.steps.prepare.install import (
+    PrepareInstall,  # pyright: ignore[reportUnknownVariableType]
+    PrepareInstallData,  # pyright: ignore[reportUnknownVariableType]
+)
 from tmt.steps.prepare.verify_installation import (
     PrepareVerifyInstallation,  # pyright: ignore[reportUnknownVariableType]
     PrepareVerifyInstallationData,
@@ -201,6 +204,25 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
     ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
 
+    #: tmt-managed install phase names whose package lists may be rewritten with artifact NEVRAs.
+    _TMT_INSTALL_PHASE_NAMES: ClassVar[frozenset[str]] = frozenset(
+        {
+            'essential-requires',
+            'requires',
+            'recommends',
+            'requires (dist-git)',
+            'recommends (dist-git)',
+        }
+    )
+
+    #: Name of the auto-injected reinstall phase.
+    REINSTALL_PHASE_NAME: ClassVar[str] = 'fix-artifact-origins'
+
+    #: Summary of the auto-injected reinstall phase.
+    REINSTALL_PHASE_SUMMARY: ClassVar[str] = (
+        'Reinstall artifact packages by name to fix swdb origin for pre-installed packages'
+    )
+
     #: Name of the auto-injected verify-installation phase.
     VERIFY_PHASE_NAME: ClassVar[str] = 'verify-artifact-packages'
 
@@ -235,6 +257,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Initialize all providers and have them contribute to the shared repo
         providers: list[ArtifactProvider] = []
         seen_nvras: dict[str, str] = {}
+        seen_download_pkg_names: dict[str, tuple[str, str]] = {}
 
         # --- Pass 1: Initialize all providers and validate for duplicate NVRAs ---
         for raw_id in self.data.provide:
@@ -249,7 +272,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                     parent=self,
                 )
 
-                self._detect_duplicate_nvras(provider, seen_nvras)
+                self._detect_duplicate_nvras(provider, seen_nvras, seen_download_pkg_names)
 
                 providers.append(provider)
 
@@ -310,9 +333,22 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Persist artifact metadata to YAML
         self._save_artifacts_metadata(providers)
 
-        # Verify phase injection
+        # Verify phase injection — three steps in order:
+        #   1. Rewrite requires/recommends package specifiers to exact NEVRAs so the install
+        #      phases pull the artifact version from the artifact repo (not whatever the package
+        #      manager would pick by default).
+        #   2. Inject a reinstall phase (order 76) that runs after the install phases to fix swdb
+        #      origin for packages that were pre-installed at the correct NEVRA and therefore
+        #      skipped by step 1 (dnf install is a no-op when the version is already present).
+        #   3. Inject the verify phase (order 79) that confirms every package came from an
+        #      expected artifact repository.
         if self.data.verify:
-            self._inject_verify_phase(providers, guest)
+            pkgs_to_verify, specifier_to_nevra = self._compute_pkgs_to_verify(providers, guest)
+            if pkgs_to_verify:
+                if specifier_to_nevra:
+                    self._substitute_artifact_nevras(specifier_to_nevra, guest)
+                self._inject_reinstall_phase(pkgs_to_verify)
+            self._inject_verify_phase(pkgs_to_verify)
 
         # Report configuration summary
         logger.info(
@@ -322,39 +358,33 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         return outcome
 
-    def _inject_verify_phase(self, providers: list[ArtifactProvider], guest: Guest) -> None:
+    def _compute_pkgs_to_verify(
+        self,
+        providers: list[ArtifactProvider],
+        guest: Guest,
+    ) -> tuple[dict[str, set[str]], dict[str, str]]:
         """
-        Inject a verify-installation phase for packages from these providers.
+        Compute verification data for artifact packages found in tmt-managed install phases.
 
-        If a verify phase already exists for the same where= group, merge
-        the packages into it. Otherwise, create and add a new phase.
+        Returns ``(pkgs_to_verify, specifier_to_nevra)`` where:
+        - ``pkgs_to_verify``: pkg_name → acceptable repo_ids (empty when nothing to verify)
+        - ``specifier_to_nevra``: install-phase specifier → exact artifact NEVRA to substitute
         """
-        # Collect packages from the install phases injected by tmt on behalf of
-        # test/essential requirements. User-defined prepare/install phases are
-        # intentionally excluded.
-        #
-        # Phase name sources:
-        #   'essential-requires'    — Prepare._go() in tmt/steps/prepare/__init__.py
-        #   'requires'              — Prepare._go() in tmt/steps/prepare/__init__.py
-        #   'recommends'            — Prepare._go() in tmt/steps/prepare/__init__.py
-        #   'requires (dist-git)'   — tmt/steps/prepare/distgit.py
-        #   'recommends (dist-git)' — tmt/steps/prepare/distgit.py
-        _tmt_install_phase_names = {
-            'essential-requires',
-            'requires',
-            'recommends',
-            'requires (dist-git)',
-            'recommends (dist-git)',
-        }
         pkg_names: set[str] = set()
         _install_phases = self.step.phases(classes=PrepareInstall)  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
         for install_phase in _install_phases:  # pyright: ignore[reportUnknownVariableType]
-            if install_phase.data.name not in _tmt_install_phase_names:  # pyright: ignore[reportUnknownMemberType]
+            if install_phase.data.name not in self._TMT_INSTALL_PHASE_NAMES:  # pyright: ignore[reportUnknownMemberType]
                 continue
             if not install_phase.enabled_on_guest(guest):  # pyright: ignore[reportUnknownMemberType]
                 continue
             for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
+
+        if not pkg_names:
+            self.debug(
+                'No packages in tmt-managed install phases, skipping artifact verification.'
+            )
+            return {}, {}
 
         provider_repo_ids = {SHARED_REPO_NAME} | {
             repo_id
@@ -363,18 +393,11 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for repo_id in repo.repo_ids
         }
 
-        if not pkg_names:
-            self.debug(
-                'No packages in tmt-managed install phases, skipping artifact verification.'
-            )
-            return
-
         # Resolve all requirements to canonical package names via whatprovides so
         # they can be matched against artifact.version.name below.  This handles
-        # plain names, file paths, pkgconfig(...) and package-level provides
+        # plain names, file paths, pkgconfig(...) and package-level provides.
         # Artifact repos are already configured on the guest at this
         # point even though the packages themselves are not yet installed.
-
         resolved = guest.package_manager.resolve_provides(list(pkg_names), provider_repo_ids)
 
         resolved_names = {version.name for versions in resolved.values() for version in versions}
@@ -387,6 +410,92 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         if not pkgs_to_verify:
             self.verbose('No packages to be installed were found in the provided artifacts.')
+            return {}, {}
+
+        # Build canonical_name → NEVRA. Two passes: download providers (koji, copr.build, file)
+        # win unconditionally because they physically supply the RPM; repo-only providers
+        # (repository-file, copr.repository) fill in any gaps via setdefault.
+        pkg_to_nevra: dict[str, str] = {}
+        for provider in providers:
+            if not provider.get_repositories():  # download provider
+                for artifact in provider.artifacts:
+                    if artifact.version.name in pkgs_to_verify:
+                        pkg_to_nevra[artifact.version.name] = artifact.version.nvra
+        for provider in providers:
+            if provider.get_repositories():  # repo-only provider
+                for artifact in provider.artifacts:
+                    if artifact.version.name in pkgs_to_verify:
+                        pkg_to_nevra.setdefault(artifact.version.name, artifact.version.nvra)
+
+        # Map each install-phase specifier to the NEVRA it should be rewritten as.
+        # ``resolved`` maps original specifier (e.g. "pkgconfig(foo)") → list of Versions;
+        # we take the first canonical name that has a known artifact NEVRA.
+        # Specifiers that resolve to no artifact are left unchanged by _substitute_artifact_nevras.
+        specifier_to_nevra: dict[str, str] = {}
+        for specifier, versions in resolved.items():
+            for version in versions:
+                if version.name in pkg_to_nevra:
+                    specifier_to_nevra[specifier] = pkg_to_nevra[version.name]
+                    break  # one NEVRA per specifier is sufficient
+
+        return pkgs_to_verify, specifier_to_nevra
+
+    def _substitute_artifact_nevras(
+        self,
+        specifier_to_nevra: dict[str, str],
+        guest: Guest,
+    ) -> None:
+        """
+        Replace artifact package specifiers in tmt-managed install phases with exact NEVRAs.
+
+        This ensures the install phase installs precisely the artifact version rather than
+        whatever the package manager would select from the available repositories.
+        """
+        _install_phases = self.step.phases(classes=PrepareInstall)  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
+        for install_phase in _install_phases:  # pyright: ignore[reportUnknownVariableType]
+            if install_phase.data.name not in self._TMT_INSTALL_PHASE_NAMES:  # pyright: ignore[reportUnknownMemberType]
+                continue
+            if not install_phase.enabled_on_guest(guest):  # pyright: ignore[reportUnknownMemberType]
+                continue
+            # Replace each specifier with its artifact NEVRA; fall back to the original
+            # string for packages that are not covered by any artifact provider.
+            install_phase.data.package = [  # pyright: ignore[reportUnknownMemberType]
+                tmt.base.core.DependencySimple(specifier_to_nevra.get(str(pkg), str(pkg)))  # pyright: ignore[reportUnknownArgumentType]
+                for pkg in install_phase.data.package  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+            ]
+
+    def _inject_reinstall_phase(self, pkgs_to_verify: dict[str, set[str]]) -> None:
+        """
+        Inject a reinstall phase to fix swdb origin for pre-installed packages.
+
+        Packages already at the correct NEVRA before the install phases run are
+        skipped by those phases (check_first=True), leaving their swdb origin as
+        ``<unknown>``. This phase reinstalls them by name so DNF re-records the
+        origin from the artifact repository.
+
+        Runs at order 76 — after requires/recommends (70/75), before verify (79).
+        """
+        reinstall_data = PrepareInstallData(  # pyright: ignore[reportUnknownVariableType]
+            name=self.REINSTALL_PHASE_NAME,
+            how='install',
+            summary=self.REINSTALL_PHASE_SUMMARY,
+            order=tmt.steps.PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS + 1,
+            where=list(self.data.where),
+            package=[tmt.base.core.DependencySimple(name) for name in pkgs_to_verify],
+            reinstall=True,
+            missing='skip',
+        )
+        reinstall_phase = PreparePlugin.delegate(self.step, data=reinstall_data)  # pyright: ignore[reportUnknownVariableType]
+        self.step.add_phase(reinstall_phase)  # pyright: ignore[reportUnknownArgumentType]
+
+    def _inject_verify_phase(self, pkgs_to_verify: dict[str, set[str]]) -> None:
+        """
+        Inject a verify-installation phase for packages from these providers.
+
+        If a verify phase already exists for the same where= group, merge
+        the packages into it. Otherwise, create and add a new phase.
+        """
+        if not pkgs_to_verify:
             return
 
         self.debug(f"Verifying {fmf.utils.listed(sorted(pkgs_to_verify), 'package')}.")
@@ -427,20 +536,44 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         ]
 
     def _detect_duplicate_nvras(
-        self, provider: ArtifactProvider, seen_nvras: dict[str, str]
+        self,
+        provider: ArtifactProvider,
+        seen_nvras: dict[str, str],
+        seen_download_pkg_names: dict[str, tuple[str, str]],
     ) -> None:
         """
-        Check for duplicate NVRAs across providers.
+        Check for duplicate NVRAs and conflicting package names across providers.
         """
         raw_id = provider.raw_id
+        # Download providers have their artifacts pre-populated (via @cached_property) before
+        # fetch_contents runs, so their package names are available at Pass 1 validation time.
+        # Repo-only providers populate _artifacts lazily via enumerate_artifacts() in Pass 2,
+        # so their artifacts list is empty here no name-conflict check needed for them.
+        is_download = not provider.get_repositories()
 
-        for artifact_info in provider.artifact_metadata:
-            if (nvra := artifact_info["nvra"]) in seen_nvras:
+        for artifact in provider.artifacts:
+            nvra = artifact.version.nvra
+            if nvra in seen_nvras:
                 raise tmt.utils.PrepareError(
                     f"Artifact '{nvra}' provided by both '{seen_nvras[nvra]}' and '{raw_id}'."
                 )
-
             seen_nvras[nvra] = raw_id
+
+            # For download providers, also detect the same package name at different NEVRAs
+            # _ensure_artifacts_installed can only install one NEVRA per name, so this would
+            # silently pick one and ignore the other.
+            if is_download:
+                pkg_name = artifact.version.name
+                if pkg_name in seen_download_pkg_names:
+                    prev_nvra, prev_id = seen_download_pkg_names[pkg_name]
+                    if prev_nvra != nvra:
+                        raise tmt.utils.PrepareError(
+                            f"Download providers '{prev_id}' and '{raw_id}' both declare "
+                            f"package '{pkg_name}' at different NEVRAs "
+                            f"('{prev_nvra}' vs '{nvra}'). This conflict cannot be resolved."
+                        )
+                else:
+                    seen_download_pkg_names[pkg_name] = (nvra, raw_id)
 
     def _save_artifacts_metadata(self, providers: list[ArtifactProvider]) -> None:
         """
