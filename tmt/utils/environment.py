@@ -50,6 +50,59 @@ class EnvVarValue(str):
         )
 
 
+@container
+class EnvVar:
+    """
+    An environment variable recognized by tmt.
+    """
+
+    class Scope:
+        """
+        Scopes of environment variables.
+        """
+
+        #: Environment variable is consumed by tmt process itself.
+        TMT = {'tmt'}
+
+        #: Environment variable is exposed to ``discover`` phases.
+        DISCOVER = {'discover'}
+
+        #: Environment variable is exposed to ``provision`` phases.
+        PROVISION = {'provision'}
+
+        #: Environment variable is exposed to ``prepare`` phases.
+        PREPARE = {'prepare'}
+
+        #: Environment variable is exposed to ``execute`` phases.
+        EXECUTE = {'execute'}
+
+        #: Environment variable is exposed to ``finish`` phases.
+        FINISH = {'finish'}
+
+        #: Environment variable is exposed to individual tests..
+        TEST = {'test'}
+
+    #: Name of the environment variable
+    name: EnvVarName
+
+    #: Scope of the environment variable.
+    scope: set[str] = simple_field(default_factory=set[str])
+
+    def __init__(
+        self,
+        *,
+        name: str,
+        scope: Optional[set[str]] = None,
+        doc: Optional[str] = None,
+    ) -> None:
+        self.name = name
+        self.scope = scope or set()
+
+        self.__doc__ = (
+            textwrap.dedent(doc).strip() if doc else 'This environment variable is undocumented.'
+        )
+
+
 class HasEnvironment(abc.ABC):
     """
     A class that provides :py:attr:`environment` attribute.
@@ -74,8 +127,19 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
 
-    def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
-        super().__init__(data or {})
+    def __init__(self, data: Optional[dict[Union[EnvVar, EnvVarName], EnvVarValue]] = None) -> None:
+        super().__init__(
+            {
+                (key.name if isinstance(key, EnvVar) else key): value
+                for key, value in (data or {}).items()
+            }
+        )
+
+    def __getitem__(self, key: Union[EnvVar, EnvVarName]) -> EnvVarValue:
+        return super().__getitem__(key.name if isinstance(key, EnvVar) else key)
+
+    def __setitem__(self, key: Union[EnvVar, EnvVarName], value: EnvVarValue) -> None:
+        super().__setitem__((key.name if isinstance(key, EnvVar) else key), value)
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':
