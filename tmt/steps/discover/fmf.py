@@ -573,6 +573,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     # Options which require .git to be present for their functionality
     _REQUIRES_GIT = {
         "ref",
+        "dist_git_source",
         "modified_url",
         "modified_only",
         "fmf_id",
@@ -604,29 +605,20 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Path for distgit sources cannot be checked until
         # they are extracted
-        if path and not path.is_dir() and not self.data.dist_git_source:
+        if path and not path.is_dir():
             raise tmt.utils.DiscoverError(f"Provided path '{path}' is not a directory.")
-        if self.data.dist_git_source:
-            # Ensure we're in a git repo when extracting dist-git sources
-            if self.step.plan.fmf_root is None:
-                raise tmt.utils.DiscoverError("No git repository found for DistGit.")
-            git_root = tmt.utils.git.git_root(
-                fmf_root=self.step.plan.fmf_root, logger=self._logger
-            )
-            if not git_root:
-                raise tmt.utils.DiscoverError(f"{self.step.plan.fmf_root} is not a git repo")
-        else:
-            if fmf_root is None:
-                raise tmt.utils.DiscoverError("No metadata found in the current directory.")
-            # Check git repository root (use fmf root if not found)
-            git_root = tmt.utils.git.git_root(fmf_root=fmf_root, logger=self._logger)
-            if not git_root:
-                self.debug(f"Git root not found, using '{fmf_root}.'")
-                git_root = fmf_root
-            # Set path to relative path from the git root to fmf root
-            path = fmf_root.resolve().relative_to(
-                git_root.resolve() if requires_git else fmf_root.resolve()
-            )
+
+        if fmf_root is None:
+            raise tmt.utils.DiscoverError("No metadata found in the current directory.")
+        # Check git repository root (use fmf root if not found)
+        git_root = tmt.utils.git.git_root(fmf_root=fmf_root, logger=self._logger)
+        if not git_root:
+            self.debug(f"Git root not found, using '{fmf_root}.'")
+            git_root = fmf_root
+        # Set path to relative path from the git root to fmf root
+        path = fmf_root.resolve().relative_to(
+            git_root.resolve() if requires_git else fmf_root.resolve()
+        )
 
         # Copy the git/fmf root directory to test_dir
         # (for dist-git case only when merge explicitly requested)
@@ -636,10 +628,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             assert fmf_root is not None  # narrow type
             directory = fmf_root
         self.info('directory', directory, 'green')
-        if not self.data.dist_git_source or self.data.dist_git_merge:
-            self.debug(f"Copy '{directory}' to '{self.test_dir}'.")
-            if not self.is_dry_run:
-                tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
+        self.debug(f"Copy '{directory}' to '{self.test_dir}'.")
+        if not self.is_dry_run:
+            tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
         return path
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
