@@ -659,17 +659,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Dist-git source processing during discover step
         if dist_git_source:
             try:
-                if self.data.url:
-                    fmf_root = self.test_dir
-                elif self.step.plan.fmf_root:
-                    fmf_root = self.step.plan.fmf_root
-                else:
-                    raise tmt.utils.DiscoverError("No git repository found.")
-
-                git_root = tmt.utils.git.git_root(fmf_root=fmf_root, logger=self._logger)
+                git_root = tmt.utils.git.git_root(fmf_root=self.test_dir, logger=self._logger)
                 if not git_root:
                     raise tmt.utils.DiscoverError(
-                        f"Directory '{fmf_root}' is not a git repository."
+                        f"Directory '{self.test_dir}' is not a git repository."
                     )
                 self.process_distgit_source(git_root)
                 return
