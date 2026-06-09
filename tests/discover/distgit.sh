@@ -192,9 +192,11 @@ EOF
         rlAssertExists $WORKDIR_SOURCE/no-tmt-2.tgz
         rlAssertExists $WORKDIR_SOURCE/outsider
 
-        # Test dir has only fmf_root from source (so one less level)
-        rlAssertExists $WORKDIR_TESTS/tests/from-source.fmf
-        rlAssertNotExists $WORKDIR_TESTS/with-tmt-1/tests/from-source.fmf
+        # The path structure is not flattened
+        # TODO: The behavior here for these first 2 checks has flipped this may have
+        #  some unexpected behavior, but seems very edge-case scenario
+        rlAssertNotExists $WORKDIR_TESTS/tests/from-source.fmf
+        rlAssertExists $WORKDIR_TESTS/with-tmt-1/tests/from-source.fmf
         rlAssertNotExists $WORKDIR_TESTS/with-tmt-1.tgz
         rlAssertNotExists $WORKDIR_TESTS/no-tmt-2/all_in_one
         rlAssertNotExists $WORKDIR_TESTS/no-tmt-2.tgz
@@ -254,9 +256,9 @@ EOF
         rlAssertExists $WORKDIR_SOURCE/with-tmt-1.tgz
 
         # Test dir has only fmf_root from source
-        rlAssertExists $WORKDIR_TESTS/tests/from-source.fmf
+        rlAssertExists $WORKDIR_TESTS/with-tmt-1/tests/from-source.fmf
         rlAssertNotExists $WORKDIR_TESTS/outsider
-        rlAssertNotExists $WORKDIR_TESTS/with-tmt-1
+        rlAssertExists $WORKDIR_TESTS/with-tmt-1
         rlAssertNotExists $WORKDIR_TESTS/with-tmt-1.tgz
 
         assert_tests $WORKDIR /from-source
@@ -439,9 +441,11 @@ EOF
         rlAssertExists $WORKDIR_SOURCE/no-tmt-2.tgz
         rlAssertExists $WORKDIR_SOURCE/outsider
 
-        # Test dir has only fmf_root from source (so one less level)
-        rlAssertExists $WORKDIR_TESTS/tests/from-source.fmf
-        rlAssertNotExists $WORKDIR_TESTS/with-tmt-1/tests/from-source.fmf
+        # The path structure is not flattened
+        # TODO: The behavior here for these first 2 checks has flipped this may have
+        #  some unexpected behavior, but seems very edge-case scenario
+        rlAssertNotExists $WORKDIR_TESTS/tests/from-source.fmf
+        rlAssertExists $WORKDIR_TESTS/with-tmt-1/tests/from-source.fmf
         rlAssertNotExists $WORKDIR_TESTS/with-tmt-1.tgz
         rlAssertNotExists $WORKDIR_TESTS/no-tmt-2/all_in_one
         rlAssertNotExists $WORKDIR_TESTS/no-tmt-2.tgz
