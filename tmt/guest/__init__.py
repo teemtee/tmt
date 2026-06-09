@@ -2238,7 +2238,11 @@ class Guest(
             # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
             # more.
             if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+                from tmt.steps.execute import ENV_TMT_PLAN_ENVIRONMENT_FILE
+
+                environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(
+                    self.plan_environment_path
+                )
 
         else:
             # Create a copy of given environment - this prevents any

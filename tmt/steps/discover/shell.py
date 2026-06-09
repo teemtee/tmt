@@ -434,7 +434,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                     target_dir=self.source_dir,
                     handler_name=self.data.dist_git_type,
                 )
-                # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
+                # Copy rest of files so the source directory has patches, sources and spec file
                 # FIXME 'worktree' could be used as source_dir when 'url' is not set
                 shutil.copytree(git_root, self.source_dir, symlinks=True, dirs_exist_ok=True)
 

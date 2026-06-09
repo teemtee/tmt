@@ -671,7 +671,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             handler_name=self.get('dist-git-type'),
         )
 
-        # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
+        # Copy rest of files so the source directory has patches, sources and spec file
         tmt.utils.filesystem.copy_tree(
             distgit_dir,
             self.source_dir,

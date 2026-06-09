@@ -42,6 +42,7 @@ from tmt.utils import (
     Command,
     CommandOutput,
     Environment,
+    EnvVar,
     EnvVarValue,
     HasEnvironment,
     HasStepWorkdir,
@@ -76,6 +77,111 @@ TEST_FAILURES_FILENAME = 'failures.yaml'
 
 # File containing paths of submitted files
 SUBMITTED_FILES_FILENAME = "submitted-files.log"
+
+
+#
+# Environment variables
+#
+
+ENV_TMT_TEST_NAME = EnvVar(
+    name='TMT_TEST_NAME',
+    scope=EnvVar.Scope.TEST,
+    doc="""
+         The test name, as a resolved FMF object name starting with
+         ``/`` from the root of the hierarchy.
+         """,
+)
+
+ENV_TMT_TEST_INVOCATION_PATH = EnvVar(
+    name='TMT_TEST_INVOCATION_PATH',
+    scope=EnvVar.Scope.TEST,
+    doc="""
+         Path to the directory where tmt stores information about the
+         current test invocation.
+         """,
+)
+
+ENV_TMT_TEST_DATA = EnvVar(
+    name='TMT_TEST_DATA',
+    scope=EnvVar.Scope.TEST,
+    doc="""
+         Path to the directory where test can store logs and other
+         artifacts generated during its execution. These will be pulled
+         back from the guest and available for inspection after the
+         test execution is finished.
+         """,
+)
+
+ENV_TMT_TEST_SUBMITTED_FILES = EnvVar(
+    name='TMT_TEST_SUBMITTED_FILES',
+    scope=EnvVar.Scope.TEST,
+)
+
+ENV_TMT_TEST_SERIAL_NUMBER = EnvVar(
+    name='TMT_TEST_SERIAL_NUMBER',
+    scope=EnvVar.Scope.TEST,
+    doc="""
+         The serial number of running test in the whole plan. Each test
+         is assigned its own serial number.
+         """,
+)
+
+ENV_TMT_TEST_METADATA = EnvVar(
+    name='TMT_TEST_METADATA',
+    scope=EnvVar.Scope.TEST,
+    doc="""
+         Path to a YAML-formatted file with test metadata collected
+         during the ``discover`` step.
+         """,
+)
+
+ENV_TMT_TEST_ITERATION_ID = EnvVar(
+    name='TMT_TEST_ITERATION_ID',
+    scope=EnvVar.Scope.TEST,
+    doc="""
+         The iteration ID is a combination of a unique run ID and the
+         test serial number. The value is different for each new test
+         execution.
+
+         .. versionadded:: 1.32
+         """,
+)
+
+ENV_TMT_SOURCE_DIR = EnvVar(
+    name='TMT_SOURCE_DIR',
+    scope=EnvVar.Scope.TEST,
+    doc="""
+         Path to directory with downloaded and extracted sources if the
+         ``dist-git-source`` option was used in the ``discover`` step.
+         """,
+)
+
+ENV_TMT_PLAN_ENVIRONMENT_FILE = EnvVar(
+    name='TMT_PLAN_ENVIRONMENT_FILE',
+    scope=EnvVar.Scope.PREPARE | EnvVar.Scope.EXECUTE | EnvVar.Scope.FINISH | EnvVar.Scope.TEST,
+    doc="""
+         Path to the file containing environment variables that should
+         be sourced after prepare and execute steps. These variables
+         will be accessible for all subsequent steps and have lower
+         priority than variables specified by the ``environment`` key,
+         ``environment-file`` key, or the command line. Variables inside
+         the file **have to be** in the format of ``NAME=VALUE`` and
+         each variable should be on a separate line. Other content form
+         is **not** allowed, use ``TMT_PLAN_SOURCE_SCRIPT`` instead to
+         include other bash commands.
+
+         Note that this is not shared between guests of the given plan,
+         each guest has its own dedicated file.
+
+         Example of the file content::
+
+             COUNT=1
+             VARIABLE=VALUE
+             ANOTHER_VARIABLE=ANOTHER_VALUE
+
+         .. versionadded:: 1.29
+         """,
+)
 
 
 @container
@@ -372,18 +478,18 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 self.phase.parent.plan.environment,
             )
 
-            environment["TMT_TEST_NAME"] = EnvVarValue(self.test.name)
-            environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(self.path)
-            environment["TMT_TEST_DATA"] = EnvVarValue(self.test_data_path)
-            environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(self.submission_log_path)
-            environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(self.test.serial_number))
-            environment["TMT_TEST_METADATA"] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
+            environment[ENV_TMT_TEST_NAME] = EnvVarValue(self.test.name)
+            environment[ENV_TMT_TEST_INVOCATION_PATH] = EnvVarValue(self.path)
+            environment[ENV_TMT_TEST_DATA] = EnvVarValue(self.test_data_path)
+            environment[ENV_TMT_TEST_SUBMITTED_FILES] = EnvVarValue(self.submission_log_path)
+            environment[ENV_TMT_TEST_SERIAL_NUMBER] = EnvVarValue(str(self.test.serial_number))
+            environment[ENV_TMT_TEST_METADATA] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
 
-            environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
+            environment[ENV_TMT_TEST_ITERATION_ID] = EnvVarValue(
                 f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
             )
 
-            environment['TMT_SOURCE_DIR'] = EnvVarValue(self.discover_phase.source_dir)
+            environment[ENV_TMT_SOURCE_DIR] = EnvVarValue(self.discover_phase.source_dir)
 
         else:
             environment = self._environment
@@ -392,7 +498,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         # be owned by plan again once the dust of environment untangling
         # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
         # more.
-        environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.guest.plan_environment_path)
+        environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(self.guest.plan_environment_path)
 
         environment.update(
             # Add variables from invocation contexts
@@ -859,7 +965,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                     partial_result.name = '/' + partial_result.name
                 partial_result.name = test.name + partial_result.name
 
-            # Fix log paths as user provides relative path to `TMT_TEST_DATA`, but Result has to
+            # Fix log paths as user provides relative path to test data path, but Result has to
             # point relative to the execute workdir
             partial_result.log = [
                 invocation.relative_test_data_path / log for log in partial_result.log
@@ -954,7 +1060,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         collection.validate()
 
         # Fix log paths created by `tmt-report-result` on the guest, which are by default relative
-        # to the `TMT_TEST_DATA`, to be relative to the `execute` directory.
+        # to the test data path, to be relative to the `execute` directory.
         for result in collection.results:
             result["log"] = [
                 str(invocation.relative_test_data_path / log) for log in result.get("log", [])
