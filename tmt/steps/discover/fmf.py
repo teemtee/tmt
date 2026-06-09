@@ -843,6 +843,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         dist_git_merge = self.get('dist-git-merge', False)
         dist_git_remove_fmf_root = self.get('dist-git-remove-fmf-root', False)
 
+        fmf_root = Path(self.data.path) if self.data.path else None
+
         # '/' means everything which was extracted from the srpm and do not flatten
         # glob otherwise
         if dist_git_extract and dist_git_extract != '/':
@@ -854,6 +856,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 raise tmt.utils.DiscoverError(
                     f"Couldn't glob '{dist_git_extract}' within extracted sources."
                 ) from error
+            if not dist_git_merge:
+                if self.data.path:
+                    self._logger.warning(
+                        "Automatic fmf root detection combined with 'path' key is ill defined"
+                    )
+                fmf_root = dist_git_extract.relative_to(self.source_dir) / (fmf_root or "")
         if dist_git_init:
             if dist_git_extract == '/' or not dist_git_extract:
                 dist_git_extract = '/'
@@ -875,6 +883,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 shutil.rmtree((dist_git_extract or extracted_fmf_root) / '.fmf')
         if not dist_git_extract:
             try:
+                # TODO: This is ill-defined in combination with path, maybe this should go away
                 top_fmf_root = tmt.utils.find_fmf_root(
                     self.source_dir, ignore_paths=[self.source_dir]
                 )[0]
@@ -897,10 +906,17 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     self.debug(f"Copy '{git_root}' to '{self.test_dir}'.")
                     if not self.is_dry_run:
                         tmt.utils.filesystem.copy_tree(git_root, self.test_dir, self._logger)
+            else:
+                if not dist_git_merge:
+                    if self.data.path:
+                        self._logger.warning(
+                            "Automatic fmf root detection combined with 'path' key is ill defined"
+                        )
+                    fmf_root = top_fmf_root.relative_to(self.source_dir)
 
         # Copy extracted sources into test_dir
         if not self.is_dry_run:
-            flatten = True
+            flatten = dist_git_merge
             if dist_git_extract == '/':
                 flatten = False
                 copy_these = created_content
@@ -919,24 +935,23 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 else:
                     shutil.copyfile(src, self.test_dir / to_copy)
 
-        path = Path(cast(str, self.get('path'))) if self.get('path') else None
         # Adjust path and optionally show
-        if path is None or path.resolve() == Path.cwd().resolve():
-            path = Path('')
+        if fmf_root is None or fmf_root.resolve() == Path.cwd().resolve():
+            fmf_root = Path('')
         else:
-            self.info('path', path, 'green')
+            self.info('path', fmf_root, 'green')
 
         # Discover tests
-        self._tests = self.do_the_discovery(path)
+        self._tests = self.do_the_discovery(fmf_root)
 
         if self.get('prune', False):
             clone_dir = self.clone_dirpath / 'tests'
             self.install_libraries(self.test_dir, clone_dir)
-            self.prune_tree(clone_dir, path)
+            self.prune_tree(clone_dir, fmf_root)
         else:
             self.install_libraries(self.test_dir, self.test_dir)
 
-        self.adjust_test_attributes(path)
+        self.adjust_test_attributes(fmf_root)
         self.apply_policies()
 
         # Inject newly found tests into parent discover at the right position
