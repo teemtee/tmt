@@ -655,18 +655,13 @@ commands it is also stored in the ``log.txt`` file under the
 :term:`run workdir`. It is handled by methods such as ``info()``,
 ``debug()``, ``warning()`` and ``fail()``. Logging communicates
 progress, diagnostics and status information during command
-execution. It is the primary form of communication for commands
-that do not produce structured data, such as:
-
-* ``tmt run``
-* ``tmt try``
-* ``tmt lint``
-* ``tmt clean``
+execution. This is the main mode of communication you should use
+throughout the code.
 
 **Output** goes to ``stdout`` and is produced by the ``print()``
-method. Output represents the actual data result of a command —
-a list of names, exported metadata, or formatted details meant
-for further processing or inspection:
+method. Output represents the actual data result of a command,
+such as a list of names, exported metadata, or formatted details
+meant for further processing or inspection:
 
 * ``tmt test ls``
 * ``tmt story export``
@@ -761,7 +756,7 @@ internals* when choosing the right level:
     normalization
 
 
-Debug Topics
+Log Topics
 ------------------------------------------------------------------
 
 In addition to levels, debug messages can be tagged with a
@@ -775,33 +770,16 @@ without raising the overall debug level:
     tmt run --log-topic=adjust-decisions --log-topic=command-events
 
 Messages tagged with a topic are hidden by default and only shown
-when the topic is explicitly enabled. The following topics are
-available:
-
-``key-normalization``
-    Metadata key normalization.
-
-``cli-invocations``
-    CLI command invocations and option processing.
-
-``command-events``
-    Command execution events (start, finish, errors).
-
-``adjust-decisions``
-    Decisions made during the context ``adjust`` rule evaluation.
-
-``help-rendering``
-    reStructuredText parsing and rendering for help output.
-
-``policy``
-    Policy rule evaluation and application.
-
-When adding new debug messages that belong to a specific
-subsystem, use the ``topic`` parameter:
+when the topic is explicitly enabled. When adding new debug
+messages that belong to a specific subsystem, use the ``topic``
+parameter:
 
 .. code-block:: python
 
     self.debug('key', value, level=3, topic=tmt.log.Topic.KEY_NORMALIZATION)
+
+See the :py:class:`tmt.log.Topic` class for the list of available
+topics.
 
 
 .. _issues:

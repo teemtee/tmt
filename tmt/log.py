@@ -65,11 +65,22 @@ DEFAULT_DEBUG_LEVEL = 0
 
 
 class Topic(enum.Enum):
+    #: Metadata key normalization.
     KEY_NORMALIZATION = 'key-normalization'
+
+    #: CLI command invocations and option processing.
     CLI_INVOCATIONS = 'cli-invocations'
+
+    #: Command execution events (start, finish, errors).
     COMMAND_EVENTS = 'command-events'
+
+    #: Decisions made during the context ``adjust`` rule evaluation.
     ADJUST_DECISIONS = 'adjust-decisions'
+
+    #: reStructuredText parsing and rendering for help output.
     HELP_RENDERING = 'help-rendering'
+
+    #: Policy rule evaluation and application.
     POLICY = 'policy'
 
 
