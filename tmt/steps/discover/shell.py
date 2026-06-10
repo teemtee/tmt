@@ -417,7 +417,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             }
             tests.child(data.name, test_fmf_keys)
 
-        if self.data.dist_git_source:
+        if self.data.dist_git_source and not self.is_dry_run:
             assert self.step.plan.my_run is not None  # narrow type
             assert self.step.plan.my_run.tree is not None  # narrow type
             assert self.step.plan.my_run.tree.root is not None  # narrow type

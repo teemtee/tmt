@@ -148,13 +148,13 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         except Exception as error:
             raise tmt.utils.ReportError(f"Failed to write the output '{filepath}'.") from error
 
-        # Nothing more to do in dry mode
-        if self.is_dry_run:
-            return
-
         # Show output file path
         self.info("output", filepath, color='yellow')
         if not self.data.open:
+            return
+
+        # Nothing more to do in dry mode
+        if self.is_dry_run:
             return
 
         # Open target in webbrowser

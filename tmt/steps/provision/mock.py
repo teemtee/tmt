@@ -565,6 +565,9 @@ class GuestMock(tmt.Guest):
         Execute the command in a running mock shell for increased speed.
         """
 
+        if self.is_dry_run:
+            return tmt.utils.CommandOutput(stdout=None, stderr=None)
+
         sourced_files = sourced_files or []
 
         if self.mock_shell.mock_shell is None:
@@ -647,6 +650,9 @@ class GuestMock(tmt.Guest):
         self.stop()
 
     def start(self) -> None:
+        if self.is_dry_run:
+            return
+
         self.mock_shell.enter_shell()
 
     def stop(self) -> None:
@@ -667,6 +673,9 @@ class GuestMock(tmt.Guest):
         Compress option is ignored, it only slows down the execution.
         Create destination option is ignored, there were problems with workdir.
         """
+        if self.is_dry_run:
+            return
+
         # TODO chmod permissions for tar
         options = options or tmt.guest.DEFAULT_PUSH_OPTIONS
         excludes = Command()
@@ -722,6 +731,9 @@ class GuestMock(tmt.Guest):
         For files we use `cp` or `install`.
         Compress option is ignored, it only slows down the execution.
         """
+        if self.is_dry_run:
+            return
+
         # TODO chmod permissions for tar
         options = options or tmt.guest.DEFAULT_PULL_OPTIONS
         excludes = Command()
