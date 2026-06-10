@@ -40,6 +40,14 @@ rlJournalStart
                 continue
             fi
 
+            if is_fedora_rawhide "$image"; then
+                    # https://github.com/ansible/ansible/issues/87081
+                    rlLogInfo "Ansible on rawhide/python3.15 is broken right now"
+                rlPhaseEnd
+
+                continue
+            fi
+
             [ "$PROVISION_HOW" = "container" ] && rlRun "podman images $image"
 
             # Run given method
