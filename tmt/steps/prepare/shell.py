@@ -129,6 +129,9 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
+        if self.is_dry_run:
+            return outcome
+
         reboot_context = tmt.steps.context.reboot.RebootContext(
             owner_label=f'{self.step.name} / {self.name}',
             guest=guest,
@@ -169,9 +172,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
             environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
 
-            if self.is_dry_run:
-                return
-
             with self._url_clone_lock:
                 if not repo_path.exists():
                     repo_path.parent.mkdir(parents=True, exist_ok=True)
@@ -211,9 +211,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             )
 
         def _prepare_topology() -> None:
-            if self.is_dry_run:
-                return
-
             topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
             topology.guest = tmt.steps.GuestTopology(guest)
 

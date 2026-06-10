@@ -654,6 +654,9 @@ class GuestArtemis(tmt.GuestSsh):
         load() is completed so all guest data should be available.
         """
 
+        if self.is_dry_run:
+            return
+
         if self.guestname is None or self.primary_address is None:
             self._create()
 

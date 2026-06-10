@@ -186,6 +186,9 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
+        if self.is_dry_run:
+            return outcome
+
         # Apply each playbook on the guest
         for playbook_index, _playbook in enumerate(self.data.playbook):
             logger.info('playbook', _playbook, 'green')

@@ -1166,6 +1166,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 f"instance ({self.data.url})."
             )
 
+        if self.is_dry_run:
+            return
+
         with catch_warnings_safe(
             action=warning_filter_action, category=urllib3.exceptions.InsecureRequestWarning
         ):

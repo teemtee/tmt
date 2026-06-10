@@ -523,9 +523,12 @@ class GuestContainer(tmt.Guest):
         Execute given commands in podman via shell
         """
 
+        if self.is_dry_run:
+            return tmt.utils.CommandOutput(stdout=None, stderr=None)
+
         sourced_files = sourced_files or []
 
-        if not self.container and not self.is_dry_run:
+        if not self.container:
             raise tmt.utils.ProvisionError('Could not execute without provisioned container.')
 
         podman_command = Command('exec')

@@ -638,8 +638,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.info('directory', directory, 'green')
         if not self.data.dist_git_source or self.data.dist_git_merge:
             self.debug(f"Copy '{directory}' to '{self.test_dir}'.")
-            if not self.is_dry_run:
-                tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
+            tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
         return path
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
@@ -658,6 +657,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Dist-git source processing during discover step
         if dist_git_source:
+            if self.is_dry_run:
+                return
             try:
                 if self.data.url:
                     fmf_root = self.test_dir
@@ -719,7 +720,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Prepare the whole tree path
         path = path or Path('')
         tree_path = self.test_dir / path.unrooted()
-        if not tree_path.is_dir() and not self.is_dry_run:
+        if not tree_path.is_dir():
+            if self.is_dry_run:
+                return []
             raise tmt.utils.DiscoverError(f"Metadata tree path '{path}' not found.")
 
         # Show filters and test names if provided
@@ -753,55 +756,59 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             self.info('modified-url', modified_url, 'green')
             if previous != modified_url:
                 self.debug(f"Original url was '{previous}'.")
-            self.debug(f"Fetch also '{modified_url}' as 'reference'.")
-            self.run(
-                Command('git', 'remote', 'add', 'reference', modified_url),
-                cwd=self.test_dir,
-            )
-            self.run(
-                Command('git', 'fetch', 'reference'),
-                cwd=self.test_dir,
-            )
+            if self.is_dry_run:
+                self.debug("Skipping 'modified-url' fetch in dry run.")
+            else:
+                self.debug(f"Fetch also '{modified_url}' as 'reference'.")
+                self.run(
+                    Command('git', 'remote', 'add', 'reference', modified_url),
+                    cwd=self.test_dir,
+                )
+                self.run(
+                    Command('git', 'fetch', 'reference'),
+                    cwd=self.test_dir,
+                )
         if modified_only:
-            modified_ref = self.get(
-                'modified-ref',
-                tmt.utils.git.default_branch(repository=self.test_dir, logger=self._logger),
-            )
-            self.info('modified-ref', modified_ref, 'green')
-            ref_commit = self.run(
-                Command('git', 'rev-parse', '--short', str(modified_ref)),
-                cwd=self.test_dir,
-            )
-            assert ref_commit.stdout is not None
-            self.verbose('modified-ref hash', ref_commit.stdout.strip(), 'green')
-            output = self.run(
-                Command(
-                    'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
-                ),
-                cwd=self.test_dir,
-            )
-            if output.stdout:
-                directories = [Path(name).parent for name in output.stdout.split('\n')]
-                modified = {
-                    # ($|/): match end of test name or `/` which would be any sub-test
-                    f"^/{re.escape(str(directory))}($|/)"
-                    for directory in directories
-                    if directory
-                }
-                if not modified:
+            if self.is_dry_run and self.get('modified-url'):
+                self.debug("Skipping 'modified-only' filter in dry run.")
+            else:
+                modified_ref = self.get(
+                    'modified-ref',
+                    tmt.utils.git.default_branch(repository=self.test_dir, logger=self._logger),
+                )
+                self.info('modified-ref', modified_ref, 'green')
+                ref_commit = self.run(
+                    Command('git', 'rev-parse', '--short', str(modified_ref)),
+                    cwd=self.test_dir,
+                )
+                assert ref_commit.stdout is not None
+                self.verbose('modified-ref hash', ref_commit.stdout.strip(), 'green')
+                output = self.run(
+                    Command(
+                        'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
+                    ),
+                    cwd=self.test_dir,
+                )
+                if output.stdout:
+                    directories = [Path(name).parent for name in output.stdout.split('\n')]
+                    modified = {
+                        # ($|/): match end of test name or `/` which would be any sub-test
+                        f"^/{re.escape(str(directory))}($|/)"
+                        for directory in directories
+                        if directory
+                    }
+                    if not modified:
+                        # Nothing was modified, do not select anything
+                        return []
+                    self.debug(f"Limit to modified test dirs: {modified}", level=3)
+                    self.data.test.extend(TestsWithAdjusts(name=name) for name in modified)
+                else:
+                    self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
                     # Nothing was modified, do not select anything
                     return []
-                self.debug(f"Limit to modified test dirs: {modified}", level=3)
-                self.data.test.extend(TestsWithAdjusts(name=name) for name in modified)
-            else:
-                self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
-                # Nothing was modified, do not select anything
-                return []
 
         # Initialize the metadata tree, search for available tests
         self.debug(f"Check metadata tree in '{tree_path}'.")
-        if self.is_dry_run:
-            return []
         tests = []
         tree = tmt.Tree(
             logger=self._logger,
@@ -877,7 +884,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             else:
                 location = dist_git_extract
             # User specified location or 'root' of extracted sources
-            if not (Path(location) / '.fmf').is_dir() and not self.is_dry_run:
+            if not (Path(location) / '.fmf').is_dir():
                 fmf.Tree.init(location)
         elif dist_git_remove_fmf_root:
             try:
@@ -887,8 +894,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )[0]
             except tmt.utils.MetadataError:
                 self.warn("No fmf root to remove, there isn't one already.")
-            if not self.is_dry_run:
-                shutil.rmtree((dist_git_extract or extracted_fmf_root) / '.fmf')
+            shutil.rmtree((dist_git_extract or extracted_fmf_root) / '.fmf')
         if not dist_git_extract:
             try:
                 top_fmf_root = tmt.utils.find_fmf_root(
@@ -911,29 +917,27 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                             f"Directory '{self.step.plan.node.root}' is not in a git repository."
                         ) from error
                     self.debug(f"Copy '{git_root}' to '{self.test_dir}'.")
-                    if not self.is_dry_run:
-                        tmt.utils.filesystem.copy_tree(git_root, self.test_dir, self._logger)
+                    tmt.utils.filesystem.copy_tree(git_root, self.test_dir, self._logger)
 
         # Copy extracted sources into test_dir
-        if not self.is_dry_run:
-            flatten = True
-            if dist_git_extract == '/':
-                flatten = False
-                copy_these = created_content
-            elif dist_git_extract:
-                copy_these = [dist_git_extract.relative_to(self.source_dir)]
+        flatten = True
+        if dist_git_extract == '/':
+            flatten = False
+            copy_these = created_content
+        elif dist_git_extract:
+            copy_these = [dist_git_extract.relative_to(self.source_dir)]
+        else:
+            copy_these = [top_fmf_root.relative_to(self.source_dir)]
+        for to_copy in copy_these:
+            src = self.source_dir / to_copy
+            if src.is_dir():
+                tmt.utils.filesystem.copy_tree(
+                    self.source_dir / to_copy,
+                    self.test_dir if flatten else self.test_dir / to_copy,
+                    self._logger,
+                )
             else:
-                copy_these = [top_fmf_root.relative_to(self.source_dir)]
-            for to_copy in copy_these:
-                src = self.source_dir / to_copy
-                if src.is_dir():
-                    tmt.utils.filesystem.copy_tree(
-                        self.source_dir / to_copy,
-                        self.test_dir if flatten else self.test_dir / to_copy,
-                        self._logger,
-                    )
-                else:
-                    shutil.copyfile(src, self.test_dir / to_copy)
+                shutil.copyfile(src, self.test_dir / to_copy)
 
         path = Path(cast(str, self.get('path'))) if self.get('path') else None
         # Adjust path and optionally show
