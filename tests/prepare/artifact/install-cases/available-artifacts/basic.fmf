@@ -1,0 +1,23 @@
+summary: Basic case (non-verified)
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: None
+  Artifacts: foo-2.2 or foo-1.2
+
+  Normal installation case with an non-verified artifact available
+
+/upgrade:
+  summary: " (upgrading)"
+  context+:
+    available_artifact: foo-2.2
+  environment+:
+    EXPECTED_PACKAGE: foo-2.2
+
+/downgrade:
+  summary: " (downgrading)"
+  context+:
+    available_artifact: foo-1.2
+  environment+:
+    # TODO: This downgraded because of the forced artifact priority
+    #  change this when the repo priority is opt-in
+    EXPECTED_PACKAGE: foo-1.2
