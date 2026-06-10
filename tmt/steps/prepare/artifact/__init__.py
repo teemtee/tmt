@@ -220,6 +220,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
+        if self.is_dry_run:
+            return outcome
+
         # Prepare a shared directory on the guest for aggregating artifacts.
         shared_repo_dir: Path = self.plan_workdir / self.SHARED_REPO_DIR_NAME
 

@@ -358,7 +358,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
-        if self.opt('dry'):
+        if self.is_dry_run:
             return outcome
 
         for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():

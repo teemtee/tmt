@@ -193,6 +193,9 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
+        if self.is_dry_run:
+            return outcome
+
         environment = environment or tmt.utils.Environment()
 
         # Packages required for this plugin to work and additional required packages

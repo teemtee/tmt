@@ -2033,6 +2033,9 @@ class Guest(
         Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
         """
 
+        if self.is_dry_run:
+            return
+
         self.install_scripts(tmt.steps.scripts.SCRIPTS)
 
     # A couple of requiremens for this field:
@@ -3503,6 +3506,9 @@ class GuestSsh(Guest, CommandCollector):
             for batch execution (when ``immediately=False`` on supported guests).
         """
 
+        if self.is_dry_run:
+            return tmt.utils.CommandOutput(stdout=None, stderr=None)
+
         sourced_files = sourced_files or []
 
         # For guests in image mode collect non testing commands with
@@ -3514,7 +3520,7 @@ class GuestSsh(Guest, CommandCollector):
             return None
 
         # Abort if guest is unavailable
-        if self.primary_address is None and not self.is_dry_run:
+        if self.primary_address is None:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         ssh_command: tmt.utils.Command = self._ssh_command
@@ -3643,8 +3649,11 @@ class GuestSsh(Guest, CommandCollector):
             only privileged users are allowed to modify.
         """
 
+        if self.is_dry_run:
+            return
+
         # Abort if guest is unavailable
-        if self.primary_address is None and not self.is_dry_run:
+        if self.primary_address is None:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         self._assert_rsync()
@@ -3709,8 +3718,11 @@ class GuestSsh(Guest, CommandCollector):
             :py:data:`DEFAULT_PULL_OPTIONS`.
         """
 
+        if self.is_dry_run:
+            return
+
         # Abort if guest is unavailable
-        if self.primary_address is None and not self.is_dry_run:
+        if self.primary_address is None:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         self._assert_rsync()
