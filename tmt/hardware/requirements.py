@@ -368,7 +368,7 @@ def _parse_requirements(spec: Spec) -> BaseConstraint:
     # * otherwise, a single-level requirement is expected, like ``memory``
     #   or ``hostname``.
 
-    def _parse(requirement: str, spec: Spec, peer_index: Optional[int] = None) -> None:
+    def _parse_one(requirement: str, spec: Spec, peer_index: Optional[int] = None) -> None:
         for parser in _REQUIREMENT_PARSERS:
             if parser.requirement != requirement:
                 continue
@@ -377,7 +377,7 @@ def _parse_requirements(spec: Spec) -> BaseConstraint:
 
             return
 
-        raise Exception(f"Unhandled requirement '{requirement}'.")
+        raise Exception(f"Unhandled hardware requirement '{requirement}'.")
 
     for l1_name in sorted(spec.keys()):
         l1_value = spec[l1_name]
@@ -386,17 +386,17 @@ def _parse_requirements(spec: Spec) -> BaseConstraint:
             l1_value = cast(dict[str, Any], l1_value)
 
             for l2_name in sorted(l1_value.keys()):
-                _parse(f'{l1_name}.{l2_name}', l1_value)
+                _parse_one(f'{l1_name}.{l2_name}', l1_value)
 
         elif isinstance(l1_value, list):
             l1_value = cast(list[dict[str, Any]], l1_value)
 
             for peer_index, l2_value in enumerate(l1_value):
                 for l2_name in sorted(l2_value.keys()):
-                    _parse(f'{l1_name}.{l2_name}', l2_value, peer_index=peer_index)
+                    _parse_one(f'{l1_name}.{l2_name}', l2_value, peer_index=peer_index)
 
         else:
-            _parse(l1_name, spec)
+            _parse_one(l1_name, spec)
 
     return group
 
