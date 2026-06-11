@@ -618,6 +618,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             git_root.resolve() if requires_git else fmf_root.resolve()
         )
 
+        # Copy the git/fmf root directory to test_dir
         if requires_git:
             directory: Path = git_root
         else:
