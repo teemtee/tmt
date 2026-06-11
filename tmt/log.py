@@ -1186,12 +1186,15 @@ class Loggable:
         """
         Hierarchy level
         """
-        parent = getattr(self, "parent", None)
+        from tmt.utils import HasParent
 
-        if parent is None or not isinstance(parent, Loggable):
+        if not isinstance(self, HasParent):
             return -1
-        assert isinstance(parent, Loggable)  # narrow type
-        return parent._level() + self._relative_indent
+
+        if not isinstance(self.parent, Loggable):
+            return -1
+
+        return self.parent._level() + self._relative_indent
 
     def _indent(
         self,
