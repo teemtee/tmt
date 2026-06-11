@@ -1824,6 +1824,11 @@ class Test(
 
         yield LinterOutcome.FIXED, 'added type to requirements'
 
+    @property
+    def _logging_source(self) -> str:
+        # The test should be the source of the logger, not its parent
+        return str(self)
+
 
 @container(repr=False)
 class LintableCollection(tmt.lint.Lintable['LintableCollection']):
@@ -2219,6 +2224,11 @@ class Story(
             return
 
         yield LinterOutcome.PASS, 'story key is defined'
+
+    @property
+    def _logging_source(self) -> str:
+        # The story should be the source of the logger, not its parent
+        return str(self)
 
 
 Test.discover_linters()

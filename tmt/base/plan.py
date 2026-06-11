@@ -1727,5 +1727,10 @@ class Plan(
         # TODO: Check that the current step/phase is after the current step/phase
         step.add_phase(phase)
 
+    @property
+    def _logging_source(self) -> str:
+        # The plan should be the source of the logger, not its parent
+        return str(self)
+
 
 Plan.discover_linters()
