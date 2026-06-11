@@ -285,6 +285,8 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                 )
 
                 for check in test.check:
+                    if not check.enabled:
+                        continue
                     collected_requires[guest].dependencies += check.plugin.essential_requires(
                         guest, test, self._logger
                     )
