@@ -38,6 +38,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
     assert hw.constraint is not None
 
     result = constraint_to_beaker_filter(hw.constraint, root_logger)
+<<<<<<< HEAD
     assert result.to_mrack() == {
         'and': [
             {},
@@ -51,6 +52,13 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                 },
             },
 >>>>>>> b38039300 (squash: more tests)
+=======
+
+    assert result.to_mrack() == {
+        'and': [
+            {},
+            {'pool': {'_op': '!=', '_value': 'foo.*'}},
+>>>>>>> f16120b3d (squash: more test fixes)
             {},
             {'and': [{}, {}]},
             {'cpu': {'cores': {'_op': '==', '_value': '2'}}},
