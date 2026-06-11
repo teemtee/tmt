@@ -220,6 +220,76 @@ rlJournalStart
             fi
         rlPhaseEnd
 
+        rlPhaseStartTest "$phase_prefix check-first skips already-installed packages (plan)"
+            rlRun -s "$tmt plan --name /check-first"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            # Second install step (check-first: true) must log that packages were skipped
+            rlAssertGrep "check-first: packages already installed, skipping" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # 1 extra phase for apt-get update + 2 install phases
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix check-first skips only already-installed packages (partial, plan)"
+            rlRun -s "$tmt plan --name /check-first-partial"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            # The second install step must skip the pre-installed package and install only the missing one
+            if is_ubi "$image"; then
+                rlAssertGrep "check-first: packages already installed, skipping:.*dconf" $rlRun_LOG
+                rlAssertGrep "libpng" $rlRun_LOG
+            else
+                rlAssertGrep "check-first: packages already installed, skipping:.*tree" $rlRun_LOG
+                rlAssertGrep "diffutils" $rlRun_LOG
+            fi
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix check-first option via CLI (--check-first)"
+            # Insert a second install step on top of the /existing plan; the plan installs the
+            # packages first, so the CLI-inserted step (check-first: true by default) must skip them.
+            if is_ubi "$image"; then
+                rlRun -s "$tmt --insert --how install --package dconf --package libpng plan --name /existing"
+            else
+                rlRun -s "$tmt --insert --how install --package tree --package diffutils plan --name /existing"
+            fi
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            rlAssertGrep "check-first: packages already installed, skipping" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix check-first option via CLI (--no-check-first)"
+            if is_ubi "$image"; then
+                rlRun -s "$tmt --insert --how install --package dconf --package libpng --no-check-first plan --name /empty"
+            else
+                rlRun -s "$tmt --insert --how install --package tree --package diffutils --no-check-first plan --name /empty"
+            fi
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
         # Limit these test cases to:
         # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
         # * image mode - the code handling is different in this case, so we need to make sure these cases work well
