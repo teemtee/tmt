@@ -603,8 +603,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         requires_git = any(getattr(self.data, key) for key in self._REQUIRES_GIT)
 
-        # Path for distgit sources cannot be checked until
-        # they are extracted
         if path and not path.is_dir():
             raise tmt.utils.DiscoverError(f"Provided path '{path}' is not a directory.")
 
@@ -858,7 +856,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 ) from error
             if not dist_git_merge:
                 if self.data.path:
-                    self._logger.warning(
+                    self.warn(
                         "Automatic fmf root detection combined with 'path' key is ill defined"
                     )
                 fmf_root = dist_git_extract.relative_to(self.source_dir) / (fmf_root or "")
@@ -909,7 +907,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             else:
                 if not dist_git_merge:
                     if self.data.path:
-                        self._logger.warning(
+                        self.warn(
                             "Automatic fmf root detection combined with 'path' key is ill defined"
                         )
                     fmf_root = top_fmf_root.relative_to(self.source_dir)
