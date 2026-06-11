@@ -38,202 +38,74 @@ def test_maximal_constraint(root_logger: Logger) -> None:
     assert hw.constraint is not None
 
     result = constraint_to_beaker_filter(hw.constraint, root_logger)
-    print(result.to_mrack())
+
     assert result.to_mrack() == {
         'and': [
             {},
-            {
-                'pool': {
-                    '_op': '!=',
-                    '_value': 'foo.*',
-                },
-            },
+            {'pool': {'_op': '!=', '_value': 'foo.*'}},
             {},
             {'and': [{}, {}]},
+            {'cpu': {'cores': {'_op': '==', '_value': '2'}}},
+            {},
+            {'cpu': {'family': {'_op': '<', '_value': '6'}}},
+            {},
             {
                 'and': [
-                    {
-                        'cpu': {
-                            'processors': {'_op': '>', '_value': '8'},
-                        },
-                    },
-                    {},
-                    {
-                        'cpu': {
-                            'cores': {'_op': '==', '_value': '2'},
-                        },
-                    },
-                    {},
-                    {},
-                    {},
-                    {'cpu': {'model': {'_op': '==', '_value': '62'}}},
-                    {'cpu': {'family': {'_op': '<', '_value': '6'}}},
-                    {},
-                    {
-                        'cpu': {
-                            'stepping': {
-                                '_op': '!=',
-                                '_value': '10',
-                            },
-                        },
-                    },
-                    {
-                        'cpu': {
-                            'speed': {
-                                '_op': '>=',
-                                '_value': '2300.0',
-                            },
-                        },
-                    },
-                    {},
-                    {
-                        'not': {'cpu': {'model_name': {'_op': 'like', '_value': 'Haswell'}}},
-                    },
-                    {
-                        'cpu': {
-                            'vendor': {
-                                '_op': 'like',
-                                '_value': 'Intel%',
-                            },
-                        },
-                    },
-                    {
-                        'and': [
-                            {'cpu': {'flag': {'_op': '==', '_value': 'avx'}}},
-                            {'cpu': {'flag': {'_op': '==', '_value': 'avx2'}}},
-                            {'cpu': {'flag': {'_op': '!=', '_value': 'smep'}}},
-                        ]
-                    },
-                    {'cpu': {'hyper': {'_op': '==', '_value': 'True'}}},
+                    {'cpu': {'flag': {'_op': '==', '_value': 'avx'}}},
+                    {'cpu': {'flag': {'_op': '==', '_value': 'avx2'}}},
+                    {'cpu': {'flag': {'_op': '!=', '_value': 'smep'}}},
                 ]
             },
-            {
-                'and': [
-                    {
-                        'device': {
-                            '_vendor_id': '97',
-                            '_op': '>',
-                        },
-                    },
-                    {
-                        'device': {
-                            '_device_id': '79',
-                            '_op': '==',
-                        },
-                    },
-                    {},
-                    {
-                        'device': {
-                            '_description': '%Thunderbolt%',
-                            '_op': 'like',
-                        },
-                    },
-                    {
-                        'key_value': {
-                            '_key': 'MODULE',
-                            '_op': '==',
-                            '_value': 'mc',
-                        },
-                    },
-                ],
-            },
-            {'and': [{}, {}, {}, {}, {}]},
-            {'system': {'memory': {'_op': '==', '_value': '8192'}}},
-            {
-                'and': [
-                    {
-                        'and': [
-                            {'disk': {'size': {'_op': '==', '_value': '42949672960'}}},
-                            {'disk': {'phys_sector_size': {'_op': '==', '_value': '4096 B'}}},
-                            {'disk': {'model': {'_op': 'like', '_value': 'WD 100G%'}}},
-                        ]
-                    },
-                    {
-                        'and': [
-                            {'disk': {'size': {'_op': '==', '_value': '128849018880'}}},
-                            {'disk': {'sector_size': {'_op': '==', '_value': '512 B'}}},
-                            {'key_value': {'_key': 'BOOTDISK', '_op': '==', '_value': 'virtblk'}},
-                        ]
-                    },
-                ]
-            },
-            {
-                'and': [
-                    {
-                        'and': [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                        ]
-                    },
-                    {},
-                ],
-            },
+            {'cpu': {'speed': {'_op': '>=', '_value': '2300.0'}}},
+            {'cpu': {'hyper': {'_op': '==', '_value': 'True'}}},
+            {'cpu': {'model': {'_op': '==', '_value': '62'}}},
+            {'not': {'cpu': {'model_name': {'_op': 'like', '_value': 'Haswell'}}}},
+            {'cpu': {'processors': {'_op': '>', '_value': '8'}}},
+            {},
+            {'cpu': {'stepping': {'_op': '!=', '_value': '10'}}},
+            {},
+            {},
+            {},
+            {'cpu': {'vendor': {'_op': 'like', '_value': 'Intel%'}}},
+            {'device': {'_op': '==', '_device_id': '79'}},
+            {'device': {'_op': 'like', '_description': '%Thunderbolt%'}},
+            {'key_value': {'_key': 'MODULE', '_op': '==', '_value': 'mc'}},
+            {'device': {'_op': '>', '_vendor_id': '97'}},
+            {},
+            {'disk': {'model': {'_op': 'like', '_value': 'WD 100G%'}}},
+            {'disk': {'phys_sector_size': {'_op': '==', '_value': '4096 B'}}},
+            {'disk': {'size': {'_op': '==', '_value': '42949672960'}}},
+            {'key_value': {'_key': 'BOOTDISK', '_op': '==', '_value': 'virtblk'}},
+            {'disk': {'sector_size': {'_op': '==', '_value': '512 B'}}},
+            {'disk': {'size': {'_op': '==', '_value': '128849018880'}}},
+            {},
+            {},
+            {},
+            {},
+            {},
             {'hostname': {'_op': 'like', '_value': '%.foo.redhat.com'}},
             {'labcontroller': {'_op': '!=', '_value': 'lab-1.bar.redhat.com'}},
-            {
-                'and': [
-                    {},
-                    {
-                        'system': {
-                            'vendor': {
-                                '_op': 'like',
-                                '_value': 'Dell%',
-                            },
-                        },
-                    },
-                    {},
-                    {
-                        'system': {
-                            'numanodes': {
-                                '_op': '<',
-                                '_value': '4',
-                            },
-                        },
-                    },
-                    {
-                        'system': {
-                            'model': {
-                                '_op': 'like',
-                                '_value': 'PowerEdge R750',
-                            },
-                        },
-                    },
-                    {},
-                ]
-            },
-            {
-                'key_value': {
-                    '_key': 'TPM',
-                    '_op': '==',
-                    '_value': '2.0',
-                },
-            },
-            {
-                'and': [
-                    {'system': {'hypervisor': {'_op': '==', '_value': ''}}},
-                    {},
-                    {},
-                    {'system': {'hypervisor': {'_op': 'like', '_value': 'xen'}}},
-                ]
-            },
-            {
-                'and': [
-                    {
-                        'system': {
-                            'key_value': {'_key': 'ZCRYPT_MODEL', '_op': '==', '_value': 'CEX8C'}
-                        }
-                    },
-                    {
-                        'system': {
-                            'key_value': {'_key': 'ZCRYPT_MODE', '_op': '==', '_value': 'CCA'}
-                        }
-                    },
-                ]
-            },
+            {'system': {'memory': {'_op': '==', '_value': '8192'}}},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {'system': {'model': {'_op': 'like', '_value': 'PowerEdge R750'}}},
+            {'system': {'numanodes': {'_op': '<', '_value': '4'}}},
+            {},
+            {},
+            {'system': {'vendor': {'_op': 'like', '_value': 'Dell%'}}},
+            {'key_value': {'_key': 'TPM', '_op': '==', '_value': '2.0'}},
+            {},
+            {'system': {'hypervisor': {'_op': 'like', '_value': 'xen'}}},
+            {},
+            {'system': {'hypervisor': {'_op': '==', '_value': ''}}},
+            {'system': {'key_value': {'_key': 'ZCRYPT_MODEL', '_op': '==', '_value': 'CEX8C'}}},
+            {'system': {'key_value': {'_key': 'ZCRYPT_MODE', '_op': '==', '_value': 'CCA'}}},
         ]
     }
 
