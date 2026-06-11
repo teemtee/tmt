@@ -18,6 +18,7 @@ import requests
 import tmt
 import tmt.guest
 import tmt.hardware
+import tmt.hardware.constraints
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
@@ -977,8 +978,10 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.memory is None:
             return
 
-        memory_constraint = tmt.hardware.SizeConstraint.from_specification(
-            'memory', str(self.memory)
+        memory_constraint = (
+            tmt.hardware.constraints.SIZE_CONSTRAINT_FACTORY.constraint_class.from_specification(
+                'memory', str(self.memory)
+            )
         )
 
         self.hardware.and_(memory_constraint)
@@ -994,8 +997,10 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.disk is None:
             return
 
-        disk_size_constraint = tmt.hardware.SizeConstraint.from_specification(
-            'disk[0].size', str(self.disk)
+        disk_size_constraint = (
+            tmt.hardware.constraints.SIZE_CONSTRAINT_FACTORY.constraint_class.from_specification(
+                'disk[0].size', str(self.disk)
+            )
         )
 
         self.hardware.and_(disk_size_constraint)
