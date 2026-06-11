@@ -857,7 +857,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if not dist_git_merge:
                 if self.data.path:
                     self.warn(
-                        "Automatic fmf root detection combined with 'path' key is ill defined"
+                        "Automatic fmf root detection combined with 'path' key is ill defined. "
+                        "This will be more narrowly defined in an upcoming tmt release."
                     )
                 fmf_root = dist_git_extract.relative_to(self.source_dir) / (fmf_root or "")
         if dist_git_init:
@@ -908,7 +909,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 if not dist_git_merge:
                     if self.data.path:
                         self.warn(
-                            "Automatic fmf root detection combined with 'path' key is ill defined"
+                            "Automatic fmf root detection combined with 'path' key is ill"
+                            "defined. "
+                            "This will be more narrowly defined in an upcoming tmt release."
                         )
                     fmf_root = top_fmf_root.relative_to(self.source_dir)
 
