@@ -541,19 +541,45 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             for match in pattern.finditer(output):
                 yield match.group(1)
 
+    def _check_first_filter(
+        self,
+        *installables: Installable,
+        options: Options,
+        present: bool,
+    ) -> list[Installable]:
+        """
+        Filter installables by presence when check_first is set.
+
+        Returns the full list of installables when check_first is not set.
+        Returns a subset (possibly empty) matching the desired presence state
+        when check_first is set. Order is preserved.
+        """
+        if not options.check_first:
+            return list(installables)
+        presence = self.check_presence(*installables)
+        return [p for p, is_present in presence.items() if is_present == present]
+
     def install(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.execute(self.engine.install(*installables, options=options))
+        options = options or Options()
+        to_install = self._check_first_filter(*installables, options=options, present=False)
+        if not to_install:
+            return CommandOutput(stdout=None, stderr=None)
+        return self.guest.execute(self.engine.install(*to_install, options=options))
 
     def reinstall(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.execute(self.engine.reinstall(*installables, options=options))
+        options = options or Options()
+        to_reinstall = self._check_first_filter(*installables, options=options, present=True)
+        if not to_reinstall:
+            return CommandOutput(stdout=None, stderr=None)
+        return self.guest.execute(self.engine.reinstall(*to_reinstall, options=options))
 
     def install_debuginfo(
         self,

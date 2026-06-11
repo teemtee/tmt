@@ -64,12 +64,9 @@ installable_packages="$installable_packages $fs_path_package"
   {% endfor %}
 {% endif %}
 
-{% if OPTIONS.check_first %}
+{% if CHECK_FIRST %}
 dpkg-query --show $installable_packages \\
-{% else -%}
-/bin/false \\
-{% endif -%}
-{{ '||' if COMMAND == 'install' else '&&' }} {{ ENGINE.command.to_script() }} {{ COMMAND }} {{ ENGINE.options.to_script() }} {{ EXTRA_OPTIONS }} $installable_packages
+&& {% endif %}{{ ENGINE.command.to_script() }} {{ COMMAND }} {{ ENGINE.options.to_script() }} {{ EXTRA_OPTIONS }} $installable_packages
 
 {% if OPTIONS.skip_missing %}
 exit 0
@@ -184,6 +181,7 @@ class AptEngine(PackageManagerEngine):
                     COMMAND='install',
                     OPTIONS=options,
                     EXTRA_OPTIONS=extra_options,
+                    CHECK_FIRST=False,
                     REAL_PACKAGES=escape_installables(*real_packages),
                     FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
                 )
@@ -196,6 +194,7 @@ class AptEngine(PackageManagerEngine):
                 COMMAND='install',
                 OPTIONS=options,
                 EXTRA_OPTIONS=extra_options,
+                CHECK_FIRST=False,
                 REAL_PACKAGES=escape_installables(*real_packages),
                 FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
             )
@@ -219,6 +218,7 @@ class AptEngine(PackageManagerEngine):
                     COMMAND='reinstall',
                     OPTIONS=options,
                     EXTRA_OPTIONS=extra_options,
+                    CHECK_FIRST=True,
                     REAL_PACKAGES=escape_installables(*real_packages),
                     FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
                 )
@@ -231,8 +231,9 @@ class AptEngine(PackageManagerEngine):
                 COMMAND='reinstall',
                 OPTIONS=options,
                 EXTRA_OPTIONS=extra_options,
-                REAL_PACKAGES=real_packages,
-                FILESYSTEM_PATHS=filesystem_paths,
+                CHECK_FIRST=True,
+                REAL_PACKAGES=escape_installables(*real_packages),
+                FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
             )
         )
 

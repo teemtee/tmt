@@ -80,6 +80,14 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         help='Action on missing packages, fail (default) or skip.',
     )
 
+    check_first: bool = field(
+        default=True,
+        option='--check-first / --no-check-first',
+        is_flag=True,
+        show_default=True,
+        help='Check whether packages are already installed before attempting to install them.',
+    )
+
 
 @tmt.steps.provides_method('install')
 class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
@@ -421,6 +429,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         options = Options(
             excluded_packages=[Package(p) for p in self.data.exclude],
             skip_missing=self.data.missing == 'skip',
+            check_first=self.data.check_first,
         )
 
         self._prepare_installables(self.data.package, self.data.directory, logger)
