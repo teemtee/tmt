@@ -1047,6 +1047,9 @@ class Loggable:
     #: Actual logger object
     _logger: Logger
 
+    #: Relative log indent level shift against the parent
+    _relative_indent: int
+
     def inject_logger(self, logger: Logger) -> None:
         self._logger = logger
 
@@ -1054,9 +1057,11 @@ class Loggable:
         self,
         *,
         logger: Logger,
+        relative_indent: int = 1,
         **kwargs: Any,
     ) -> None:
         self.inject_logger(logger)
+        self._relative_indent = relative_indent
 
     def print(
         self,
@@ -1176,3 +1181,67 @@ class Loggable:
         """
 
         self._logger.fail(message, shift=shift, stacklevel=stacklevel + 1)
+
+    def _level(self) -> int:
+        """
+        Hierarchy level
+        """
+        parent = getattr(self, "parent", None)
+
+        if parent is None or not isinstance(parent, Loggable):
+            return -1
+        assert isinstance(parent, Loggable)  # narrow type
+        return parent._level() + self._relative_indent
+
+    def _indent(
+        self,
+        key: str,
+        value: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
+        shift: int = 0,
+    ) -> str:
+        """
+        Indent message according to the object hierarchy
+        """
+
+        return indent(key, value=value, color=color, level=self._level() + shift)
+
+    @property
+    def debug_level(self) -> int:
+        """
+        The current debug level applied to this object
+        """
+
+        return self._logger.debug_level
+
+    @debug_level.setter
+    def debug_level(self, level: int) -> None:
+        """
+        Update the debug level attached to this object
+        """
+
+        self._logger.debug_level = level
+
+    @property
+    def verbosity_level(self) -> int:
+        """
+        The current verbosity level applied to this object
+        """
+
+        return self._logger.verbosity_level
+
+    @verbosity_level.setter
+    def verbosity_level(self, level: int) -> None:
+        """
+        Update the verbosity level attached to this object
+        """
+
+        self._logger.verbosity_level = level
+
+    @property
+    def quietness(self) -> bool:
+        """
+        The current quietness level applied to this object
+        """
+
+        return self._logger.quiet

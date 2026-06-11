@@ -1798,9 +1798,7 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
         name: Optional[str] = None,
         workdir: WorkdirArgumentType = None,
         workdir_root: Optional[Path] = None,
-        relative_indent: int = 1,
         cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
-        logger: tmt.log.Logger,
         **kwargs: Any,
     ) -> None:
         """
@@ -1816,8 +1814,6 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
             parent=parent,
             name=name,
             workdir=workdir,
-            relative_indent=relative_indent,
-            logger=logger,
             **kwargs,
         )
 
@@ -1827,9 +1823,6 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
 
         self._workdir_root = workdir_root
         self.cli_invocation = cli_invocation
-
-        # Relative log indent level shift against the parent
-        self._relative_indent = relative_indent
 
         # Initialize the workdir if requested
         self._workdir_load(workdir)
@@ -2085,46 +2078,6 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
             parent = self.parent.opt(option)
         return parent if parent is not None else local
 
-    @property
-    def debug_level(self) -> int:
-        """
-        The current debug level applied to this object
-        """
-
-        return self._logger.debug_level
-
-    @debug_level.setter
-    def debug_level(self, level: int) -> None:
-        """
-        Update the debug level attached to this object
-        """
-
-        self._logger.debug_level = level
-
-    @property
-    def verbosity_level(self) -> int:
-        """
-        The current verbosity level applied to this object
-        """
-
-        return self._logger.verbosity_level
-
-    @verbosity_level.setter
-    def verbosity_level(self, level: int) -> None:
-        """
-        Update the verbosity level attached to this object
-        """
-
-        self._logger.verbosity_level = level
-
-    @property
-    def quietness(self) -> bool:
-        """
-        The current quietness level applied to this object
-        """
-
-        return self._logger.quiet
-
     # TODO: interestingly, the option has its own default, right? So why do we
     # need a default of our own? Because sometimes commands have not been
     # invoked, and there's no CLI invocation to ask for the default value.
@@ -2214,28 +2167,6 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
             )
 
             raise GeneralError(f"Invalid regular expression '{faulty_pattern}'.") from exc
-
-    def _level(self) -> int:
-        """
-        Hierarchy level
-        """
-
-        if self.parent is None:
-            return -1
-        return self.parent._level() + self._relative_indent
-
-    def _indent(
-        self,
-        key: str,
-        value: Optional[str] = None,
-        color: 'tmt.utils.themes.Style' = None,
-        shift: int = 0,
-    ) -> str:
-        """
-        Indent message according to the object hierarchy
-        """
-
-        return tmt.log.indent(key, value=value, color=color, level=self._level() + shift)
 
     def _command_verbose_logger(
         self,
