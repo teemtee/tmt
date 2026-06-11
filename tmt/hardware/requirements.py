@@ -5,18 +5,20 @@ from typing import Any, Callable, Generic, Optional, Protocol, TypeVar, Union, c
 import tmt.log
 from tmt.container import SpecBasedContainer, container, simple_field
 from tmt.hardware.constraints import (
+    FLAG_CONSTRAINT_FACTORY,
+    INTEGER_CONSTRAINT_FACTORY,
+    NUMBER_CONSTRAINT_FACTORY,
+    SIZE_CONSTRAINT_FACTORY,
+    TEXT_CONSTRAINT_FACTORY,
     And,
     BaseConstraint,
     CompoundConstraint,
     Constraint,
-    FlagConstraint,
-    IntegerConstraint,
-    NumberConstraint,
     Operator,
     Or,
-    SizeConstraint,
     Spec,
     TextConstraint,
+    _ConstraintFactory,
 )
 
 BaseConstraintT = TypeVar('BaseConstraintT', bound=BaseConstraint, covariant=True)  # noqa: PLC0105
@@ -75,9 +77,10 @@ class _TrivialParser(_Parser[ConstraintT]):
     Base class for simple parser that can be statically defined.
     """
 
-    #: Constraint class whose :py:meth:`Constraint.from_specification`
-    #: method would be used to parse the requirement.
-    constraint_class: type[ConstraintT]
+    #: Constraint class factory whose
+    #: :py:meth:`_ConstraintFactory.constraint_class`
+    #: would be used to parse and represent the requirement.
+    constraint_class_factory: _ConstraintFactory[ConstraintT]
 
     #: Optional keyword arguments to pass to
     #: :py:meth:`Constraint.from_specification` method.
@@ -91,7 +94,7 @@ class SingleLevelParser(_TrivialParser[ConstraintT]):
     """
 
     def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
-        return self.constraint_class.from_specification(
+        return self.constraint_class_factory.constraint_class.from_specification(
             self.requirement,
             str(spec[self.requirement]),
             **self.kwargs,
@@ -113,7 +116,7 @@ class DoubleLevelParser(_TrivialParser[ConstraintT]):
         return self.requirement.split('.', 1)[1]
 
     def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
-        return self.constraint_class.from_specification(
+        return self.constraint_class_factory.constraint_class.from_specification(
             self.requirement,
             str(spec[self.child_constraint_name]),
             **self.kwargs,
@@ -127,7 +130,7 @@ class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
     """
 
     def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
-        return self.constraint_class.from_specification(
+        return self.constraint_class_factory.constraint_class.from_specification(
             f'{self.constraint_name}[{peer_index}].{self.child_constraint_name}',
             str(spec[self.child_constraint_name]),
             **self.kwargs,
@@ -153,17 +156,17 @@ def generate_device_parsers(
     device_prefix: str = 'device',
     include_driver: bool = True,
     include_device: bool = True,
-    parser_class: Union[type[DLP[Constraint]], type[IDLP[Constraint]]] = DLP,
+    parser_class: Union[type[DLP[Any]], type[IDLP[Any]]] = DLP,
 ) -> Iterator[Union[DLP[Constraint], IDLP[Constraint]]]:
-    yield parser_class(f'{device_prefix}.vendor', IntegerConstraint)
-    yield parser_class(f'{device_prefix}.vendor-name', TextConstraint)
+    yield parser_class(f'{device_prefix}.vendor', INTEGER_CONSTRAINT_FACTORY)
+    yield parser_class(f'{device_prefix}.vendor-name', TEXT_CONSTRAINT_FACTORY)
 
     if include_device:
-        yield parser_class(f'{device_prefix}.device', IntegerConstraint)
-        yield parser_class(f'{device_prefix}.device-name', TextConstraint)
+        yield parser_class(f'{device_prefix}.device', INTEGER_CONSTRAINT_FACTORY)
+        yield parser_class(f'{device_prefix}.device-name', TEXT_CONSTRAINT_FACTORY)
 
     if include_driver:
-        yield parser_class(f'{device_prefix}.driver', TextConstraint)
+        yield parser_class(f'{device_prefix}.driver', TEXT_CONSTRAINT_FACTORY)
 
 
 def custom_parser(fn: RequirementParser[BaseConstraint]) -> RequirementParser[BaseConstraint]:
@@ -230,74 +233,80 @@ TPM_VERSION_ALLOWED_OPERATORS = (
 #:    order of keys.
 _REQUIREMENT_PARSERS: list[Union[CustomParser[Any], SLP[Any], DLP[Any], IDLP[Any]]] = [
     # arch
-    SLP('arch', TextConstraint),
+    SLP('arch', TEXT_CONSTRAINT_FACTORY),
     # beaker
-    DLP('beaker.panic-watchdog', FlagConstraint),
-    DLP('beaker.pool', TextConstraint, {'allowed_operators': (Operator.EQ, Operator.NEQ)}),
+    DLP('beaker.panic-watchdog', FLAG_CONSTRAINT_FACTORY),
+    DLP(
+        'beaker.pool', TEXT_CONSTRAINT_FACTORY, {'allowed_operators': (Operator.EQ, Operator.NEQ)}
+    ),
     # cpu
-    DLP('cpu.cores', IntegerConstraint),
-    DLP('cpu.cores-per-socket', IntegerConstraint),
-    DLP('cpu.family', IntegerConstraint),
-    DLP('cpu.hyper-threading', FlagConstraint, {'allowed_operators': (Operator.EQ, Operator.NEQ)}),
-    DLP('cpu.model', IntegerConstraint),
-    DLP('cpu.processors', IntegerConstraint),
-    DLP('cpu.sockets', IntegerConstraint),
-    DLP('cpu.threads', IntegerConstraint),
-    DLP('cpu.threads-per-core', IntegerConstraint),
-    DLP('cpu.vendor', IntegerConstraint),
-    DLP('cpu.stepping', IntegerConstraint),
-    DLP('cpu.frequency', NumberConstraint, {'default_unit': 'MHz'}),
-    DLP('cpu.family-name', TextConstraint),
-    DLP('cpu.model-name', TextConstraint),
-    DLP('cpu.vendor-name', TextConstraint),
+    DLP('cpu.cores', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.cores-per-socket', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.family', INTEGER_CONSTRAINT_FACTORY),
+    DLP(
+        'cpu.hyper-threading',
+        FLAG_CONSTRAINT_FACTORY,
+        {'allowed_operators': (Operator.EQ, Operator.NEQ)},
+    ),
+    DLP('cpu.model', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.processors', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.sockets', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.threads', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.threads-per-core', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.vendor', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.stepping', INTEGER_CONSTRAINT_FACTORY),
+    DLP('cpu.frequency', NUMBER_CONSTRAINT_FACTORY, {'default_unit': 'MHz'}),
+    DLP('cpu.family-name', TEXT_CONSTRAINT_FACTORY),
+    DLP('cpu.model-name', TEXT_CONSTRAINT_FACTORY),
+    DLP('cpu.vendor-name', TEXT_CONSTRAINT_FACTORY),
     # device
     *generate_device_parsers(),
     # disk
-    IDLP('disk.size', SizeConstraint),
-    IDLP('disk.logical-sector-size', SizeConstraint),
-    IDLP('disk.physical-sector-size', SizeConstraint),
-    IDLP('disk.model-name', TextConstraint),
-    IDLP('disk.driver', TextConstraint),
+    IDLP('disk.size', SIZE_CONSTRAINT_FACTORY),
+    IDLP('disk.logical-sector-size', SIZE_CONSTRAINT_FACTORY),
+    IDLP('disk.physical-sector-size', SIZE_CONSTRAINT_FACTORY),
+    IDLP('disk.model-name', TEXT_CONSTRAINT_FACTORY),
+    IDLP('disk.driver', TEXT_CONSTRAINT_FACTORY),
     # gpu
     *generate_device_parsers(device_prefix='gpu'),
     # hostname
-    SLP('hostname', TextConstraint),
+    SLP('hostname', TEXT_CONSTRAINT_FACTORY),
     # iommu
-    DLP('iommu.is-supported', FlagConstraint),
-    DLP('iommu.model-name', TextConstraint),
+    DLP('iommu.is-supported', FLAG_CONSTRAINT_FACTORY),
+    DLP('iommu.model-name', TEXT_CONSTRAINT_FACTORY),
     # location
-    DLP('location.lab-controller', TextConstraint),
+    DLP('location.lab-controller', TEXT_CONSTRAINT_FACTORY),
     # memory
-    SLP('memory', SizeConstraint, {'default_unit': 'MiB'}),
+    SLP('memory', SIZE_CONSTRAINT_FACTORY, {'default_unit': 'MiB'}),
     # network
     *generate_device_parsers(device_prefix='network', parser_class=IDLP),
-    IDLP('network.type', TextConstraint),
+    IDLP('network.type', TEXT_CONSTRAINT_FACTORY),
     # system
     *generate_device_parsers(device_prefix='system', include_driver=False, include_device=False),
-    DLP('system.model', IntegerConstraint),
-    DLP('system.numa-nodes', IntegerConstraint),
-    DLP('system.model-name', TextConstraint),
-    DLP('system.type', TextConstraint),
+    DLP('system.model', INTEGER_CONSTRAINT_FACTORY),
+    DLP('system.numa-nodes', INTEGER_CONSTRAINT_FACTORY),
+    DLP('system.model-name', TEXT_CONSTRAINT_FACTORY),
+    DLP('system.type', TEXT_CONSTRAINT_FACTORY),
     # tpm
     DLP(
         'tpm.version',
-        TextConstraint,
+        TEXT_CONSTRAINT_FACTORY,
         {'allowed_operators': TPM_VERSION_ALLOWED_OPERATORS},
     ),
     # virtualization
-    DLP('virtualization.is-virtualized', FlagConstraint),
-    DLP('virtualization.is-supported', FlagConstraint),
-    DLP('virtualization.confidential', FlagConstraint),
-    DLP('virtualization.hypervisor', TextConstraint),
+    DLP('virtualization.is-virtualized', FLAG_CONSTRAINT_FACTORY),
+    DLP('virtualization.is-supported', FLAG_CONSTRAINT_FACTORY),
+    DLP('virtualization.confidential', FLAG_CONSTRAINT_FACTORY),
+    DLP('virtualization.hypervisor', TEXT_CONSTRAINT_FACTORY),
     # zcrypt
-    DLP('zcrypt.adapter', TextConstraint),
-    DLP('zcrypt.mode', TextConstraint),
+    DLP('zcrypt.adapter', TEXT_CONSTRAINT_FACTORY),
+    DLP('zcrypt.mode', TEXT_CONSTRAINT_FACTORY),
 ]
 
 
 @custom_parser
 def parse_boot_method(spec: Spec, peer_index: Optional[int] = None) -> TextConstraint:
-    constraint = TextConstraint.from_specification(
+    constraint = TEXT_CONSTRAINT_FACTORY.constraint_class.from_specification(
         'boot.method', spec['method'], allowed_operators=(Operator.EQ, Operator.NEQ)
     )
 
@@ -315,7 +324,9 @@ def parse_compatible_distro(spec: Spec, peer_index: Optional[int] = None) -> And
     group = And()
 
     for distro in cast(list[str], (spec['distro'] or [])):
-        constraint = TextConstraint.from_specification('compatible.distro', distro)
+        constraint = TEXT_CONSTRAINT_FACTORY.constraint_class.from_specification(
+            'compatible.distro', distro
+        )
 
         constraint.change_operator(Operator.CONTAINS)
 
@@ -329,7 +340,9 @@ def parse_cpu_flag(spec: Spec, peer_index: Optional[int] = None) -> And:
     group = And()
 
     for flag_spec in spec['flag']:
-        constraint = TextConstraint.from_specification('cpu.flag', flag_spec)
+        constraint = TEXT_CONSTRAINT_FACTORY.constraint_class.from_specification(
+            'cpu.flag', flag_spec
+        )
 
         if constraint.operator == Operator.EQ:
             constraint.change_operator(Operator.CONTAINS)
