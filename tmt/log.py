@@ -1034,3 +1034,214 @@ class Logger:
             cls._bootstrap_logger.add_console_handler()
 
         return cls._bootstrap_logger
+
+
+class Loggable:
+    """
+    Logging helper class.
+
+    Provides helper functions to interact with the :py:class:`Logger` and
+    some sensible defaults for the formatting.
+    """
+
+    #: Actual logger object
+    _logger: Logger
+
+    #: Relative log indent level shift against the parent
+    _relative_indent: int
+
+    def inject_logger(self, logger: Logger) -> None:
+        self._logger = logger
+
+    def __init__(
+        self,
+        *,
+        logger: Logger,
+        relative_indent: int = 1,
+        **kwargs: Any,
+    ) -> None:
+        self.inject_logger(logger)
+        self._relative_indent = relative_indent
+
+    def print(
+        self,
+        text: str,
+        color: 'tmt.utils.themes.Style' = None,
+    ) -> None:
+        """
+        Print out an output.
+
+        This method is supposed to be used for emitting a command output. Not
+        to be mistaken with logging - errors, warnings, general command progress,
+        and so on.
+
+        ``print()`` emits even when ``--quiet`` is used, as the option suppresses
+        **logging** but not the actual command output.
+        """
+
+        self._logger.print(text, color=color)
+
+    def info(
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: 'tmt.utils.themes.Style' = None,
+        shift: int = 0,
+        topic: Optional[Topic] = None,
+        stacklevel: int = 1,
+    ) -> None:
+        """
+        Show a message unless in quiet mode
+        """
+
+        self._logger.info(
+            key,
+            value=value,
+            color=color,
+            shift=shift,
+            topic=topic,
+            stacklevel=stacklevel + 1,
+        )
+
+    def verbose(
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: 'tmt.utils.themes.Style' = None,
+        shift: int = 0,
+        level: int = 1,
+        topic: Optional[Topic] = None,
+        stacklevel: int = 1,
+    ) -> None:
+        """
+        Show message if in requested verbose mode level
+
+        In quiet mode verbose messages are not displayed.
+        """
+
+        self._logger.verbose(
+            key,
+            value=value,
+            color=color,
+            shift=shift,
+            level=level,
+            topic=topic,
+            stacklevel=stacklevel + 1,
+        )
+
+    def debug(
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: 'tmt.utils.themes.Style' = None,
+        shift: int = 0,
+        level: int = 1,
+        topic: Optional[Topic] = None,
+        stacklevel: int = 1,
+    ) -> None:
+        """
+        Show message if in requested debug mode level
+
+        In quiet mode debug messages are not displayed.
+        """
+
+        self._logger.debug(
+            key,
+            value=value,
+            color=color,
+            shift=shift,
+            level=level,
+            topic=topic,
+            stacklevel=stacklevel + 1,
+        )
+
+    def warn(
+        self,
+        message: str,
+        shift: int = 0,
+        stacklevel: int = 1,
+        source: Optional[str] = None,
+        reason: Optional[str] = None,
+    ) -> None:
+        """
+        Show a yellow warning message on info level, send to stderr
+        """
+
+        self._logger.warning(
+            message,
+            shift=shift,
+            stacklevel=stacklevel + 1,
+            source=source,
+            reason=reason,
+        )
+
+    def fail(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
+        """
+        Show a red failure message on info level, send to stderr
+        """
+
+        self._logger.fail(message, shift=shift, stacklevel=stacklevel + 1)
+
+    def _level(self) -> int:
+        """
+        Hierarchy level
+        """
+        parent = getattr(self, "parent", None)
+
+        if parent is None or not isinstance(parent, Loggable):
+            return -1
+        assert isinstance(parent, Loggable)  # narrow type
+        return parent._level() + self._relative_indent
+
+    def _indent(
+        self,
+        key: str,
+        value: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
+        shift: int = 0,
+    ) -> str:
+        """
+        Indent message according to the object hierarchy
+        """
+
+        return indent(key, value=value, color=color, level=self._level() + shift)
+
+    @property
+    def debug_level(self) -> int:
+        """
+        The current debug level applied to this object
+        """
+
+        return self._logger.debug_level
+
+    @debug_level.setter
+    def debug_level(self, level: int) -> None:
+        """
+        Update the debug level attached to this object
+        """
+
+        self._logger.debug_level = level
+
+    @property
+    def verbosity_level(self) -> int:
+        """
+        The current verbosity level applied to this object
+        """
+
+        return self._logger.verbosity_level
+
+    @verbosity_level.setter
+    def verbosity_level(self, level: int) -> None:
+        """
+        Update the verbosity level attached to this object
+        """
+
+        self._logger.verbosity_level = level
+
+    @property
+    def quietness(self) -> bool:
+        """
+        The current quietness level applied to this object
+        """
+
+        return self._logger.quiet
