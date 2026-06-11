@@ -24,6 +24,7 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
+import abc
 import copy
 import enum
 import io
@@ -1036,7 +1037,7 @@ class Logger:
         return cls._bootstrap_logger
 
 
-class Loggable:
+class Loggable(abc.ABC):
     """
     Logging helper class.
 
@@ -1247,8 +1248,16 @@ class Loggable:
         return self._logger.quiet
 
     @property
-    def _logging_source(self) -> Optional[str]:
+    def _logging_source(self) -> str:
         """
         The default source to be used when logging warnings
         """
-        return None
+        parent = getattr(self, "parent", None)
+
+        if parent is None or not isinstance(parent, Loggable):
+            return str(self)
+        assert isinstance(parent, Loggable)  # narrow type
+        return f"{parent._logging_source}[{self!s}]"
+
+    @abc.abstractmethod
+    def __str__(self) -> str: ...
