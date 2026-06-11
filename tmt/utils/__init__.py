@@ -1695,6 +1695,37 @@ class HasGuestWorkdir(abc.ABC):
         raise NotImplementedError
 
 
+ParentT = TypeVar("ParentT", bound="Union[HasParent,None]", default=None)
+
+
+class HasParent(Generic[ParentT]):
+    parent: ParentT
+
+    @overload
+    def __init__(
+        self,
+        *,
+        parent: None = None,
+        **kwargs: Any,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        *,
+        parent: ParentT,
+        **kwargs: Any,
+    ) -> None: ...
+
+    def __init__(
+        self,
+        *,
+        parent=None,
+        **kwargs: Any,
+    ) -> None:
+        self.parent = parent
+
+
 class _CommonBase:
     """
     A base class for **all** classes contributing to "common" tree of classes.
@@ -1757,7 +1788,7 @@ class _CommonMeta(abc.ABCMeta):
         cls.cli_invocation: Optional[tmt.cli.CliInvocation] = None
 
 
-class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
+class Common(_CommonBase, HasParent, tmt.log.Loggable, metaclass=_CommonMeta):
     """
     Common shared stuff
 
@@ -1772,20 +1803,6 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
     _workdir: WorkdirType = None
     _clone_dirpath: Optional[Path] = None
 
-    # TODO: must be declared outside of __init__(), because it must exist before
-    # __init__() gets called to allow logging helpers work correctly when used
-    # from mixins. But that's not very clean, is it? :( Maybe decoupling logging
-    # from Common class would help, such a class would be able to initialize
-    # itself without involving the rest of Common code. On the other hand,
-    # Common owns workdir, for example, whose value affects logging too, so no
-    # clear solution so far.
-    #
-    # Note: cannot use CommonDerivedType - it's a TypeVar filled in by the type
-    # given to __init__() and therefore the type it's representing *now* is
-    # unknown. but we know `parent` will be derived from `Common` class, so it's
-    # mostly fine.
-    parent: Optional['Common'] = None
-
     # Store actual name and safe name. When `name` changes, we need to update
     # `safe_name` accordingly. Direct access not encouraged, use `name` and
     # `safe_name` attributes.
@@ -1794,7 +1811,7 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
     def __init__(
         self,
         *,
-        parent: Optional[CommonDerivedType] = None,
+        parent: Optional[HasParent] = None,
         name: Optional[str] = None,
         workdir: WorkdirArgumentType = None,
         workdir_root: Optional[Path] = None,
@@ -1819,7 +1836,6 @@ class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
 
         # Use lowercase class name as the default name
         self.name = name or self.__class__.__name__.lower()
-        self.parent = parent
 
         self._workdir_root = workdir_root
         self.cli_invocation = cli_invocation
