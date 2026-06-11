@@ -1171,7 +1171,7 @@ class Loggable:
             message,
             shift=shift,
             stacklevel=stacklevel + 1,
-            source=source,
+            source=source or self._logging_source,
             reason=reason,
         )
 
@@ -1245,3 +1245,10 @@ class Loggable:
         """
 
         return self._logger.quiet
+
+    @property
+    def _logging_source(self) -> Optional[str]:
+        """
+        The default source to be used when logging warnings
+        """
+        return None
