@@ -45,7 +45,7 @@ from typing import (
 from ruamel.yaml import YAML
 
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import Self, TypeAlias, override
+from tmt._compat.typing import Self, TypeAlias, TypeGuard, override
 from tmt._compat.warnings import deprecated
 from tmt.container import SpecBasedContainer, container, simple_field
 
@@ -301,6 +301,55 @@ class LogRecordDetails:
     reason: Optional[str] = None
 
 
+class LogRecord(logging.LogRecord):
+    """
+    Custom log record class, aware of our log record details.
+
+    :py:mod:`logging` is instructed to use this class instead of its
+    default :py:class:`logging.LogRecord`. This formalizes the existence
+    of the :py:attr:`details` attribute, and allows for custom message
+    rendering.
+    """
+
+    details: LogRecordDetails
+
+    @override
+    def getMessage(self) -> str:
+        if is_our_log_record(self):
+            return indent(
+                self.details.key,
+                value=self.details.value,
+                # Always apply colors - message can be decolorized later.
+                color=self.details.color,
+                level=self.details.shift,
+                labels=self.details.logger_labels,
+                labels_padding=self.details.logger_labels_padding,
+            )
+
+        return super().getMessage()
+
+
+def is_our_log_record(record: logging.LogRecord) -> TypeGuard[LogRecord]:
+    """
+    Type guard for narrowing logging record type.
+
+    Narrows a log record down to our custom :py:class:`LogRecord` type
+    if and only if:
+
+    1. record is an instance of said class, and
+    2. record has :py:attr:`LogRecord.details` attribute.
+
+    Once narrowed, the type checker should correctly recognize
+    :py:attr:`LogRecord.details` attribute and its type.
+    """
+
+    return isinstance(record, LogRecord) and hasattr(record, 'details')
+
+
+# Tell logging to use our custom log record class.
+logging.setLogRecordFactory(LogRecord)
+
+
 class RunWarningsHandler(logging.FileHandler):
     def __init__(self, filepath: Path) -> None:
         # mode="a": We want to keep the old warnings.yaml if we are running a new run on top
@@ -383,25 +432,32 @@ class RunWarningsFormatter(logging.Formatter):
         super().__init__('%(message)s', datefmt='%H:%M:%S')
 
     def format(self, record: logging.LogRecord) -> str:
-        # TODO: make this in a better yaml with a schema
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-        if not details:
-            # Not a tmt owned warning
-            warning_msg = super().format(record)
-        else:
+        if is_our_log_record(record):
             # Tmt warning, we take the original raw value
             record_copy = copy.copy(record)
-            record_copy.msg = details.value
+            record_copy.msg = record.details.value
             warning_msg = super().format(record_copy)
+
+            source: Optional[str] = record.details.source
+            reason: Optional[str] = record.details.reason
+
+        else:
+            # Not a tmt owned warning
+            warning_msg = super().format(record)
+
+            source = "(external)"
+            reason = None
+
         # The yaml content to be appended is always a single list item so that
         # it can be appended with the previous content
+        # TODO: make this in a better yaml with a schema
         yaml_content = [
             RunWarningEntry(
                 msg=warning_msg,
                 logger=record.name,
                 trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
-                source=details.source if details else "(external)",
-                reason=details.reason if details else None,
+                source=source,
+                reason=reason,
             ).to_minimal_spec(),
         ]
         # Format and dump the yaml content
@@ -415,15 +471,16 @@ class VerbosityLevelFilter(logging.Filter):
         if record.levelno != logging.INFO:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return True
 
-        if details.message_verbosity_level is None:
+        if record.details.message_verbosity_level is None:
             return True
 
-        return details.logger_verbosity_level >= details.message_verbosity_level
+        if record.details.logger_verbosity_level >= record.details.message_verbosity_level:
+            return True
+
+        return False
 
 
 class DebugLevelFilter(logging.Filter):
@@ -431,15 +488,16 @@ class DebugLevelFilter(logging.Filter):
         if record.levelno != logging.DEBUG:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return True
 
-        if details.message_debug_level is None:
+        if record.details.message_debug_level is None:
             return True
 
-        return details.logger_debug_level >= details.message_debug_level
+        if record.details.logger_debug_level >= record.details.message_debug_level:
+            return True
+
+        return False
 
 
 class QuietnessFilter(logging.Filter):
@@ -447,15 +505,13 @@ class QuietnessFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO, logging.WARNING):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return False
 
-        if not details.logger_quiet:
+        if not record.details.logger_quiet:
             return True
 
-        if details.ignore_quietness:
+        if record.details.ignore_quietness:
             return True
 
         return False
@@ -466,15 +522,13 @@ class TopicFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return False
 
-        if details.message_topic is None:
+        if record.details.message_topic is None:
             return True
 
-        if details.message_topic in details.logger_topics:
+        if record.details.message_topic in record.details.logger_topics:
             return True
 
         return False
@@ -848,24 +902,14 @@ class Logger:
 
         details.shift = details.shift + self._base_shift
 
-        if not message:
-            message = indent(
-                details.key,
-                value=details.value,
-                # Always apply colors - message can be decolorized later.
-                color=details.color,
-                level=details.shift,
-                labels=self.labels,
-                labels_padding=self.labels_padding,
-            )
-
         # stacklevel: This function is never called directly, instead it is called by one level
         # higher e.g. `info`. So we escape at least 2 levels of the stack (this function, and its
         # caller) + the requested stacklevel of the caller (default is the current caller of
         # `info`)
         self._logger._log(
             level,
-            message,
+            # No message - our log record class will utilize `details` instead.
+            None,
             (),
             extra={'details': details},
             stacklevel=stacklevel + 2,
