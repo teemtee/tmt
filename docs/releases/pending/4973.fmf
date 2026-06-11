@@ -1,0 +1,7 @@
+description: |
+  Changed the location where the dist-git tests are extracted to when not using
+  ``dist-git-merge``. This may impact  the discovery when used with ``path``.
+
+  .. note::
+
+      Further changes and simplifications to these paths are planned.
