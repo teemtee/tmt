@@ -74,7 +74,6 @@ from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
-from tmt.log import LoggableValue
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
@@ -1758,7 +1757,7 @@ class _CommonMeta(abc.ABCMeta):
         cls.cli_invocation: Optional[tmt.cli.CliInvocation] = None
 
 
-class Common(_CommonBase, metaclass=_CommonMeta):
+class Common(_CommonBase, tmt.log.Loggable, metaclass=_CommonMeta):
     """
     Common shared stuff
 
@@ -1791,9 +1790,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     # `safe_name` accordingly. Direct access not encouraged, use `name` and
     # `safe_name` attributes.
     _name: str
-
-    def inject_logger(self, logger: tmt.log.Logger) -> None:
-        self._logger = logger
 
     def __init__(
         self,
@@ -1831,8 +1827,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         self._workdir_root = workdir_root
         self.cli_invocation = cli_invocation
-
-        self.inject_logger(logger)
 
         # Relative log indent level shift against the parent
         self._relative_indent = relative_indent
@@ -2242,125 +2236,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
 
         return tmt.log.indent(key, value=value, color=color, level=self._level() + shift)
-
-    def print(
-        self,
-        text: str,
-        color: 'tmt.utils.themes.Style' = None,
-    ) -> None:
-        """
-        Print out an output.
-
-        This method is supposed to be used for emitting a command output. Not
-        to be mistaken with logging - errors, warnings, general command progress,
-        and so on.
-
-        ``print()`` emits even when ``--quiet`` is used, as the option suppresses
-        **logging** but not the actual command output.
-        """
-
-        self._logger.print(text, color=color)
-
-    def info(
-        self,
-        key: str,
-        value: Optional[LoggableValue] = None,
-        color: 'tmt.utils.themes.Style' = None,
-        shift: int = 0,
-        topic: Optional[tmt.log.Topic] = None,
-        stacklevel: int = 1,
-    ) -> None:
-        """
-        Show a message unless in quiet mode
-        """
-
-        self._logger.info(
-            key,
-            value=value,
-            color=color,
-            shift=shift,
-            topic=topic,
-            stacklevel=stacklevel + 1,
-        )
-
-    def verbose(
-        self,
-        key: str,
-        value: Optional[LoggableValue] = None,
-        color: 'tmt.utils.themes.Style' = None,
-        shift: int = 0,
-        level: int = 1,
-        topic: Optional[tmt.log.Topic] = None,
-        stacklevel: int = 1,
-    ) -> None:
-        """
-        Show message if in requested verbose mode level
-
-        In quiet mode verbose messages are not displayed.
-        """
-
-        self._logger.verbose(
-            key,
-            value=value,
-            color=color,
-            shift=shift,
-            level=level,
-            topic=topic,
-            stacklevel=stacklevel + 1,
-        )
-
-    def debug(
-        self,
-        key: str,
-        value: Optional[LoggableValue] = None,
-        color: 'tmt.utils.themes.Style' = None,
-        shift: int = 0,
-        level: int = 1,
-        topic: Optional[tmt.log.Topic] = None,
-        stacklevel: int = 1,
-    ) -> None:
-        """
-        Show message if in requested debug mode level
-
-        In quiet mode debug messages are not displayed.
-        """
-
-        self._logger.debug(
-            key,
-            value=value,
-            color=color,
-            shift=shift,
-            level=level,
-            topic=topic,
-            stacklevel=stacklevel + 1,
-        )
-
-    def warn(
-        self,
-        message: str,
-        shift: int = 0,
-        stacklevel: int = 1,
-        source: Optional[str] = None,
-        reason: Optional[str] = None,
-    ) -> None:
-        """
-        Show a yellow warning message on info level, send to stderr
-        """
-
-        self._logger.warning(
-            message,
-            shift=shift,
-            stacklevel=stacklevel + 1,
-            source=source,
-            reason=reason,
-        )
-
-    def fail(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
-        """
-        Show a red failure message on info level, send to stderr
-        """
-
-        self._logger.fail(message, shift=shift, stacklevel=stacklevel + 1)
 
     def _command_verbose_logger(
         self,
