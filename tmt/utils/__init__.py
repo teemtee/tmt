@@ -2335,12 +2335,25 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             stacklevel=stacklevel + 1,
         )
 
-    def warn(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
+    def warn(
+        self,
+        message: str,
+        shift: int = 0,
+        stacklevel: int = 1,
+        source: Optional[str] = None,
+        reason: Optional[str] = None,
+    ) -> None:
         """
         Show a yellow warning message on info level, send to stderr
         """
 
-        self._logger.warning(message, shift=shift, stacklevel=stacklevel + 1)
+        self._logger.warning(
+            message,
+            shift=shift,
+            stacklevel=stacklevel + 1,
+            source=source,
+            reason=reason,
+        )
 
     def fail(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
         """
