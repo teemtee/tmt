@@ -161,8 +161,8 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
     1. Install required packages for the rpmbuild itself
     2. Detect and install build requires
     3. Patch sources (rpmbuild -bp)
-    4. Move patched sources from buildroot into TMT_SOURCE_DIR
-    5. Call function of discover plugin to discover tests from TMT_SOURCE_DIR
+    4. Move patched sources from buildroot into the source directory
+    5. Call function of discover plugin to discover tests from the source directory
     """
 
     _data_class = DistGitData

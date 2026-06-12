@@ -152,7 +152,9 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
         # more.
         if guest.plan_environment_path:
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(guest.plan_environment_path)
+            from tmt.steps.execute import ENV_TMT_PLAN_ENVIRONMENT_FILE
+
+            environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(guest.plan_environment_path)
 
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
