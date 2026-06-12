@@ -76,10 +76,10 @@ class RpmOstreeEngine(PackageManagerEngine):
         # script = ShellScript(f'{self.command.to_script()} refresh-md --force')
         # return self.guest.execute(script)
 
-    def enable_repo(self, *repo_ids: str) -> ShellScript:
+    def enable_repository(self, *repo_ids: str) -> ShellScript:
         raise PrepareError("Package manager 'rpm-ostree' does not support enabling repositories.")
 
-    def disable_repo(self, *repo_ids: str) -> ShellScript:
+    def disable_repository(self, *repo_ids: str) -> ShellScript:
         raise PrepareError("Package manager 'rpm-ostree' does not support disabling repositories.")
 
     def install(

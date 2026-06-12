@@ -386,7 +386,7 @@ class PackageManagerEngine(tmt.utils.Common):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def enable_repo(self, *repo_ids: str) -> ShellScript:
+    def enable_repository(self, *repo_ids: str) -> ShellScript:
         """
         Enable specified repositories.
 
@@ -396,7 +396,7 @@ class PackageManagerEngine(tmt.utils.Common):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def disable_repo(self, *repo_ids: str) -> ShellScript:
+    def disable_repository(self, *repo_ids: str) -> ShellScript:
         """
         Disable specified repositories.
 
@@ -678,7 +678,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         raise PrepareError(f"Package manager '{self.NAME}' does not support config-manager.")
 
-    def enable_repo(self, *repo_ids: str) -> None:
+    def enable_repository(self, *repo_ids: str) -> None:
         """
         Enable specified repositories.
 
@@ -690,9 +690,9 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self.assert_config_manager()
 
         self.verbose('enable repo', fmf.utils.listed(repo_ids), 'green')
-        self.guest.execute(self.engine.enable_repo(*repo_ids))
+        self.guest.execute(self.engine.enable_repository(*repo_ids))
 
-    def disable_repo(self, *repo_ids: str) -> None:
+    def disable_repository(self, *repo_ids: str) -> None:
         """
         Disable specified repositories.
 
@@ -704,7 +704,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self.assert_config_manager()
 
         self.verbose('disable repo', fmf.utils.listed(repo_ids), 'green')
-        self.guest.execute(self.engine.disable_repo(*repo_ids))
+        self.guest.execute(self.engine.disable_repository(*repo_ids))
 
     def enable_copr(self, *repositories: str) -> None:
         """

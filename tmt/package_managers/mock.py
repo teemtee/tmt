@@ -82,10 +82,10 @@ class MockEngine(PackageManagerEngine):
     def refresh_metadata(self) -> ShellScript:
         return self._prepare_mock_command_script('makecache --refresh')
 
-    def enable_repo(self, *repo_ids: str) -> ShellScript:
+    def enable_repository(self, *repo_ids: str) -> ShellScript:
         raise PrepareError("Package manager 'mock' does not support enabling repositories.")
 
-    def disable_repo(self, *repo_ids: str) -> ShellScript:
+    def disable_repository(self, *repo_ids: str) -> ShellScript:
         raise PrepareError("Package manager 'mock' does not support disabling repositories.")
 
 
