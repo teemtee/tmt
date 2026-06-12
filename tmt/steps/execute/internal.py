@@ -561,8 +561,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 self.execute(invocation=invocation, logger=logger)
 
-                assert invocation.real_duration is not None  # narrow type
-                duration = style(invocation.real_duration, fg='cyan')
+                duration = style(invocation.stopwatch.duration_formatted, fg='cyan')
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle test restart. May include guest reboot too.

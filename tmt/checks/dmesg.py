@@ -104,7 +104,7 @@ class DmesgCheck(Check):
         outcome = ResultOutcome.PASS
         failures: list[str] = []
 
-        output, exc, timer = Stopwatch.measure(self._fetch_dmesg, invocation.guest, logger)
+        output, exc, timer = Stopwatch().measure(self._fetch_dmesg, invocation.guest, logger)
 
         if exc:
             outcome = ResultOutcome.ERROR

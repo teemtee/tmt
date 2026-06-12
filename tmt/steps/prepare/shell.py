@@ -199,7 +199,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 ),
             )
 
-        _, error, timer = Stopwatch.measure(_prepare_remote_repository)
+        _, error, timer = Stopwatch().measure(_prepare_remote_repository)
 
         if error is not None:
             return self._save_error_outcome(
@@ -228,7 +228,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 )
             )
 
-        _, error, timer = Stopwatch.measure(_prepare_topology)
+        _, error, timer = Stopwatch().measure(_prepare_topology)
 
         if error is not None:
             return self._save_error_outcome(
@@ -293,9 +293,11 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             else:
                 remote_command = ShellScript(f'./{outer_wrapper_filepath.name}')
 
-            output, error, timer = Stopwatch.measure(
+            command = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {remote_command}')
+
+            output, error, timer = Stopwatch().measure(
                 _invoke_script,
-                remote_command,
+                command,
                 script_environment,
             )
 
