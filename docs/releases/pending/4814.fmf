@@ -1,0 +1,4 @@
+description: |
+    The :ref:`contribute` guide now includes a :ref:`logging`
+    section with guidelines for verbosity levels, debug levels and
+    debug topics.

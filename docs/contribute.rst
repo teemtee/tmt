@@ -637,6 +637,165 @@ export
 __ https://github.com/teemtee/tmt/issues/4443
 
 
+.. _logging:
+
+Logging and Output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+tmt distinguishes between two types of terminal communication:
+**logging** and **output**. Understanding the difference is
+essential for consistent and user-friendly behavior.
+
+
+Output Types
+------------------------------------------------------------------
+
+**Logging** goes to ``stderr``, for ``tmt run`` and ``tmt try``
+commands it is also stored in the ``log.txt`` file under the
+:term:`run workdir`. It is handled by methods such as ``info()``,
+``debug()``, ``warning()`` and ``fail()``. Logging communicates
+progress, diagnostics and status information during command
+execution. This is the main mode of communication you should use
+throughout the code.
+
+**Output** goes to ``stdout`` and is produced by the ``print()``
+method. Output represents the actual data result of a command,
+such as a list of names, exported metadata, or formatted details
+meant for further processing or inspection:
+
+* ``tmt test ls``
+* ``tmt story export``
+* ``tmt run provision --how minute --list-images``
+
+
+Logging Methods
+------------------------------------------------------------------
+
+All logging methods send their output to ``stderr``:
+
+``info()``
+    Communicate progress and status to the user. Supports
+    verbosity levels via the ``level`` parameter (see below).
+
+    .. note::
+
+        Using the ``level`` parameter with ``info()`` is a planned
+        target state. Currently, use the ``verbose()`` method for
+        logging with specific verbosity levels.
+
+``debug()``
+    Provide diagnostics for tmt developers. Supports debug
+    levels via the ``level`` parameter (see below).
+
+``warning()``
+    Signal a potential problem that does not prevent execution
+    but deserves user attention, such as a deprecated feature
+    or a missing optional dependency.
+
+``fail()``
+    Report an error that caused a test, step or operation to
+    fail.
+
+The ``info()``, ``verbose()`` and ``debug()`` methods accept a
+``key`` and an optional ``value`` parameter. The ``key`` is a
+short label (e.g. step name, action) and ``value`` provides the
+detail, optional ``color`` parameter can be used for choosing the
+desired color:
+
+.. code-block:: python
+
+    self.info(key='status', value='done', color='green')
+    self.info('status', 'done', 'green')
+
+They are formatted as ``key: value`` in the output.  The
+``warning()`` and ``fail()`` methods take a single ``message``
+parameter and automatically set the ``key`` to ``warn`` or
+``fail``.
+
+
+Verbosity Levels
+------------------------------------------------------------------
+
+Verbosity levels control user-facing logging and are incremented
+with ``-v`` on the command line. Focus on *user scenarios* when
+choosing the right level:
+
+``info(level=0)`` == ``info()``
+    key output: plan names, step names, phase summary, overall
+    summaries
+
+``info(level=1)``
+    specific info: individual test names in ``discover`` and
+    ``execute``
+
+``info(level=2)``
+    extra context: test log paths in ``report``, console log path,
+    guest facts
+
+``info(level=3)``
+    full details: complete output of prepare commands and test
+    execution
+
+When deciding where to place a new message, ask from the user's
+perspective:
+
+* Would a user running plain ``tmt run`` need this information to
+  understand what is happening? ... ``info()`` (level 0)
+* Is the message useful when the user wants details about
+  individual items such as tests, guests, packages and plugins?
+  ...  ``info(level=1)``
+* Does it help investigating results after the run, for example
+  log paths or guest facts?  ... ``info(level=2)``
+* Is it providing the full command or test output? ...
+  ``info(level=3)``
+* Would only a tmt developer care? ... ``debug()``
+
+
+Debug Levels
+------------------------------------------------------------------
+
+Debug levels control developer-facing diagnostics and are
+incremented with ``-d`` on the command line. Focus on *tmt
+internals* when choosing the right level:
+
+``debug(level=1)``
+    high-level info: framework choice, policy application, reboot
+
+``debug(level=2)``
+    detailed operations: step load, wake up, guest pull/push,
+    playbook path
+
+``debug(level=3)``
+    internal plumbing: workdir handling, process termination, key
+    normalization
+
+
+Log Topics
+------------------------------------------------------------------
+
+In addition to levels, debug messages can be tagged with a
+**topic** to group related diagnostics across the codebase. Users
+can selectively enable topics with the ``--log-topic`` option
+without raising the overall debug level:
+
+.. code-block:: shell
+
+    tmt run --log-topic=key-normalization
+    tmt run --log-topic=adjust-decisions --log-topic=command-events
+
+Messages tagged with a topic are hidden by default and only shown
+when the topic is explicitly enabled. When adding new debug
+messages that belong to a specific subsystem, use the ``topic``
+parameter:
+
+.. code-block:: python
+
+    self.debug('key', value, level=3, topic=tmt.log.Topic.KEY_NORMALIZATION)
+
+See the :py:class:`tmt.log.Topic` class for the list of available
+topics.
+
+
 .. _issues:
 
 Issues
