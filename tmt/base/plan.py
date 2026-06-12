@@ -4,7 +4,7 @@ import itertools
 import re
 import shutil
 import tempfile
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union, cast
 
@@ -487,11 +487,11 @@ class Plan(
         Environment variables from ``environment`` and ``environment-file`` keys.
         """
 
-        return Environment.from_inputs(
-            raw_fmf_environment_files=self.node.get("environment-file") or [],
-            raw_fmf_environment=self.node.get('environment', {}),
+        return Environment.from_fmf_keys(
+            raw_fmf_environment_files=cast(Optional[list[str]], self.node.get("environment-file"))
+            or [],
+            raw_fmf_environment=cast(Optional[dict[str, Any]], self.node.get('environment')) or {},
             file_root=Path(self.node.root) if self.node.root else None,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
-            key_address=self.node.name,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             logger=self._logger,
         )
 
@@ -501,11 +501,27 @@ class Plan(
         Environment variables from ``--environment`` and ``--environment-file`` options.
         """
 
-        return Environment.from_inputs(
-            raw_cli_environment_files=self.opt('environment-file') or [],
-            raw_cli_environment=self.opt('environment'),
+        # Do not use `self.opt()` or anything similar: we are only looking
+        # at options given to command that has no better storage for CLI
+        # options than the `Plan` class itself. `tmt run` is represented
+        # internally as a `Run` instance, it owns its environment, but
+        # commands like `tmt * show` accept environment options, but have
+        # no internal representation. Such commands store the CLI invocation,
+        # and that is what we inspect and consume.
+
+        cli_invocation = self.__class__.cli_invocation
+
+        if cli_invocation is None:
+            return Environment()
+
+        return Environment.from_cli_options(
+            raw_cli_environment_files=cast(
+                Sequence[str], cli_invocation.options.get('environment-file')
+            )
+            or [],
+            raw_cli_environment=cast(Sequence[str], cli_invocation.options.get('environment'))
+            or [],
             file_root=Path(self.node.root) if self.node.root else None,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
-            key_address=self.node.name,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             logger=self._logger,
         )
 
