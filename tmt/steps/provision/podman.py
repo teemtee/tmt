@@ -1,3 +1,4 @@
+import contextlib
 import os
 from shlex import quote
 from typing import Any, ClassVar, Optional, Union, cast
@@ -646,6 +647,9 @@ class GuestContainer(tmt.Guest):
         """
 
         if self.container:
+            with contextlib.suppress(tmt.utils.RunError):
+                self.podman(Command('exec', self.container, 'kill', '-HUP', '-1'))
+
             self.podman(
                 Command('container', 'stop', '--time', str(self.stop_time), self.container)
             )
