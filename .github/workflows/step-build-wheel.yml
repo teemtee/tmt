@@ -13,8 +13,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           ref: ${{ inputs.ref }}
           persist-credentials: false
-      - uses: hynek/build-and-inspect-python-package@v2.17.0
+      - uses: hynek/build-and-inspect-python-package@v2.18.0
