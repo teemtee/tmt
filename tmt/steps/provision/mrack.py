@@ -291,20 +291,25 @@ def transforms(fn: ConstraintTransformer[ConstraintT]) -> ConstraintTransformer[
     A decorator marking a function as a constraint transformer.
 
     Function name is expected to provide the constraint name it
-    transforms: decorator strips away the initial ``_transform_``
-    prefix, and replaces the first underscore, ``_`` with a dot, ``.``:
+    transforms, and decorator:
+
+    * strips away the initial ``_transform_`` prefix,
+    * replaces the first underscore, ``_`` with a dot, ``.``,
+    * replaces all remaining underscores with dashes, ``-``.
 
     .. code-block::
 
         _transform_beaker_pool => beaker.pool
-        _transform_disk_physical_sector_size => disk.physical_sector_size
+        _transform_disk_physical_sector_size => disk.physical-sector-size
 
     :param fn: function to decorate.
     """
 
     global _CONSTRAINT_TRANSFORMERS
 
-    _CONSTRAINT_TRANSFORMERS[fn.__name__.replace('_transform_', '').replace('_', '.', 1)] = fn
+    _CONSTRAINT_TRANSFORMERS[
+        fn.__name__.replace('_transform_', '').replace('_', '.', 1).replace('_', '-')
+    ] = fn
 
     @functools.wraps(fn)
     def _transforms(constraint: ConstraintT, logger: tmt.log.Logger) -> BeakerizedConstraint:
@@ -928,9 +933,12 @@ def constraint_to_beaker_filter(
         constraint, logger
     ) or _translate_constraint_by_transformer(constraint, logger)
 
-    if not transformed and constraint.name != 'beaker.panic_watchdog':
+    if not transformed and constraint.name != 'beaker.panic-watchdog':
         # Make sure user is aware constraint would have no effect.
         logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
+
+    print(f'{constraint=} -> {transformed=}')
+
     return transformed
 
 
@@ -1019,7 +1027,7 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             Check if any of the constraints are beaker panic-watchdog with the value True
             """
             if isinstance(constraint, tmt.hardware.FlagConstraint):
-                return constraint.name == 'beaker.panic_watchdog' and constraint.value
+                return constraint.name == 'beaker.panic-watchdog' and constraint.value
 
             if isinstance(constraint, (tmt.hardware.constraints.And, tmt.hardware.constraints.Or)):
                 return any(
