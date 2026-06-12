@@ -62,6 +62,22 @@ rlJournalStart
         run_test "Verify that custom value which is the same as the default is recognized" /value-source/same-as-default  "5m +10m +50m"
     rlPhaseEnd
 
+    rlPhaseStartTest "Multiple policies"
+        function run_test () {
+            rlRun "tmt -vv test export \
+                --policy-root ../../policies/test \
+                --policy-name test --policy-name contact \
+                /basic"
+            rlRun -s "tmt -vv test export \
+                --policy-root ../../policies/test \
+                --policy-name test --policy-name contact \
+                /basic 2> /dev/null"
+        }
+        run_test
+        rlRun "yq '.[0] | .test' $rlRun_LOG | grep -- 'bash -c'" 0 "Test policy was applied"
+        rlRun "yq '.[0] | .contact == \"xyzzy\"' $rlRun_LOG" 0 "Test policy was applied"
+    rlPhaseEnd
+
     rlPhaseStartTest "Test whether tmt run accepts a policy"
         function run_test () {
             local option="$1"
