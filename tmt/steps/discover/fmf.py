@@ -908,7 +908,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 if not dist_git_merge:
                     if self.data.path:
                         self.warn(
-                            "Automatic fmf root detection combined with 'path' key is ill"
+                            "Automatic fmf root detection combined with 'path' key is ill "
                             "defined. "
                             "This will be more narrowly defined in an upcoming tmt release."
                         )
