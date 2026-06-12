@@ -8,15 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
       - name: Build - tmt
-        uses: redhat-actions/buildah-build@v2.12
+        uses: redhat-actions/buildah-build@v2.13
         id: build-image-tmt
         with:
           image: tmt
           containerfiles: ./containers/Containerfile.mini
       - name: Build - tmt-all
-        uses: redhat-actions/buildah-build@v2.12
+        uses: redhat-actions/buildah-build@v2.13
         id: build-image-tmt-all
         with:
           image: tmt-all

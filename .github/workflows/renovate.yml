@@ -20,15 +20,15 @@ jobs:
     environment: renovate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
       - name: Get GitHub App token
         id: token
-        uses: actions/create-github-app-token@v3.1.1
+        uses: actions/create-github-app-token@v3.2.0
         with:
           client-id: ${{ secrets.RENOVATE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RENOVATE_BOT_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-      - uses: renovatebot/github-action@v46.1.12
+      - uses: renovatebot/github-action@v46.1.15
         with:
           configurationFile: .github/renovate-config.json
           token: '${{ steps.token.outputs.token }}'
