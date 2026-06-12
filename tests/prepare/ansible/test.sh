@@ -49,7 +49,7 @@ rlJournalStart
                     continue
                 fi
 
-                if is_fedora_rawhide "$image"; then
+                if is_fedora_rawhide "$image" || is_fedora_eln "$image"; then
                         # https://github.com/ansible/ansible/issues/87081
                         rlLogInfo "Ansible on rawhide/python3.15 is broken right now"
                     rlPhaseEnd
