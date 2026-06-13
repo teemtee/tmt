@@ -1272,7 +1272,7 @@ class Step(
             plugin_label = f'{plugin_envvar.step.name}/{plugin_envvar.how}'
 
             if plugin_envvar.plugin_class is None:
-                self.warn(
+                self.debug(
                     f"Found environment variable for plugin '{plugin_label}',"
                     " but the plugin was not found. The following environment variable"
                     f" will have no effect: {plugin_envvar.name}."
@@ -1287,7 +1287,7 @@ class Step(
             ]
 
             if not compatible_raw_data:
-                self.warn(
+                self.debug(
                     f"Found environment variable for plugin '{plugin_label}',"
                     f" but the plugin is not used by the plan '{self.plan.name}'. The"
                     f" following environment variable will have no effect: {plugin_envvar.name}."
