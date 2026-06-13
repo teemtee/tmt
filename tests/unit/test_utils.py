@@ -17,6 +17,7 @@ import pytest
 
 import tmt
 import tmt.base.core
+import tmt.base.links
 import tmt.base.plan
 import tmt.log
 import tmt.plugins
@@ -1703,7 +1704,7 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test],
-            links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            links=tmt.base.links.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
         result = mock_jira.return_value.add_simple_link.call_args.args[1]
@@ -1719,7 +1720,7 @@ class TestJiraLink(unittest.TestCase):
         story = tmt.Tree(logger=self.logger, path=self.tmp).stories(names=['tmp'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test, plan, story],
-            links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            links=tmt.base.links.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
         result = mock_jira.return_value.add_simple_link.call_args.args[1]
@@ -1742,7 +1743,7 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test],
-            links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            links=tmt.base.links.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
         # Load the test object again with the link present

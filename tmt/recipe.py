@@ -21,12 +21,11 @@ from tmt.utils import Common, Environment, FmfContext, NormalizeKeysMixin, Path,
 if TYPE_CHECKING:
     from tmt.base.core import (
         Dependency,
-        Links,
         Test,
         _RawAdjustRule,
         _RawDependency,
-        _RawLinks,
     )
+    from tmt.base.links import Links, _RawLinks
     from tmt.base.plan import Plan
     from tmt.base.run import Run
 
@@ -39,7 +38,7 @@ DEFAULT_TEST_DURATION_L1 = '5m'
 
 
 def _normalize_link(value: Optional['_RawLinks']) -> 'Links':
-    from tmt.base.core import Links
+    from tmt.base.links import Links
 
     return Links(data=value)
 
@@ -215,8 +214,6 @@ class _RecipeTest(
         )
 
     def to_minimal_spec(self) -> _RawRecipeTest:
-        from tmt.base.core import _RawLinks
-
         spec = {
             key_to_option(key): value for key, value in self.items() if value not in (None, [], {})
         }
@@ -224,7 +221,7 @@ class _RecipeTest(
         field_map: dict[str, Callable[[Any], Any]] = {
             'test': lambda test: str(test) if test is not None else None,
             'path': lambda path: str(path) if path is not None else None,
-            'link': lambda link: cast(_RawLinks, link.to_spec()) if link else None,
+            'link': lambda link: cast('_RawLinks', link.to_spec()) if link else None,
             'require': lambda requires: [require.to_minimal_spec() for require in requires],
             'recommend': lambda recommends: [
                 recommend.to_minimal_spec() for recommend in recommends
@@ -421,7 +418,7 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
     def from_spec(cls, spec: _RawRecipePlan, logger: Logger) -> '_RecipePlan':  # type: ignore[override]
-        from tmt.base.core import DEFAULT_ORDER, _RawLinks
+        from tmt.base.core import DEFAULT_ORDER
 
         return _RecipePlan(
             name=spec.get('name', ''),
@@ -435,7 +432,7 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
             tag=spec.get('tag', []),
             tier=spec.get('tier'),
             adjust=spec.get('adjust'),
-            link=_normalize_link(cast(_RawLinks, spec.get('link'))),
+            link=_normalize_link(cast('_RawLinks', spec.get('link'))),
             environment=Environment.from_fmf_spec(spec.get('environment', {})),
             context=FmfContext.from_serialized(spec.get('context', {})),
             discover=_RecipeDiscoverStep.from_spec(spec.get('discover', {}), logger),
@@ -474,14 +471,12 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
         )
 
     def to_minimal_spec(self) -> _RawRecipePlan:
-        from tmt.base.core import _RawLinks
-
         spec = {
             key_to_option(key): value for key, value in self.items() if value not in (None, [], {})
         }
 
         field_map: dict[str, Callable[[Any], Any]] = {
-            'link': lambda link: cast(_RawLinks, link.to_spec()) if link else None,
+            'link': lambda link: cast('_RawLinks', link.to_spec()) if link else None,
             'environment': lambda environment: environment.to_fmf_spec(),
             'context': lambda context: context.to_spec(),
             'discover': lambda step: step.to_spec(),

@@ -7,6 +7,7 @@ import fmf
 
 import tmt
 import tmt.base.core
+import tmt.base.links
 import tmt.checks
 import tmt.log
 import tmt.steps
@@ -74,15 +75,15 @@ class TestDescription(
             50 if raw_value is None else int(raw_value)
         ),
     )
-    link: Optional[tmt.base.core.Links] = field(
+    link: Optional[tmt.base.links.Links] = field(
         default=None,
-        normalize=lambda key_address, raw_value, logger: tmt.base.core.Links(data=raw_value),
+        normalize=lambda key_address, raw_value, logger: tmt.base.links.Links(data=raw_value),
         # Using `to_spec()` on purpose: `Links` does not provide serialization
         # methods, because specification of links is already good enough. We
         # can use existing `to_spec()` method, and undo it with a simple
         # `Links(...)` call.
         serialize=lambda link: link.to_spec() if link else None,
-        unserialize=lambda serialized_link: tmt.base.core.Links(data=serialized_link),
+        unserialize=lambda serialized_link: tmt.base.links.Links(data=serialized_link),
     )
     id: Optional[str] = None
     tag: list[str] = field(

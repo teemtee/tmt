@@ -18,6 +18,7 @@ import fmf.utils
 import tmt
 import tmt._bootstrap
 import tmt.base.core
+import tmt.base.links
 import tmt.base.plan
 import tmt.config
 import tmt.convert
@@ -2121,7 +2122,7 @@ def link(
     for link in links:
         tmt.utils.jira.link(
             tmt_objects=tmt_objects,
-            links=tmt.base.core.Links(data=link),
+            links=tmt.base.links.Links(data=link),
             separate=separate,
             logger=context.obj.logger,
         )

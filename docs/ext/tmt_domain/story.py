@@ -11,7 +11,8 @@ from sphinx.domains import Index, IndexEntry
 from sphinx.util import logging
 
 from tmt._compat.pathlib import Path
-from tmt.base.core import Link, Story
+from tmt.base.core import Story
+from tmt.base.links import Link
 from tmt.utils.git import web_git_url
 
 from .autodoc import Content
