@@ -8,13 +8,12 @@ from tmt.base.core import (
     DependencyFile,
     DependencyFmfId,
     DependencySimple,
-    Link,
-    Links,
     Status,
     Story,
     Test,
     Tree,
 )
+from tmt.base.links import Link, Links
 from tmt.base.plan import Plan
 from tmt.base.run import Run
 

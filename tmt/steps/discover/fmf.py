@@ -7,6 +7,7 @@ import fmf
 
 import tmt
 import tmt.base.core
+import tmt.base.links
 import tmt.log
 import tmt.options
 import tmt.steps
@@ -716,7 +717,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # FIXME: cast() - typeless "dispatcher" method
         raw_link_needles = cast(list[str], tmt.Test._opt('links', []) or self.get('link', []))
         link_needles = [
-            tmt.base.core.LinkNeedle.from_spec(raw_needle) for raw_needle in raw_link_needles
+            tmt.base.links.LinkNeedle.from_spec(raw_needle) for raw_needle in raw_link_needles
         ]
 
         for link_needle in link_needles:
