@@ -602,7 +602,7 @@ class GuestArtemis(tmt.GuestSsh):
         for log_type in self.log_type:
             self.collect_log(GuestLogArtemis(name=log_type, guest=self))
 
-        self.setup_logs(logger=self._logger)
+        self.kickoff_logs(logger=self._logger)
 
         def get_new_state() -> GuestInspectType:
             nonlocal previous_state
