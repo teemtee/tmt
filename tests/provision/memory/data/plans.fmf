@@ -10,8 +10,8 @@ discover:
 /override:
     provision:
         how: virtual
+        image: fedora
         hardware:
-            image: fedora
             virtualization:
                 is-supported: true
             memory: '>= 8 GB'
@@ -20,8 +20,8 @@ discover:
 /hardware-only:
     provision:
         how: virtual
+        image: fedora
         hardware:
-            image: fedora
             virtualization:
                 is-supported: true
             memory: '>= 8 GB'
@@ -29,7 +29,7 @@ discover:
 /default:
     provision:
         how: virtual
+        image: fedora
         hardware:
-            image: fedora
             virtualization:
                 is-supported: true
