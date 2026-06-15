@@ -647,7 +647,7 @@ class GuestMock(tmt.Guest):
         (self.mock_command_prefix + Command('--scrub=all')).run(cwd=None, logger=self._logger)
 
     def suspend(self) -> None:
-        self.stop()
+        self.stop(logger=self._logger)
 
     def start(self) -> None:
         if self.is_dry_run:
@@ -655,7 +655,7 @@ class GuestMock(tmt.Guest):
 
         self.mock_shell.enter_shell()
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         self.mock_shell.exit_shell()
         self.run(Command('rm', '-rf', str(self.root_path / MOCK_PIPE)))
 
