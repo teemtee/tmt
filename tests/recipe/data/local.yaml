@@ -115,6 +115,7 @@ plans:
             environment:
                 PROVISION_ENV: provision_value
             image: fedora
+            log-update-tick: 300
             user: root
             force-pull: false
             pull-attempts: 5
