@@ -32,6 +32,7 @@ import logging
 import os
 import sys
 import textwrap
+import typing
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -64,15 +65,17 @@ LOG_FILENAME = 'log.txt'
 # Hierarchy indent
 INDENT = 4
 
-#: Supported verbosity levels.
-VERBOSITY_LEVELS = (0, 1, 2, 3, 4)
-#: Supported debug levels.
-DEBUG_LEVELS = (0, 1, 2, 3, 4)
-
 #: A type of verbosity level values accepted by logging functions.
 VerbosityLevel: 'TypeAlias' = Literal[0, 1, 2, 3, 4]
+
 #: A type of debug level values accepted by logging functions.
 DebugLevel: 'TypeAlias' = Literal[0, 1, 2, 3, 4]
+
+#: Supported verbosity levels.
+VERBOSITY_LEVELS: tuple[VerbosityLevel, ...] = tuple(typing.get_args(VerbosityLevel))
+
+#: Supported debug levels.
+DEBUG_LEVELS: tuple[DebugLevel, ...] = tuple(typing.get_args(DebugLevel))
 
 DEFAULT_VERBOSITY_LEVEL: VerbosityLevel = 0
 DEFAULT_DEBUG_LEVEL: DebugLevel = 0

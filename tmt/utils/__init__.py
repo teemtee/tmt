@@ -2457,7 +2457,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         filepath: Path,
         data: str,
         mode: WriteMode = 'w',
-        debug_level: VerbosityLevel = 2,
+        debug_level: DebugLevel = 2,
         permissions: Optional[int] = None,
     ) -> None:
         """
@@ -6414,7 +6414,6 @@ class NormalizeKeysMixin(_CommonBase):
             value: Any = None
             value_source: FieldValueSource
 
-            # Verbose, let's hide it a bit deeper.
             debug('dict', self.__dict__)
 
             if hasattr(self, keyname):
