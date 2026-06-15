@@ -11,7 +11,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Verify plugin envvars are delivered"
-        rlRun "run_tmt=\"tmt -vvv --feeling-safe --log-topic=cli-invocations run --id $rundir --scratch\""
+        rlRun "run_tmt=\"tmt -vvvd --feeling-safe --log-topic=cli-invocations run --id $rundir --scratch\""
 
         rlRun -s "$run_tmt"
         rlAssertGrep "ReportPlugin.delegate\(step=report, data=None, raw_data=\{'how': 'html', 'absolute-paths': False, 'display-guest': 'auto', 'name': 'default-0'\}\)" $rundir/log.txt -E
@@ -23,13 +23,13 @@ rlJournalStart
     rlPhaseStartTest "Verify unknown plugins are reported"
         rlRun -s "TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST=never $run_tmt"
 
-        rlAssertGrep "Found environment variable for plugin 'report/xhtml', but the plugin was not found. The following environment variable will have no effect: TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST" $rundir/log.txt
+        rlAssertGrep "Found environment variable for plugin 'report/xhtml', but the plugin was not found. The following environment variable will have no effect: TMT_PLUGIN_REPORT_XHTML_DISPLAY_GUEST" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Verify unused envvars are reported"
         rlRun -s "TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST=never $run_tmt"
 
-        rlAssertGrep "Found environment variable for plugin 'report/display', but the plugin is not used by the plan '/'. The following environment variable will have no effect: TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST" $rundir/log.txt
+        rlAssertGrep "Found environment variable for plugin 'report/display', but the plugin is not used by the plan '/'. The following environment variable will have no effect: TMT_PLUGIN_REPORT_DISPLAY_DISPLAY_GUEST" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Verify unknown options are reported"
