@@ -282,9 +282,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         :returns: Potential path to the metadata tree root within the fetched source.
         """
         self.info('url', url, 'green')
-        if self.is_dry_run:
-            return None
-
         if self.data.url_content_type == "git":
             self.debug(f"Clone '{url}' to '{self.test_dir}'.")
 

@@ -637,17 +637,18 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         super().go(path=path, logger=logger)
 
-        dist_git_source = self.get('dist-git-source', False)
-
         # No tests are selected in some cases
         self._tests: list[tmt.Test] = []
+
+        if self.is_dry_run:
+            return
+
+        dist_git_source = self.get('dist-git-source', False)
 
         self.log_import_plan_details()
 
         # Dist-git source processing during discover step
         if dist_git_source:
-            if self.is_dry_run:
-                return
             try:
                 git_root = tmt.utils.git.git_root(fmf_root=self.test_dir, logger=self._logger)
                 if not git_root:
@@ -703,8 +704,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         path = path or Path('')
         tree_path = self.test_dir / path.unrooted()
         if not tree_path.is_dir():
-            if self.is_dry_run:
-                return []
             raise tmt.utils.DiscoverError(f"Metadata tree path '{path}' not found.")
 
         # Show filters and test names if provided
@@ -738,56 +737,50 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             self.info('modified-url', modified_url, 'green')
             if previous != modified_url:
                 self.debug(f"Original url was '{previous}'.")
-            if self.is_dry_run:
-                self.debug("Skipping 'modified-url' fetch in dry run.")
-            else:
-                self.debug(f"Fetch also '{modified_url}' as 'reference'.")
-                self.run(
-                    Command('git', 'remote', 'add', 'reference', modified_url),
-                    cwd=self.test_dir,
-                )
-                self.run(
-                    Command('git', 'fetch', 'reference'),
-                    cwd=self.test_dir,
-                )
+            self.debug(f"Fetch also '{modified_url}' as 'reference'.")
+            self.run(
+                Command('git', 'remote', 'add', 'reference', modified_url),
+                cwd=self.test_dir,
+            )
+            self.run(
+                Command('git', 'fetch', 'reference'),
+                cwd=self.test_dir,
+            )
         if modified_only:
-            if self.is_dry_run and self.get('modified-url'):
-                self.debug("Skipping 'modified-only' filter in dry run.")
-            else:
-                modified_ref = self.get(
-                    'modified-ref',
-                    tmt.utils.git.default_branch(repository=self.test_dir, logger=self._logger),
-                )
-                self.info('modified-ref', modified_ref, 'green')
-                ref_commit = self.run(
-                    Command('git', 'rev-parse', '--short', str(modified_ref)),
-                    cwd=self.test_dir,
-                )
-                assert ref_commit.stdout is not None
-                self.verbose('modified-ref hash', ref_commit.stdout.strip(), 'green')
-                output = self.run(
-                    Command(
-                        'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
-                    ),
-                    cwd=self.test_dir,
-                )
-                if output.stdout:
-                    directories = [Path(name).parent for name in output.stdout.split('\n')]
-                    modified = {
-                        # ($|/): match end of test name or `/` which would be any sub-test
-                        f"^/{re.escape(str(directory))}($|/)"
-                        for directory in directories
-                        if directory
-                    }
-                    if not modified:
-                        # Nothing was modified, do not select anything
-                        return []
-                    self.debug(f"Limit to modified test dirs: {modified}", level=3)
-                    self.data.test.extend(TestsWithAdjusts(name=name) for name in modified)
-                else:
-                    self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
+            modified_ref = self.get(
+                'modified-ref',
+                tmt.utils.git.default_branch(repository=self.test_dir, logger=self._logger),
+            )
+            self.info('modified-ref', modified_ref, 'green')
+            ref_commit = self.run(
+                Command('git', 'rev-parse', '--short', str(modified_ref)),
+                cwd=self.test_dir,
+            )
+            assert ref_commit.stdout is not None
+            self.verbose('modified-ref hash', ref_commit.stdout.strip(), 'green')
+            output = self.run(
+                Command(
+                    'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
+                ),
+                cwd=self.test_dir,
+            )
+            if output.stdout:
+                directories = [Path(name).parent for name in output.stdout.split('\n')]
+                modified = {
+                    # ($|/): match end of test name or `/` which would be any sub-test
+                    f"^/{re.escape(str(directory))}($|/)"
+                    for directory in directories
+                    if directory
+                }
+                if not modified:
                     # Nothing was modified, do not select anything
                     return []
+                self.debug(f"Limit to modified test dirs: {modified}", level=3)
+                self.data.test.extend(TestsWithAdjusts(name=name) for name in modified)
+            else:
+                self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
+                # Nothing was modified, do not select anything
+                return []
 
         # Initialize the metadata tree, search for available tests
         self.debug(f"Check metadata tree in '{tree_path}'.")

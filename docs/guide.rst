@@ -1260,9 +1260,8 @@ Use the ``-n`` / ``--dry`` flag to enable dry mode. In this mode
 tmt reads and validates metadata, resolves configurations, and
 reports what it would do, but skips every action that modifies
 state: no guests are provisioned, no guest commands are executed,
-no results are submitted. It is a safe way to validate a plan
-or check which tests would be selected without triggering any
-side effects.
+no results are submitted. It is a safe way to see which steps and
+phases would run without triggering any side effects.
 
 **What dry mode allows:**
 
@@ -1283,11 +1282,8 @@ The following sections describe the behavior of each step in
 dry mode:
 
 discover
-    Tests from the local repository are discovered normally.
-    If a remote repository or ``dist-git-source`` is specified,
-    the test discovery is skipped and no tests will be discovered.
-    For the :ref:`/plugins/discover/shell` plugin, tests defined
-    in the plan are always discovered, but no remote data is fetched.
+    No tests are discovered. No remote data is fetched.
+    The step reports which provision phases would run.
 
 provision
     No images are pulled or built. No guests are provisioned.
