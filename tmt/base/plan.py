@@ -487,9 +487,12 @@ class Plan(
         """
 
         return Environment.from_fmf_keys(
-            raw_fmf_environment_files=cast(Optional[list[str]], self.node.get("environment-file"))
-            or [],
-            raw_fmf_environment=cast(Optional[dict[str, Any]], self.node.get('environment')) or {},
+            raw_fmf_environment_files=tmt.utils.normalize_string_list(
+                f'{self.name}:environment-file', self.node.get("environment-file"), self._logger
+            ),
+            raw_fmf_environment=tmt.utils.normalize_string_dict(
+                f'{self.name}:environment', self.node.get('environment'), self._logger
+            ),
             file_root=Path(self.node.root) if self.node.root else None,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             logger=self._logger,
         )
