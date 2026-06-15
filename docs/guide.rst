@@ -1324,12 +1324,15 @@ Several other commands also support ``--dry``:
     Metadata is read and converted but not written to any ``.fmf``
     files.
 
-``tmt tests export``, ``tmt plans export``, ``tmt stories export``
-    Read-only operations against external services are performed
-    so that tmt can show what *would* change. Write operations
-    (creating or updating test cases in Nitrate or Polarion) are
-    skipped. Exporters that only write local files still produce
-    their output.
+``tmt tests export``
+    Behavior depends on the export format:
+
+    * For remote service exporters (``nitrate``, ``polarion``),
+      all write operations are skipped. The exporters still
+      report what would be done.
+    * For stdout-only formats (``yaml``, ``json``, ``rst``,
+      etc.), dry mode has no effect — output is always printed
+      to the terminal since there are no side effects to skip.
 
 
 .. include:: guide/test-runner.inc.rst
