@@ -1669,14 +1669,9 @@ class GuestLogUpdater(threading.Thread):
     #: Guest whose logs the thread updates.
     guest: 'Guest'
 
-    #: As long as this flag is set, the inner loop will continue its
-    #: iterations.
-    keep_running: threading.Event
-
-    #: Instead of :py:func:`time.sleep`, a condition is used for sleeping
-    #: between iterations of the inner loop. Once notified, the sleeping
-    #: thread can be woken up & quit.
-    limbo: threading.Condition
+    #: As long as this flag is **not** set, the inner loop will continue
+    #: its iterations.
+    stop_running: threading.Event
 
     def __init__(
         self,
@@ -1690,17 +1685,11 @@ class GuestLogUpdater(threading.Thread):
         self.guest = guest
         self.update_tick = update_tick
 
-        self.keep_running = threading.Event()
-        self.limbo = threading.Condition()
+        self.stop_running = threading.Event()
 
     def run(self) -> None:
-        while self.keep_running.is_set():
-            # TODO: shall fetch before first sleep?
-            self.limbo.wait(timeout=self.update_tick)
-
-            if not self.keep_running.is_set():
-                break
-
+        # TODO: shall fetch before first sleep?
+        while not self.stop_running.wait(timeout=self.update_tick):
             self.guest.update_logs(logger=self.guest._logger)
 
     def start(self) -> None:
@@ -1714,7 +1703,7 @@ class GuestLogUpdater(threading.Thread):
             is possible - or worth the effort - to start the updates.
         """
 
-        self.keep_running.set()
+        self.stop_running.clear()
 
         super().start()
 
@@ -1732,10 +1721,7 @@ class GuestLogUpdater(threading.Thread):
         if not self.is_alive():
             return
 
-        self.keep_running.clear()
-
-        with self.limbo:
-            self.limbo.notify_all()
+        self.stop_running.set()
 
         self.join()
 
