@@ -1299,11 +1299,8 @@ execute
     method and returns empty results.
 
 report
-    Plugins that require an external service (e.g. submitting
-    results to Polarion or ReportPortal) are skipped. Plugins
-    that only write local files (e.g. ``junit``, ``html``) still
-    produce their output. The step reports which report phases
-    would run.
+    No external services are used. No local files are created.
+    The step reports which report phases would run.
 
 finish
     No finishing tasks are executed on guests. The step reports

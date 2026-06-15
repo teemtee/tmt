@@ -95,6 +95,9 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
         super().go(logger=logger)
 
+        if self.is_dry_run:
+            return
+
         # Prepare the template
         environment = tmt.utils.templates.default_template_environment()
 
@@ -151,10 +154,6 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         # Show output file path
         self.info("output", filepath, color='yellow')
         if not self.data.open:
-            return
-
-        # Nothing more to do in dry mode
-        if self.is_dry_run:
             return
 
         # Open target in webbrowser
