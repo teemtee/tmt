@@ -24,7 +24,7 @@ from tmt.utils import (
     Path,
     RunError,
 )
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
 
 if TYPE_CHECKING:
     import tmt.base.core
@@ -761,7 +761,7 @@ def git_clone(
     """
 
     environment = Environment.from_environ()
-    environment["GIT_ASKPASS"] = EnvVarValue("echo")
+    environment["GIT_ASKPASS"] = OpenEnvVarValue("echo")
 
     def clone_the_repo(
         url: str,

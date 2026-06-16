@@ -5,7 +5,7 @@ import tmt.utils
 from tmt.container import container
 from tmt.guest import Guest
 from tmt.steps.context import StepContext
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
 
 if TYPE_CHECKING:
     from tmt.steps.context.reboot import RebootContext
@@ -52,7 +52,7 @@ class RestartContext(StepContext):
 
     @property
     def intrinsic_environment(self) -> Environment:
-        return Environment({'TMT_TEST_RESTART_COUNT': EnvVarValue(str(self.restart_counter))})
+        return Environment({'TMT_TEST_RESTART_COUNT': OpenEnvVarValue(str(self.restart_counter))})
 
     def handle_restart(self, reboot: Optional['RebootContext'] = None) -> bool:
         """
