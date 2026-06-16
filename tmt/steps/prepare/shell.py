@@ -13,8 +13,8 @@ import tmt.utils.git
 from tmt.container import container, field
 from tmt.guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.steps import safe_filename
-from tmt.utils import Command, ShellScript, Stopwatch
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils import Command, OpenEnvVarValue, ShellScript, Stopwatch
+from tmt.utils.environment import Environment
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
@@ -164,7 +164,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
             repo_path = self.phase_workdir / "repository"
 
-            environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
+            environment[self._cloned_repo_path_envvar_name] = OpenEnvVarValue(repo_path.resolve())
 
             with self._url_clone_lock:
                 if not repo_path.exists():

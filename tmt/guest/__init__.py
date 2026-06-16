@@ -70,7 +70,8 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
+from tmt.utils.environment import EnvVarValue as EnvVarValue
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
 
@@ -1940,7 +1941,7 @@ class Guest(
         environment = Environment()
 
         if self.plan_environment_path is not None:
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = OpenEnvVarValue(self.plan_environment_path)
 
         return environment
 

@@ -85,7 +85,7 @@ from tmt.guest import Guest, TransferOptions
 from tmt.steps import safe_filename
 from tmt.steps.context import StepContext
 from tmt.utils import Path, ShellScript
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
 from tmt.utils.templates import render_template
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
@@ -224,8 +224,8 @@ class PidFileContext(StepContext):
     def intrinsic_environment(self) -> Environment:
         return Environment(
             {
-                'TMT_TEST_PIDFILE': EnvVarValue(self.pidfile_path),
-                'TMT_TEST_PIDFILE_LOCK': EnvVarValue(self.pidfile_lock_path),
+                'TMT_TEST_PIDFILE': OpenEnvVarValue(self.pidfile_path),
+                'TMT_TEST_PIDFILE_LOCK': OpenEnvVarValue(self.pidfile_lock_path),
             }
         )
 

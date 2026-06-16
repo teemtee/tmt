@@ -549,6 +549,14 @@ ENVIRONMENT_OPTIONS: list[ClickOptionDecoratorType] = [
              be specified multiple times.
              """,
     ),
+    option(
+        '--secret',
+        metavar='KEY',
+        multiple=True,
+        help="""
+             Set secret environment variable. Environment variable of the given name is ingested.
+             """,
+    ),
 ]
 
 POLICY_OPTIONS: list[ClickOptionDecoratorType] = [

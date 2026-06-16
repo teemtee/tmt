@@ -75,7 +75,9 @@ from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
 from tmt.log import LoggableValue
-from tmt.utils.environment import Environment
+from tmt.utils.environment import Environment, OpenEnvVarValue, _BaseEnvVarValue
+from tmt.utils.environment import EnvVarValue as EnvVarValue
+from tmt.utils.secret import Secret as Secret
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
@@ -359,6 +361,9 @@ class FmfContext(dict[str, list[str]]):
                     f"Context dimension '{key}' has an empty value. "
                     f"Use 'KEY=VALUE' format or remove the dimension entirely."
                 )
+
+            assert isinstance(value, OpenEnvVarValue)
+
             raw_fmf_context[key] = value.split(',')
         return FmfContext(raw_fmf_context)
 
@@ -3641,6 +3646,22 @@ def assert_window_size(window_size: Optional[int]) -> None:
     )
 
 
+def _format_envvar(
+    value: _BaseEnvVarValue,
+    window_size: Optional[int],
+    key_color: 'tmt.utils.themes.Style',
+    list_format: ListFormat,
+    wrap: FormatWrap,
+) -> Iterator[str]:
+    yield from _format_str(
+        str(value),
+        window_size=window_size,
+        key_color=key_color,
+        list_format=list_format,
+        wrap=wrap,
+    )
+
+
 def _format_bool(
     value: bool,
     window_size: Optional[int],
@@ -3914,6 +3935,7 @@ ValueFormatter = Callable[
 #: Available formatters, as ``type``/``formatter`` pairs. If a value is instance
 #: of ``type``, the ``formatter`` is called to render it.
 _VALUE_FORMATTERS: list[tuple[Any, ValueFormatter]] = [
+    (_BaseEnvVarValue, _format_envvar),
     (bool, _format_bool),
     (str, _format_str),
     (list, _format_list),
