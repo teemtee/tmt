@@ -12,7 +12,7 @@ from tmt.utils import Path
 @pytest.fixture
 def report_fix(tmppath: Path, root_logger):
     # need to provide genuine workdir paths - mock would break os.path.* calls
-    step_mock = MagicMock(workdir=tmppath)
+    step_mock = MagicMock(workdir=tmppath, is_dry_run=False)
     plan_mock = MagicMock()
     name_property = PropertyMock(return_value='name')
 
