@@ -15,9 +15,9 @@ from tmt.guest import RebootMode, TransferOptions
 from tmt.steps import Step
 from tmt.utils import (
     Command,
-    EnvVarValue,
     OnProcessEndCallback,
     OnProcessStartCallback,
+    OpenEnvVarValue,
     Path,
     ShellScript,
 )
@@ -80,7 +80,9 @@ class GuestLocal(tmt.Guest):
             # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
             # more.
             if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+                environment['TMT_PLAN_ENVIRONMENT_FILE'] = OpenEnvVarValue(
+                    self.plan_environment_path
+                )
 
         else:
             environment = super()._prepare_command_environment(environment=environment)

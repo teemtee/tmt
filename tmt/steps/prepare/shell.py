@@ -13,7 +13,7 @@ import tmt.utils.git
 from tmt.container import container, field
 from tmt.guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.steps import safe_filename
-from tmt.utils import Command, EnvVarValue, ShellScript, Stopwatch
+from tmt.utils import Command, OpenEnvVarValue, ShellScript, Stopwatch
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
@@ -152,7 +152,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
         # more.
         if guest.plan_environment_path:
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(guest.plan_environment_path)
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = OpenEnvVarValue(guest.plan_environment_path)
 
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
@@ -167,7 +167,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
             repo_path = self.phase_workdir / "repository"
 
-            environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
+            environment[self._cloned_repo_path_envvar_name] = OpenEnvVarValue(repo_path.resolve())
 
             if self.is_dry_run:
                 return

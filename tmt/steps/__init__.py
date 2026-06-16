@@ -70,6 +70,7 @@ from tmt.utils import (
     HasPlanWorkdir,
     HasRunWorkdir,
     HasStepWorkdir,
+    OpenEnvVarValue,
     Path,
     RunError,
     ShellScript,
@@ -3563,10 +3564,10 @@ class Topology(SerializableContainer):
             )
 
             if filepath.suffix == '.sh':
-                environment['TMT_TOPOLOGY_BASH'] = EnvVarValue(filepath)
+                environment['TMT_TOPOLOGY_BASH'] = OpenEnvVarValue(filepath)
 
             elif filepath.suffix == '.yaml':
-                environment['TMT_TOPOLOGY_YAML'] = EnvVarValue(filepath)
+                environment['TMT_TOPOLOGY_YAML'] = OpenEnvVarValue(filepath)
 
             else:
                 raise tmt.utils.GeneralError(f"Unhandled topology file '{filepath}'.")

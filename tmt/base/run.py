@@ -341,6 +341,10 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
         )
 
     @property
+    def _environment_from_secrets(self) -> Environment:
+        return tmt.utils.Environment.from_environ_secrets(*self.opt('secret'))
+
+    @property
     def _environment_from_recipe(self) -> Environment:
         """
         Environment variables from the recipe.
@@ -377,6 +381,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
             {
                 **self._environment_from_workdir,
                 **self._environment_from_cli,
+                **self._environment_from_secrets,
             }
         )
 
