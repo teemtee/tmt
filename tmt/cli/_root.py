@@ -19,7 +19,6 @@ import tmt
 import tmt._bootstrap
 import tmt.base.core
 import tmt.base.links
-import tmt.base.plan
 import tmt.config
 import tmt.convert
 import tmt.identifier
