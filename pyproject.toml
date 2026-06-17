@@ -477,6 +477,7 @@ known-first-party = ["tmt"]
 [tool.pytest.ini_options]
 markers = [
     "containers: tests which need to spawn containers",
+    "nonunit: tests that are discoverable by pytest but are not unit tests",
     "web: tests which need to access the web"
     ]
 

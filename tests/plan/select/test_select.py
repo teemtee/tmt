@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from tests import RunTmt
 
 
+@pytest.mark.nonunit
 def test_ls(run_tmt: 'RunTmt') -> None:
     result = run_tmt('plan', 'ls')
 
@@ -17,6 +18,7 @@ def test_ls(run_tmt: 'RunTmt') -> None:
     assert not result.stderr
 
 
+@pytest.mark.nonunit
 def test_ls_select_by_name(run_tmt: 'RunTmt') -> None:
     result = run_tmt('plan', 'ls', 'core')
 
@@ -25,6 +27,7 @@ def test_ls_select_by_name(run_tmt: 'RunTmt') -> None:
     assert not result.stderr
 
 
+@pytest.mark.nonunit
 def test_ls_select_by_invalid_name(run_tmt: 'RunTmt') -> None:
     result = run_tmt('plan', 'ls', 'non-existent')
 
@@ -32,6 +35,7 @@ def test_ls_select_by_invalid_name(run_tmt: 'RunTmt') -> None:
     assert not result.stderr
 
 
+@pytest.mark.nonunit
 @pytest.mark.parametrize('exclude_option', ['-x', '--exclude'])
 def test_ls_select_by_exclude(run_tmt: 'RunTmt', tmpdir: Path, exclude_option: str) -> None:
     result = run_tmt('plan', 'ls', exclude_option, 'core')
@@ -40,6 +44,7 @@ def test_ls_select_by_exclude(run_tmt: 'RunTmt', tmpdir: Path, exclude_option: s
     assert re.search(r'(?m)^/plans/features/basic$', result.stdout)
 
 
+@pytest.mark.nonunit
 def test_show(run_tmt: 'RunTmt') -> None:
     result = run_tmt('plan', 'show')
 
@@ -48,6 +53,7 @@ def test_show(run_tmt: 'RunTmt') -> None:
     assert not result.stderr
 
 
+@pytest.mark.nonunit
 @pytest.mark.parametrize('filter_option', ['-f', '--filter'])
 def test_show_with_filter(run_tmt: 'RunTmt', filter_option: str) -> None:
     result = run_tmt('plan', 'show', filter_option, 'description:.*fast.*')
@@ -57,6 +63,7 @@ def test_show_with_filter(run_tmt: 'RunTmt', filter_option: str) -> None:
     assert not result.stderr
 
 
+@pytest.mark.nonunit
 @pytest.mark.parametrize('name_option', ['-n', '--name'])
 def test_run_with_name(run_tmt: 'RunTmt', tmpdir: Path, name_option: str) -> None:
     result = run_tmt('run', '-i', tmpdir, 'discover', 'plan', name_option, 'core')
@@ -65,7 +72,17 @@ def test_run_with_name(run_tmt: 'RunTmt', tmpdir: Path, name_option: str) -> Non
     assert re.search(r'(?m)^/plans/features/core$', result.stderr)
 
 
+@pytest.mark.nonunit
 @pytest.mark.parametrize('name_option', ['-n', '--name'])
 def test_run_with_invalid_name(run_tmt: 'RunTmt', tmpdir: Path, name_option: str) -> None:
     with pytest.raises(GeneralError, match=r'(?m)^No plans found\.$'):
-        run_tmt('run', '-i', tmpdir, 'discover', 'plan', name_option, 'non-existent')
+        run_tmt(
+            'run',
+            '-i',
+            tmpdir,
+            'discover',
+            'plan',
+            name_option,
+            'non-existent',
+            catch_exceptions=False,
+        )
