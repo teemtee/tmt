@@ -12,7 +12,7 @@ TEST_DIR = Path(__file__).absolute().parent
 DATA_DIR = TEST_DIR / 'data'
 
 
-@with_cwd(dirname='data')
+@with_cwd(DATA_DIR)
 def test_plan_with_good_context(run_tmt: 'RunTmt') -> None:
     """
     Plan with a good context
@@ -26,7 +26,7 @@ def test_plan_with_good_context(run_tmt: 'RunTmt') -> None:
     assert "arch: 'aarch64' and 'x86_64'" in result.stdout
 
 
-@with_cwd(dirname='data')
+@with_cwd(DATA_DIR)
 def test_plan_with_bad_context(run_tmt: 'RunTmt') -> None:
     """
     Plan with a bad context
@@ -38,7 +38,7 @@ def test_plan_with_bad_context(run_tmt: 'RunTmt') -> None:
     assert "arch: 'aarch64' and 'x86_64'" in result.stdout
 
 
-@with_cwd(dirname='data')
+@with_cwd(DATA_DIR)
 def test_plan_with_good_context_and_bad_command_line(run_tmt: 'RunTmt') -> None:
     """
     Plan with a good context, overwritten by command line
@@ -62,7 +62,7 @@ def test_plan_with_good_context_and_bad_command_line(run_tmt: 'RunTmt') -> None:
     assert "arch: 'aarch64' and 'x86_64'" in result.stdout
 
 
-@with_cwd(dirname='data')
+@with_cwd(DATA_DIR)
 def test_plan_with_broken_values(run_tmt: 'RunTmt') -> None:
     """
     Plan with broken values
