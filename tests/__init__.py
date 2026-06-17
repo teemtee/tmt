@@ -43,7 +43,7 @@ def reset_common() -> None:
 
 
 @contextlib.contextmanager
-def cwd(*, path: Optional[Path] = None, dirname: Optional[str] = None) -> Iterator[Path]:
+def cwd(path: Path) -> Iterator[Path]:
     """
     A context manager switching the current working directory to a given path.
 
@@ -52,19 +52,6 @@ def cwd(*, path: Optional[Path] = None, dirname: Optional[str] = None) -> Iterat
         Changing the current working directory can have unexpected
         consequences in a multithreaded environment.
     """
-
-    if path is not None:
-        pass
-
-    elif dirname is not None:
-        current_test = os.getenv("PYTEST_CURRENT_TEST")
-        assert current_test is not None
-
-        test_filename, _ = current_test.split(':', maxsplit=1)
-        path = Path(test_filename).absolute().parent / dirname
-
-    else:
-        raise ValueError('Either path or dirname must be given.')
 
     cwd = Path.cwd()
 
@@ -77,9 +64,7 @@ def cwd(*, path: Optional[Path] = None, dirname: Optional[str] = None) -> Iterat
         os.chdir(cwd)
 
 
-def with_cwd(
-    *, path: Optional[Path] = None, dirname: Optional[str] = None
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
+def with_cwd(path: Path) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """
     Decorate a test to have it run in the given path as its CWD.
     """
@@ -87,7 +72,7 @@ def with_cwd(
     def _with_cwd(fn: Callable[P, T]) -> Callable[P, T]:
         @functools.wraps(fn)
         def __with_cwd(*args: P.args, **kwargs: P.kwargs) -> T:
-            with cwd(path=path, dirname=dirname):
+            with cwd(path):
                 return fn(*args, **kwargs)
 
         return __with_cwd
