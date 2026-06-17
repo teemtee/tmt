@@ -650,6 +650,7 @@ class GuestContainer(tmt.Guest):
                 self.podman(Command('exec', self.container, 'kill', '-HUP', '-1'))
             except tmt.utils.RunError as exc:
                 # this is expected when there are no leftover processes to kill
+                # TODO: needs a helper similar to show_exception_as_warning()
                 self._logger.debug(f"Failed sending SIGHUP on container .stop(): {exc}")
 
             self.podman(
