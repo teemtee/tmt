@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 import tmt
 import tmt.base.core
+import tmt.base.plan
 import tmt.plugins.plan_shapers
 import tmt.steps
 import tmt.steps.cleanup
