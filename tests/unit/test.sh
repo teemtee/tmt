@@ -22,10 +22,12 @@ rlJournalStart
             PYTEST_PARALLELIZE="-n 0"
         fi
 
+        PYTEST_MARK="not nonunit"
+
         if [ "$ENABLE_CONTAINERS" = "yes" ]; then
-            PYTEST_MARK="-m containers"
+            PYTEST_MARK="$PYTEST_MARK and containers"
         else
-            PYTEST_MARK="-m 'not containers'"
+            PYTEST_MARK="$PYTEST_MARK and not containers"
         fi
 
         rlLogInfo "PYTEST_PARALLELIZE=$PYTEST_PARALLELIZE"
@@ -47,7 +49,7 @@ rlJournalStart
             rlRun "$TEST_VENV/bin/pip install 'pytest-container>=0.4.1' pytest-xdist"
 
             # Note: we're not in the root directory!
-            rlRun "$TEST_VENV/bin/python3 -m $PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK ."
+            rlRun "$TEST_VENV/bin/python3 -m $PYTEST_COMMAND $PYTEST_PARALLELIZE -m '$PYTEST_MARK' ."
 
             rlRun "rm -rf $TEST_VENV"
         rlPhaseEnd
@@ -55,7 +57,7 @@ rlJournalStart
         rlPhaseStartTest "Unit tests"
             # Note: we're not in the root directory!
             rlLogInfo "hatch is $(which hatch), $(hatch --version)"
-            rlRun "hatch -v run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK ."
+            rlRun "hatch -v run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE -m '$PYTEST_MARK' ."
         rlPhaseEnd
     fi
 

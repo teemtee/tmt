@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+import pytest
 from tests import with_cwd
 
 from tmt.utils import Path
@@ -12,6 +13,7 @@ TEST_DIR = Path(__file__).absolute().parent
 DATA_DIR = TEST_DIR / 'data'
 
 
+@pytest.mark.nonunit
 @with_cwd(DATA_DIR)
 def test_plan_with_good_context(run_tmt: 'RunTmt') -> None:
     """
@@ -26,6 +28,7 @@ def test_plan_with_good_context(run_tmt: 'RunTmt') -> None:
     assert "arch: 'aarch64' and 'x86_64'" in result.stdout
 
 
+@pytest.mark.nonunit
 @with_cwd(DATA_DIR)
 def test_plan_with_bad_context(run_tmt: 'RunTmt') -> None:
     """
@@ -38,6 +41,7 @@ def test_plan_with_bad_context(run_tmt: 'RunTmt') -> None:
     assert "arch: 'aarch64' and 'x86_64'" in result.stdout
 
 
+@pytest.mark.nonunit
 @with_cwd(DATA_DIR)
 def test_plan_with_good_context_and_bad_command_line(run_tmt: 'RunTmt') -> None:
     """
@@ -62,6 +66,7 @@ def test_plan_with_good_context_and_bad_command_line(run_tmt: 'RunTmt') -> None:
     assert "arch: 'aarch64' and 'x86_64'" in result.stdout
 
 
+@pytest.mark.nonunit
 @with_cwd(DATA_DIR)
 def test_plan_with_broken_values(run_tmt: 'RunTmt') -> None:
     """
