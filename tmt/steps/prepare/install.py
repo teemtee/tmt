@@ -11,7 +11,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
-from tmt.container import container, field
+from tmt.container import container, field, simple_field
 from tmt.guest import Guest
 from tmt.package_managers import (
     FileSystemPath,
@@ -79,6 +79,9 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         choices=['fail', 'skip'],
         help='Action on missing packages, fail (default) or skip.',
     )
+
+    #: Internal: call ``reinstall`` instead of ``install`` for plain package names.
+    reinstall: bool = simple_field(default=False)
 
 
 @tmt.steps.provides_method('install')
@@ -430,6 +433,19 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         if not self.data.package and not self.data.directory:
             self.debug("No packages for installation found.", level=3)
+            return outcome
+
+        if self.data.reinstall:
+            # Reinstall plain package names only (no local files or URLs).
+            # skip_missing (missing='skip') means packages absent from all repos are silently
+            # ignored rather than failing — the package manager will skip the reinstall for
+            # packages that cannot be found.  We bypass _install's retry-on-metadata-refresh
+            # logic because a reinstall failure here is non-fatal by design.
+            if self.packages:
+                guest.package_manager.reinstall(
+                    *self._list_installables('package', *self.packages),
+                    options=options,
+                )
             return outcome
 
         # ... and install packages.
