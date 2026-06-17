@@ -504,7 +504,7 @@ class SecretEnvVarValue(Secret, _BaseEnvVarValue):
         return self
 
 
-EnvVarValue: TypeAlias = Union[OpenEnvVarValue, SecretEnvVarValue]
+EnvVarValue: 'TypeAlias' = Union[OpenEnvVarValue, SecretEnvVarValue]
 
 
 class HasEnvironment(abc.ABC):
