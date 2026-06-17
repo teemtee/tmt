@@ -1,0 +1,24 @@
+summary: Pre-installed package present (non-verified)
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: foo-1.4
+  Artifacts: foo-2.2 or foo-1.2
+
+  Pre-installed package should be respected in this case
+
+environment+:
+  PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
+
+/upgrade:
+  summary: " (upgrading)"
+  context+:
+    available_artifact: foo-2.2
+  environment+:
+    EXPECTED_PACKAGE: foo-1.4
+
+/downgrade:
+  summary: " (downgrading)"
+  context+:
+    available_artifact: foo-1.2
+  environment+:
+    EXPECTED_PACKAGE: foo-1.4

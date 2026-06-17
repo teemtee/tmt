@@ -1,0 +1,28 @@
+summary: Pre-installed package present
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: foo-1.4
+  Artifacts: foo-2.4 or foo-1.1
+
+  Pre-installed package should be ignored in this case
+
+environment+:
+  PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
+context+:
+  # Because presence check gets in the way.
+  # It should fail at verify phase and test execution.
+  xfail: "true"
+
+/upgrade:
+  summary: " (upgrading)"
+  context+:
+    verified_artifact: foo-2.4
+  environment+:
+    EXPECTED_PACKAGE: foo-2.4
+
+/downgrade:
+  summary: " (downgrading)"
+  context+:
+    verified_artifact: foo-1.1
+  environment+:
+    EXPECTED_PACKAGE: foo-1.1
