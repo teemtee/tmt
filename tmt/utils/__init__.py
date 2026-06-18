@@ -41,6 +41,7 @@ from typing import (
     Final,
     Generic,
     Literal,
+    NewType,
     Optional,
     TextIO,
     TypeVar,
@@ -442,6 +443,10 @@ class _BaseEnvVarValue(abc.ABC):
     A type of environment variable value.
     """
 
+    @functools.cached_property
+    def is_secret(self) -> bool:
+        return False
+
     @property
     @abc.abstractmethod
     def dangerous_as_open(self) -> 'OpenEnvVarValue':
@@ -455,7 +460,7 @@ class _BaseEnvVarValue(abc.ABC):
 
 class OpenEnvVarValue(str, _BaseEnvVarValue):
     def __new__(cls, raw_value: Union[str, Path]) -> Self:
-        if isinstance(raw_value, SecretEnvVarValue):
+        if isinstance(raw_value, _SecretEnvVarValue):
             raise GeneralError("Secret variables cannot be turned into open variables.")
 
         if isinstance(raw_value, str):
@@ -474,12 +479,12 @@ class OpenEnvVarValue(str, _BaseEnvVarValue):
 
     @property
     def as_secret(self) -> 'SecretEnvVarValue':
-        return SecretEnvVarValue(self)
+        return SecretEnvVarValue(_SecretEnvVarValue(self))
 
 
-class SecretEnvVarValue(Secret, _BaseEnvVarValue):
+class _SecretEnvVarValue(Secret, _BaseEnvVarValue):
     def __new__(cls, raw_value: Union[str, Path, 'OpenEnvVarValue']) -> Self:
-        if isinstance(raw_value, SecretEnvVarValue):
+        if isinstance(raw_value, _SecretEnvVarValue):
             raise ValueError("Secret variables cannot be turned into secret variables.")
 
         if isinstance(raw_value, OpenEnvVarValue):
@@ -495,14 +500,20 @@ class SecretEnvVarValue(Secret, _BaseEnvVarValue):
             f"Only strings and paths can be environment variables, '{type(raw_value)}' found."
         )
 
+    @functools.cached_property
+    def is_secret(self) -> bool:
+        return True
+
     @property
     def dangerous_as_open(self) -> 'OpenEnvVarValue':
-        return OpenEnvVarValue(self)
+        return OpenEnvVarValue(super().__str__())
 
     @property
     def as_secret(self) -> Self:
         return self
 
+
+SecretEnvVarValue = NewType('SecretEnvVarValue', _SecretEnvVarValue)
 
 EnvVarValue: 'TypeAlias' = Union[OpenEnvVarValue, SecretEnvVarValue]
 
@@ -4270,6 +4281,22 @@ def assert_window_size(window_size: Optional[int]) -> None:
     )
 
 
+def _format_envvar(
+    value: _SecretEnvVarValue,
+    window_size: Optional[int],
+    key_color: 'tmt.utils.themes.Style',
+    list_format: ListFormat,
+    wrap: FormatWrap,
+) -> Iterator[str]:
+    yield from _format_str(
+        str(value),
+        window_size=window_size,
+        key_color=key_color,
+        list_format=list_format,
+        wrap=wrap,
+    )
+
+
 def _format_bool(
     value: bool,
     window_size: Optional[int],
@@ -4543,6 +4570,7 @@ ValueFormatter = Callable[
 #: Available formatters, as ``type``/``formatter`` pairs. If a value is instance
 #: of ``type``, the ``formatter`` is called to render it.
 _VALUE_FORMATTERS: list[tuple[Any, ValueFormatter]] = [
+    (_BaseEnvVarValue, _format_envvar),
     (bool, _format_bool),
     (str, _format_str),
     (list, _format_list),

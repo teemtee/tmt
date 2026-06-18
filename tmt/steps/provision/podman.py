@@ -260,7 +260,18 @@ class GuestContainer(tmt.Guest):
         # does not support multiline values (one line = one variable)
         filtered_environment = tmt.utils.Environment()
         for key, value in environment.items():
-            if '\n' in value:
+            if value.is_secret:
+                if '\n' in value.dangerous_as_open:
+                    self.warn(
+                        f"Environment variable '{key}' contains a newline character. "
+                        "Podman's env-file format does not support multiline values, "
+                        "skipping this variable."
+                    )
+
+                else:
+                    filtered_environment[key] = value
+
+            elif '\n' in value:
                 self.warn(
                     f"Environment variable '{key}' contains a newline character. "
                     "Podman's env-file format does not support multiline values, "
