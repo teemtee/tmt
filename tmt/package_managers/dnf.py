@@ -1,3 +1,4 @@
+import copy
 import re
 from collections.abc import Iterable, Sequence
 from typing import ClassVar, Optional, cast
@@ -30,10 +31,11 @@ class DnfEngine(PackageManagerEngine):
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command('-y')
 
-        command = self._base_command
-
         if self.guest.facts.sudo_prefix:
             command = Command(self.guest.facts.sudo_prefix) + self._base_command
+
+        else:
+            command = copy.deepcopy(self._base_command)
 
         return (command, options)
 
