@@ -89,10 +89,28 @@ description: |
     /several:
         summary: Multiple shell commands
         title: Multiple commands
-        description:
+        description: |
             You can also include several commands as a list.
-            Executor will run commands one-by-one and check exit
-            code of each.
+            Each command runs in a separate shell session so they
+            do not share environment variables, working directory
+            changes or other shell state. Executor will run
+            commands one-by-one and check exit code of each.
+
+            For example, the following will **not** create the
+            file in ``/tmp`` because ``pushd`` in the first
+            command does not affect the working directory of the
+            second command:
+
+            .. code-block:: yaml
+
+                execute:
+                    script:
+                      - pushd /tmp
+                      - touch testfile
+
+            Use a :tmt:story:`multi-line script </spec/plans/execute/script/multi>`
+            or join related commands with ``&&`` if they need to
+            share the shell session.
         example: |
             execute:
                 script:
