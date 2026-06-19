@@ -1028,7 +1028,13 @@ class HasRunWorkdir(abc.ABC):
         ) as f:
             f.close()
 
-            yield Path(f.name)
+            path = Path(f.name)
+
+            try:
+                yield path
+
+            finally:
+                path.unlink(missing_ok=True)
 
     @contextlib.contextmanager
     def runner_tmpdir(
