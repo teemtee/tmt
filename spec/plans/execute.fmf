@@ -97,15 +97,16 @@ description: |
             commands one-by-one and check exit code of each.
 
             For example, the following will **not** create the
-            file in ``/tmp`` because ``pushd`` in the first
+            file in ``/tmp`` because ``cd`` in the first
             command does not affect the working directory of the
             second command:
 
             .. code-block:: yaml
 
+                # WARNING: broken example
                 execute:
                     script:
-                      - pushd /tmp
+                      - cd /tmp
                       - touch testfile
 
             Use a :tmt:story:`multi-line script </spec/plans/execute/script/multi>`
