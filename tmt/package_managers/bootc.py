@@ -251,7 +251,7 @@ class Bootc(PackageManager[BootcEngine]):
         image_tag = f"{LOCALHOST_BOOTC_IMAGE_PREFIX}/bootc/{uuid.uuid4()}"
 
         # Write the final Containerfile
-        with self.guest.mkdtemp() as containerfile_dir:
+        with self.guest.guest_tmpdir() as containerfile_dir:
             containerfile_path = Path(containerfile_dir, 'Containerfile')
 
             containerfile = '\n'.join(self.engine.containerfile_directives)

@@ -1575,7 +1575,32 @@ class HasRunWorkdir(abc.ABC):
         return path
 
     @contextlib.contextmanager
-    def tmpdir(self, prefix: Optional[str] = None, suffix: Optional[str] = None) -> Iterator[Path]:
+    def runner_tmpfile(
+        self, prefix: Optional[str] = None, suffix: Optional[str] = None
+    ) -> Iterator[Path]:
+        """
+        Path to a new, unique temporary file.
+
+        The file is created with the help of
+        :py:func:`tempfile.NamedTemporaryFile`, using it to manage the
+        file itself. The newly created temporary file is
+        located under the :py:attr:`run_tempdir` directory.
+        """
+
+        with tempfile.NamedTemporaryFile(
+            prefix=prefix,
+            suffix=suffix,
+            dir=self.run_tmpdir,
+            delete=False,
+        ) as f:
+            f.close()
+
+            yield Path(f.name)
+
+    @contextlib.contextmanager
+    def runner_tmpdir(
+        self, prefix: Optional[str] = None, suffix: Optional[str] = None
+    ) -> Iterator[Path]:
         """
         Path to a new, unique temporary directory.
 
@@ -1588,7 +1613,7 @@ class HasRunWorkdir(abc.ABC):
         with tempfile.TemporaryDirectory(
             prefix=prefix, suffix=suffix, dir=self.run_tmpdir
         ) as path:
-            yield self.run_tmpdir / path
+            yield Path(path)
 
 
 class HasUserAnchorPath(abc.ABC):

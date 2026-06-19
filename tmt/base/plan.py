@@ -659,7 +659,7 @@ class Plan(
 
         with (
             tempfile.NamedTemporaryFile(mode='w') as excludes_tempfile,
-            self.tmpdir(prefix='rsync-') as rsync_tempdir,
+            self.runner_tmpdir(prefix='rsync-') as rsync_tempdir,
         ):
             excludes_tempfile.write('\n'.join(str(path) for path in ignore))
 

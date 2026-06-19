@@ -2774,26 +2774,28 @@ class Guest(
             else:
                 logger.info(log.name, str(log.filepath))
 
-    def _construct_mkdtemp_command(
+    def _construct_mktemp_command(
         self,
+        template: str = 'tmp.XXXXXXXXXX',
         prefix: Optional[str] = None,
-        template: Optional[str] = None,
-        parent: Optional[Path] = None,
+        suffix: Optional[str] = None,
+        directory: bool = False,
     ) -> Command:
-        template = template or 'tmp.XXXXXXXXXX'
-
         if prefix is not None:
             template = f'{prefix}{template}'
 
-        options: list[str] = ['--directory']
+        if suffix is not None:
+            template = f'{template}{suffix}'
 
-        if parent is not None:
-            options += ['-p', str(parent)]
+        options: list[str] = ['-p', str(self.run_tmpdir)]
+
+        if directory:
+            options.append('--directory')
 
         return Command(*('mktemp', *options, template))
 
     @contextlib.contextmanager
-    def mkdtemp(
+    def guest_tmpfile(
         self,
         # Suffix is not supported everywhere, namely Alpine does not
         # recognize it, and even requires template to end with `XXXXXX`.
@@ -2802,17 +2804,67 @@ class Guest(
         # parameter.
         # suffix: Optional[str] = None,
         prefix: Optional[str] = None,
-        template: Optional[str] = None,
-        parent: Optional[Path] = None,
+    ) -> Iterator[Path]:
+        """
+        Create a temporary file.
+
+        Modeled after :py:func:`tempfile.NamedTemporaryFile`, but creates
+        the temporary file on the guest, by invoking ``mktemp``-like
+        command. The implementation may slightly differ, but the temporary
+        file should be created safely, without conflicts, and it should
+        be accessible only to user who created it.
+
+        Since the caller is responsible for removing the file, it is
+        recommended to use it as a context manager, just as one would
+        use :py:func:`tempfile.NamedTemporaryFile`; leaving the context
+        will remove the file:
+
+        .. code-block:: python
+
+            with guest.remote_tmpfile() as path:
+                ...
+
+        :param prefix: if set, the directory name will begin with this
+            string.
+        """
+
+        self.execute(Command('mkdir', '-p', self.run_tmpdir))
+
+        output = self.execute(self._construct_mktemp_command(prefix=prefix))
+
+        if not output.stdout:
+            raise GeneralError(f"Failed to create temporary directory on guest: {output.stderr}")
+
+        path = Path(output.stdout.strip())
+
+        try:
+            yield path
+
+        except Exception as exc:
+            raise exc
+
+        else:
+            self.execute(Command('rm', '-f', path))
+
+    @contextlib.contextmanager
+    def guest_tmpdir(
+        self,
+        # Suffix is not supported everywhere, namely Alpine does not
+        # recognize it, and even requires template to end with `XXXXXX`.
+        # Therefore not supporting this option - in the future, someone
+        # may need it, fix it for all distros, and uncomment the
+        # parameter.
+        # suffix: Optional[str] = None,
+        prefix: Optional[str] = None,
     ) -> Iterator[Path]:
         """
         Create a temporary directory.
 
         Modeled after :py:func:`tempfile.mkdtemp`, but creates the
-        temporary directory on the guest, by invoking ``mktemp -d``. The
-        implementation may slightly differ, but the temporary directory
-        should be created safely, without conflicts, and it should be
-        accessible only to user who created it.
+        temporary directory on the guest, by invoking ``mktemp -d``-like
+        command. The implementation may slightly differ, but the temporary
+        directory should be created safely, without conflicts, and it
+        should be accessible only to user who created it.
 
         Since the caller is responsible for removing the directory, it
         is recommended to use it as a context manager, just as one would
@@ -2821,22 +2873,16 @@ class Guest(
 
         .. code-block:: python
 
-            with guest.mkdtemp() as path:
+            with guest.remote_tmpdir() as path:
                 ...
 
         :param prefix: if set, the directory name will begin with this
             string.
-        :param template: if set, the directory name will follow the
-            given naming scheme: the template must end with 6
-            consecutive ``X``s, i.e. ``XXXXXX``. All ``X`` letters will
-            be replaced with random characters.
-        :param parent: if set, new directory will be created under this
-            path. Otherwise, the default directory is used.
         """
 
-        output = self.execute(
-            self._construct_mkdtemp_command(prefix=prefix, template=template, parent=parent)
-        )
+        self.execute(Command('mkdir', '-p', self.run_tmpdir))
+
+        output = self.execute(self._construct_mktemp_command(prefix=prefix))
 
         if not output.stdout:
             raise GeneralError(f"Failed to create temporary directory on guest: {output.stderr}")
@@ -3726,7 +3772,7 @@ class GuestSsh(Guest, CommandCollector):
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
         try:
-            with self.tmpdir(prefix='rsync-') as rsync_tempdir:
+            with self.runner_tmpdir(prefix='rsync-') as rsync_tempdir:
                 self._run_guest_command(
                     Command(
                         "rsync",
