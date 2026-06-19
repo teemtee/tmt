@@ -2875,7 +2875,7 @@ class Guest(
 
         .. code-block:: python
 
-            with guest.remote_tmpfile() as path:
+            with guest.guest_tmpfile() as path:
                 ...
 
         :param prefix: if set, the directory name will begin with this
@@ -2887,7 +2887,7 @@ class Guest(
         output = self.execute(self._construct_mktemp_command(prefix=prefix))
 
         if not output.stdout:
-            raise GeneralError(f"Failed to create temporary directory on guest: {output.stderr}")
+            raise GeneralError(f"Failed to create temporary file on guest: {output.stderr}")
 
         path = Path(output.stdout.strip())
 
@@ -2927,7 +2927,7 @@ class Guest(
 
         .. code-block:: python
 
-            with guest.remote_tmpdir() as path:
+            with guest.guest_tmpdir() as path:
                 ...
 
         :param prefix: if set, the directory name will begin with this
@@ -2936,7 +2936,7 @@ class Guest(
 
         self.execute(Command('mkdir', '-p', self.run_tmpdir))
 
-        output = self.execute(self._construct_mktemp_command(prefix=prefix))
+        output = self.execute(self._construct_mktemp_command(prefix=prefix, directory=True))
 
         if not output.stdout:
             raise GeneralError(f"Failed to create temporary directory on guest: {output.stderr}")
