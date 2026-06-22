@@ -121,18 +121,8 @@ def read_manual(
         data['test'] = 'test.md'
 
         if dry_run:
-            echo(
-                style(
-                    f"Test case would be stored into '{new_cwd / dir_name / 'test.md'}'.",
-                    fg='magenta',
-                )
-            )
-            echo(
-                style(
-                    f"Metadata would be stored into '{new_cwd / dir_name / 'main.fmf'}'.",
-                    fg='magenta',
-                )
-            )
+            log.info(f"Test case would be stored into '{new_cwd / dir_name / 'test.md'}'.")
+            log.info(f"Metadata would be stored into '{new_cwd / dir_name / 'main.fmf'}'.")
         else:
             write_markdown(Path.cwd() / 'test.md', md_content)
             write(Path.cwd() / 'main.fmf', data)
@@ -785,7 +775,7 @@ def read_nitrate(
         else:
             write_markdown(md_path, md_content)
     elif dry_run:
-        echo(style(f"Test case file '{md_path}' would be removed.", fg='magenta'))
+        log.info(f"Test case file '{md_path}' would be removed.")
     else:
         try:
             md_path.unlink()

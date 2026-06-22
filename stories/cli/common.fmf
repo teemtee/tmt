@@ -73,10 +73,10 @@ story:
       - verified-by: /tests/core/dry
 
 /dry:
-    summary: Run in dry mode without performing any side effects
+    summary: Run in dry mode without causing any side effects
     story:
         As a user I want to run commands in dry mode so that I
-        can safely inspect what would happen without triggering
+        can safely inspect what would happen without causing
         any side effects.
     description: |
         When dry mode is enabled, tmt reads and validates metadata,

@@ -1325,14 +1325,10 @@ Several other commands also support ``--dry``:
     files.
 
 ``tmt tests export``
-    Behavior depends on the export format:
-
-    * For remote service exporters (``nitrate``, ``polarion``),
-      all write operations are skipped. The exporters still
-      report what would be done.
-    * For stdout-only formats (``yaml``, ``json``, ``rst``,
-      etc.), dry mode has no effect — output is always printed
-      to the terminal since there are no side effects to skip.
+    Prints the exported item when the output targets local stdout
+    (``yaml``, ``json``, ``rst``, etc.), or prints the request
+    that would be sent when the output targets an external
+    service (``nitrate``, ``polarion``).
 
 
 .. include:: guide/test-runner.inc.rst
