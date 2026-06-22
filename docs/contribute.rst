@@ -577,62 +577,14 @@ Dry Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Dry mode, activated by the option ``--dry``, lets users preview
-"what would tmt do" without actually performing the actions. For
-example the ``tmt clean --dry`` command shows which files would be
-removed and ``tmt run --dry`` shows the test execution plan: which
-steps, phases and plugins would run, with what configuration
-without provisioning guests.
+"what would tmt do" without actually performing the actions. See
+the :ref:`dry-mode-guide` section in the guide for the full
+description of the expected behavior per step and command.
 
-When implementing new features or modifying existing code, follow
-these rules to determine what is allowed and what must be skipped
-when :py:attr:`tmt.utils.Common.is_dry_run` is true. See `#4443`__
-for background.
-
-**In scope** (allowed during dry run):
-
-* Reading, parsing and validating metadata
-* Creating and modifying the local :term:`run workdir`
-* Showing what steps and phases would be executed
-
-**Out of scope** (skipped during dry run):
-
-* Creating or modifying resources (guests, containers, images)
-* Network access (git clone, fetching remote plans or images)
-* Executing commands on guests (e.g. for provision connect)
-* Submitting tasks or tests results to external services
-* Removing provisioned guests, run workdirs or images
-
-For individual steps and commands the following behavior is
-expected:
-
-discover
-    skip git clone and remote repository operations, just show
-    what would be discovered
-
-provision
-    no pulling images, no image creation, no starting guests
-
-prepare
-    skip package installation and guest commands, just show which
-    prepare phases would run
-
-execute
-    skip test execution, show the execute method
-
-report
-    skip submission to external services, just show which report
-    steps would be run
-
-finish
-    skip executing finishing tasks, just show which finish phases
-    would run
-
-cleanup
-    skip guest removal, just show which cleanup phases would run
-
-export
-    skip writes to Nitrate and Polarion, compute and show what
-    would be changed
+When implementing new features or modifying existing code, use
+:py:attr:`tmt.utils.Common.is_dry_run` to check whether dry mode
+is active and skip actions which should not be done in dry mode.
+See `#4443`__ for background.
 
 __ https://github.com/teemtee/tmt/issues/4443
 
