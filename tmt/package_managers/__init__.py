@@ -554,11 +554,12 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         present: bool,
     ) -> list[Installable]:
         """
-        Filter installables by presence when check_first is set.
+        Filter installables by their presence when "check first" is enabled.
 
-        Returns the full list of installables when check_first is not set.
-        Returns a subset (possibly empty) matching the desired presence state
-        when check_first is set. Order is preserved.
+        :returns: full list of installables when :py:attr:`Options.check_first`
+            of ``options`` is not set, a subset of installables whose presence
+            matches ``present`` otherwise. The returned list can be empty. Order
+            of installables is preserved.
         """
         if not options.check_first:
             return list(installables)
