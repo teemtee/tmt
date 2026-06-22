@@ -1,5 +1,6 @@
 import abc
 import configparser
+import dataclasses
 import enum
 import re
 import shlex
@@ -575,7 +576,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         to_install = self._check_first_filter(*installables, options=options, present=False)
         if not to_install:
             return CommandOutput(stdout=None, stderr=None)
-        return self.guest.execute(self.engine.install(*to_install, options=options))
+        no_check_options = dataclasses.replace(options, check_first=False)
+        return self.guest.execute(self.engine.install(*to_install, options=no_check_options))
 
     def reinstall(
         self,
@@ -586,7 +588,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         to_reinstall = self._check_first_filter(*installables, options=options, present=True)
         if not to_reinstall:
             return CommandOutput(stdout=None, stderr=None)
-        return self.guest.execute(self.engine.reinstall(*to_reinstall, options=options))
+        no_check_options = dataclasses.replace(options, check_first=False)
+        return self.guest.execute(self.engine.reinstall(*to_reinstall, options=no_check_options))
 
     def install_debuginfo(
         self,
