@@ -31,7 +31,7 @@ from tmt.package_managers import (
 from tmt.steps.provision.podman import GuestContainer
 from tmt.utils import ShellScript
 
-from . import MATCH, assert_log
+from . import MATCH, SEARCH, assert_log
 
 # We will need a logger...
 logger = tmt.Logger.create()
@@ -983,6 +983,158 @@ def test_install_dont_check_first(
     output = package_manager.install(package, options=Options(check_first=False))
 
     assert_expected_command(caplog, expected_command)
+
+    assert_output(expected_output, output.stdout, output.stderr)
+
+
+def _parametrize_test_install_check_first_skips_present() -> Iterator[
+    tuple[Container, PackageManagerClass, Package, Package, str, str, Optional[str]]
+]:
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Dnf5:
+            # tar is pre-installed in all Fedora containers; tree is absent.
+            yield (
+                container,
+                package_manager_class,
+                Package('tar'),
+                Package('tree'),
+                r"rpm -q --whatprovides tar >&2 \|\| echo tar",
+                r"dnf5 install -y  tree",
+                None,
+            )
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            if 'ubi/8' in container.url:
+                # tree is not available in UBI 8 default repos; use dconf.
+                yield (
+                    container,
+                    package_manager_class,
+                    Package('tar'),
+                    Package('dconf'),
+                    r"rpm -q --whatprovides tar >&2 \|\| echo tar",
+                    r"dnf install -y  dconf",
+                    'Installed:\n  dconf',
+                )
+            else:
+                yield (
+                    container,
+                    package_manager_class,
+                    Package('tar'),
+                    Package('tree'),
+                    r"rpm -q --whatprovides tar >&2 \|\| echo tar",
+                    r"dnf install -y  tree",
+                    'Installed:\n  tree',
+                )
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'ubi/8' in container.url:
+                yield (
+                    container,
+                    package_manager_class,
+                    Package('tar'),
+                    Package('dconf'),
+                    r"rpm -q --whatprovides tar >&2 \|\| echo tar",
+                    r"yum install -y  dconf && rpm -q --whatprovides dconf",
+                    'Installed:\n  dconf',
+                )
+            else:
+                yield (
+                    container,
+                    package_manager_class,
+                    Package('tar'),
+                    Package('tree'),
+                    r"rpm -q --whatprovides tar >&2 \|\| echo tar",
+                    r"yum install -y  tree && rpm -q --whatprovides tree",
+                    'Installed:\n  tree',
+                )
+
+        elif package_manager_class is tmt.package_managers.apt.Apt:
+            # tar is pre-installed in Ubuntu and Debian; tree is absent.
+            yield (
+                container,
+                package_manager_class,
+                Package('tar'),
+                Package('tree'),
+                r'PRESENCE-TEST:tar:tar:',
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
+                'Setting up tree',
+            )
+
+        elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+            # tar is pre-installed in rpm-ostree images; tree is absent.
+            yield (
+                container,
+                package_manager_class,
+                Package('tar'),
+                Package('tree'),
+                r"rpm -q --whatprovides tar >&2 \|\| echo tar",
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree",
+                'Installing: tree',
+            )
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            # busybox is pre-installed in Alpine; tree is absent.
+            yield (
+                container,
+                package_manager_class,
+                Package('busybox'),
+                Package('tree'),
+                r"apk info -e busybox tree",
+                r"apk add tree",
+                'Installing tree',
+            )
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers
+@pytest.mark.parametrize(
+    (
+        'container_per_test',
+        'package_manager_class',
+        'present_package',
+        'absent_package',
+        'expected_check_command',
+        'expected_install_command',
+        'expected_output',
+    ),
+    list(_parametrize_test_install_check_first_skips_present()),
+    indirect=["container_per_test"],
+    ids=CONTAINER_MATRIX_IDS,
+)
+def test_install_check_first_skips_present(
+    container_per_test: ContainerData,
+    guest_per_test: GuestContainer,
+    package_manager_class: PackageManagerClass,
+    present_package: Package,
+    absent_package: Package,
+    expected_check_command: str,
+    expected_install_command: str,
+    expected_output: Optional[str],
+    root_logger: tmt.log.Logger,
+    caplog: _pytest.logging.LogCaptureFixture,
+) -> None:
+    """
+    Regression test: with check_first=True and a mixed set [present, absent],
+    only the absent package should reach the install command. The present package
+    should not be forwarded to the package manager and should not be silently upgraded.
+    """
+    package_manager = create_package_manager(
+        container_per_test, guest_per_test, package_manager_class, root_logger
+    )
+
+    output = package_manager.install(
+        present_package,
+        absent_package,
+        options=Options(check_first=True),
+    )
+
+    # The presence check should have run and covered the pre-installed package.
+    assert_log(caplog, message=SEARCH(expected_check_command))
+
+    # Only the absent package should have been passed to the install command
+    assert_expected_command(caplog, expected_install_command)
 
     assert_output(expected_output, output.stdout, output.stderr)
 
