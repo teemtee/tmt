@@ -1283,7 +1283,7 @@ dry mode:
 
 discover
     No tests are discovered. No remote data is fetched.
-    The step reports which provision phases would run.
+    The step reports which discover phases would run.
 
 provision
     No images are pulled or built. No guests are provisioned.
