@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 from unittest.mock import MagicMock, Mock
 
 import _pytest.logging
+import _pytest.monkeypatch
 import pytest
 from pytest_container.container import ContainerData
 
@@ -179,18 +180,15 @@ def test_execute_no_connection_closed(
     indirect=["container"],
     ids=[TEST_CONTAINERS[container_name].url for container_name in sorted(TEST_CONTAINERS.keys())],
 )
-def test_mkdtemp(
+def test_guest_tmpdir(
     container: ContainerData,
     guest: GuestContainer,
     root_logger: Logger,
     caplog: _pytest.logging.LogCaptureFixture,
+    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
 ) -> None:
-    guest.execute(ShellScript('mkdir -p /tmp/qux'))
-
-    with guest.mkdtemp(
+    with guest.guest_tmpdir(
         prefix='bar',
-        template='XXXXXXbazXXXXXX',
-        parent=Path('/tmp/qux'),
     ) as path:
         guest.execute(ShellScript(f'ls -al {path}'))
 
