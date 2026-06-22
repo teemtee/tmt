@@ -864,6 +864,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             partial_result.log = [
                 invocation.relative_test_data_path / log for log in partial_result.log
             ]
+            for subresult in partial_result.subresult:
+                subresult.log = [invocation.relative_test_data_path / log for log in subresult.log]
 
             # Include the default output log if no log provided
             if not partial_result.log and default_log is not None:
