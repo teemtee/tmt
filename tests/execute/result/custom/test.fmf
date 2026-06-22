@@ -2,7 +2,7 @@ result: custom
 
 /custom-results:
     summary: Test provides custom results.yaml
-    test: cp results.yaml ${TMT_TEST_DATA}; touch ${TMT_TEST_DATA}/{pass,fail,another,slash}_log
+    test: cp results.yaml ${TMT_TEST_DATA}; touch ${TMT_TEST_DATA}/{pass,pass_subresult,fail,another,slash}_log
 /custom-json-results:
     summary: Test provides custom results.json
     test: cp results.json ${TMT_TEST_DATA}; touch ${TMT_TEST_DATA}/{pass,fail,another}_log
