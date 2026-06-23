@@ -721,24 +721,21 @@ with ``-v`` on the command line. Focus on *user scenarios* when
 choosing the right level:
 
 level 0: progress and summaries
-    use ``info(level=0)`` or short ``info()`` for the current
-    state of steps and phases, their names, ``how`` methods and
-    summaries
+    the current state of steps and phases, their names, ``how``
+    methods and summaries
 
 level 1: phase inputs and outputs
-    ``info(level=1)`` is dedicated for the essential phase input
-    and output such as discovered test names, required packages or
-    individual test results
+    the essential phase input and output such as discovered test
+    names, required packages or individual test results
 
 level 2: investigation details
     details needed when investigating what went wrong such as log
     paths, remote links, external sources, guest facts, duration
-    deadlines or executed commands should go to ``info(level=2)``
+    deadlines or executed commands
 
 level 3: full output
-    use ``info(level=3)`` for command outputs, full test output,
-    rendered script, other constructed input, queued/executed
-    tasks
+    command outputs, full test output, rendered script, other
+    constructed input, queued/executed tasks
 
 
 Debug Levels
@@ -749,17 +746,16 @@ incremented with ``-d`` on the command line. Focus on *tmt
 internals* when choosing the right level:
 
 level 1: high-level info
-    use ``debug(level=1)`` for the high-level stuff like framework
-    choice, policy application or reboot actions
+    the high-level stuff like framework choice, policy application
+    or reboot actions
 
 level 2: detailed operations
-    detailed operations such as step load, wake up, guest
-    pull/push or playbook paths should go to ``debug(level=2)``
+    more detailed actions such as step load, wake up, guest
+    pull/push or playbook paths
 
 level 3: internal plumbing
-    use ``debug(level=3)`` for the low-level implementation
-    details such as workdir handling, process termination, key
-    normalization and similar
+    the low-level implementation details such as workdir handling,
+    process termination, key normalization and similar
 
 
 Log Topics
