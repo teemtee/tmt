@@ -637,6 +637,153 @@ export
 __ https://github.com/teemtee/tmt/issues/4443
 
 
+.. _logging:
+
+Logging and Output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+tmt distinguishes between two types of terminal communication:
+**logging** and **output**. Understanding the difference is
+essential for consistent and user-friendly behavior.
+
+
+Output Types
+------------------------------------------------------------------
+
+**Logging** goes to ``stderr``, for ``tmt run`` and ``tmt try``
+commands it is also stored in the ``log.txt`` file under the
+:term:`run workdir`. It is handled by methods such as ``info()``,
+``debug()``, ``warning()`` and ``fail()``. Logging communicates
+progress, diagnostics and status information during command
+execution. This is the main mode of communication you should use
+throughout the code.
+
+**Output** goes to ``stdout`` and is produced by the ``print()``
+method. Output represents the actual data result of a command,
+such as a list of names, exported metadata, or formatted details
+meant for further processing or inspection:
+
+* ``tmt test ls``
+* ``tmt story export``
+* ``tmt run provision --how minute --list-images``
+
+
+Logging Methods
+------------------------------------------------------------------
+
+All logging methods send their output to ``stderr``:
+
+``info()``
+    Communicate progress and status to the user. Supports
+    verbosity levels via the ``level`` parameter (see below).
+
+    .. note::
+
+        Using the ``level`` parameter with ``info()`` is a planned
+        target state. Currently, use the ``verbose()`` method for
+        logging with specific verbosity levels.
+
+``debug()``
+    Provide diagnostics for tmt developers. Supports debug
+    levels via the ``level`` parameter (see below).
+
+``warning()``
+    Signal a potential problem that does not prevent execution
+    but deserves user attention, such as a deprecated feature
+    or a missing optional dependency.
+
+``fail()``
+    Report an error that caused a test, step or operation to
+    fail.
+
+The ``info()``, ``verbose()`` and ``debug()`` methods accept a
+``key`` and an optional ``value`` parameter. The ``key`` is a
+short label (e.g. step name, action) and ``value`` provides the
+detail, optional ``color`` parameter can be used for choosing the
+desired color:
+
+.. code-block:: python
+
+    self.info(key='status', value='done', color='green')
+    self.info('status', 'done', 'green')
+
+They are formatted as ``key: value`` in the output.  The
+``warning()`` and ``fail()`` methods take a single ``message``
+parameter and automatically set the ``key`` to ``warn`` or
+``fail``.
+
+
+Verbosity Levels
+------------------------------------------------------------------
+
+Verbosity levels control user-facing logging and are incremented
+with ``-v`` on the command line. Focus on *user scenarios* when
+choosing the right level:
+
+level 0: progress and summaries
+    the current state of steps and phases, their names, ``how``
+    methods and summaries
+
+level 1: phase inputs and outputs
+    the essential phase input and output such as discovered test
+    names, required packages or individual test results
+
+level 2: investigation details
+    details needed when investigating what went wrong such as log
+    paths, remote links, external sources, guest facts, duration
+    deadlines or executed commands
+
+level 3: full output
+    command outputs, full test output, rendered script, other
+    constructed input, queued/executed tasks
+
+
+Debug Levels
+------------------------------------------------------------------
+
+Debug levels control developer-facing diagnostics and are
+incremented with ``-d`` on the command line. Focus on *tmt
+internals* when choosing the right level:
+
+level 1: high-level info
+    the high-level stuff like framework choice, policy application
+    or reboot actions
+
+level 2: detailed operations
+    more detailed actions such as step load, wake up, guest
+    pull/push or playbook paths
+
+level 3: internal plumbing
+    the low-level implementation details such as workdir handling,
+    process termination, key normalization and similar
+
+
+Log Topics
+------------------------------------------------------------------
+
+In addition to levels, debug messages can be tagged with a
+**topic** to group related diagnostics across the codebase. Users
+can selectively enable topics with the ``--log-topic`` option
+without raising the overall debug level:
+
+.. code-block:: shell
+
+    tmt run --log-topic=key-normalization
+    tmt run --log-topic=adjust-decisions --log-topic=command-events
+
+Messages tagged with a topic are hidden by default and only shown
+when the topic is explicitly enabled. When adding new debug
+messages that belong to a specific subsystem, use the ``topic``
+parameter:
+
+.. code-block:: python
+
+    self.debug('key', value, level=3, topic=tmt.log.Topic.KEY_NORMALIZATION)
+
+See the :py:class:`tmt.log.Topic` class for the list of available
+topics.
+
+
 .. _issues:
 
 Issues
