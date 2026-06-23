@@ -3314,6 +3314,10 @@ class Login(Action):
             self.warn("Login not possible in discover step (no guests provisioned yet).")
             return
 
+        if self.is_dry_run:
+            self.info('login', 'Skipped in dry mode.', color='yellow')
+            return
+
         # Nothing to do if there are no guests ready for login
         if not self.parent.plan.provision.ready_guests:
             self.info('login', 'No guests ready for login', color='yellow')

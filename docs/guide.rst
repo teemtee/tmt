@@ -1310,6 +1310,9 @@ cleanup
     Provisioned guests are not removed. The step reports which
     cleanup phases would run.
 
+login
+    Login to the guest is skipped.
+
 Several other commands also support ``--dry``:
 
 ``tmt tests create``, ``tmt plans create``, ``tmt stories create``
@@ -1329,6 +1332,15 @@ Several other commands also support ``--dry``:
     (``yaml``, ``json``, ``rst``, etc.), or prints the request
     that would be sent when the output targets an external
     service (``nitrate``, ``polarion``).
+
+``tmt clean``, ``tmt clean runs``, ``tmt clean guests``, ``tmt clean images``
+    No workdirs, guests or images are removed. The commands report
+    what would be cleaned instead.
+
+``tmt try``
+    The interactive session starts but all steps behave as in dry
+    mode: no guests are provisioned, no commands are executed on
+    guests, and no tests are run.
 
 
 .. include:: guide/test-runner.inc.rst
