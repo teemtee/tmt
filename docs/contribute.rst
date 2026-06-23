@@ -720,35 +720,25 @@ Verbosity levels control user-facing logging and are incremented
 with ``-v`` on the command line. Focus on *user scenarios* when
 choosing the right level:
 
-``info(level=0)`` == ``info()``
-    key output: plan names, step names, phase summary, overall
+level 0: progress and summaries
+    use ``info(level=0)`` or short ``info()`` for the current
+    state of steps and phases, their names, ``how`` methods and
     summaries
 
-``info(level=1)``
-    specific info: individual test names in ``discover`` and
-    ``execute``
+level 1: phase inputs and outputs
+    ``info(level=1)`` is dedicated for the essential phase input
+    and output such as discovered test names, required packages or
+    individual test results
 
-``info(level=2)``
-    extra context: test log paths in ``report``, console log path,
-    guest facts
+level 2: investigation details
+    details needed when investigating what went wrong such as log
+    paths, remote links, external sources, guest facts, duration
+    deadlines or executed commands should go to ``info(level=2)``
 
-``info(level=3)``
-    full details: complete output of prepare commands and test
-    execution
-
-When deciding where to place a new message, ask from the user's
-perspective:
-
-* Would a user running plain ``tmt run`` need this information to
-  understand what is happening? ... ``info()`` (level 0)
-* Is the message useful when the user wants details about
-  individual items such as tests, guests, packages and plugins?
-  ...  ``info(level=1)``
-* Does it help investigating results after the run, for example
-  log paths or guest facts?  ... ``info(level=2)``
-* Is it providing the full command or test output? ...
-  ``info(level=3)``
-* Would only a tmt developer care? ... ``debug()``
+level 3: full output
+    use ``info(level=3)`` for command outputs, full test output,
+    rendered script, other constructed input, queued/executed
+    tasks
 
 
 Debug Levels
@@ -758,16 +748,18 @@ Debug levels control developer-facing diagnostics and are
 incremented with ``-d`` on the command line. Focus on *tmt
 internals* when choosing the right level:
 
-``debug(level=1)``
-    high-level info: framework choice, policy application, reboot
+level 1: high-level info
+    use ``debug(level=1)`` for the high-level stuff like framework
+    choice, policy application or reboot actions
 
-``debug(level=2)``
-    detailed operations: step load, wake up, guest pull/push,
-    playbook path
+level 2: detailed operations
+    detailed operations such as step load, wake up, guest
+    pull/push or playbook paths should go to ``debug(level=2)``
 
-``debug(level=3)``
-    internal plumbing: workdir handling, process termination, key
-    normalization
+level 3: internal plumbing
+    use ``debug(level=3)`` for the low-level implementation
+    details such as workdir handling, process termination, key
+    normalization and similar
 
 
 Log Topics
