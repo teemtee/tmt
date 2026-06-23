@@ -18,7 +18,7 @@ rlJournalStart
     rlPhaseStartTest "Last step"
         rlRun -s "$tmt login -c true"
         rlAssertGrep "interactive" "$rlRun_LOG"
-        rlRun "grep '^    finish$' -A5 '$rlRun_LOG' | grep -i interactive"
+        rlRun "grep '^    report$' -A5 '$rlRun_LOG' | grep -i interactive"
     rlPhaseEnd
 
     for step in discover provision prepare execute report finish; do
