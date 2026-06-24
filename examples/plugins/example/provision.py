@@ -82,7 +82,7 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
         print("wake() called")
 
         # Don't schedule anything if ve are in dry mode
-        if self.opt('dry'):
+        if self.is_dry_run:
             return
 
         if data:
@@ -209,7 +209,7 @@ class GuestExample(tmt.Guest):
 
         print("start() called")
 
-        if self.opt('dry'):
+        if self.is_dry_run:
             return
 
         self.verbose('what', self.what, 'green')
