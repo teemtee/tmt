@@ -102,7 +102,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
     """
 
     probe_command = Command('/usr/bin/false')
-    probe_priority = 140
+    probe_priority = 130
     _engine_class = MockEngine
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
