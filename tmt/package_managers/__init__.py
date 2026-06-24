@@ -1,5 +1,6 @@
 import abc
 import configparser
+import dataclasses
 import enum
 import re
 import shlex
@@ -547,19 +548,48 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             for match in pattern.finditer(output):
                 yield match.group(1)
 
+    def _check_first_filter(
+        self,
+        *installables: Installable,
+        options: Options,
+        present: bool,
+    ) -> list[Installable]:
+        """
+        Filter installables by their presence when "check first" is enabled.
+
+        :returns: full list of installables when :py:attr:`Options.check_first`
+            of ``options`` is not set, a subset of installables whose presence
+            matches ``present`` otherwise. The returned list can be empty. Order
+            of installables is preserved.
+        """
+        if not options.check_first:
+            return list(installables)
+        presence = self.check_presence(*installables)
+        return [p for p, is_present in presence.items() if is_present == present]
+
     def install(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.execute(self.engine.install(*installables, options=options))
+        options = options or Options()
+        to_install = self._check_first_filter(*installables, options=options, present=False)
+        if not to_install:
+            return CommandOutput(stdout=None, stderr=None)
+        no_check_options = dataclasses.replace(options, check_first=False)
+        return self.guest.execute(self.engine.install(*to_install, options=no_check_options))
 
     def reinstall(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.execute(self.engine.reinstall(*installables, options=options))
+        options = options or Options()
+        to_reinstall = self._check_first_filter(*installables, options=options, present=True)
+        if not to_reinstall:
+            return CommandOutput(stdout=None, stderr=None)
+        no_check_options = dataclasses.replace(options, check_first=False)
+        return self.guest.execute(self.engine.reinstall(*to_reinstall, options=no_check_options))
 
     def install_debuginfo(
         self,

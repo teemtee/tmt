@@ -17,7 +17,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.package_managers._rpm import RpmVersion
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, ShellScript
 
 
 class DnfEngine(PackageManagerEngine):
@@ -76,7 +76,12 @@ class DnfEngine(PackageManagerEngine):
         return ShellScript(f'rpm -q {" ".join(escape_installables(*installables))}')
 
     def check_presence(self, *installables: Installable) -> ShellScript:
-        return self._construct_presence_script(*installables)
+        return ShellScript(
+            '\n'.join(
+                f'rpm -q --whatprovides {escaped} >&2 || echo {escaped}'
+                for escaped in escape_installables(*installables)
+            )
+        )
 
     def _construct_install_script(
         self, *installables: Installable, options: Optional[Options] = None
@@ -85,16 +90,11 @@ class DnfEngine(PackageManagerEngine):
 
         extra_options = self._extra_dnf_options(options)
 
-        script = ShellScript(
+        return ShellScript(
             f'{self.command.to_script()} install '
             f'{self.options.to_script()} {extra_options} '
             f'{" ".join(escape_installables(*installables))}'
         )
-
-        if options.check_first:
-            script = self._construct_presence_script(*installables) | script
-
-        return script
 
     def _construct_reinstall_script(
         self, *installables: Installable, options: Optional[Options] = None
@@ -103,16 +103,11 @@ class DnfEngine(PackageManagerEngine):
 
         extra_options = self._extra_dnf_options(options)
 
-        script = ShellScript(
+        return ShellScript(
             f'{self.command.to_script()} reinstall '
             f'{self.options.to_script()} {extra_options} '
             f'{" ".join(escape_installables(*installables))}'
         )
-
-        if options.check_first:
-            script = self._construct_presence_script(*installables) & script
-
-        return script
 
     def _construct_install_debuginfo_script(
         self, *installables: Installable, options: Optional[Options] = None
@@ -305,41 +300,18 @@ class Dnf(PackageManager[DnfEngine]):
         return result
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        try:
-            output = self.guest.execute(self.engine.check_presence(*installables))
-            stdout = output.stdout
+        if not installables:
+            return {}
 
-        except RunError as exc:
-            stdout = exc.stdout
+        results: dict[Installable, bool] = dict.fromkeys(installables, True)
 
-        if stdout is None:
-            raise GeneralError("rpm presence check provided no output")
+        # Script always exits 0; stdout contains one line per missing package.
+        output = self.guest.execute(self.engine.check_presence(*installables))
+        missing = {line.strip() for line in (output.stdout or '').splitlines() if line.strip()}
 
-        results: dict[Installable, bool] = {}
-
-        for line, installable in zip(stdout.strip().splitlines(), installables):
-            # Match for packages not installed, when "rpm -q PACKAGE" used
-            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
-            if match is not None:
+        for installable in installables:
+            if str(installable) in missing:
                 results[installable] = False
-                continue
-
-            # Match for provided rpm capabilities (packages, commands, etc.),
-            # when "rpm -q --whatprovides CAPABILITY" used
-            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
-            if match is not None:
-                results[installable] = False
-                continue
-
-            # Match for filesystem paths, when "rpm -q --whatprovides PATH" used
-            match = re.match(
-                rf'error: file {re.escape(str(installable))}: No such file or directory', line
-            )
-            if match is not None:
-                results[installable] = False
-                continue
-
-            results[installable] = True
 
         return results
 

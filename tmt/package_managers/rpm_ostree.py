@@ -1,3 +1,4 @@
+import dataclasses
 import re
 from typing import Optional
 
@@ -96,9 +97,6 @@ class RpmOstreeEngine(PackageManagerEngine):
             f'{self.options.to_script()} {extra_options} '
             f'{" ".join(escape_installables(*installables))}'
         )
-
-        if options.check_first:
-            script = self._construct_presence_script(*installables) | script
 
         if options.skip_missing:
             script = script | ShellScript('/bin/true')
@@ -215,47 +213,30 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
 
         Dnf5(guest=self.guest, logger=self._logger).enable_copr(*repositories)
 
-    def sort_packages(
-        self,
-        *installables: Installable,
-        options: Options,
-    ) -> tuple[list[Installable], list[Installable]]:
-        """Sort packages into required and recommended based on presence and skip_missing."""
-        required: list[Installable] = []
-        recommended: list[Installable] = []
-
-        presence = self.check_presence(*installables)
-
-        for installable, present in presence.items():
-            if present:
-                continue
-            if options.skip_missing:
-                recommended.append(installable)
-            else:
-                required.append(installable)
-
-        return required, recommended
-
     def install(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
         options = options or Options()
-        required, recommended = self.sort_packages(*installables, options=options)
 
-        for package in recommended:
-            self.info('package', str(package), 'green')
-            try:
-                super().install(package, options=options)
-            except RunError as error:
-                self.debug(f"Package installation failed: {error}")
-                self.warn(f"Unable to install recommended package '{package}'.")
+        if not options.check_first:
+            return super().install(*installables, options=options)
 
-        if required:
-            return super().install(*required, options=options)
+        missing = [p for p, present in self.check_presence(*installables).items() if not present]
+        no_check_options = dataclasses.replace(options, check_first=False)
 
-        return CommandOutput(stdout=None, stderr=None)
+        if options.skip_missing:
+            for package in missing:
+                self.info('package', str(package), 'green')
+                try:
+                    super().install(package, options=no_check_options)
+                except RunError as error:
+                    self.debug(f"Package installation failed: {error}")
+                    self.warn(f"Unable to install recommended package '{package}'.")
+            return CommandOutput(stdout=None, stderr=None)
+
+        return super().install(*missing, options=no_check_options)
 
     def install_local(
         self,
