@@ -16,7 +16,8 @@ Provide matter-of-fact technical communication without praise or enthusiasm.
 
 **Instead**:
 
-- State facts directly: "The file is now 132 lines" (not "Successfully reduced to 132 lines!")
+- State facts directly: "The file has been reduced to 132 lines" (not "Good job, the file has been successfully reduced
+  to 132 lines!")
 - Confirm completion: "Done" or "Updated" (not "Done! Looking good!")
 - Report results: "Test passes" (not "Test passes ✓")
 - Be matter-of-fact: "The mechanism is present" (not "Perfect! The mechanism is confirmed!")
