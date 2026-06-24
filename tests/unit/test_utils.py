@@ -29,6 +29,7 @@ from tmt.log import Logger
 from tmt.utils import (
     Command,
     Common,
+    FrozenCommand,
     GeneralError,
     Path,
     ShellScript,
@@ -1825,3 +1826,87 @@ def test_render_command_report_minimal():
 # Finished successfully
 """
     )
+
+
+def test_command_addition() -> None:
+    a = Command('foo', 'bar')
+    b = Command('baz')
+    c = Command('quux')
+
+    # Simple addition
+    assert (a + b).to_element() == 'foo bar baz'
+    assert (a + c).to_element() == 'foo bar quux'
+
+    # Also a simple addition, but saved into a variable
+    d = a + b
+
+    assert isinstance(d, Command)
+    assert d.to_element() == 'foo bar baz'
+
+    d = a + c
+
+    assert isinstance(d, Command)
+    assert d.to_element() == 'foo bar quux'
+
+
+def test_command_inplace_addition() -> None:
+    a = original_a = Command('foo', 'bar')
+    b = Command('baz')
+    c = FrozenCommand('quux')
+
+    a += b
+
+    assert a.to_element() == 'foo bar baz'
+    assert b.to_element() == 'baz'
+    assert a is original_a
+
+    a = original_a = Command('foo', 'bar')
+
+    a += c
+
+    assert a.to_element() == 'foo bar quux'
+    assert c.to_element() == 'quux'
+    assert a is original_a
+
+
+def test_frozen_command_addition() -> None:
+    a = FrozenCommand('foo', 'bar')
+    b = FrozenCommand('baz')
+    c = Command('quux')
+
+    # Simple addition
+    assert (a + b).to_element() == 'foo bar baz'
+    assert (a + c).to_element() == 'foo bar quux'
+
+    # Also a simple addition, but saved into a variable
+    d = a + b
+
+    assert isinstance(d, FrozenCommand)
+    assert d.to_element() == 'foo bar baz'
+
+    d = a + c
+
+    assert isinstance(d, FrozenCommand)
+    assert d.to_element() == 'foo bar quux'
+
+
+def test_frozen_command_inplace_addition() -> None:
+    a = original_a = FrozenCommand('foo', 'bar')
+    b = FrozenCommand('baz')
+    c = Command('quux')
+
+    original_a = a
+
+    with pytest.raises(GeneralError):
+        a += b
+
+    assert a.to_element() == 'foo bar'
+    assert b.to_element() == 'baz'
+    assert a is original_a
+
+    with pytest.raises(GeneralError):
+        a += c
+
+    assert a.to_element() == 'foo bar'
+    assert c.to_element() == 'quux'
+    assert a is original_a

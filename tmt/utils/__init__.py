@@ -41,6 +41,7 @@ from typing import (
     Final,
     Generic,
     Literal,
+    NoReturn,
     Optional,
     TextIO,
     TypeVar,
@@ -1197,17 +1198,23 @@ class Command:
     A command with its arguments.
     """
 
-    def __init__(self, *elements: RawCommandElement) -> None:
-        self._command = [str(element) for element in elements]
+    _command: list[str]
+
+    def __init__(self, *elements: RawCommandElement, command: Optional['Command'] = None) -> None:
+        if command is not None:
+            self._command = command._command[:]
+
+        else:
+            self._command = [str(element) for element in elements]
 
     def __str__(self) -> str:
         return self.to_element()
 
-    def __add__(self, other: Union['Command', RawCommand]) -> 'Command':
+    def __add__(self, other: Union['Command', RawCommand]) -> Self:
         if isinstance(other, Command):
-            return Command(*self._command, *other._command)
+            return self.__class__(*self._command, *other._command)
 
-        return Command(*self._command, *other)
+        return self.__class__(*self._command, *other)
 
     # While the outcome of `+=` can be emulated by `__add__`, it would
     # return new object. Often we just want to add to the existing object,
@@ -1517,6 +1524,15 @@ class Command:
             )
 
         return output
+
+
+class FrozenCommand(Command):
+    def __iadd__(self, other: Union['Command', RawCommand]) -> NoReturn:  # noqa: PYI034
+        # Do not raise `NotImplemented` - interpreter would be free to
+        # change order of operands, or try another method, which we do
+        # not want to allow: someone just tried to modify a frozen command,
+        # an exception is the least we can do to them.
+        raise GeneralError('In-place modification of frozen command is not allowed.')
 
 
 _SANITIZE_NAME_PATTERN: Pattern[str] = re.compile(r'[^\w/-]+')
