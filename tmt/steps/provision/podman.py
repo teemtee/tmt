@@ -438,9 +438,13 @@ class GuestContainer(tmt.Guest):
 
         # As non-root we must run with podman unshare
         podman_command = Command()
+        environment = self._prepare_command_environment()
 
         if os.geteuid() != 0:
             podman_command += ['podman', 'unshare']
+            host_environment = tmt.utils.Environment.from_environ()
+            host_environment.update(environment)
+            environment = host_environment
 
         # TODO: add ansible inventory support
         podman_command += cast(
@@ -461,7 +465,7 @@ class GuestContainer(tmt.Guest):
             return self._run_guest_command(
                 podman_command,
                 cwd=self.parent.plan.worktree,
-                environment=self._prepare_command_environment(),
+                environment=environment,
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
