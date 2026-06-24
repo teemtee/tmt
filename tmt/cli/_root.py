@@ -9,6 +9,7 @@ Main top-level command implementations.
     command remains.
 """
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional
 
 import click
@@ -71,8 +72,8 @@ recipe_options = create_options_decorator(tmt.options.RECIPE_OPTIONS)
 
 
 def _load_policies(
-    policy_name: list[str],
-    policy_path: list[Path],
+    policy_name: Sequence[str],
+    policy_path: Sequence[Path],
     policy_root: Optional[Path],
 ) -> list[tmt.policy.Policy]:
     """
@@ -356,8 +357,8 @@ def run(
     context: Context,
     id_: Optional[str],
     workdir_root: Optional[Path],
-    policy_file: list[Path],
-    policy_name: list[str],
+    policy_file: Sequence[Path],
+    policy_name: Sequence[str],
     policy_root: Optional[Path],
     recipe: Optional[Path],
     **kwargs: Any,
@@ -1230,8 +1231,8 @@ def plans_export(
     how: str,
     format: str,
     template: Optional[str],
-    policy_file: list[Path],
-    policy_name: list[str],
+    policy_file: Sequence[Path],
+    policy_name: Sequence[str],
     policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
