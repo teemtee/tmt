@@ -1,5 +1,5 @@
 description: |
-    A new :ref:`dry-mode-guide` section has been added to the guide
+    A new :ref:`dry-mode` section has been added to the guide
     documenting the expected behavior of each step and command
     in dry mode. The implementation has been updated to match
     the documentation.

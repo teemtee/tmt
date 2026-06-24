@@ -1251,7 +1251,7 @@ __ https://github.com/teemtee/tmt/issues/2047
 
 
 
-.. _dry-mode-guide:
+.. _dry-mode:
 
 Dry Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

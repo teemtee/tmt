@@ -571,14 +571,14 @@ __ https://github.com/tldr-pages/tldr/blob/main/CONTRIBUTING.md
    not be reflected in the tldr pages collection.
 
 
-.. _dry-mode:
+.. _dry-mode-implementation:
 
 Dry Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Dry mode, activated by the option ``--dry``, lets users preview
 "what would tmt do" without actually performing the actions. See
-the :ref:`dry-mode-guide` section in the guide for the full
+the :ref:`dry-mode` section in the guide for the full
 description of the expected behavior per step and command.
 
 When implementing new features or modifying existing code, use
