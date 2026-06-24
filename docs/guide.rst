@@ -1272,7 +1272,8 @@ phases would run without triggering any side effects.
 **What dry mode skips:**
 
 * Creating or modifying resources (guests, containers, images)
-* Network access (git clones, fetching remote images or sources)
+* Network access (git clones, fetching remote images or sources,
+  importing remote plans)
 * Executing any commands on guests
 * Submitting results or tasks to external services (nitrate,
   polarion, reportportal, etc.)
