@@ -380,7 +380,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
-    test_uuids: dict[int, dict[str, str]] = field(default_factory=dict)
+    test_uuids: dict[int, dict[Optional[str], str]] = field(default_factory=dict)
 
     def to_spec(self) -> _RawStepData:
         spec = super().to_spec()
@@ -954,7 +954,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 test_link = None
                 test_id = None
                 env_vars = None
-                guest_name = f"{tmt.utils.DEFAULT_NAME}-0"
+                guest_name = None
 
                 if result:
                     serial_number = result.serial_number
