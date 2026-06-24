@@ -38,7 +38,12 @@ class DnfEngine(PackageManagerEngine):
         options = FrozenCommand('-y')
 
         if self.guest.facts.sudo_prefix:
-            return (FrozenCommand(self.guest.facts.sudo_prefix) + self._base_command, options)
+            return (
+                FrozenCommand.from_command(
+                    Command(self.guest.facts.sudo_prefix) + self._base_command
+                ),
+                options,
+            )
 
         return (self._base_command, options)
 

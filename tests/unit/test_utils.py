@@ -1881,12 +1881,12 @@ def test_frozen_command_addition() -> None:
     # Also a simple addition, but saved into a variable
     d = a + b
 
-    assert isinstance(d, FrozenCommand)
+    assert isinstance(d, Command)
     assert d.to_element() == 'foo bar baz'
 
     d = a + c
 
-    assert isinstance(d, FrozenCommand)
+    assert isinstance(d, Command)
     assert d.to_element() == 'foo bar quux'
 
 

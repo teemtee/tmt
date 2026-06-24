@@ -1201,20 +1201,20 @@ class Command:
     _command: list[str]
 
     def __init__(self, *elements: RawCommandElement, command: Optional['Command'] = None) -> None:
-        if command is not None:
-            self._command = command._command[:]
+        self._command = [str(element) for element in elements]
 
-        else:
-            self._command = [str(element) for element in elements]
+    @classmethod
+    def from_command(cls, other: 'Command') -> Self:
+        return cls(*other._command)
 
     def __str__(self) -> str:
         return self.to_element()
 
-    def __add__(self, other: Union['Command', RawCommand]) -> Self:
+    def __add__(self, other: Union['Command', RawCommand]) -> 'Command':
         if isinstance(other, Command):
-            return self.__class__(*self._command, *other._command)
+            return Command(*self._command, *other._command)
 
-        return self.__class__(*self._command, *other)
+        return Command(*self._command, *other)
 
     # While the outcome of `+=` can be emulated by `__add__`, it would
     # return new object. Often we just want to add to the existing object,
