@@ -50,7 +50,7 @@ class MockEngine(PackageManagerEngine):
         if self.guest.root is not None:
             options += Command('-r', self.guest.root)
         options += Command('--pm-cmd')
-        return (FrozenCommand('mock'), FrozenCommand(command=options))
+        return (FrozenCommand('mock'), FrozenCommand.from_command(options))
 
     def check_presence(self, *installables: Installable) -> ShellScript:
         return ShellScript(
