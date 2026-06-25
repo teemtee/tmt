@@ -4,3 +4,8 @@ require:
 - git-core
 - tmt
 tier: 4
+
+adjust+:
+  - when: distro == fedora-rawhide
+    result: xfail
+    because: Python dependencies on PyPI have not caught up

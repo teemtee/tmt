@@ -40,6 +40,9 @@ require+:
             We want to run this locally and it's enough to execute
             on a single distro when run in the CI. We don't need
             to exercise this again and again across all distros.
+      - when: distro == fedora-rawhide
+        result: xfail
+        because: Python dependencies on PyPI have not caught up
 
     /basic:
         summary: Basic unit tests (development packages)
