@@ -1268,6 +1268,9 @@ phases would run without triggering any side effects.
 * Reading, parsing, and validating metadata
 * Creating and modifying the local :term:`run workdir`
 * Showing which steps, phases, and plugins would be executed
+* Read-only network queries during ``tmt tests import`` and
+  ``tmt tests export`` for nitrate and polarion, to produce
+  meaningful dry-run output
 
 **What dry mode skips:**
 
