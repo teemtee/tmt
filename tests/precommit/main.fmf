@@ -5,7 +5,8 @@ require:
 - tmt
 tier: 4
 
-adjust+:
-  - when: distro == fedora-rawhide
-    result: xfail
-    because: Python dependencies on PyPI have not caught up
+# Comment/Uncomment as needed on next python release
+#adjust+:
+#  - when: distro == fedora-rawhide
+#    result: xfail
+#    because: Python dependencies on PyPI have not caught up
