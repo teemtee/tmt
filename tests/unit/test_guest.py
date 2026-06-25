@@ -172,6 +172,25 @@ def test_execute_no_connection_closed(
     assert output.stdout == stdout
 
 
+def test_container_host_side_ansible_inherits_path(root_logger: Logger, monkeypatch: Any) -> None:
+    step = Mock(spec=Provision)
+    step.plan = Mock()
+    step.plan.worktree = Path('/tmp')
+    guest = GuestContainer(logger=root_logger, data=PodmanGuestData(), name='guest', parent=step)
+    guest.container = 'container'
+
+    monkeypatch.setattr(os, 'geteuid', lambda: 1000)
+    monkeypatch.setenv('PATH', '/host/bin')
+    monkeypatch.setattr(guest, '_prepare_command_environment', Mock(return_value=Environment()))
+    run_guest_command = Mock(return_value=CommandOutput(stdout='', stderr=''))
+    monkeypatch.setattr(guest, '_run_guest_command', run_guest_command)
+
+    guest._run_ansible('namespace.playbook')
+
+    assert run_guest_command.call_args.args[0]._command[:2] == ['podman', 'unshare']
+    assert run_guest_command.call_args.kwargs['environment']['PATH'] == '/host/bin'
+
+
 @pytest.mark.containers
 @pytest.mark.parametrize(
     ('container',),  # noqa: PT006
