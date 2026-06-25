@@ -968,8 +968,8 @@ def tests_export(
     nitrate: bool,
     bugzilla: bool,
     template: Optional[str],
-    policy_file: list[Path],
-    policy_name: list[str],
+    policy_file: Sequence[Path],
+    policy_name: Sequence[str],
     policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
