@@ -127,7 +127,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Run Tests"
-        rlRun -s "tmt run -v --remove --dry plan --name /plans/minimal" 0 "Run tests (dry mode)"
+        rlRun -s "tmt run -v --remove --dry plan --name /plans/minimal" 2 "Expect error (dry mode)"
         rlRun -s "tmt run -v --remove       plan --name /plans/minimal" 0 "Run tests"
         rlAssertGrep "pass /tests/one" $rlRun_LOG
         rlAssertGrep "pass /tests/two" $rlRun_LOG
@@ -140,19 +140,19 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Imported plan's adjust should be respected"
-        rlRun -s "tmt run --remove --dry plan --name /plans/full/tmt" 2 "Expect error (dry mode)"
-        rlRun -s "tmt -c how=full run -r --dry plan -n /plans/full/tmt" 0 "Run plan (dry mode)"
+        rlRun -s "tmt run --remove discover plan --name /plans/full/tmt" 2 "Expect error"
+        rlRun -s "tmt -c how=full run -r discover plan -n /plans/full/tmt" 0 "Discover plan"
     rlPhaseEnd
 
     rlPhaseStartTest "Remote plan should not be fetched if disabled by adjust"
         cleanup
-        rlRun -s "tmt -ddd -c distro=rhel-10 run --remove --dry plan --name /plans/importing/disabled-by-adjust" 0 "Run enabled plan"
+        rlRun -s "tmt -ddd -c distro=rhel-10 run --remove discover plan --name /plans/importing/disabled-by-adjust" 0 "Run enabled plan"
         rlAssertGrep "Plan '/plans/importing/disabled-by-adjust' importing" $rlRun_LOG
         rlAssertNotGrep "Plan '/plans/importing/disabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
         rlAssertNotGrep "No plans found." $rlRun_LOG
 
         cleanup
-        rlRun -s "tmt -ddd -c distro=fedora-rawhide run --remove --dry plan --name /plans/importing/disabled-by-adjust" 2 "Expect no plans to be found"
+        rlRun -s "tmt -ddd -c distro=fedora-rawhide run --remove discover plan --name /plans/importing/disabled-by-adjust" 2 "Expect no plans to be found"
         rlAssertNotGrep "Plan '/plans/importing/disabled-by-adjust' importing" $rlRun_LOG
         rlAssertGrep "Plan '/plans/importing/disabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
         rlAssertGrep "No plans found." $rlRun_LOG
@@ -175,13 +175,13 @@ rlJournalStart
 
     rlPhaseStartTest "Disabled remote plan should be fetched if enabled by adjust"
         cleanup
-        rlRun -s "tmt -ddd -c distro=fedora-rawhide run --remove --dry plan --name /plans/importing/enabled-by-adjust" 0 "Run enabled plan"
+        rlRun -s "tmt -ddd -c distro=fedora-rawhide run --remove discover plan --name /plans/importing/enabled-by-adjust" 0 "Run enabled plan"
         rlAssertGrep "Plan '/plans/importing/enabled-by-adjust' importing" $rlRun_LOG
         rlAssertNotGrep "Plan '/plans/importing/enabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
         rlAssertNotGrep "No plans found." $rlRun_LOG
 
         cleanup
-        rlRun -s "tmt -ddd -c distro=rhel-10 run --remove --dry plan --name /plans/importing/enabled-by-adjust" 2 "Expect no plans to be found"
+        rlRun -s "tmt -ddd -c distro=rhel-10 run --remove discover plan --name /plans/importing/enabled-by-adjust" 2 "Expect no plans to be found"
         rlAssertNotGrep "Plan '/plans/importing/enabled-by-adjust' importing" $rlRun_LOG
         rlAssertGrep "Plan '/plans/importing/enabled-by-adjust' is not enabled, skipping imports resolution" $rlRun_LOG
         rlAssertGrep "No plans found." $rlRun_LOG
