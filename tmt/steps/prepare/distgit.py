@@ -6,7 +6,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
-from tmt.guest import Guest
+from tmt.guest import DEFAULT_PULL_OPTIONS, Guest
 from tmt.package_managers import Package
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
@@ -300,7 +300,11 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
 
         # Make sure to pull back sources ...
         # FIXME -- Do we need to? Can be lot of data...
-        guest.pull(source_dir)
+        # Exclude .git, it might be being modified by git garbage collection,
+        # leading to rsync error. And we do not need this directory.
+        opt = DEFAULT_PULL_OPTIONS.copy()
+        opt.exclude.append('.git')
+        guest.pull(source_dir, options=opt)
 
         # Mark which file/dirs were created after rpmbuild ran
         content_after = set(source_dir.iterdir())
