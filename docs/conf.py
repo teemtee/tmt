@@ -316,6 +316,10 @@ linkcheck_ignore = [
     r'https://www.cpu-world.com.*',
     # Stack Overflow uses captcha and these links are not essential
     r'https://stackoverflow.com.*',
+    # YAML specs pages disappeared: https://github.com/yaml/www.yaml.org/issues/193
+    r'https://yaml.org/spec/1.2.2/.+',
+    # no-color.org seems to be down, no sign of long-term issue
+    r'https://no-color.org/',
 ]
 linkcheck_request_headers = {
     "*": {
