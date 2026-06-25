@@ -8,3 +8,8 @@
     - name: Debug message to confirm playbook execution
       debug:
         msg: "Minimal playbook executed - inventory generation triggered"
+    - name: Check that context variables are set
+      assert:
+        that:
+          - tmt.context["plan-var"] == ["foo"]
+          - tmt.context["cli-var"] == ["bar"]
