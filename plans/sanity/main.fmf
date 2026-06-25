@@ -32,3 +32,7 @@ prepare:
         pip install -e .
   discover+:
     filter+: " & tag: with-tmt"
+  adjust+:
+    - when: distro == fedora-rawhide
+      enabled: false
+      because: Python dependencies on PyPI have not caught up
