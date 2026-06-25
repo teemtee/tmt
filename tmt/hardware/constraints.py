@@ -8,8 +8,10 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Generic,
     NamedTuple,
     Optional,
+    TypeVar,
     Union,
     cast,
 )
@@ -873,6 +875,42 @@ class TextConstraint(Constraint):
             original_constraint=original_constraint,
             allowed_operators=allowed_operators,
         )
+
+
+ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: PLC0105
+
+
+# To hold the actual constraint class, we need a mutable container we
+# can refer to in calls and variables. We do not need a callable, which
+# is more common in the "factory" pattern. We cannot use a module-level
+# variable directly: once passed to a call, its value at that moment
+# would be used, while we have to delay the evaluation of the "what class
+# shall I use to create a 'text constraint'?" answer until we really
+# need the answer, not sooner.
+#
+# A mapping or list would work, but custom class can carry constraint
+# type better.
+@container
+class _ConstraintFactory(Generic[ConstraintT]):
+    #: Class whose ``from_specification`` method should be used to create
+    #: new instances of the given constraint type.
+    constraint_class: type[ConstraintT]
+
+
+#: Factory for :py:class:`SizeConstraint` constraints.
+SIZE_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=SizeConstraint)
+
+#: Factory for :py:class:`FlagConstraint` constraints.
+FLAG_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=FlagConstraint)
+
+#: Factory for :py:class:`IntegerConstraint` constraints.
+INTEGER_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=IntegerConstraint)
+
+#: Factory for :py:class:`NumberConstraint` constraints.
+NUMBER_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=NumberConstraint)
+
+#: Factory for :py:class:`TextConstraint` constraints.
+TEXT_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=TextConstraint)
 
 
 @container(repr=False)
