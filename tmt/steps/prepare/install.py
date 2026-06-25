@@ -164,6 +164,16 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         * Cannot install new version of already installed local rpm.
         * No support for installing debuginfo packages at this time.
+
+    .. note::
+
+        On `Image Mode`__ (bootc) guests, package installation commands
+        are collected as ``RUN`` directives in a ``Containerfile`` instead
+        of being executed directly. At the end of the prepare step, ``tmt``
+        builds a new container image, switches to it using ``bootc switch``,
+        and reboots the guest. See :ref:`image-mode` for more details.
+
+        __ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
     """
 
     _data_class = PrepareInstallData
