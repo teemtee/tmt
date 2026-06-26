@@ -446,8 +446,13 @@ class MockShell:
                 # other than `returncode` because the event ordering is not
                 # guaranteed.
                 if len(events) == 1 and events[0][0] == returncode_fd:
-                    # Read the return code number string into a large enough buffer.
-                    content = os.read(returncode_fd, 16)
+                    try:
+                        # Read the return code number string into a large enough buffer.
+                        content = os.read(returncode_fd, 16)
+                    except BlockingIOError:
+                        # EAGAIN: the writer opened the FIFO but has not written data yet.
+                        # Keep waiting.
+                        continue
                     if not content:
                         # EPOLLHUP with no data: the writer (echo $?>) has not
                         # yet opened the FIFO. Keep waiting until it does.
