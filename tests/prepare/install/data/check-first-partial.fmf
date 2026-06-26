@@ -13,9 +13,6 @@ adjust:
         check-first: false
         package:
           - tree
-
-  - when: distro != rhel
-    prepare+:
       - how: install
         check-first: true
         package:
@@ -28,9 +25,6 @@ adjust:
         check-first: false
         package:
           - dconf
-
-  - when: distro == rhel
-    prepare+:
       - how: install
         check-first: true
         package:

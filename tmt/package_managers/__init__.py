@@ -587,7 +587,9 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             self.debug(
                 'check-first: packages already installed, skipping: ' + fmf.utils.listed(skipped)
             )
-        return self.guest.execute(self.engine.install(*to_install, options=options))
+
+        no_check_options = dataclasses.replace(options, check_first=False)
+        return self.guest.execute(self.engine.install(*to_install, options=no_check_options))
 
 
     def reinstall(
