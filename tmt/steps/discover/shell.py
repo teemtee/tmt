@@ -382,6 +382,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         """
 
         super().go(path=path, logger=logger)
+
+        if self.is_dry_run:
+            return
+
         tests = fmf.Tree({'summary': 'tests'})
 
         self.log_import_plan_details()

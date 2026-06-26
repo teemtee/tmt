@@ -58,6 +58,7 @@ def read_manual(
     case_id: int,
     disabled: bool,
     with_script: bool,
+    dry_run: bool,
     logger: tmt.log.Logger,
 ) -> None:
     """
@@ -88,8 +89,9 @@ def read_manual(
 
     # Create directory to store manual tests in
     new_cwd = Path(tree.root) / 'Manual'
-    new_cwd.mkdir(exist_ok=True)
-    os.chdir(new_cwd)
+    if not dry_run:
+        new_cwd.mkdir(exist_ok=True)
+        os.chdir(new_cwd)
 
     for cid in case_ids:
         testcase = nitrate.TestCase(cid)
@@ -104,9 +106,10 @@ def read_manual(
         dir_name = testcase.summary.replace(' ', '_')
         dir_name = dir_name.replace('/', '_')
         directory = Path(dir_name)
-        directory.mkdir(exist_ok=True)
+        if not dry_run:
+            directory.mkdir(exist_ok=True)
+            os.chdir(directory)
 
-        os.chdir(directory)
         echo(f"Importing the '{directory}' test case.")
 
         # Test case data
@@ -117,11 +120,16 @@ def read_manual(
         data['manual'] = True
         data['test'] = 'test.md'
 
-        write_markdown(Path.cwd() / 'test.md', md_content)
-        write(Path.cwd() / 'main.fmf', data)
-        os.chdir(new_cwd)
+        if dry_run:
+            log.info(f"Test case would be stored into '{new_cwd / dir_name / 'test.md'}'.")
+            log.info(f"Metadata would be stored into '{new_cwd / dir_name / 'main.fmf'}'.")
+        else:
+            write_markdown(Path.cwd() / 'test.md', md_content)
+            write(Path.cwd() / 'main.fmf', data)
+            os.chdir(new_cwd)
 
-    os.chdir(old_cwd)
+    if not dry_run:
+        os.chdir(old_cwd)
 
 
 def read_manual_data(testcase: 'TestCase') -> dict[str, str]:
@@ -766,6 +774,8 @@ def read_nitrate(
             echo(style(f"Test case would be stored into '{md_path}'.", fg='magenta'))
         else:
             write_markdown(md_path, md_content)
+    elif dry_run:
+        log.info(f"Test case file '{md_path}' would be removed.")
     else:
         try:
             md_path.unlink()

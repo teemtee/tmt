@@ -575,6 +575,9 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
 
         self.check_options()
 
+        if self.is_dry_run:
+            return
+
         f_path = self.data.file or self.phase_workdir / DEFAULT_FILENAME
 
         xml_data = make_junit_xml(

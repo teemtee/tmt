@@ -1576,7 +1576,7 @@ class Plan(
 
         try:
             # Clone the whole git repository if executing tests (run is attached)
-            if self.my_run and not self.my_run.is_dry_run:
+            if self.my_run:
                 nodes = self._resolve_import_from_git(reference)
 
             # Use fmf cache for exploring plans (the whole git repo is not needed)
@@ -1598,6 +1598,11 @@ class Plan(
 
         if not self.is_remote_plan_reference:
             return [self]
+
+        # Do not fetch remote plans in dry mode
+        if self.is_dry_run:
+            self.info(f"Plan '{self.name}' was skipped - import is not allowed in dry mode.")
+            return []
 
         if not self._imported_plans:
             for reference in self._imported_plan_references:

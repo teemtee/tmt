@@ -73,11 +73,21 @@ story:
       - verified-by: /tests/core/dry
 
 /dry:
-    summary: Run in dry mode, just let me know what would be done
+    summary: Run in dry mode without causing any side effects
     story:
-        As a user I want to run commands in dry mode so that I can
-        see what would happen if I run the command but no actions
-        are performed or changes saved to disk.
+        As a user I want to run commands in dry mode so that I
+        can safely inspect what would happen without causing
+        any side effects.
+    description: |
+        When dry mode is enabled, tmt reads and validates metadata,
+        resolves configurations, and reports what it would do, but
+        skips every action that modifies state: no guests are
+        provisioned, no guest commands are executed, no results are
+        submitted.
+
+        See the :ref:`dry-mode` section of the guide for a
+        detailed description of the behavior of each step and
+        command.
     example:
         - tmt run -n
         - tmt run --dry

@@ -1250,5 +1250,102 @@ __ https://github.com/teemtee/tmt/labels/multihost
 __ https://github.com/teemtee/tmt/issues/2047
 
 
+
+.. _dry-mode:
+
+Dry Mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the ``-n`` / ``--dry`` flag to enable dry mode. In this mode
+tmt reads and validates metadata, resolves configurations, and
+reports what it would do, but skips every action that modifies
+state: no guests are provisioned, no guest commands are executed,
+no results are submitted. It is a safe way to see which steps and
+phases would run without triggering any side effects.
+
+**What dry mode allows:**
+
+* Reading, parsing, and validating metadata
+* Creating and modifying the local :term:`run workdir`
+* Showing which steps, phases, and plugins would be executed
+* Read-only network queries during ``tmt tests import`` and
+  ``tmt tests export`` for nitrate and polarion, to produce
+  meaningful dry-run output
+
+**What dry mode skips:**
+
+* Creating or modifying resources (guests, containers, images)
+* Network access (git clones, fetching remote images or sources,
+  importing remote plans)
+* Executing any commands on guests
+* Submitting results or tasks to external services (nitrate,
+  polarion, reportportal, etc.)
+* Removing provisioned guests, run workdirs, or images
+
+The following sections describe the behavior of each step in
+dry mode:
+
+discover
+    No tests are discovered. No remote data is fetched.
+    The step reports which discover phases would run.
+
+provision
+    No images are pulled or built. No guests are provisioned.
+    No connections to remote providers are made. The step
+    reports which provision phases would run.
+
+prepare
+    No commands are executed and no packages are installed
+    on guests. The step reports which prepare phases would run.
+
+execute
+    Tests are not executed. The step reports the execution
+    method and returns empty results.
+
+report
+    No external services are used. No local files are created.
+    The step reports which report phases would run.
+
+finish
+    No finishing tasks are executed on guests. The step reports
+    which finish phases would run.
+
+cleanup
+    Provisioned guests are not removed. The step reports which
+    cleanup phases would run.
+
+login
+    Login to the guest is skipped.
+
+Several other commands also support ``--dry``:
+
+``tmt tests create``, ``tmt plans create``, ``tmt stories create``
+    No directories or metadata files are written. No links to
+    external issue trackers are created.
+
+``tmt tests id``, ``tmt plans id``, ``tmt stories id``
+    New UUIDs are generated and displayed but not written to disk.
+    Nodes that already have an id show their existing value.
+
+``tmt tests import``
+    Metadata is read and converted but not written to any ``.fmf``
+    files.
+
+``tmt tests export``
+    Prints the exported item when the output targets local stdout
+    (``yaml``, ``json``, ``rst``, etc.), or prints the request
+    that would be sent when the output targets an external
+    service (``nitrate``, ``polarion``).
+
+``tmt clean``, ``tmt clean runs``, ``tmt clean guests``, ``tmt clean images``
+    No workdirs, guests or images are removed. The commands report
+    what would be cleaned instead.
+
+``tmt try``
+    The interactive session starts but all steps behave as in dry
+    mode: no guests are provisioned, no commands are executed on
+    guests, and no tests are run.
+
+
 .. include:: guide/test-runner.inc.rst
 .. include:: guide/guest-preparation.inc.rst

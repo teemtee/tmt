@@ -298,6 +298,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         super().go(logger=logger)
 
+        if self.is_dry_run:
+            return
+
         from tmt.export.polarion import find_polarion_case_ids, import_polarion
 
         import_polarion()

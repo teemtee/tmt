@@ -627,8 +627,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             directory = fmf_root
         self.info('directory', directory, 'green')
         self.debug(f"Copy '{directory}' to '{self.test_dir}'.")
-        if not self.is_dry_run:
-            tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
+        tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
         return path
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
@@ -638,10 +637,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         super().go(path=path, logger=logger)
 
-        dist_git_source = self.get('dist-git-source', False)
-
         # No tests are selected in some cases
         self._tests: list[tmt.Test] = []
+
+        if self.is_dry_run:
+            return
+
+        dist_git_source = self.get('dist-git-source', False)
 
         self.log_import_plan_details()
 
@@ -701,7 +703,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Prepare the whole tree path
         path = path or Path('')
         tree_path = self.test_dir / path.unrooted()
-        if not tree_path.is_dir() and not self.is_dry_run:
+        if not tree_path.is_dir():
             raise tmt.utils.DiscoverError(f"Metadata tree path '{path}' not found.")
 
         # Show filters and test names if provided
@@ -782,8 +784,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Initialize the metadata tree, search for available tests
         self.debug(f"Check metadata tree in '{tree_path}'.")
-        if self.is_dry_run:
-            return []
         tests = []
         tree = tmt.Tree(
             logger=self._logger,
@@ -868,7 +868,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             else:
                 location = dist_git_extract
             # User specified location or 'root' of extracted sources
-            if not (Path(location) / '.fmf').is_dir() and not self.is_dry_run:
+            if not (Path(location) / '.fmf').is_dir():
                 fmf.Tree.init(location)
         elif dist_git_remove_fmf_root:
             try:
@@ -878,8 +878,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )[0]
             except tmt.utils.MetadataError:
                 self.warn("No fmf root to remove, there isn't one already.")
-            if not self.is_dry_run:
-                shutil.rmtree((dist_git_extract or extracted_fmf_root) / '.fmf')
+            shutil.rmtree((dist_git_extract or extracted_fmf_root) / '.fmf')
         if not dist_git_extract:
             try:
                 # TODO: This is ill-defined in combination with path, maybe this should go away
@@ -903,8 +902,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                             f"Directory '{self.step.plan.node.root}' is not in a git repository."
                         ) from error
                     self.debug(f"Copy '{git_root}' to '{self.test_dir}'.")
-                    if not self.is_dry_run:
-                        tmt.utils.filesystem.copy_tree(git_root, self.test_dir, self._logger)
+                    tmt.utils.filesystem.copy_tree(git_root, self.test_dir, self._logger)
             else:
                 if not dist_git_merge:
                     if self.data.path:
@@ -916,25 +914,24 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     fmf_root = top_fmf_root.relative_to(self.source_dir)
 
         # Copy extracted sources into test_dir
-        if not self.is_dry_run:
-            flatten = dist_git_merge
-            if dist_git_extract == '/':
-                flatten = False
-                copy_these = created_content
-            elif dist_git_extract:
-                copy_these = [dist_git_extract.relative_to(self.source_dir)]
+        flatten = dist_git_merge
+        if dist_git_extract == '/':
+            flatten = False
+            copy_these = created_content
+        elif dist_git_extract:
+            copy_these = [dist_git_extract.relative_to(self.source_dir)]
+        else:
+            copy_these = [top_fmf_root.relative_to(self.source_dir)]
+        for to_copy in copy_these:
+            src = self.source_dir / to_copy
+            if src.is_dir():
+                tmt.utils.filesystem.copy_tree(
+                    self.source_dir / to_copy,
+                    self.test_dir if flatten else self.test_dir / to_copy,
+                    self._logger,
+                )
             else:
-                copy_these = [top_fmf_root.relative_to(self.source_dir)]
-            for to_copy in copy_these:
-                src = self.source_dir / to_copy
-                if src.is_dir():
-                    tmt.utils.filesystem.copy_tree(
-                        self.source_dir / to_copy,
-                        self.test_dir if flatten else self.test_dir / to_copy,
-                        self._logger,
-                    )
-                else:
-                    shutil.copyfile(src, self.test_dir / to_copy)
+                shutil.copyfile(src, self.test_dir / to_copy)
 
         # Adjust path and optionally show
         if fmf_root is None or fmf_root.resolve() == Path.cwd().resolve():

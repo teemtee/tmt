@@ -773,7 +773,7 @@ def tests_import(
             raise tmt.utils.GeneralError(
                 "Option --case or --plan is mandatory when using --manual."
             )
-        tmt.convert.read_manual(plan, case, disabled, with_script, context.obj.logger)
+        tmt.convert.read_manual(plan, case, disabled, with_script, dry, context.obj.logger)
         return
 
     if not paths:

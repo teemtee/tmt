@@ -95,6 +95,9 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
         super().go(logger=logger)
 
+        if self.is_dry_run:
+            return
+
         # Prepare the template
         environment = tmt.utils.templates.default_template_environment()
 
@@ -147,10 +150,6 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
         except Exception as error:
             raise tmt.utils.ReportError(f"Failed to write the output '{filepath}'.") from error
-
-        # Nothing more to do in dry mode
-        if self.is_dry_run:
-            return
 
         # Show output file path
         self.info("output", filepath, color='yellow')
