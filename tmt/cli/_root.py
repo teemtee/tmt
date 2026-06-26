@@ -9,6 +9,7 @@ Main top-level command implementations.
     command remains.
 """
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional
 
 import click
@@ -71,45 +72,47 @@ recipe_options = create_options_decorator(tmt.options.RECIPE_OPTIONS)
 
 
 def _load_policies(
-    policy_name: Optional[str],
-    policy_path: Optional[Path],
+    policy_names: Sequence[str],
+    policy_paths: Sequence[Path],
     policy_root: Optional[Path],
 ) -> list[tmt.policy.Policy]:
     """
     A helper for loading policies.
 
-    :param policy_name: policy name to look up under the policy root.
-        If set, it is preferred over ``policy_path``, and it requires
+    :param policy_names: policy name to look up under the policy root.
+        If set, it is preferred over ``policy_paths``, and it requires
         ``policy_root`` to be set as well.
-    :param policy_path: path to the policy file.
+    :param policy_paths: path to the policy file.
     :param policy_root: if set, policy files must be located under this
         directory.
     """
 
-    if policy_name is not None:
+    if policy_names:
         if policy_root is None:
             raise GeneralError(
                 "Policy can be loaded by its name only when '--policy-root' is specified."
             )
 
-        if policy_path is not None:
+        if policy_paths:
             raise GeneralError(
                 "Options '--policy-name' and '--policy-file' are mutually exclusive."
             )
 
         return [
             tmt.policy.Policy.load_by_name(
-                name=policy_name,
+                name=name,
                 root=policy_root,
             )
+            for name in policy_names
         ]
 
-    if policy_path is not None:
+    if policy_paths:
         return [
             tmt.policy.Policy.load_by_filepath(
-                path=policy_path,
+                path=path,
                 root=policy_root,
             )
+            for path in policy_paths
         ]
 
     return []
@@ -354,8 +357,8 @@ def run(
     context: Context,
     id_: Optional[str],
     workdir_root: Optional[Path],
-    policy_file: Optional[Path],
-    policy_name: Optional[str],
+    policy_files: Sequence[Path],
+    policy_names: Sequence[str],
     policy_root: Optional[Path],
     recipe: Optional[Path],
     **kwargs: Any,
@@ -368,7 +371,7 @@ def run(
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
-    policies = _load_policies(policy_name, policy_file, policy_root)
+    policies = _load_policies(policy_names, policy_files, policy_root)
 
     context.obj.run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
@@ -965,8 +968,8 @@ def tests_export(
     nitrate: bool,
     bugzilla: bool,
     template: Optional[str],
-    policy_file: Optional[Path],
-    policy_name: Optional[str],
+    policy_files: Sequence[Path],
+    policy_names: Sequence[str],
     policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
@@ -1008,7 +1011,7 @@ def tests_export(
     else:
         tests = context.obj.tree.tests()
 
-        policies = _load_policies(policy_name, policy_file, policy_root)
+        policies = _load_policies(policy_names, policy_files, policy_root)
 
         for policy in policies:
             policy.apply_to_tests(tests=tests, logger=context.obj.logger)
@@ -1228,8 +1231,8 @@ def plans_export(
     how: str,
     format: str,
     template: Optional[str],
-    policy_file: Optional[Path],
-    policy_name: Optional[str],
+    policy_files: Sequence[Path],
+    policy_names: Sequence[str],
     policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
@@ -1249,7 +1252,7 @@ def plans_export(
 
     plans = context.obj.tree.plans()
 
-    policies = _load_policies(policy_name, policy_file, policy_root)
+    policies = _load_policies(policy_names, policy_files, policy_root)
 
     for policy in policies:
         policy.apply_to_plans(plans=plans, logger=context.obj.logger)
