@@ -202,6 +202,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %{_mandir}/man1/tmt.1.gz
 %{_datadir}/bash-completion/completions/%{name}
 
+%files -n tmt+prepare-artifact -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-container -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-virtual -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-bootc -f %{_pyproject_ghost_distinfo}
