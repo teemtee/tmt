@@ -14,9 +14,6 @@ adjust:
         package:
           - tree
           - diffutils
-
-  - when: distro != rhel
-    prepare+:
       - how: install
         check-first: true
         package:
@@ -30,9 +27,6 @@ adjust:
         package:
           - dconf
           - libpng
-
-  - when: distro == rhel
-    prepare+:
       - how: install
         check-first: true
         package:
