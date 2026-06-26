@@ -591,7 +591,6 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         no_check_options = dataclasses.replace(options, check_first=False)
         return self.guest.execute(self.engine.install(*to_install, options=no_check_options))
 
-
     def reinstall(
         self,
         *installables: Installable,
