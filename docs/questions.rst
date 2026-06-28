@@ -65,6 +65,10 @@ can be worked around by installing the test dependencies (as well
 as the ``rsync`` command) using :ref:`/plugins/prepare/ansible`
 or :ref:`/plugins/prepare/shell` prepare plugins.
 
+When running on macOS, it is recommended to override
+``TMT_WORKDIR_ROOT`` as accessing both ``/tmp`` and ``/var/tmp``
+seems to be problematic.
+
 
 Virtualization Tips
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
