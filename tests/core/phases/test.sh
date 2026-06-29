@@ -196,6 +196,58 @@ default-1:html:never"
         rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test --update handles incompatible keys correctly"
+        rlRun -s "$run plan -n /with-incompatible-keys \
+            report --update -h junit"
+
+        rlAssertGrep "warn: Cannot update report phase 'default-0' and inherit 'absolute-paths' key. This key is recognized by the original plugin 'html' but not by the requested plugin 'junit'." $rlRun_LOG
+        rlAssertGrep "output: junit.xml" $rlRun_LOG
+
+        check "with-incompatible-keys" "One 'junit' phase shall exist" "default-0:junit:50"
+
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-incompatible-keys/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to junit how" "$(cat $rlRun_LOG)" "default-0:junit"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test --update-missing handles incompatible keys correctly"
+        rlRun -s "$run plan -n /with-incompatible-keys \
+            report --update-missing -h junit"
+
+        rlAssertGrep "warn: Cannot update report phase 'default-0' and inherit 'absolute-paths' key. This key is recognized by the original plugin 'html' but not by the requested plugin 'junit'." $rlRun_LOG
+        rlAssertGrep "output: junit.xml" $rlRun_LOG
+
+        check "with-incompatible-keys" "One 'html' phase shall exist" "default-0:html:50"
+
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-incompatible-keys/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test --update handles compatible keys correctly"
+        rlRun -s "$run plan -n /with-report \
+            report --update -h junit --file foo.xml --prettify"
+
+        rlAssertNotGrep "warn: Cannot fully update report phase 'default-0'" $rlRun_LOG
+        rlAssertGrep "output: foo.xml" $rlRun_LOG
+
+        check "with-report" "One 'junit' phase shall exist" "default-0:junit:50"
+
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to junit how" "$(cat $rlRun_LOG)" "default-0:junit"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test --update-missing handles compatible keys correctly"
+        rlRun -s "$run plan -n /with-report \
+            report --update-missing -h junit --file foo.xml  --prettify"
+
+        rlAssertNotGrep "warn: Cannot fully update report phase 'default-0'" $rlRun_LOG
+        rlAssertGrep "output: foo.xml" $rlRun_LOG
+
+        check "with-report" "One 'html' phase shall exist" "default-0:html:50"
+
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
+    rlPhaseEnd
+
     rlPhaseStartTest "Test /with-order"
         rlRun -s "$run plan -n /with-order"
 

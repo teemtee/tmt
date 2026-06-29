@@ -3,7 +3,8 @@ from typing import Optional, TypeVar, Union, cast
 import tmt.log
 import tmt.result
 import tmt.steps
-from tmt.container import container
+import tmt.utils
+from tmt.container import container, field
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 
@@ -37,6 +38,17 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
         """
 
         self.go_prolog(logger or self._logger)
+
+
+@container
+class HasOutputFile(tmt.steps._IsStepDataTrait):
+    file: Optional[tmt.utils.Path] = field(
+        default=None,
+        option='--file',
+        metavar='PATH',
+        help='Path to the file to store the report in.',
+        normalize=tmt.utils.normalize_path,
+    )
 
 
 class Report(tmt.steps.Step):

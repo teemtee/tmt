@@ -18,15 +18,7 @@ DEFAULT_FILENAME = 'index.html'
 
 
 @container
-class ReportHtmlData(tmt.steps.report.ReportStepData):
-    file: Optional[Path] = field(
-        default=None,
-        option='--file',
-        metavar='PATH',
-        help='Path to the file to store HTML report to.',
-        normalize=tmt.utils.normalize_path,
-    )
-
+class ReportHtmlData(tmt.steps.report.HasOutputFile, tmt.steps.report.ReportStepData):
     open: bool = field(
         default=False,
         option=('-o', '--open'),
