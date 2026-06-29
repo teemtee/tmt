@@ -259,7 +259,7 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
             # Second install step (check-first: true) must log that packages were skipped
-            rlAssertGrep "check-first: packages already installed, skipping" $rlRun_LOG
+            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
 
             if is_ubuntu "$image" || is_debian "$image"; then
                 # 1 extra phase for apt-get update + 2 install phases
@@ -275,11 +275,11 @@ rlJournalStart
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
             # The second install step must skip the pre-installed package and install only the missing one
             if is_ubi "$image"; then
-                rlAssertGrep "check-first: packages already installed, skipping:.*dconf" $rlRun_LOG
+                rlAssertGrep "packages already installed, skipping.*dconf" $rlRun_LOG
                 rlAssertGrep "cmd: $package_manager.*install.*libpng" $rlRun_LOG
             else
-                rlAssertGrep "check-first: packages already installed, skipping:.*tree" $rlRun_LOG
-                rlAssertGrep "cmd: $package_manager.*install.*diffutils" $rlRun_LOG
+                rlAssertGrep "packages already installed, skipping.*tree" $rlRun_LOG
+                rlAssertGrep "cmd: $package_manager.*(install|add).*diffutils" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
@@ -299,12 +299,31 @@ rlJournalStart
             fi
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-            rlAssertGrep "check-first: packages already installed, skipping" $rlRun_LOG
+            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
 
             if is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
             else
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Check-first option via CLI (--no-check-first) for requires"
+            rlRun -s "$tmt -d -h install --no-check-first plan --name /no-check-first-requires$"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            if is_ubi "$image"; then
+                rlAssertGrep "cmd: $package_manager.*install.*dconf" $rlRun_LOG
+                rlAssertGrep "cmd: $package_manager.*install.*libpng" $rlRun_LOG
+            else
+		rlAssertGrep "cmd: $package_manager.*(install|add).*tree" $rlRun_LOG
+		rlAssertGrep "cmd: $package_manager.*(install|add).*diffutils" $rlRun_LOG
+            fi
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
             fi
         rlPhaseEnd
 
@@ -315,8 +334,8 @@ rlJournalStart
                 rlAssertGrep "cmd: $package_manager.*install.*libpng" $rlRun_LOG
             else
                 rlRun -s "$tmt -d --insert --how install --package tree --package diffutils --no-check-first plan --name /empty$"
-                rlAssertGrep "cmd: $package_manager.*install.*tree" $rlRun_LOG
-                rlAssertGrep "cmd: $package_manager.*install.*diffutils" $rlRun_LOG
+                rlAssertGrep "cmd: $package_manager.*(install|add).*tree" $rlRun_LOG
+                rlAssertGrep "cmd: $package_manager.*(install|add).*diffutils" $rlRun_LOG
             fi
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG

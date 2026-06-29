@@ -576,16 +576,13 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         to_install = self._check_first_filter(*installables, options=options, present=False)
         if not to_install:
             if options.check_first:
-                self.debug(
-                    'check-first: packages already installed, skipping: '
-                    + fmf.utils.listed(sorted(str(i) for i in installables))
-                )
+                self.debug('packages already installed, skipping', list(installables))
             return CommandOutput(stdout=None, stderr=None)
 
         if options.check_first and len(to_install) < len(installables):
-            skipped = sorted(str(i) for i in installables if i not in to_install)
             self.debug(
-                'check-first: packages already installed, skipping: ' + fmf.utils.listed(skipped)
+                'packages already installed, skipping',
+                [installable for installable in installables if installable not in to_install],
             )
 
         no_check_options = dataclasses.replace(options, check_first=False)
