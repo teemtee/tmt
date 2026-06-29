@@ -1,6 +1,6 @@
-import os
-
 import pytest
+
+from tmt.utils import Environment
 
 env_vars_parametrization = (
     ("env_name", "value"),
@@ -18,4 +18,4 @@ env_vars_parametrization = (
 
 @pytest.mark.parametrize(*env_vars_parametrization)
 def test_environment_file_with_variables(env_name, value):
-    assert os.environ[env_name] == value
+    assert Environment.environ[env_name] == value

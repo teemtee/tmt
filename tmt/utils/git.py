@@ -3,7 +3,6 @@ Test Metadata Utilities
 """
 
 import functools
-import os
 import re
 import shutil
 import subprocess
@@ -249,14 +248,14 @@ def inject_auth_git_url(url: str) -> str:
     """
 
     # Try all environment variables sorted by their name
-    for name, value in sorted(os.environ.items(), key=lambda x: x[0]):
+    for name, value in sorted(Environment.environ.items(), key=lambda x: x[0]):
         # First one which matches url is taken into the account
         if name.startswith(INJECT_CREDENTIALS_URL_PREFIX) and re.search(value, url):
             unique_suffix = name[len(INJECT_CREDENTIALS_URL_PREFIX) :]
             variable_with_value = f'{INJECT_CREDENTIALS_VALUE_PREFIX}{unique_suffix}'
             # Get credentials value
             try:
-                creds = os.environ[variable_with_value]
+                creds = Environment.environ[variable_with_value]
             except KeyError as error:
                 raise GitUrlError(
                     f'Missing "{variable_with_value}" variable with credentials for "{url}"'
@@ -763,7 +762,7 @@ def git_clone(
     :returns: Command output, bundled in a :py:class:`CommandOutput` tuple.
     """
 
-    environment = environment if environment is not None else Environment.from_environ()
+    environment = environment if environment is not None else Environment.environ
 
     def clone_the_repo(
         url: str,

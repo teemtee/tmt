@@ -3,7 +3,7 @@
 import os
 import sys
 
-step = os.getenv('STEP', '')
+step = os.getenv('STEP', '')  # noqa: TID251
 
 isatty = (sys.stdin.isatty(), sys.stdout.isatty(), sys.stderr.isatty())
 
