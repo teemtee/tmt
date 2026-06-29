@@ -181,14 +181,14 @@ def test_inject_auth_git_url(monkeypatch) -> None:
     """
 
     # empty environment
-    monkeypatch.setattr('os.environ', {})
+    monkeypatch.setattr('Environment.environ', {})
     assert inject_auth_git_url('input_text') == 'input_text'
 
     suffix = '_glab'
     # https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
     # username can be anything but cannot be an empty string
     monkeypatch.setattr(
-        'os.environ',
+        'Environment.environ',
         {
             f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://gitlab.com/namespace/project',
             f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'foo:abcdefgh',
@@ -204,7 +204,7 @@ def test_inject_auth_git_url(monkeypatch) -> None:
     # https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
     # just token or username is used (value before @)
     monkeypatch.setattr(
-        'os.environ',
+        'Environment.environ',
         {
             f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://github.com/namespace/project',
             f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'abcdefgh',
