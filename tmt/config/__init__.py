@@ -1,5 +1,4 @@
 import functools
-import os
 from contextlib import suppress
 from typing import Optional, TypeVar, cast
 
@@ -29,8 +28,8 @@ def effective_config_dir() -> Path:
     :py:const:`DEFAULT_CONFIG_DIR` is picked.
     """
 
-    if 'TMT_CONFIG_DIR' in os.environ:
-        return Path(os.environ['TMT_CONFIG_DIR']).expanduser()
+    if 'TMT_CONFIG_DIR' in tmt.utils.Environment.environ:
+        return Path(tmt.utils.Environment.environ['TMT_CONFIG_DIR']).expanduser()
 
     return DEFAULT_CONFIG_DIR.expanduser()
 

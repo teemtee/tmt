@@ -487,7 +487,7 @@ class GuestContainer(tmt.Guest):
         try:
             return self._run_guest_command(
                 Command('podman') + command,
-                environment=tmt.utils.Environment.from_environ(),
+                environment=tmt.utils.Environment.environ,
                 silent=silent,
                 **kwargs,
             )

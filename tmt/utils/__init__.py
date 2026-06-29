@@ -38,6 +38,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Final,
     Generic,
     Literal,
@@ -107,15 +108,15 @@ def configure_optional_constant(default: Optional[int], envvar: str) -> Optional
         given default value if the variable did not exist.
     """
 
-    if envvar not in os.environ:
+    if envvar not in Environment.environ:
         return default
 
     try:
-        return int(os.environ[envvar])
+        return int(Environment.environ[envvar])
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={os.environ[envvar]}' as integer."
+            f"Could not parse '{envvar}={Environment.environ[envvar]}' as integer."
         ) from exc
 
 
@@ -131,11 +132,11 @@ def configure_constant(default: int, envvar: str) -> int:
     """
 
     try:
-        return int(os.environ.get(envvar, default))
+        return int(Environment.environ.get(envvar, default))
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={os.environ[envvar]}' as integer."
+            f"Could not parse '{envvar}={Environment.environ[envvar]}' as integer."
         ) from exc
 
 
@@ -151,11 +152,11 @@ def configure_float_constant(default: float, envvar: str) -> float:
     """
 
     try:
-        return float(os.environ.get(envvar, default))
+        return float(Environment.environ.get(envvar, default))
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={os.environ[envvar]}' as float."
+            f"Could not parse '{envvar}={Environment.environ[envvar]}' as float."
         ) from exc
 
 
@@ -171,7 +172,7 @@ def configure_bool_constant(default: bool, envvar: str) -> bool:
     :returns: value extracted from the environment variable, or the
         given default value if the variable did not exist.
     """
-    value = os.environ.get(envvar)
+    value = Environment.environ.get(envvar)
     if value is None:
         return default
     return value == "1"
@@ -324,8 +325,8 @@ def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     if workdir_root_option:
         return workdir_root_option
 
-    if 'TMT_WORKDIR_ROOT' in os.environ:
-        return Path(os.environ['TMT_WORKDIR_ROOT'])
+    if 'TMT_WORKDIR_ROOT' in Environment.environ:
+        return Path(Environment.environ['TMT_WORKDIR_ROOT'])
 
     return WORKDIR_ROOT
 
@@ -474,6 +475,14 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment and
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
+
+    environ: ClassVar['Environment']
+
+    @classmethod
+    def _init_environ(cls) -> None:
+        cls.environ = Environment(
+            {key: EnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
+        )
 
     def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
         super().__init__(data or {})
@@ -857,7 +866,7 @@ class Environment(dict[str, EnvVarValue]):
         Extract environment variables from the live environment
         """
 
-        return Environment({key: EnvVarValue(value) for key, value in os.environ.items()})
+        return cls.environ
 
     @classmethod
     def from_fmf_context(cls, fmf_context: FmfContext) -> 'Environment':
@@ -976,14 +985,17 @@ class Environment(dict[str, EnvVarValue]):
             provision/prepare/execute/finish phases.
         """
 
-        environ_backup = os.environ.copy()
-        os.environ.clear()
-        os.environ.update(self.to_environ())
+        environ_backup = os.environ.copy()  # noqa: TID251
+        os.environ.clear()  # noqa: TID251
+        os.environ.update(self.to_environ())  # noqa: TID251
         try:
             yield
         finally:
-            os.environ.clear()
-            os.environ.update(environ_backup)
+            os.environ.clear()  # noqa: TID251
+            os.environ.update(environ_backup)  # noqa: TID251
+
+
+Environment._init_environ()
 
 
 # Workdir argument type, can be True, a string, a path or None
@@ -2985,7 +2997,9 @@ class TracebackVerbosity(enum.Enum):
 
     @classmethod
     def from_env(cls) -> 'TracebackVerbosity':
-        return TracebackVerbosity.from_spec(os.getenv('TMT_SHOW_TRACEBACK', '0').lower())
+        return TracebackVerbosity.from_spec(
+            Environment.environ.get('TMT_SHOW_TRACEBACK', '0').lower()
+        )
 
 
 def render_run_exception_streams(
@@ -3914,7 +3928,7 @@ def get_state_format(format: Optional[str] = None) -> StateFormat:
 #: The default state format. It is initialized via ``TMT_STATE_FORMAT``
 #: environment variable.
 DEFAULT_STATE_FORMAT: Final[StateFormat] = get_state_format(
-    format=os.environ.get('TMT_STATE_FORMAT', 'yaml').lower()
+    format=Environment.environ.get('TMT_STATE_FORMAT', 'yaml').lower()
 )
 
 

@@ -285,7 +285,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         if self.data.url_content_type == "git":
             self.debug(f"Clone '{url}' to '{self.test_dir}'.")
 
-            environment = Environment.from_environ()
+            environment = Environment.environ
             environment["GIT_ASKPASS"] = EnvVarValue("echo")
 
             tmt.utils.git.git_clone(

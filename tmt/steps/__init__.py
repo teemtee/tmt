@@ -1265,7 +1265,7 @@ class Step(
 
         # First pass, apply environment variables
         for i, plugin_envvar in enumerate(
-            PluginEnvVar.from_environment(Environment.from_environ(), self)
+            PluginEnvVar.from_environment(Environment.environ, self)
         ):
             debug2(f'environment invocation #{i}', str(plugin_envvar))
 
