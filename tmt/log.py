@@ -29,7 +29,6 @@ import enum
 import io
 import itertools
 import logging
-import os
 import sys
 from typing import (
     TYPE_CHECKING,
@@ -128,7 +127,7 @@ def create_decolorizer(apply_colors: bool) -> Callable[[str], str]:
 def _debug_level_from_global_envvar() -> int:
     import tmt.utils
 
-    raw_value = os.getenv('TMT_DEBUG', None)
+    raw_value = tmt.utils.Environment.environ.get('TMT_DEBUG', None)
 
     if raw_value is None:
         return 0
@@ -182,15 +181,17 @@ def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
         for logging colorization.
     """
 
+    from tmt.utils import Environment
+
     # Default values: assume colors & unicorns everywhere.
     apply_colors_output = apply_colors_logging = True
 
     # Enforce colors if `--force-color` was used, or `TMT_FORCE_COLOR` envvar is set.
-    if force_color or 'TMT_FORCE_COLOR' in os.environ:
+    if force_color or 'TMT_FORCE_COLOR' in Environment.environ:
         apply_colors_output = apply_colors_logging = True
 
     # Disable coloring if `--no-color` was used, or `NO_COLOR` or `TMT_NO_COLOR` envvar is set.
-    elif no_color or 'NO_COLOR' in os.environ or 'TMT_NO_COLOR' in os.environ:
+    elif no_color or 'NO_COLOR' in Environment.environ or 'TMT_NO_COLOR' in Environment.environ:
         apply_colors_output = apply_colors_logging = False
 
     # Autodetection, disable colors when not talking to a terminal.
