@@ -341,6 +341,8 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
         ) -> None:
             from tmt.steps.prepare.install import PrepareInstallData
 
+            check_first = self.opt('check-first')
+
             for collection in pruned_collections:
                 if not collection.dependencies:
                     continue
@@ -354,6 +356,9 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                     package=collection.dependencies,
                     missing=missing,
                 )
+
+                if isinstance(check_first, bool):
+                    data.check_first = check_first
 
                 self._phases.append(PreparePlugin.delegate(self, data=data))
 
