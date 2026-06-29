@@ -196,78 +196,78 @@ rlJournalStart
         # TODO: find out whether all those exceptions can be simplified and parametrized...
 
         # TODO: cannot *successfully* install on ubi without subscribing first?
-#        rlPhaseStartTest "$phase_prefix Install existing packages (plan)"
-#            rlRun -s "$tmt plan --name /existing"
-#
-#            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#            if is_image_mode "$image"; then
-#                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
-#                rlAssertGrep "switching to new image" $rlRun_LOG
-#                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
-#            fi
-#
-#            if is_ubuntu "$image" || is_debian "$image"; then
-#                # Runs 1 extra phase, to populate local caches.
-#                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-#            else
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            fi
-#        rlPhaseEnd
-#
-#        # On image mode, verify packages persist after reboot
-#        if is_image_mode "$image"; then
-#            rlPhaseStartTest "$phase_prefix Reboot persistence"
-#                rlRun -s "$tmt_run --all provision --how $PROVISION_HOW --image $image plan --name /reboot-persistence"
-#
-#                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
-#                rlAssertGrep "switching to new image" $rlRun_LOG
-#                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
-#
-#                # should see the tree and diffutils version printed twice (before and after the test reboot)
-#                rlAssertEquals "Verify tree available after reboot" $(grep "stdout: tree v" $rlRun_LOG | wc -l) 2
-#                rlAssertEquals "Verify diffutils available after reboot" $(grep "stdout: diff (GNU diffutils)" $rlRun_LOG | wc -l) 2
-#
-#                rlAssertGrep "total: 1 test passed" $rlRun_LOG
-#            rlPhaseEnd
-#        fi
-#
-#        # Here the basic functionality check ends for the secondary distros.
-#        if [[ "$SECONDARY_IMAGES" =~ "$image" ]]; then
-#            continue
-#        fi
-#
-#        rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
-#            if is_ubi "$image"; then
-#                rlRun -s "$tmt --insert --how install --package dconf --package libpng plan --name /empty"
-#            else
-#                rlRun -s "$tmt --insert --how install --package tree --package diffutils plan --name /empty"
-#            fi
-#
-#            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#            if is_ubuntu "$image" || is_debian "$image"; then
-#                # Runs 1 extra phase, to populate local caches.
-#                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-#            else
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            fi
-#        rlPhaseEnd
-#
-#        rlPhaseStartTest "$phase_prefix Check-first skips already-installed packages (plan)"
-#            rlRun -s "$tmt -d plan --name /check-first$"
-#
-#            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#            # Second install step (check-first: true) must log that packages were skipped
-#            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
-#
-#            if is_ubuntu "$image" || is_debian "$image"; then
-#                # 1 extra phase for apt-get update + 2 install phases
-#                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
-#            else
-#                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-#            fi
-#        rlPhaseEnd
+        rlPhaseStartTest "$phase_prefix Install existing packages (plan)"
+            rlRun -s "$tmt plan --name /existing"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_image_mode "$image"; then
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+            fi
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # Runs 1 extra phase, to populate local caches.
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        # On image mode, verify packages persist after reboot
+        if is_image_mode "$image"; then
+            rlPhaseStartTest "$phase_prefix Reboot persistence"
+                rlRun -s "$tmt_run --all provision --how $PROVISION_HOW --image $image plan --name /reboot-persistence"
+
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+
+                # should see the tree and diffutils version printed twice (before and after the test reboot)
+                rlAssertEquals "Verify tree available after reboot" $(grep "stdout: tree v" $rlRun_LOG | wc -l) 2
+                rlAssertEquals "Verify diffutils available after reboot" $(grep "stdout: diff (GNU diffutils)" $rlRun_LOG | wc -l) 2
+
+                rlAssertGrep "total: 1 test passed" $rlRun_LOG
+            rlPhaseEnd
+        fi
+
+        # Here the basic functionality check ends for the secondary distros.
+        if [[ "$SECONDARY_IMAGES" =~ "$image" ]]; then
+            continue
+        fi
+
+        rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
+            if is_ubi "$image"; then
+                rlRun -s "$tmt --insert --how install --package dconf --package libpng plan --name /empty"
+            else
+                rlRun -s "$tmt --insert --how install --package tree --package diffutils plan --name /empty"
+            fi
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # Runs 1 extra phase, to populate local caches.
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Check-first skips already-installed packages (plan)"
+            rlRun -s "$tmt -d plan --name /check-first$"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            # Second install step (check-first: true) must log that packages were skipped
+            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # 1 extra phase for apt-get update + 2 install phases
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
 
         rlPhaseStartTest "$phase_prefix Check-first skips only already-installed packages (partial, plan)"
             rlRun -s "$tmt -d plan --name /check-first-partial"
@@ -348,143 +348,143 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-#        # Limit these test cases to:
-#        # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
-#        # * image mode - the code handling is different in this case, so we need to make sure these cases work well
-#        # * fedora - the tests use rpms
-#        if ([ "$PROVISION_HOW" = "container" ] || is_image_mode "$image") && is_fedora "$image"; then
-#            rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
-#                fetch_downloaded_packages "$image"
-#
-#                rlRun -s "$tmt plan --name /downloaded/in-cwd"
-#
-#                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            rlPhaseEnd
-#
-#            rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (CLI)"
-#                fetch_downloaded_packages "$image"
-#
-#                rlRun -s "$tmt prepare --insert --how install --package tree*.rpm --package diffutils*.rpm plan --name /empty"
-#
-#                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            rlPhaseEnd
-#
-#            rlPhaseStartTest "$phase_prefix Install downloaded packages from subdirectory (plan)"
-#                fetch_downloaded_packages "$image" "yes"
-#
-#                rlRun -s "$tmt plan --name /downloaded/in-subdirectory"
-#
-#                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            rlPhaseEnd
-#
-#            rlPhaseStartTest "$phase_prefix Install downloaded packages from subdirectory (CLI)"
-#                fetch_downloaded_packages "$image" "yes"
-#
-#                rlRun -s "$tmt prepare --insert --how install --package downloaded-rpms/tree.rpm --package downloaded-rpms/diffutils.rpm plan --name /empty"
-#
-#                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            rlPhaseEnd
-#
-#            rlPhaseStartTest "$phase_prefix Install downloaded directory (plan)"
-#                fetch_downloaded_packages "$image" "yes"
-#
-#                rlRun -s "$tmt plan --name /downloaded/as-directory"
-#
-#                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            rlPhaseEnd
-#
-#            rlPhaseStartTest "$phase_prefix Install downloaded directory (CLI)"
-#                fetch_downloaded_packages "$image" "yes"
-#
-#                rlRun -s "$tmt prepare --insert --how install --directory downloaded-rpms plan --name /empty"
-#
-#                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            rlPhaseEnd
-#        fi
-#
-#        rlPhaseStartTest "$phase_prefix Install existing and invalid packages (plan)"
-#            rlRun -s "$tmt plan --name /missing" 2
-#            assert_package_manager
-#            rlAssertGrep "Other failed packages:" $rlRun_LOG
-#            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
-#        rlPhaseEnd
-#
-#        rlPhaseStartTest "$phase_prefix Install existing and invalid packages (test)"
-#            rlRun -s "$tmt plan --name /missing-from-test" 2
-#            assert_package_manager
-#            rlAssertGrep "Required packages failed to install, aborting:" $rlRun_LOG
-#            rlAssertGrep "tree-but-spelled-wrong: required by: /test-with-invalid-package" $rlRun_LOG
-#        rlPhaseEnd
-#
-#        rlPhaseStartTest "$phase_prefix Install existing and invalid packages (CLI)"
-#            rlRun -s "$tmt --insert --how install --package tree-but-spelled-wrong --package diffutils plan --name /empty" 2
-#            assert_package_manager
-#            rlAssertGrep "Other failed packages:" $rlRun_LOG
-#            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
-#        rlPhaseEnd
-#
-#        rlPhaseStartTest "$phase_prefix Empty prepare install with exclude"
-#            rlRun "$tmt execute plan --name empty-with-exclude"
-#        rlPhaseEnd
-#
-#        # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
-#        # possible to extend to other distros.
-#        # TODO: image mode copr support depends on #4748
-#        if ! is_image_mode "$image" && ((is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"); then
-#            if ! is_centos_7 "$image" && ! is_ubi_8 "$image" && ! is_fedora_eln "$image"; then
-#                rlPhaseStartTest "$phase_prefix Just enable copr"
-#                    rlRun "$tmt execute plan --name copr"
-#                rlPhaseEnd
-#
-#                rlPhaseStartTest "$phase_prefix Exclude selected packages"
-#                    rlRun "$tmt execute plan --name exclude"
-#                rlPhaseEnd
-#            fi
-#
-#            if is_fedora_eln "$image"; then
-#                rlPhaseStartTest "$phase_prefix Escape package names"
-#                    rlRun "$tmt_run -e COPR_PLUGIN=\"dnf5-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf5-plugins\" $tmt_steps execute plan --name escape"
-#                rlPhaseEnd
-#            else
-#                rlPhaseStartTest "$phase_prefix Escape package names"
-#                    rlRun "$tmt_run -e COPR_PLUGIN=\"dnf-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf-plugins-core\" $tmt_steps execute plan --name escape"
-#                rlPhaseEnd
-#            fi
-#
-#            if is_centos_7 "$image"; then
-#                rlPhaseStartTest "$phase_prefix Install from epel7 copr"
-#                    rlRun "$tmt execute plan --name epel7"
-#                rlPhaseEnd
-#            fi
-#
-#            if is_centos_stream_9 "$image"; then
-#                rlPhaseStartTest "$phase_prefix Install remote packages"
-#                    rlRun "$tmt execute plan --name epel9-remote"
-#                rlPhaseEnd
-#            fi
-#
-#            if is_ubi_8 "$image"; then
-#                rlPhaseStartTest "$phase_prefix Install remote packages"
-#                    rlRun "$tmt execute plan --name epel8-remote"
-#                rlPhaseEnd
-#            fi
-#
-#            rlPhaseStartTest "$phase_prefix Install debuginfo packages"
-#                rlRun "$tmt execute plan --name debuginfo"
-#            rlPhaseEnd
-#        fi
+        # Limit these test cases to:
+        # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
+        # * image mode - the code handling is different in this case, so we need to make sure these cases work well
+        # * fedora - the tests use rpms
+        if ([ "$PROVISION_HOW" = "container" ] || is_image_mode "$image") && is_fedora "$image"; then
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
+                fetch_downloaded_packages "$image"
+
+                rlRun -s "$tmt plan --name /downloaded/in-cwd"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (CLI)"
+                fetch_downloaded_packages "$image"
+
+                rlRun -s "$tmt prepare --insert --how install --package tree*.rpm --package diffutils*.rpm plan --name /empty"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from subdirectory (plan)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt plan --name /downloaded/in-subdirectory"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from subdirectory (CLI)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt prepare --insert --how install --package downloaded-rpms/tree.rpm --package downloaded-rpms/diffutils.rpm plan --name /empty"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded directory (plan)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt plan --name /downloaded/as-directory"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded directory (CLI)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt prepare --insert --how install --directory downloaded-rpms plan --name /empty"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+        fi
+
+        rlPhaseStartTest "$phase_prefix Install existing and invalid packages (plan)"
+            rlRun -s "$tmt plan --name /missing" 2
+            assert_package_manager
+            rlAssertGrep "Other failed packages:" $rlRun_LOG
+            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Install existing and invalid packages (test)"
+            rlRun -s "$tmt plan --name /missing-from-test" 2
+            assert_package_manager
+            rlAssertGrep "Required packages failed to install, aborting:" $rlRun_LOG
+            rlAssertGrep "tree-but-spelled-wrong: required by: /test-with-invalid-package" $rlRun_LOG
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Install existing and invalid packages (CLI)"
+            rlRun -s "$tmt --insert --how install --package tree-but-spelled-wrong --package diffutils plan --name /empty" 2
+            assert_package_manager
+            rlAssertGrep "Other failed packages:" $rlRun_LOG
+            rlAssertGrep "tree-but-spelled-wrong" $rlRun_LOG
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Empty prepare install with exclude"
+            rlRun "$tmt execute plan --name empty-with-exclude"
+        rlPhaseEnd
+
+        # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
+        # possible to extend to other distros.
+        # TODO: image mode copr support depends on #4748
+        if ! is_image_mode "$image" && ((is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"); then
+            if ! is_centos_7 "$image" && ! is_ubi_8 "$image" && ! is_fedora_eln "$image"; then
+                rlPhaseStartTest "$phase_prefix Just enable copr"
+                    rlRun "$tmt execute plan --name copr"
+                rlPhaseEnd
+
+                rlPhaseStartTest "$phase_prefix Exclude selected packages"
+                    rlRun "$tmt execute plan --name exclude"
+                rlPhaseEnd
+            fi
+
+            if is_fedora_eln "$image"; then
+                rlPhaseStartTest "$phase_prefix Escape package names"
+                    rlRun "$tmt_run -e COPR_PLUGIN=\"dnf5-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf5-plugins\" $tmt_steps execute plan --name escape"
+                rlPhaseEnd
+            else
+                rlPhaseStartTest "$phase_prefix Escape package names"
+                    rlRun "$tmt_run -e COPR_PLUGIN=\"dnf-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf-plugins-core\" $tmt_steps execute plan --name escape"
+                rlPhaseEnd
+            fi
+
+            if is_centos_7 "$image"; then
+                rlPhaseStartTest "$phase_prefix Install from epel7 copr"
+                    rlRun "$tmt execute plan --name epel7"
+                rlPhaseEnd
+            fi
+
+            if is_centos_stream_9 "$image"; then
+                rlPhaseStartTest "$phase_prefix Install remote packages"
+                    rlRun "$tmt execute plan --name epel9-remote"
+                rlPhaseEnd
+            fi
+
+            if is_ubi_8 "$image"; then
+                rlPhaseStartTest "$phase_prefix Install remote packages"
+                    rlRun "$tmt execute plan --name epel8-remote"
+                rlPhaseEnd
+            fi
+
+            rlPhaseStartTest "$phase_prefix Install debuginfo packages"
+                rlRun "$tmt execute plan --name debuginfo"
+            rlPhaseEnd
+        fi
     done <<< "$IMAGES"
 
     rlPhaseStartCleanup
