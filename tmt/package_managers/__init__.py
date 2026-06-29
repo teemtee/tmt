@@ -576,13 +576,13 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         to_install = self._check_first_filter(*installables, options=options, present=False)
         if not to_install:
             if options.check_first:
-                self.debug('packages already installed, skipping', list(installables))
+                self.debug('packages already installed, skipping', str(installables))
             return CommandOutput(stdout=None, stderr=None)
 
         if options.check_first and len(to_install) < len(installables):
             self.debug(
                 'packages already installed, skipping',
-                [installable for installable in installables if installable not in to_install],
+                str([i for i in installables if i not in to_install]),
             )
 
         no_check_options = dataclasses.replace(options, check_first=False)
