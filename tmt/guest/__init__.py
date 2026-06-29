@@ -798,7 +798,7 @@ class GuestFacts(SerializableContainer):
         return None
 
     def _query_arch(self, guest: 'Guest') -> Optional[str]:
-        return self._query(guest, [(Command('arch'), r'(.+)')])
+        return self._query(guest, [(Command('uname', '-m'), r'(.+)')])
 
     def _query_distro(self, guest: 'Guest') -> Optional[str]:
         # Try some low-hanging fruits first. We already might have the answer,
