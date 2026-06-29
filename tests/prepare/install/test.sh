@@ -196,78 +196,78 @@ rlJournalStart
         # TODO: find out whether all those exceptions can be simplified and parametrized...
 
         # TODO: cannot *successfully* install on ubi without subscribing first?
-#        rlPhaseStartTest "$phase_prefix Install existing packages (plan)"
-#            rlRun -s "$tmt plan --name /existing"
-#
-#            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#            if is_image_mode "$image"; then
-#                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
-#                rlAssertGrep "switching to new image" $rlRun_LOG
-#                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
-#            fi
-#
-#            if is_ubuntu "$image" || is_debian "$image"; then
-#                # Runs 1 extra phase, to populate local caches.
-#                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-#            else
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            fi
-#        rlPhaseEnd
-#
-#        # On image mode, verify packages persist after reboot
-#        if is_image_mode "$image"; then
-#            rlPhaseStartTest "$phase_prefix Reboot persistence"
-#                rlRun -s "$tmt_run --all provision --how $PROVISION_HOW --image $image plan --name /reboot-persistence"
-#
-#                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
-#                rlAssertGrep "switching to new image" $rlRun_LOG
-#                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
-#
-#                # should see the tree and diffutils version printed twice (before and after the test reboot)
-#                rlAssertEquals "Verify tree available after reboot" $(grep "stdout: tree v" $rlRun_LOG | wc -l) 2
-#                rlAssertEquals "Verify diffutils available after reboot" $(grep "stdout: diff (GNU diffutils)" $rlRun_LOG | wc -l) 2
-#
-#                rlAssertGrep "total: 1 test passed" $rlRun_LOG
-#            rlPhaseEnd
-#        fi
-#
-#        # Here the basic functionality check ends for the secondary distros.
-#        if [[ "$SECONDARY_IMAGES" =~ "$image" ]]; then
-#            continue
-#        fi
-#
-#        rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
-#            if is_ubi "$image"; then
-#                rlRun -s "$tmt --insert --how install --package dconf --package libpng plan --name /empty"
-#            else
-#                rlRun -s "$tmt --insert --how install --package tree --package diffutils plan --name /empty"
-#            fi
-#
-#            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#
-#            if is_ubuntu "$image" || is_debian "$image"; then
-#                # Runs 1 extra phase, to populate local caches.
-#                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-#            else
-#                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-#            fi
-#        rlPhaseEnd
-#
-#        rlPhaseStartTest "$phase_prefix Check-first skips already-installed packages (plan)"
-#            rlRun -s "$tmt -d plan --name /check-first$"
-#
-#            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-#            # Second install step (check-first: true) must log that packages were skipped
-#            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
-#
-#            if is_ubuntu "$image" || is_debian "$image"; then
-#                # 1 extra phase for apt-get update + 2 install phases
-#                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
-#            else
-#                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-#            fi
-#        rlPhaseEnd
+        rlPhaseStartTest "$phase_prefix Install existing packages (plan)"
+            rlRun -s "$tmt plan --name /existing"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_image_mode "$image"; then
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+            fi
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # Runs 1 extra phase, to populate local caches.
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        # On image mode, verify packages persist after reboot
+        if is_image_mode "$image"; then
+            rlPhaseStartTest "$phase_prefix Reboot persistence"
+                rlRun -s "$tmt_run --all provision --how $PROVISION_HOW --image $image plan --name /reboot-persistence"
+
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+
+                # should see the tree and diffutils version printed twice (before and after the test reboot)
+                rlAssertEquals "Verify tree available after reboot" $(grep "stdout: tree v" $rlRun_LOG | wc -l) 2
+                rlAssertEquals "Verify diffutils available after reboot" $(grep "stdout: diff (GNU diffutils)" $rlRun_LOG | wc -l) 2
+
+                rlAssertGrep "total: 1 test passed" $rlRun_LOG
+            rlPhaseEnd
+        fi
+
+        # Here the basic functionality check ends for the secondary distros.
+        if [[ "$SECONDARY_IMAGES" =~ "$image" ]]; then
+            continue
+        fi
+
+        rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
+            if is_ubi "$image"; then
+                rlRun -s "$tmt --insert --how install --package dconf --package libpng plan --name /empty"
+            else
+                rlRun -s "$tmt --insert --how install --package tree --package diffutils plan --name /empty"
+            fi
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # Runs 1 extra phase, to populate local caches.
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Check-first skips already-installed packages (plan)"
+            rlRun -s "$tmt -d plan --name /check-first$"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            # Second install step (check-first: true) must log that packages were skipped
+            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # 1 extra phase for apt-get update + 2 install phases
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
 
         rlPhaseStartTest "$phase_prefix Check-first skips only already-installed packages (partial, plan)"
             rlRun -s "$tmt -d plan --name /check-first-partial"

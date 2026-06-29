@@ -1,0 +1,33 @@
+summary: Verify --no-check-first is applied to required packages
+prepare: []
+
+discover: []
+
+execute:
+    how: tmt
+
+adjust:
+  - when: distro == ubuntu,debian
+    prepare+<:
+      - how: shell
+        script: apt-get update
+
+  - when: distro != rhel
+    discover+:
+      - how: shell
+        tests:
+          - name: test-with-requires
+            test: /bin/true
+            require:
+              - tree
+              - diffutils
+
+  - when: distro == rhel
+    discover+:
+      - how: shell
+        tests:
+          - name: test-with-requires
+            test: /bin/true
+            require:
+              - dconf
+              - libpng
