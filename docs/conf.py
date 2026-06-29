@@ -343,3 +343,6 @@ redirects = {
     "releases": "releases/index.html",
     "code/autodocs": "z_autodocs/",
 }
+
+# -- Options for sphinx.ext.todo ------------------------------------------
+todo_include_todos = True
