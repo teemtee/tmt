@@ -131,7 +131,7 @@ def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path
     parameter path is returned.
     """
 
-    return Path(os.environ.get(SCRIPTS_DEST_DIR_VARIABLE, default))
+    return Path(tmt.utils.Environment.environ.get(SCRIPTS_DEST_DIR_VARIABLE, default))
 
 
 # Script handling reboots, in restraint compatible fashion
