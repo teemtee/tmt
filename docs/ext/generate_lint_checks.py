@@ -37,7 +37,7 @@ def generate_lint_checks(app: "Sphinx") -> None:
         'COLLECTION_LINTERS': _sort_linters(LintableCollection.get_linter_registry()),
     }
 
-    render_template_file_into_file(template_filepath, output_filepath, **linters)
+    render_template_file_into_file(template_filepath, output_filepath, sandboxed=False, **linters)
 
 
 def setup(app: "Sphinx"):

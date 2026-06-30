@@ -107,7 +107,11 @@ class ScriptTemplate(Script):
                 logger=tmt.log.Logger.get_bootstrap_logger(),
                 assert_file=True,
             )
-            rendered_script.write(render_template_file(template_file, None, **self.context))
+            rendered_script.write(
+                render_template_file(
+                    template_file, environment=None, sandboxed=True, **self.context
+                )
+            )
 
         self._rendered_script_path = Path(rendered_script.name)
 
