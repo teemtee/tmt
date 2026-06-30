@@ -232,6 +232,7 @@ def generate_plugins(app: "Sphinx") -> None:
         render_template_file_into_file(
             template_filepath,
             output_filepath,
+            sandboxed=False,
             LOGGER=logger,
             STEP=step_name,
             PLUGINS=plugin_generator,

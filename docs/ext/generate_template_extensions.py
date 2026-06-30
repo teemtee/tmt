@@ -23,6 +23,7 @@ def generate_template_extensions(app: "Sphinx") -> None:
     render_template_file_into_file(
         template_filepath,
         output_filepath,
+        sandboxed=False,
         FILTERS=TEMPLATE_FILTERS,
         TESTS=TEMPLATE_TESTS,
     )

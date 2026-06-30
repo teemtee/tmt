@@ -450,18 +450,23 @@ TEMPLATE_TESTS: dict[str, Callable[..., Any]] = {
 }
 
 
-def default_template_environment() -> jinja2.Environment:
+def default_template_environment(sandboxed: bool = True) -> jinja2.Environment:
     """
     Create a Jinja2 environment with default settings.
 
     Adds common filters, and enables block trimming and left strip.
     """
 
+    # S701: Using jinja2 templates with `autoescape=False` is dangerous and can lead to XSS.
     # As there can be many different template file formats, used to render various formats,
     # we need to explicitly set autoescape=False, as default might change in the future.
     # Potential improvements are being tracked in /teemtee/tmt/issues/2873
 
-    environment = jinja2.sandbox.ImmutableSandboxedEnvironment(autoescape=False)
+    environment = (
+        jinja2.sandbox.ImmutableSandboxedEnvironment(autoescape=False)
+        if sandboxed
+        else jinja2.Environment(autoescape=False)  # noqa: S701
+    )
 
     environment.undefined = jinja2.StrictUndefined
 
@@ -478,6 +483,7 @@ def render_template(
     template: str,
     template_filepath: Optional[Path] = None,
     environment: Optional[jinja2.Environment] = None,
+    sandboxed: bool = True,
     **variables: Any,
 ) -> str:
     """
@@ -489,7 +495,7 @@ def render_template(
     :param variables: variables to pass to the template.
     """
 
-    environment = environment or default_template_environment()
+    environment = environment or default_template_environment(sandboxed=sandboxed)
 
     def raise_error(message: str) -> None:
         """
@@ -526,6 +532,7 @@ def render_template(
 def render_template_file(
     template_filepath: Path,
     environment: Optional[jinja2.Environment] = None,
+    sandboxed: bool = True,
     **variables: Any,
 ) -> str:
     """
@@ -538,7 +545,11 @@ def render_template_file(
 
     try:
         return render_template(
-            template_filepath.read_text(), template_filepath, environment, **variables
+            template_filepath.read_text(),
+            template_filepath=template_filepath,
+            environment=environment,
+            sandboxed=sandboxed,
+            **variables,
         )
 
     except FileNotFoundError as error:
@@ -549,6 +560,7 @@ def render_template_file_into_file(
     input_filepath: Path,
     output_filepath: Path,
     environment: Optional[jinja2.Environment] = None,
+    sandboxed: bool = True,
     **variables: Any,
 ) -> None:
     """
@@ -566,7 +578,9 @@ def render_template_file_into_file(
     """
 
     output_filepath.write_text(
-        render_template_file(input_filepath, environment=environment, **variables)
+        render_template_file(
+            input_filepath, environment=environment, sandboxed=sandboxed, **variables
+        )
     )
 
     output_filepath.append_text('\n')
