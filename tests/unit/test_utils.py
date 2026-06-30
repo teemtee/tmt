@@ -21,10 +21,12 @@ import tmt.base.links
 import tmt.base.plan
 import tmt.log
 import tmt.plugins
+import tmt.result
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
 import tmt.utils.jira
+import tmt.utils.templates
 from tmt.log import Logger
 from tmt.utils import (
     Command,
@@ -1825,3 +1827,17 @@ def test_render_command_report_minimal():
 # Finished successfully
 """
     )
+
+
+def test_render_template() -> None:
+    assert tmt.utils.templates.render_template('a {{ "template" | capitalize }}') == 'a Template'
+
+
+def test_render_template_sandbox() -> None:
+    result = tmt.result.BaseResult(name='foo')
+
+    with pytest.raises(GeneralError, match=r"Template used forbidden operation\."):
+        tmt.utils.templates.render_template('{{ RESULT.__init__ }}', RESULT=result)
+
+    with pytest.raises(GeneralError, match=r"Template used forbidden operation\."):
+        tmt.utils.templates.render_template('{{ RESULT.__init__.__globals__ }}', RESULT=result)

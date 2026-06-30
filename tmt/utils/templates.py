@@ -20,6 +20,7 @@ from typing import (
 import fmf.utils
 import jinja2
 import jinja2.exceptions
+import jinja2.sandbox
 
 from tmt.utils import GeneralError, Path, to_yaml
 from tmt.utils.git import web_git_url
@@ -461,7 +462,9 @@ def default_template_environment() -> jinja2.Environment:
     # we need to explicitly set autoescape=False, as default might change in the future.
     # Potential improvements are being tracked in /teemtee/tmt/issues/2873
 
-    environment = jinja2.Environment()  # noqa: S701
+    environment = jinja2.sandbox.ImmutableSandboxedEnvironment()
+
+    environment.undefined = jinja2.StrictUndefined
 
     environment.filters.update(TEMPLATE_FILTERS)
     environment.tests.update(TEMPLATE_TESTS)
@@ -501,6 +504,14 @@ def render_template(
 
     try:
         return environment.from_string(template).render(**variables).strip()
+
+    except jinja2.exceptions.SecurityError as error:
+        if template_filepath:
+            raise GeneralError(
+                f"Template from '{template_filepath}' used forbidden operation."
+            ) from error
+
+        raise GeneralError("Template used forbidden operation.") from error
 
     except jinja2.exceptions.TemplateSyntaxError as error:
         if template_filepath:
