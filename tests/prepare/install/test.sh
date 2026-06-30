@@ -276,10 +276,10 @@ rlJournalStart
             # The second install step must skip the pre-installed package and install only the missing one
             if is_ubi "$image"; then
                 rlAssertGrep "packages already installed, skipping.*dconf" $rlRun_LOG
-                rlAssertGrep "cmd: $package_manager.*install.*libpng" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
             else
                 rlAssertGrep "packages already installed, skipping.*tree" $rlRun_LOG
-                rlAssertGrep "cmd: $package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
+                rlAssertGrep "$package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
@@ -313,11 +313,11 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
             if is_ubi "$image"; then
-                rlAssertGrep "cmd: $package_manager.*install.*dconf" $rlRun_LOG
-                rlAssertGrep "cmd: $package_manager.*install.*libpng" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*dconf" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
             else
-		rlAssertGrep "cmd: $package_manager.*\(install\|add\).*tree" $rlRun_LOG
-		rlAssertGrep "cmd: $package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
+		rlAssertGrep "$package_manager.*\(install\|add\).*tree" $rlRun_LOG
+		rlAssertGrep "$package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
@@ -330,12 +330,12 @@ rlJournalStart
         rlPhaseStartTest "$phase_prefix Check-first option via CLI (--no-check-first)"
             if is_ubi "$image"; then
                 rlRun -s "$tmt -d --insert --how install --package dconf --package libpng --no-check-first plan --name /empty$"
-                rlAssertGrep "cmd: $package_manager.*install.*dconf" $rlRun_LOG
-                rlAssertGrep "cmd: $package_manager.*install.*libpng" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*dconf" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
             else
                 rlRun -s "$tmt -d --insert --how install --package tree --package diffutils --no-check-first plan --name /empty$"
-                rlAssertGrep "cmd: $package_manager.*\(install\|add\).*tree" $rlRun_LOG
-                rlAssertGrep "cmd: $package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
+                rlAssertGrep "$package_manager.*\(install\|add\).*tree" $rlRun_LOG
+                rlAssertGrep "$package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
             fi
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
