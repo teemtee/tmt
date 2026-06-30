@@ -8,7 +8,7 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.container import MetadataContainer, container
 from tmt.guest import Guest, RebootMode, SoftRebootModes
-from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
+from tmt.utils import Environment, HasEnvironment, OpenEnvVarValue, Path, ShellScript
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
@@ -80,9 +80,9 @@ class RebootContext(HasEnvironment):
 
         # Set all supported reboot variables
         for reboot_variable in tmt.steps.scripts.TMT_REBOOT_SCRIPT.related_variables:
-            environment[reboot_variable] = EnvVarValue(str(self.reboot_counter))
+            environment[reboot_variable] = OpenEnvVarValue(str(self.reboot_counter))
 
-        environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
+        environment["TMT_REBOOT_REQUEST"] = OpenEnvVarValue(
             self.path / tmt.steps.scripts.TMT_REBOOT_SCRIPT.created_file
         )
 

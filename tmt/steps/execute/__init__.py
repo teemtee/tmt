@@ -42,9 +42,9 @@ from tmt.utils import (
     Command,
     CommandOutput,
     Environment,
-    EnvVarValue,
     HasEnvironment,
     HasStepWorkdir,
+    OpenEnvVarValue,
     Path,
     ProcessExitCodes,
     ShellScript,
@@ -372,18 +372,18 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 self.phase.parent.plan.environment,
             )
 
-            environment["TMT_TEST_NAME"] = EnvVarValue(self.test.name)
-            environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(self.path)
-            environment["TMT_TEST_DATA"] = EnvVarValue(self.test_data_path)
-            environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(self.submission_log_path)
-            environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(self.test.serial_number))
-            environment["TMT_TEST_METADATA"] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
+            environment["TMT_TEST_NAME"] = OpenEnvVarValue(self.test.name)
+            environment["TMT_TEST_INVOCATION_PATH"] = OpenEnvVarValue(self.path)
+            environment["TMT_TEST_DATA"] = OpenEnvVarValue(self.test_data_path)
+            environment["TMT_TEST_SUBMITTED_FILES"] = OpenEnvVarValue(self.submission_log_path)
+            environment['TMT_TEST_SERIAL_NUMBER'] = OpenEnvVarValue(str(self.test.serial_number))
+            environment["TMT_TEST_METADATA"] = OpenEnvVarValue(self.path / TEST_METADATA_FILENAME)
 
-            environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
+            environment['TMT_TEST_ITERATION_ID'] = OpenEnvVarValue(
                 f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
             )
 
-            environment['TMT_SOURCE_DIR'] = EnvVarValue(self.discover_phase.source_dir)
+            environment['TMT_SOURCE_DIR'] = OpenEnvVarValue(self.discover_phase.source_dir)
 
         else:
             environment = self._environment
@@ -392,7 +392,10 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         # be owned by plan again once the dust of environment untangling
         # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
         # more.
-        environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.guest.plan_environment_path)
+        if self.guest.plan_environment_path is not None:
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = OpenEnvVarValue(
+                self.guest.plan_environment_path
+            )
 
         environment.update(
             # Add variables from invocation contexts
