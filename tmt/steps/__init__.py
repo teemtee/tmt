@@ -1587,6 +1587,12 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
 
     _queue: 'PhaseQueue[StepDataT, PluginReturnValueT]'
 
+    def inject_logger(self, logger: tmt.log.Logger) -> None:
+        super().inject_logger(logger)
+
+        if hasattr(self, '_queue'):
+            self._queue._logger = logger.descend(logger_name=f'{self.step_name}.queue')
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
