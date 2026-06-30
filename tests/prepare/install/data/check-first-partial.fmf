@@ -17,7 +17,7 @@ adjust:
         check-first: true
         package:
           - tree
-          - diffutils
+          - dos2unix
 
   - when: distro == rhel
     prepare+:

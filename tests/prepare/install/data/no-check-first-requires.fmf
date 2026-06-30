@@ -13,6 +13,14 @@ adjust:
         script: apt-get update
 
   - when: distro != rhel
+    prepare+:
+      - how: install
+        check-first: true
+        # should get overridden by CLI --no-check-first
+        package:
+          - tree
+          - dos2unix
+
     discover+:
       - how: shell
         tests:
@@ -20,9 +28,17 @@ adjust:
             test: /bin/true
             require:
               - tree
-              - diffutils
+              - dos2unix
 
   - when: distro == rhel
+    prepare+:
+      - how: install
+        check-first: true
+        # should get overridden by CLI --no-check-first
+        package:
+          - dconf
+          - libpng
+
     discover+:
       - how: shell
         tests:
