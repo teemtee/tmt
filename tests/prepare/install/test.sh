@@ -279,7 +279,7 @@ rlJournalStart
                 rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
             else
                 rlAssertGrep "packages already installed, skipping.*tree" $rlRun_LOG
-                rlAssertGrep "$package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
+                rlAssertGrep "$package_manager.*\(install\|add\).*dos2unix" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
@@ -294,12 +294,13 @@ rlJournalStart
             # packages first, so the CLI-inserted step (check-first: true by default) must skip them.
             if is_ubi "$image"; then
                 rlRun -s "$tmt -d --insert --how install --package dconf --package libpng plan --name /existing"
+		rlAssertGrep "packages already installed, skipping dconf and libpng" $rlRun_LOG
             else
                 rlRun -s "$tmt -d --insert --how install --package tree --package diffutils plan --name /existing"
+		rlAssertGrep "packages already installed, skipping diffutils and tree" $rlRun_LOG
             fi
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
 
             if is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
@@ -317,13 +318,13 @@ rlJournalStart
                 rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
             else
 		rlAssertGrep "$package_manager.*\(install\|add\).*tree" $rlRun_LOG
-		rlAssertGrep "$package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
+		rlAssertGrep "$package_manager.*\(install\|add\).*dos2unix" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
-                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
             else
-                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
             fi
         rlPhaseEnd
 
