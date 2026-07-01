@@ -247,6 +247,8 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
             name='tmt runner',
             logger=self._logger,
         )
+        guest_runner.cli_invocation = self.cli_invocation
+
         # Override some facts that we do not want to expose
         # No sudo access on the runner
         guest_runner.facts.can_sudo = False
