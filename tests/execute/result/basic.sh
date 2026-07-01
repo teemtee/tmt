@@ -115,7 +115,7 @@ rlJournalStart
         rlRun -s "tmt run --id \${run} --scratch --until execute tests -n /xfail-with-reboot provision --how container execute -v 2>&1 >/dev/null"
 
         rlAssertGrep "00:00:00 /test/xfail-with-reboot \[1/1\]" $rlRun_LOG
-        rlAssertGrep "00:00:00 pass /test/xfail-with-reboot (on default-0) \[1/1\]" $rlRun_LOG
+        rlAssertGrep "00:00:[[:digit:]][[:digit:]] pass /test/xfail-with-reboot (on default-0) \[1/1\]" $rlRun_LOG
         rlAssertGrep "Note: test failed as expected" $rlRun_LOG
         rlAssertGrep "Note: original test result: fail" $rlRun_LOG
     rlPhaseEnd

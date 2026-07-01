@@ -182,7 +182,7 @@ def create_ausearch_mark(
         ).strip()
     )
 
-    output, exc, timer = Stopwatch.measure(
+    output, exc, timer = Stopwatch().measure(
         _run_script, invocation=invocation, script=script, logger=logger
     )
 
@@ -213,7 +213,7 @@ def create_final_report(
     Collect the data, evaluate and create the final report
     """
 
-    if invocation.start_time is None:
+    if not invocation.stopwatch.started:
         raise tmt.utils.GeneralError(
             "Test does not have start time recorded, cannot run AVC check."
         )
@@ -279,7 +279,7 @@ def create_final_report(
         ).strip()
     )
 
-    output, exc, timer = Stopwatch.measure(
+    output, exc, timer = Stopwatch().measure(
         _run_script, invocation=invocation, script=script, needs_sudo=True, logger=logger
     )
 
