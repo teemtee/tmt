@@ -8,7 +8,7 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
+from tmt.result import PhaseResult, ResultGuestData, ResultOutcome, Results
 from tmt.steps import (
     Action,
     PluginOutcome,
@@ -115,7 +115,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
 
     _plugin_base_class = PreparePlugin
 
-    results: list[PhaseResult]
+    results: Results[PhaseResult]
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
@@ -145,7 +145,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
 
         super().__init__(plan=plan, raw_data=raw_data, logger=logger)
 
-        self.results = []
+        self.results = Results()
         self.preparations_applied = 0
 
     def load(self) -> None:
@@ -403,7 +403,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                     ],
                 )
 
-        self.results: list[PhaseResult] = []
+        self.results: Results[PhaseResult] = Results()
         exceptions: list[Exception] = []
 
         def _record_exception(

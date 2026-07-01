@@ -57,7 +57,7 @@ from tmt.container import (
     simple_field,
 )
 from tmt.options import ClickOptionDecoratorType, option
-from tmt.result import ResultOutcome
+from tmt.result import BaseResult, ResultOutcome, Results
 from tmt.utils import (
     DEFAULT_NAME,
     Command,
@@ -1030,7 +1030,7 @@ class Step(
         self,
         result_class: type[ResultT],
         allow_missing: bool = False,
-    ) -> list[ResultT]:
+    ) -> tmt.result.Results[ResultT]:
         """
         Load results of this step from the workdir
         """
@@ -1040,19 +1040,19 @@ class Step(
         try:
             raw_results: list[Any] = self.plan.my_run.read_state(self.step_workdir / 'results')
 
-            return [result_class.from_serialized(raw_result) for raw_result in raw_results]
+            return Results(result_class.from_serialized(raw_result) for raw_result in raw_results)
 
         except tmt.utils.FileError as exc:
             if allow_missing:
                 self.debug(f'{self.__class__.__name__} results not found.', level=2)
-                return []
+                return Results()
 
             raise GeneralError('Cannot load step results.') from exc
 
         except Exception as exc:
             raise GeneralError('Cannot load step results.') from exc
 
-    def _save_results(self, results: Sequence['BaseResult']) -> None:
+    def _save_results(self, results: Sequence[BaseResult]) -> None:
         """
         Save results of this step to the workdir
         """

@@ -1,5 +1,5 @@
 import enum
-from typing import TYPE_CHECKING, Any, Callable, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
 import fmf.utils
 
@@ -13,8 +13,12 @@ from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base.core
+    import tmt.cli
     import tmt.guest
     import tmt.steps.execute
+
+
+ResultT = TypeVar('ResultT', bound='BaseResult')
 
 
 class ResultOutcome(enum.Enum):
@@ -512,25 +516,43 @@ class Result(BaseResult):
             {option: value for option, value in self.to_serialized().items() if option in options}
         )
 
-    @staticmethod
-    def total(results: list['Result']) -> dict[ResultOutcome, int]:
+    @property
+    def failure_logs(self) -> list[Path]:
         """
-        Return dictionary with total stats for given results
+        Return paths to all failure logs from the result
+        """
+
+        failure_logs = super().failure_logs
+        for check in self.check:
+            failure_logs += check.failure_logs
+        return list(set(failure_logs))
+
+
+class Results(list[ResultT]):
+    """
+    A collection of results.
+
+    Effectively a fancy list of results, with a few helper methods for
+    the collection as a whole.
+    """
+
+    def total(self) -> dict[ResultOutcome, int]:
+        """
+        Return dictionary with total stats.
         """
 
         stats = dict.fromkeys(RESULT_OUTCOME_COLORS, 0)
 
-        for result in results:
+        for result in self:
             stats[result.result] += 1
         return stats
 
-    @staticmethod
-    def summary(results: list['Result']) -> str:
+    def summary(self) -> str:
         """
-        Prepare a nice human summary of provided results
+        Prepare a nice human summary of results.
         """
 
-        stats = Result.total(results)
+        stats = self.total()
         comments = []
         if stats.get(ResultOutcome.PASS):
             passed = ' ' + style('passed', fg='green')
@@ -556,60 +578,53 @@ class Result(BaseResult):
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))
 
-    @property
-    def failure_logs(self) -> list[Path]:
+    def to_exit_code(self, execute_enabled: bool = True) -> 'tmt.cli.TmtExitCode':
         """
-        Return paths to all failure logs from the result
+        Map results to a tmt exit code.
+
+        :param execute_enabled: if set, the :py:mod:`tmt.steps.execute`
+            step was enabled.
+        :raises tmt.utils.GeneralError: when it was not possible to map
+            results to any defined exit code.
         """
 
-        failure_logs = super().failure_logs
-        for check in self.check:
-            failure_logs += check.failure_logs
-        return list(set(failure_logs))
+        from tmt.cli import TmtExitCode
 
+        stats = self.total()
 
-def results_to_exit_code(results: list[Result], execute_enabled: bool = True) -> int:
-    """
-    Map results to a tmt exit code
-    """
+        # Quoting the specification:
 
-    from tmt.cli import TmtExitCode
+        # "No test results found."
+        if sum(stats.values()) == 0:
+            return TmtExitCode.NO_RESULTS_FOUND
 
-    stats = Result.total(results)
+        # "Errors occurred during test execution."
+        if stats[ResultOutcome.ERROR]:
+            return TmtExitCode.ERROR
 
-    # Quoting the specification:
+        # "There was a fail or warn identified, but no error."
+        if stats[ResultOutcome.FAIL] + stats[ResultOutcome.WARN]:
+            return TmtExitCode.FAIL
 
-    # "No test results found."
-    if sum(stats.values()) == 0:
-        return TmtExitCode.NO_RESULTS_FOUND
+        # "Tests were executed, and all reported the ``skip`` result."
+        if sum(stats.values()) == stats[ResultOutcome.SKIP]:
+            return TmtExitCode.ALL_TESTS_SKIPPED
 
-    # "Errors occurred during test execution."
-    if stats[ResultOutcome.ERROR]:
-        return TmtExitCode.ERROR
+        # "No errors or fails, but there are pending tests."
+        if execute_enabled and stats[ResultOutcome.PENDING]:
+            return TmtExitCode.ERROR
 
-    # "There was a fail or warn identified, but no error."
-    if stats[ResultOutcome.FAIL] + stats[ResultOutcome.WARN]:
-        return TmtExitCode.FAIL
+        # "At least one test passed, there was no fail, warn or error."
+        if (
+            sum(stats.values())
+            == stats[ResultOutcome.PASS]
+            + stats[ResultOutcome.INFO]
+            + stats[ResultOutcome.SKIP]
+            + stats[ResultOutcome.PENDING]
+        ):
+            return TmtExitCode.SUCCESS
 
-    # "Tests were executed, and all reported the ``skip`` result."
-    if sum(stats.values()) == stats[ResultOutcome.SKIP]:
-        return TmtExitCode.ALL_TESTS_SKIPPED
-
-    # "No errors or fails, but there are pending tests."
-    if execute_enabled and stats[ResultOutcome.PENDING]:
-        return TmtExitCode.ERROR
-
-    # "At least one test passed, there was no fail, warn or error."
-    if (
-        sum(stats.values())
-        == stats[ResultOutcome.PASS]
-        + stats[ResultOutcome.INFO]
-        + stats[ResultOutcome.SKIP]
-        + stats[ResultOutcome.PENDING]
-    ):
-        return TmtExitCode.SUCCESS
-
-    raise GeneralError("Unhandled combination of test result.")
+        raise GeneralError("Unhandled combination of test result.")
 
 
 def save_failures(

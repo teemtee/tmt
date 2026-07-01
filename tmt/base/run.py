@@ -19,7 +19,6 @@ import fmf.utils
 import tmt.config
 import tmt.log
 import tmt.policy
-import tmt.result
 import tmt.steps
 import tmt.steps.cleanup
 import tmt.steps.execute
@@ -36,7 +35,7 @@ from tmt.container import (
     field,
 )
 from tmt.recipe import RecipeManager
-from tmt.result import Result
+from tmt.result import Results
 from tmt.utils import (
     Command,
     Environment,
@@ -551,10 +550,10 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
         interesting_results = execute.enabled or report.enabled
 
         # Gather all results and give an overall summary
-        results = [result for plan in self.plans for result in plan.execute.results()]
+        results = Results(result for plan in self.plans for result in plan.execute.results())
         if interesting_results:
             self.info('')
-            self.info('total', Result.summary(results), color='cyan')
+            self.info('total', results.summary(), color='cyan')
 
         # Remove the workdir if enabled
         if self.remove and self.plans[0].cleanup.enabled:
@@ -570,7 +569,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
             raise SystemExit(0)
 
         # Return appropriate exit code based on the total stats
-        raise SystemExit(tmt.result.results_to_exit_code(results, bool(execute.enabled)))
+        raise SystemExit(results.to_exit_code(execute_enabled=bool(execute.enabled)))
 
     def follow(self) -> None:
         """
