@@ -166,6 +166,10 @@ def default_reconnect_waiting() -> Waiting:
     )
 
 
+#: Interval between attempts to update guest logs. This is the default
+#: value tmt would use unless told otherwise via plugin keys.
+DEFAULT_GUEST_LOG_UPDATE_TICK = 5 * 60
+
 # Types for things Ansible can execute
 ANSIBLE_COLLECTION_PLAYBOOK_PATTERN = re.compile(r'[a-zA-z0-9_]+\.[a-zA-z0-9_]+\.[a-zA-z0-9_]+')
 
@@ -1366,6 +1370,17 @@ class GuestData(
         help='Ansible configuration for individual guest inventory generation.',
     )
 
+    log_update_tick: int = field(
+        default=DEFAULT_GUEST_LOG_UPDATE_TICK,
+        option='--log-update-tick',
+        metavar='SECONDS',
+        help=f"""
+             Interval between attempts to update guest logs.
+             {DEFAULT_GUEST_LOG_UPDATE_TICK} seconds by default.
+             """,
+        normalize=tmt.utils.normalize_int,
+    )
+
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
@@ -1643,6 +1658,74 @@ class GuestLog(abc.ABC):
         raise NotImplementedError
 
 
+class GuestLogUpdater(threading.Thread):
+    """
+    A thread periodically updating guest logs.
+
+    :param guest: guest whose logs the thread updates.
+    :param update_tick: fetch log updates every this many seconds.
+    """
+
+    #: Guest whose logs the thread updates.
+    guest: 'Guest'
+
+    #: As long as this flag is **not** set, the inner loop will continue
+    #: its iterations.
+    stop_running: threading.Event
+
+    def __init__(
+        self,
+        guest: 'Guest',
+        update_tick: int = DEFAULT_GUEST_LOG_UPDATE_TICK,
+    ) -> None:
+        # Starting as a daemon thread, tmt won't wait for this thread to
+        # finish when quitting.
+        super().__init__(name=f'{guest.name} / update-logs worker', daemon=True)
+
+        self.guest = guest
+        self.update_tick = update_tick
+
+        self.stop_running = threading.Event()
+
+    def run(self) -> None:
+        # TODO: shall fetch before first sleep?
+        while not self.stop_running.wait(timeout=self.update_tick):
+            self.guest.update_logs(logger=self.guest._logger)
+
+    def start(self) -> None:
+        """
+        Start the periodic log updating.
+
+        .. important::
+
+            It is the responsibility of plugins to start the worker thread,
+            as they are in the best position to decide at which point it
+            is possible - or worth the effort - to start the updates.
+        """
+
+        self.stop_running.clear()
+
+        super().start()
+
+    def stop(self) -> None:
+        """
+        Stop the periodic log updating.
+
+        .. important::
+
+            It is the responsibility of plugins to stop the worker thread,
+            as they are in the best position to decide at which point it
+            no longer makes sense to update logs.
+        """
+
+        if not self.is_alive():
+            return
+
+        self.stop_running.set()
+
+        self.join()
+
+
 class CommandCollector(abc.ABC):
     """
     Mixin for that supports collecting commands for deferred execution.
@@ -1745,11 +1828,18 @@ class Guest(
 
     ansible: Optional[GuestAnsible]
 
+    log_update_tick: int
+
     # Flag to indicate localhost guest, requires special handling
     localhost = False
 
     #: Guest logs active and available for collection.
     guest_logs: list[GuestLog]
+
+    #: A lock taken by :py:meth:`update_logs` for the duration of its
+    #: run. Prevents multiple threads from updating logs at the same
+    #: time, and possible conflicts and broken content.
+    _update_logs_lock: threading.Lock
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
@@ -1774,6 +1864,8 @@ class Guest(
 
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
+
+        self._update_logs_lock = threading.Lock()
 
     @property
     def run_workdir(self) -> Path:
@@ -2504,7 +2596,7 @@ class Guest(
             raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
 
     @abc.abstractmethod
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop the guest
 
@@ -2714,6 +2806,32 @@ class Guest(
 
         return dirpath
 
+    def update_logs(
+        self,
+        *,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Fetch the up-to-date content of guest logs, and update saved files.
+
+        :param logger: logger to use for logging.
+        """
+
+        with self._update_logs_lock:
+            for log in self.guest_logs:
+                try:
+                    log.update(logger=logger)
+
+                except Exception as exc:
+                    tmt.utils.show_exception_as_warning(
+                        exception=exc,
+                        message=f"Failed to update guest log '{log.name}'.",
+                        logger=logger,
+                    )
+
+                else:
+                    logger.info(log.name, str(log.filepath))
+
     def collect_log(self, log: GuestLog, hint: Optional[str] = None) -> None:
         """
         Register a guest log for (later) collection.
@@ -2732,7 +2850,15 @@ class Guest(
 
         self.guest_logs.append(log)
 
-    def setup_logs(self, *, logger: tmt.log.Logger) -> None:
+    @functools.cached_property
+    def update_logs_worker(self) -> GuestLogUpdater:
+        """
+        A worker thread that updates guest logs periodically.
+        """
+
+        return GuestLogUpdater(self, update_tick=self.log_update_tick)
+
+    def _setup_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will begin.
 
@@ -2742,7 +2868,7 @@ class Guest(
         for log in self.guest_logs:
             log.setup(logger=logger)
 
-    def teardown_logs(self, *, logger: tmt.log.Logger) -> None:
+    def _teardown_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will no longer continue.
 
@@ -2752,30 +2878,40 @@ class Guest(
         for log in self.guest_logs:
             log.teardown(logger=logger)
 
-    def update_logs(
-        self,
-        *,
-        logger: tmt.log.Logger,
-    ) -> None:
+    def kickoff_logs(self, logger: tmt.log.Logger) -> None:
         """
-        Fetch the up-to-date content of guest logs, and update saved files.
-
-        :param logger: logger to use for logging.
+        Kick of guest log collection process.
         """
 
-        for log in self.guest_logs:
-            try:
-                log.update(logger=logger)
+        logger.debug("Kicking off guest logs.")
 
-            except Exception as exc:
-                tmt.utils.show_exception_as_warning(
-                    exception=exc,
-                    message=f"Failed to update guest log '{log.name}'.",
-                    logger=logger,
-                )
+        # Set up the logs. After this point, tmt can being their updating
+        # process.
+        self._setup_logs(logger=logger)
 
-            else:
-                logger.info(log.name, str(log.filepath))
+        # Start the background log update worker.
+        self.update_logs_worker.start()
+
+    def finalize_logs(self, logger: tmt.log.Logger) -> None:
+        """
+        The last attempt to update logs, just before the guest is terminated.
+        """
+
+        logger.debug("Finalizing guest logs.")
+
+        # Stop the update log worker. Plugins are responsible for both
+        # starting and stopping it.
+        self.update_logs_worker.stop()
+
+        # Explicitly update guest logs before tearing logs down. It
+        # is certainly possible the worker just updated them, but
+        # there still may interesting info emitted in the last
+        # seconds, info we do not want to miss.
+        self.update_logs(logger=logger)
+
+        # And, finally, tear down the whole log setup. After this point,
+        # logs cannot be updated anymore.
+        self._teardown_logs(logger=logger)
 
     def _construct_mkdtemp_command(
         self,
@@ -3777,7 +3913,7 @@ class GuestSsh(Guest, CommandCollector):
         # Remove the ssh socket
         self._unlink_ssh_master_socket_path()
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop the guest
 
@@ -3785,6 +3921,8 @@ class GuestSsh(Guest, CommandCollector):
         any memory or cpu resources. If needed, perform any actions
         necessary to store the instance status to disk.
         """
+
+        self.finalize_logs(logger=logger)
 
         self.suspend()
 

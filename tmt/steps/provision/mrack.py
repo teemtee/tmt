@@ -1662,7 +1662,7 @@ class GuestBeaker(tmt.guest.GuestSsh):
                 )
 
             if state == 'Reserved':
-                self.setup_logs(logger=self._logger)
+                self.kickoff_logs(logger=self._logger)
 
                 return current
 
