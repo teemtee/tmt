@@ -1,0 +1,4 @@
+description: |
+    Fixed a bug where the dnf package manager base command was
+    being mutated in place, leading to incorrectly constructed
+    dnf commands.

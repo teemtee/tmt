@@ -1,0 +1,4 @@
+description: |
+    Messages about unused plugin environment variables have been
+    lowered from warning to debug log level, reducing noise in
+    standard output.
