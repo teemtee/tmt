@@ -213,23 +213,6 @@ class BaseResult(SerializableContainer):
     def __post_init__(self) -> None:
         self.original_result = self.result
 
-    def show(self) -> str:
-        """
-        Return a nicely colored result with test name (and note)
-        """
-
-        result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
-
-        components: list[str] = [
-            style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
-            self.name,
-        ]
-
-        if self.note:
-            components.append(f'({self.printable_note})')
-
-        return ' '.join(components)
-
     @property
     def printable_note(self) -> str:
         return ', '.join(self.note)
@@ -572,30 +555,6 @@ class Result(BaseResult):
             comments.append(count + ' ' + style(comment, fg='cyan'))
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))
-
-    def show(self, display_guest: bool = True) -> str:
-        """
-        Return a nicely colored result with test name (and note)
-        """
-
-        from tmt.guest import format_guest_full_name
-
-        result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
-
-        components: list[str] = [
-            style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
-            self.name,
-        ]
-
-        if display_guest and self.guest:
-            assert self.guest.name  # narrow type
-
-            components.append(f'(on {format_guest_full_name(self.guest.name, self.guest.role)})')
-
-        if self.note:
-            components.append(f'({self.printable_note})')
-
-        return ' '.join(components)
 
     @property
     def failure_logs(self) -> list[Path]:
