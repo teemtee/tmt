@@ -1,0 +1,4 @@
+description: |
+    Package installation now passes only missing packages to the
+    package manager, preventing unintended upgrades of already
+    installed packages caused by dnf ``best=True`` default.
