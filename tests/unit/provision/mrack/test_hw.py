@@ -5,20 +5,7 @@ import pytest
 import tmt.utils
 from tests.unit.test_hardware import FULL_HARDWARE_REQUIREMENTS, OR_HARDWARE_REQUIREMENTS
 from tmt.hardware.constraints import Operator
-from tmt.hardware.requirements import (
-    Hardware,
-    _parse_cpu,
-    _parse_device,
-    _parse_disk,
-    _parse_hostname,
-    _parse_iommu,
-    _parse_location,
-    _parse_memory,
-    _parse_system,
-    _parse_tpm,
-    _parse_virtualization,
-    _parse_zcrypt,
-)
+from tmt.hardware.requirements import Hardware, _parse_requirements
 from tmt.log import Logger
 from tmt.steps.provision.mrack import (
     _CONSTRAINT_TRANSFORMERS,
@@ -51,256 +38,131 @@ def test_maximal_constraint(root_logger: Logger) -> None:
     assert hw.constraint is not None
 
     result = constraint_to_beaker_filter(hw.constraint, root_logger)
+
     assert result.to_mrack() == {
         'and': [
-            {
-                'and': [
-                    {
-                        'pool': {
-                            '_op': '!=',
-                            '_value': 'foo.*',
-                        },
-                    },
-                    {},
-                ],
-            },
+            {},
+            {'pool': {'_op': '!=', '_value': 'foo.*'}},
             {},
             {'and': [{}, {}]},
+            {'cpu': {'cores': {'_op': '==', '_value': '2'}}},
+            {},
+            {'cpu': {'family': {'_op': '<', '_value': '6'}}},
+            {},
             {
                 'and': [
-                    {
-                        'cpu': {
-                            'processors': {'_op': '>', '_value': '8'},
-                        },
-                    },
-                    {},
-                    {
-                        'cpu': {
-                            'cores': {'_op': '==', '_value': '2'},
-                        },
-                    },
-                    {},
-                    {},
-                    {},
-                    {'cpu': {'model': {'_op': '==', '_value': '62'}}},
-                    {'cpu': {'family': {'_op': '<', '_value': '6'}}},
-                    {},
-                    {
-                        'cpu': {
-                            'stepping': {
-                                '_op': '!=',
-                                '_value': '10',
-                            },
-                        },
-                    },
-                    {
-                        'cpu': {
-                            'speed': {
-                                '_op': '>=',
-                                '_value': '2300.0',
-                            },
-                        },
-                    },
-                    {},
-                    {
-                        'not': {'cpu': {'model_name': {'_op': 'like', '_value': 'Haswell'}}},
-                    },
-                    {
-                        'cpu': {
-                            'vendor': {
-                                '_op': 'like',
-                                '_value': 'Intel%',
-                            },
-                        },
-                    },
-                    {
-                        'and': [
-                            {'cpu': {'flag': {'_op': '==', '_value': 'avx'}}},
-                            {'cpu': {'flag': {'_op': '==', '_value': 'avx2'}}},
-                            {'cpu': {'flag': {'_op': '!=', '_value': 'smep'}}},
-                        ]
-                    },
-                    {'cpu': {'hyper': {'_op': '==', '_value': 'True'}}},
+                    {'cpu': {'flag': {'_op': '==', '_value': 'avx'}}},
+                    {'cpu': {'flag': {'_op': '==', '_value': 'avx2'}}},
+                    {'cpu': {'flag': {'_op': '!=', '_value': 'smep'}}},
                 ]
             },
-            {
-                'and': [
-                    {
-                        'device': {
-                            '_vendor_id': '97',
-                            '_op': '>',
-                        },
-                    },
-                    {
-                        'device': {
-                            '_device_id': '79',
-                            '_op': '==',
-                        },
-                    },
-                    {},
-                    {
-                        'device': {
-                            '_description': '%Thunderbolt%',
-                            '_op': 'like',
-                        },
-                    },
-                    {
-                        'key_value': {
-                            '_key': 'MODULE',
-                            '_op': '==',
-                            '_value': 'mc',
-                        },
-                    },
-                ],
-            },
-            {'and': [{}, {}, {}, {}, {}]},
-            {'system': {'memory': {'_op': '==', '_value': '8192'}}},
-            {
-                'and': [
-                    {
-                        'and': [
-                            {'disk': {'size': {'_op': '==', '_value': '42949672960'}}},
-                            {'disk': {'phys_sector_size': {'_op': '==', '_value': '4096 B'}}},
-                            {'disk': {'model': {'_op': 'like', '_value': 'WD 100G%'}}},
-                        ]
-                    },
-                    {
-                        'and': [
-                            {'disk': {'size': {'_op': '==', '_value': '128849018880'}}},
-                            {'disk': {'sector_size': {'_op': '==', '_value': '512 B'}}},
-                            {'key_value': {'_key': 'BOOTDISK', '_op': '==', '_value': 'virtblk'}},
-                        ]
-                    },
-                ]
-            },
-            {
-                'and': [
-                    {
-                        'and': [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                        ]
-                    },
-                    {},
-                ],
-            },
+            {'cpu': {'speed': {'_op': '>=', '_value': '2300.0'}}},
+            {'cpu': {'hyper': {'_op': '==', '_value': 'True'}}},
+            {'cpu': {'model': {'_op': '==', '_value': '62'}}},
+            {'not': {'cpu': {'model_name': {'_op': 'like', '_value': 'Haswell'}}}},
+            {'cpu': {'processors': {'_op': '>', '_value': '8'}}},
+            {},
+            {'cpu': {'stepping': {'_op': '!=', '_value': '10'}}},
+            {},
+            {},
+            {},
+            {'cpu': {'vendor': {'_op': 'like', '_value': 'Intel%'}}},
+            {'device': {'_op': '==', '_device_id': '79'}},
+            {'device': {'_op': 'like', '_description': '%Thunderbolt%'}},
+            {'key_value': {'_key': 'MODULE', '_op': '==', '_value': 'mc'}},
+            {'device': {'_op': '>', '_vendor_id': '97'}},
+            {},
+            {'disk': {'model': {'_op': 'like', '_value': 'WD 100G%'}}},
+            {'disk': {'phys_sector_size': {'_op': '==', '_value': '4096 B'}}},
+            {'disk': {'size': {'_op': '==', '_value': '42949672960'}}},
+            {'key_value': {'_key': 'BOOTDISK', '_op': '==', '_value': 'virtblk'}},
+            {'disk': {'sector_size': {'_op': '==', '_value': '512 B'}}},
+            {'disk': {'size': {'_op': '==', '_value': '128849018880'}}},
+            {},
+            {},
+            {},
+            {},
+            {},
             {'hostname': {'_op': 'like', '_value': '%.foo.redhat.com'}},
             {'labcontroller': {'_op': '!=', '_value': 'lab-1.bar.redhat.com'}},
-            {
-                'and': [
-                    {},
-                    {
-                        'system': {
-                            'vendor': {
-                                '_op': 'like',
-                                '_value': 'Dell%',
-                            },
-                        },
-                    },
-                    {},
-                    {
-                        'system': {
-                            'numanodes': {
-                                '_op': '<',
-                                '_value': '4',
-                            },
-                        },
-                    },
-                    {
-                        'system': {
-                            'model': {
-                                '_op': 'like',
-                                '_value': 'PowerEdge R750',
-                            },
-                        },
-                    },
-                    {},
-                ]
-            },
-            {
-                'key_value': {
-                    '_key': 'TPM',
-                    '_op': '==',
-                    '_value': '2.0',
-                },
-            },
-            {
-                'and': [
-                    {'system': {'hypervisor': {'_op': '==', '_value': ''}}},
-                    {},
-                    {},
-                    {'system': {'hypervisor': {'_op': 'like', '_value': 'xen'}}},
-                ]
-            },
-            {
-                'and': [
-                    {
-                        'system': {
-                            'key_value': {'_key': 'ZCRYPT_MODEL', '_op': '==', '_value': 'CEX8C'}
-                        }
-                    },
-                    {
-                        'system': {
-                            'key_value': {'_key': 'ZCRYPT_MODE', '_op': '==', '_value': 'CCA'}
-                        }
-                    },
-                ]
-            },
+            {'system': {'memory': {'_op': '==', '_value': '8192'}}},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {'system': {'model': {'_op': 'like', '_value': 'PowerEdge R750'}}},
+            {'system': {'numanodes': {'_op': '<', '_value': '4'}}},
+            {},
+            {},
+            {'system': {'vendor': {'_op': 'like', '_value': 'Dell%'}}},
+            {'key_value': {'_key': 'TPM', '_op': '==', '_value': '2.0'}},
+            {},
+            {'system': {'hypervisor': {'_op': 'like', '_value': 'xen'}}},
+            {},
+            {'system': {'hypervisor': {'_op': '==', '_value': ''}}},
+            {'system': {'key_value': {'_key': 'ZCRYPT_MODEL', '_op': '==', '_value': 'CEX8C'}}},
+            {'system': {'key_value': {'_key': 'ZCRYPT_MODE', '_op': '==', '_value': 'CCA'}}},
         ]
     }
 
 
 def test_cpu_model(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['cpu.model'](_parse_cpu({'model': '79'}), root_logger)
+    result = _CONSTRAINT_TRANSFORMERS['cpu.model'](
+        _parse_requirements({'cpu': {'model': '79'}}), root_logger
+    )
 
     assert result.to_mrack() == {'cpu': {'model': {'_op': '==', '_value': '79'}}}
 
 
 def test_cpu_processors(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['cpu.processors'](
-        _parse_cpu({'processors': '79'}), root_logger
+        _parse_requirements({'cpu': {'processors': '79'}}), root_logger
     )
 
     assert result.to_mrack() == {'cpu': {'processors': {'_op': '==', '_value': '79'}}}
 
 
 def test_cpu_cores(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['cpu.cores'](_parse_cpu({'cores': '2'}), root_logger)
+    result = _CONSTRAINT_TRANSFORMERS['cpu.cores'](
+        _parse_requirements({'cpu': {'cores': '2'}}), root_logger
+    )
 
     assert result.to_mrack() == {'cpu': {'cores': {'_op': '==', '_value': '2'}}}
 
 
 def test_cpu_stepping(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['cpu.stepping'](_parse_cpu({'stepping': '10'}), root_logger)
+    result = _CONSTRAINT_TRANSFORMERS['cpu.stepping'](
+        _parse_requirements({'cpu': {'stepping': '10'}}), root_logger
+    )
 
     assert result.to_mrack() == {'cpu': {'stepping': {'_op': '==', '_value': '10'}}}
 
 
 def test_cpu_vendor_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
-        _parse_cpu({'vendor-name': 'GenuineIntel'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
+        _parse_requirements({'cpu': {'vendor-name': 'GenuineIntel'}}), root_logger
     )
 
     assert result.to_mrack() == {'cpu': {'vendor': {'_op': '==', '_value': 'GenuineIntel'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
-        _parse_cpu({'vendor-name': '!= GenuineIntel'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
+        _parse_requirements({'cpu': {'vendor-name': '!= GenuineIntel'}}), root_logger
     )
 
     assert result.to_mrack() == {'cpu': {'vendor': {'_op': '!=', '_value': 'GenuineIntel'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
-        _parse_cpu({'vendor-name': '~ .*Intel'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
+        _parse_requirements({'cpu': {'vendor-name': '~ .*Intel'}}), root_logger
     )
 
     assert result.to_mrack() == {'cpu': {'vendor': {'_op': 'like', '_value': '%Intel'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
-        _parse_cpu({'vendor-name': '!~ .*Intel'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor-name'](
+        _parse_requirements({'cpu': {'vendor-name': '!~ .*Intel'}}), root_logger
     )
 
     assert result.to_mrack() == {'not': {'cpu': {'vendor': {'_op': 'like', '_value': '%Intel'}}}}
@@ -308,7 +170,7 @@ def test_cpu_vendor_name(root_logger: Logger) -> None:
 
 def test_disk_driver(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_disk({'driver': 'mpt3sas'}, 1), root_logger
+        _parse_requirements({'disk': {'driver': 'mpt3sas'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -316,7 +178,7 @@ def test_disk_driver(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_disk({'driver': '!= mpt3sas'}, 1), root_logger
+        _parse_requirements({'disk': {'driver': '!= mpt3sas'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -324,7 +186,7 @@ def test_disk_driver(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_disk({'driver': '~ mpt3.*'}, 1), root_logger
+        _parse_requirements({'disk': {'driver': '~ mpt3.*'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -332,7 +194,7 @@ def test_disk_driver(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_disk({'driver': '!~ mpt3.*'}, 1), root_logger
+        _parse_requirements({'disk': {'driver': '!~ mpt3.*'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -342,73 +204,75 @@ def test_disk_driver(root_logger: Logger) -> None:
 
 def test_disk_size(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['disk.size'](
-        _parse_disk({'size': '>= 40 GiB'}, 1), root_logger
+        _parse_requirements({'disk': {'size': '>= 40 GiB'}}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'size': {'_op': '>=', '_value': '42949672960'}}}
 
 
 def test_disk_model_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
-        _parse_disk({'model-name': 'PERC H310'}, 1), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
+        _parse_requirements({'disk': {'model-name': 'PERC H310'}}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '==', '_value': 'PERC H310'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
-        _parse_disk({'model-name': '!= PERC H310'}, 1), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
+        _parse_requirements({'disk': {'model-name': '!= PERC H310'}}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '!=', '_value': 'PERC H310'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
-        _parse_disk({'model-name': '~ PERC.*'}, 1), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
+        _parse_requirements({'disk': {'model-name': '~ PERC.*'}}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': 'like', '_value': 'PERC%'}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
-        _parse_disk({'model-name': '!~ PERC.*'}, 1), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
+        _parse_requirements({'disk': {'model-name': '!~ PERC.*'}}), root_logger
     )
 
     assert result.to_mrack() == {'not': {'disk': {'model': {'_op': 'like', '_value': 'PERC%'}}}}
 
 
 def test_memory(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['memory'](_parse_memory({'memory': '>= 4 GiB'}), root_logger)
+    result = _CONSTRAINT_TRANSFORMERS['memory'](
+        _parse_requirements({'memory': '>= 4 GiB'}), root_logger
+    )
 
     assert result.to_mrack() == {'system': {'memory': {'_op': '>=', '_value': '4096'}}}
 
 
 def test_hostname(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['hostname'](
-        _parse_hostname({'hostname': 'foo.dot.com'}), root_logger
+        _parse_requirements({'hostname': 'foo.dot.com'}), root_logger
     )
 
     assert result.to_mrack() == {'hostname': {'_op': '==', '_value': 'foo.dot.com'}}
 
     result = _CONSTRAINT_TRANSFORMERS['hostname'](
-        _parse_hostname({'hostname': '~ foo.*.dot.+.com'}), root_logger
+        _parse_requirements({'hostname': '~ foo.*.dot.+.com'}), root_logger
     )
 
     assert result.to_mrack() == {'hostname': {'_op': 'like', '_value': 'foo%.dot%.com'}}
 
     result = _CONSTRAINT_TRANSFORMERS['hostname'](
-        _parse_hostname({'hostname': '!~ foo.*.dot.+.com'}), root_logger
+        _parse_requirements({'hostname': '!~ foo.*.dot.+.com'}), root_logger
     )
 
     assert result.to_mrack() == {'not': {'hostname': {'_op': 'like', '_value': 'foo%.dot%.com'}}}
 
 
 def test_virtualization_is_virtualized(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['virtualization.is_virtualized'](
-        _parse_virtualization({'is-virtualized': True}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.is-virtualized'](
+        _parse_requirements({'virtualization': {'is-virtualized': True}}), root_logger
     )
 
     assert result.to_mrack() == {'system': {'hypervisor': {'_op': '!=', '_value': ''}}}
 
-    result = _CONSTRAINT_TRANSFORMERS['virtualization.is_virtualized'](
-        _parse_virtualization({'is-virtualized': False}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.is-virtualized'](
+        _parse_requirements({'virtualization': {'is-virtualized': False}}), root_logger
     )
 
     assert result.to_mrack() == {'system': {'hypervisor': {'_op': '==', '_value': ''}}}
@@ -416,13 +280,13 @@ def test_virtualization_is_virtualized(root_logger: Logger) -> None:
 
 def test_virtualization_hypervisor(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
-        _parse_virtualization({"hypervisor": "~ kvm"}), root_logger
+        _parse_requirements({'virtualization': {"hypervisor": "~ kvm"}}), root_logger
     )
 
     assert result.to_mrack() == {'system': {'hypervisor': {'_op': 'like', '_value': 'kvm'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
-        _parse_virtualization({"hypervisor": "!~ kvm"}), root_logger
+        _parse_requirements({'virtualization': {"hypervisor": "!~ kvm"}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -430,13 +294,13 @@ def test_virtualization_hypervisor(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
-        _parse_virtualization({"hypervisor": "kvm"}), root_logger
+        _parse_requirements({'virtualization': {"hypervisor": "kvm"}}), root_logger
     )
 
     assert result.to_mrack() == {'system': {'hypervisor': {'_op': '==', '_value': 'kvm'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
-        _parse_virtualization({"hypervisor": "!= kvm"}), root_logger
+        _parse_requirements({'virtualization': {"hypervisor": "!= kvm"}}), root_logger
     )
 
     assert result.to_mrack() == {'system': {'hypervisor': {'_op': '!=', '_value': 'kvm'}}}
@@ -444,7 +308,7 @@ def test_virtualization_hypervisor(root_logger: Logger) -> None:
 
 def test_zcrypt_adapter(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
-        _parse_zcrypt({'adapter': 'CEX8C'}), root_logger
+        _parse_requirements({'zcrypt': {'adapter': 'CEX8C'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -452,7 +316,7 @@ def test_zcrypt_adapter(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
-        _parse_zcrypt({'adapter': '!= CEX8C'}), root_logger
+        _parse_requirements({'zcrypt': {'adapter': '!= CEX8C'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -460,7 +324,7 @@ def test_zcrypt_adapter(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
-        _parse_zcrypt({'adapter': '~ CEX.*'}), root_logger
+        _parse_requirements({'zcrypt': {'adapter': '~ CEX.*'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -468,7 +332,7 @@ def test_zcrypt_adapter(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
-        _parse_zcrypt({'adapter': '!~ CEX.*'}), root_logger
+        _parse_requirements({'zcrypt': {'adapter': '!~ CEX.*'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -477,14 +341,16 @@ def test_zcrypt_adapter(root_logger: Logger) -> None:
 
 
 def test_zcrypt_mode(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](_parse_zcrypt({'mode': 'CCA'}), root_logger)
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
+        _parse_requirements({'zcrypt': {'mode': 'CCA'}}), root_logger
+    )
 
     assert result.to_mrack() == {
         'system': {'key_value': {'_key': 'ZCRYPT_MODE', '_op': '==', '_value': 'CCA'}}
     }
 
     result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
-        _parse_zcrypt({'mode': '!= CCA'}), root_logger
+        _parse_requirements({'zcrypt': {'mode': '!= CCA'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -492,7 +358,7 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
-        _parse_zcrypt({'mode': '~ C.*A'}), root_logger
+        _parse_requirements({'zcrypt': {'mode': '~ C.*A'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -500,7 +366,7 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
-        _parse_zcrypt({'mode': '!~ C.*A'}), root_logger
+        _parse_requirements({'zcrypt': {'mode': '!~ C.*A'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -510,8 +376,8 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
 
 def test_iommu_is_supported(root_logger: Logger) -> None:
     for value in True, False:
-        result = _CONSTRAINT_TRANSFORMERS['iommu.is_supported'](
-            _parse_iommu({"is-supported": value}), root_logger
+        result = _CONSTRAINT_TRANSFORMERS['iommu.is-supported'](
+            _parse_requirements({'iommu': {"is-supported": value}}), root_logger
         )
 
         assert result.to_mrack() == {
@@ -520,42 +386,45 @@ def test_iommu_is_supported(root_logger: Logger) -> None:
 
 
 def test_location_lab_controller(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
-        _parse_location({"lab-controller": "lab-01.bar.redhat.com"}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['location.lab-controller'](
+        _parse_requirements({'location': {"lab-controller": "lab-01.bar.redhat.com"}}), root_logger
     )
 
     assert result.to_mrack() == {'labcontroller': {'_op': '==', '_value': 'lab-01.bar.redhat.com'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
-        _parse_location({"lab-controller": "!= lab-01.bar.redhat.com"}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['location.lab-controller'](
+        _parse_requirements({'location': {"lab-controller": "!= lab-01.bar.redhat.com"}}),
+        root_logger,
     )
 
     assert result.to_mrack() == {'labcontroller': {'_op': '!=', '_value': 'lab-01.bar.redhat.com'}}
 
 
 def test_tpm_version(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['tpm.version'](_parse_tpm({'version': '2.0'}), root_logger)
+    result = _CONSTRAINT_TRANSFORMERS['tpm.version'](
+        _parse_requirements({'tpm': {'version': '2.0'}}), root_logger
+    )
 
     assert result.to_mrack() == {'key_value': {'_key': 'TPM', '_op': '==', '_value': '2.0'}}
 
     result = _CONSTRAINT_TRANSFORMERS['tpm.version'](
-        _parse_tpm({'version': '!= 2.0'}), root_logger
+        _parse_requirements({'tpm': {'version': '!= 2.0'}}), root_logger
     )
 
     assert result.to_mrack() == {'key_value': {'_key': 'TPM', '_op': '!=', '_value': '2.0'}}
 
 
 def test_system_numa_nodes(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['system.numa_nodes'](
-        _parse_system({'numa-nodes': '2'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['system.numa-nodes'](
+        _parse_requirements({'system': {'numa-nodes': '2'}}), root_logger
     )
 
     assert result.to_mrack() == {'system': {'numanodes': {'_op': '==', '_value': '2'}}}
 
 
 def test_system_model_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['system.model_name'](
-        _parse_system({'model-name': '!~ PowerEdge R750.*'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['system.model-name'](
+        _parse_requirements({'system': {'model-name': '!~ PowerEdge R750.*'}}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -608,25 +477,25 @@ def test_or_constraint(root_logger: Logger) -> None:
 
 def test_device_device(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['device.device'](
-        _parse_device({'device': '1645'}), root_logger
+        _parse_requirements({'device': {'device': '1645'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '==', '_device_id': '1645'}}
 
     result = _CONSTRAINT_TRANSFORMERS['device.device'](
-        _parse_device({'device': '!= 1645'}), root_logger
+        _parse_requirements({'device': {'device': '!= 1645'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '!=', '_device_id': '1645'}}
 
     result = _CONSTRAINT_TRANSFORMERS['device.device'](
-        _parse_device({'device': '> 1000'}), root_logger
+        _parse_requirements({'device': {'device': '> 1000'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '>', '_device_id': '1000'}}
 
     result = _CONSTRAINT_TRANSFORMERS['device.device'](
-        _parse_device({'device': '< 2000'}), root_logger
+        _parse_requirements({'device': {'device': '< 2000'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '<', '_device_id': '2000'}}
@@ -634,51 +503,51 @@ def test_device_device(root_logger: Logger) -> None:
 
 def test_device_vendor(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
-        _parse_device({'vendor': '0x10de'}), root_logger
+        _parse_requirements({'device': {'vendor': '0x10de'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '==', '_vendor_id': '4318'}}
 
     result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
-        _parse_device({'vendor': '!= 0x10de'}), root_logger
+        _parse_requirements({'device': {'vendor': '!= 0x10de'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '!=', '_vendor_id': '4318'}}
 
     result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
-        _parse_device({'vendor': '> 4318'}), root_logger
+        _parse_requirements({'device': {'vendor': '> 4318'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '>', '_vendor_id': '4318'}}
 
     result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
-        _parse_device({'vendor': '< 32902'}), root_logger
+        _parse_requirements({'device': {'vendor': '< 32902'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '<', '_vendor_id': '32902'}}
 
 
 def test_device_device_name(root_logger: Logger) -> None:
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
-        _parse_device({'device-name': 'Genoa CCP'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
+        _parse_requirements({'device': {'device-name': 'Genoa CCP'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '==', '_description': 'Genoa CCP'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
-        _parse_device({'device-name': '!= Genoa CCP'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
+        _parse_requirements({'device': {'device-name': '!= Genoa CCP'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': '!=', '_description': 'Genoa CCP'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
-        _parse_device({'device-name': '~ Genoa.*'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
+        _parse_requirements({'device': {'device-name': '~ Genoa.*'}}), root_logger
     )
 
     assert result.to_mrack() == {'device': {'_op': 'like', '_description': 'Genoa%'}}
 
-    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
-        _parse_device({'device-name': '!~ Genoa.*'}), root_logger
+    result = _CONSTRAINT_TRANSFORMERS['device.device-name'](
+        _parse_requirements({'device': {'device-name': '!~ Genoa.*'}}), root_logger
     )
 
     assert result.to_mrack() == {'not': {'device': {'_op': 'like', '_description': 'Genoa%'}}}
