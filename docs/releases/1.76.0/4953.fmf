@@ -1,0 +1,5 @@
+description: |
+    The :ref:`/plugins/report/reportportal` plugin now correctly
+    saves all test UUIDs in multihost testing by using ``guest_name``
+    as an additional key, preventing results with the same serial
+    number from overwriting each other.
