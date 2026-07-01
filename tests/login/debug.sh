@@ -7,10 +7,10 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Debug Test"
-        rlRun "tmt run --remove --until execute plans -n /plan provision -h container"
+        rlRun "tmt run --remove --until finish plans -n /plan provision -h container"
         rlRun "tmt run --last report"
         rlRun "tmt run --last login --command /bin/true"
-        rlRun "tmt run --last finish"
+        rlRun "tmt run --last cleanup"
     rlPhaseEnd
 
     rlPhaseStartCleanup

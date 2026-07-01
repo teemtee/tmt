@@ -152,7 +152,7 @@ rlJournalStart
         rlRun "grep -Pzo '(?sm)^ *prepare ?$.*^ *report' $rlRun_LOG > $output"
         rlAssertGrep "    how shell" $output
         rlAssertGrep "    script systemctl start libvirtd" $output
-        rlRun "grep -Pzo '(?sm)^ *report ?$.*^ *finish' $rlRun_LOG > $output"
+        rlRun "grep -Pzo '(?sm)^ *report ?$.*' $rlRun_LOG > $output"
         rlAssertGrep "    how html" $output
         rlAssertGrep "    open true" $output
         rlRun "grep -A30 '^ *finish' $rlRun_LOG > $output"
