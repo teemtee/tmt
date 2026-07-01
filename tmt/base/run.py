@@ -333,9 +333,9 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
 
         assert self.tree is not None  # narrow type
 
-        return tmt.utils.Environment.from_inputs(
+        return tmt.utils.Environment.from_cli_options(
             raw_cli_environment_files=self.opt('environment-file') or [],
-            raw_cli_environment=self.opt('environment'),
+            raw_cli_environment=self.opt('environment') or [],
             file_root=Path(self.tree.root) if self.tree.root else None,
             logger=self._logger,
         )
