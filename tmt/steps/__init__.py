@@ -1417,25 +1417,44 @@ class Step(
                 else:
                     debug3('incompatible step data')
 
+                    # This is very crude - we can find more overlaps between plugins, e.g. `image`
+                    # key is shared by many, yet not available from the base.
                     data_base = cast(
                         type[BasePlugin[StepData, Any]], self._plugin_base_class
                     ).get_data_class()
 
-                    debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
-                    debug3('compatible keys', ', '.join(k for k in data_base.keys()))  # noqa: SIM118
+                    compatible_keys = list(data_base.keys())
 
-                    # Copy compatible keys only, ignore everything else
-                    # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
-                    # "Type[StepData]" has no attribute "__iter__" (not iterable), and
-                    # even though ruff thinks StepData looks like a dict, it's not one.
-                    # ignore[literal-required]: we do create raw step data, but _RawStepData
-                    # is very minimal.
-                    raw_datum = cast(
+                    debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
+                    debug3('compatible keys', ', '.join(compatible_keys))
+
+                    # First, report keys that were set by user but we cannot apply them because
+                    # they are not compatible between plugins.
+                    for key in incoming_raw_datum:
+                        if key in compatible_keys:
+                            continue
+
+                        if invocation.option_sources.get(key) not in (
+                            ParameterSource.COMMANDLINE,
+                            ParameterSource.ENVIRONMENT,
+                        ):
+                            continue
+
+                        self.warn(
+                            f"Cannot fully update {self.step_name} phase"
+                            f" '{raw_datum.get('name')}' with '{key}' key from command line."
+                            f" Key is recognized by plugin '{how}'"
+                            f" but not by plugin '{raw_datum.get('how')}'."
+                        )
+
+                    # Then, reduce the incoming datum to only those keys that can affect the target
+                    # datum. Keys that our outside of the compatibility window cannot be applied.
+                    incoming_raw_datum = cast(
                         _RawStepData,
                         {
-                            key: raw_datum[key]  # type: ignore[literal-required]
-                            for key in data_base.keys()  # noqa: SIM118
-                            if key in raw_datum
+                            key: value
+                            for key, value in incoming_raw_datum.items()
+                            if key in compatible_keys
                         },
                     )
 
