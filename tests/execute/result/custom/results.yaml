@@ -12,6 +12,11 @@
   guest:
     name: client-1
     role: clients
+  subresult:
+    - name: passing subresult
+      result: pass
+      log:
+        - pass_subresult_log
 
 - name: /test/failing
   result: fail

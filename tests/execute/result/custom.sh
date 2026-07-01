@@ -15,6 +15,7 @@ rlJournalStart
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 1 "Test provides 'results.yaml' file by itself"
         rlAssertGrep "warn: Result format violation: 3.name - 'without-leading-slash' does not match '^/.*'" $rlRun_LOG
         rlAssertGrep "00:11:22 pass /test/custom-results/test/passing" $rlRun_LOG
+        rlAssertGrep "pass passing subresult (subresult)" $rlRun_LOG
         rlAssertGrep "00:22:33 fail /test/custom-results/test/failing" $rlRun_LOG
         rlAssertGrep "00:00:00 skip /test/custom-results/test/skipped" $rlRun_LOG
         # The duration of the main result is replaced with the duration measured by tmt for the whole test.
@@ -24,6 +25,7 @@ rlJournalStart
         rlAssertGrep "total: 3 tests passed, 1 test failed and 1 test skipped" $rlRun_LOG
 
         rlAssertExists "$(sed -n 's/ *pass_log (\(.\+\))/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *pass_subresult_log (\(.\+\))/\1/p' $rlRun_LOG)"
         rlAssertExists "$(sed -n 's/ *fail_log (\(.\+\))/\1/p' $rlRun_LOG)"
         rlAssertExists "$(sed -n 's/ *another_log (\(.\+\))/\1/p' $rlRun_LOG)"
         rlAssertExists "$(sed -n 's/ *slash_log (\(.\+\))/\1/p' $rlRun_LOG)"
