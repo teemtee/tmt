@@ -30,6 +30,7 @@ from tmt.result import (
     ResultGuestData,
     ResultInterpret,
     ResultOutcome,
+    Results,
 )
 from tmt.steps import Action, ActionTask, PluginTask, Step
 from tmt.steps.context.abort import AbortContext, AbortStep
@@ -750,19 +751,19 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             if self.should_run_again:
                 assert self.parent is not None  # narrow type
                 assert isinstance(self.parent, Execute)  # narrow type
-                self.parent._results = [
+                self.parent._results = Results(
                     result
                     for result in self.parent._results
                     if not (
                         test.name == result.name and test.serial_number == result.serial_number
                     )
-                ]
+                )
 
         # Keep old results in another variable to have numbers only for actually executed tests
         if self.should_run_again:
             assert self.parent is not None  # narrow type
             assert isinstance(self.parent, Execute)  # narrow type
-            self.parent._old_results = self.parent._results[:]
+            self.parent._old_results = Results(self.parent._results[:])
             self.parent._results.clear()
 
         return invocations
@@ -1079,8 +1080,8 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
 
         super().__init__(plan=plan, raw_data=raw_data, logger=logger)
         # List of Result() objects representing test results
-        self._results: list[tmt.Result] = []
-        self._old_results: list[tmt.Result] = []
+        self._results: Results[Result] = Results()
+        self._old_results: Results[Result] = Results()
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
@@ -1197,9 +1198,9 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
             # Replace existing pending result with the new one.
             results_to_save[(result.serial_number, result.name, result.guest.name)] = result
 
-        self._results = list(results_to_save.values())
+        self._results = Results(results_to_save.values())
 
-    def create_results(self, tests: list['tmt.steps.discover.TestOrigin']) -> list['Result']:
+    def create_results(self, tests: list['tmt.steps.discover.TestOrigin']) -> Results[Result]:
         """
         Get all available results from tests. For tests not yet executed, create a pending
         result.
@@ -1207,7 +1208,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
 
         guests = self.plan.provision.get_guests_info()
 
-        results = []
+        results: Results[Result] = Results()
         for result, test_origin in self.results_for_tests(tests):
             if result:
                 results.append(result)
@@ -1327,7 +1328,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
 
         self._assert_required_tests_executed()
 
-    def results(self) -> list["tmt.result.Result"]:
+    def results(self) -> 'tmt.result.Results[tmt.result.Result]':
         """
         Results from executed tests
 

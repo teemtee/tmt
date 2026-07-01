@@ -10,6 +10,7 @@ import tmt.log
 import tmt.steps
 import tmt.utils
 from tmt.container import container, field, key_to_option
+from tmt.result import Results
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref
 from tmt.steps.discover.fmf import (
     DiscoverFmf,
@@ -567,7 +568,7 @@ class ExecuteUpgrade(ExecuteInternal):
             if result.name.startswith(f'/{prefix}/')
         ]
 
-        self.step.plan.execute._results = [
+        self.step.plan.execute._results = Results(
             result for result in results if result.name not in old_result_names
-        ]
+        )
         self.step.plan.execute.save()
