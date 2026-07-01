@@ -254,6 +254,101 @@ rlJournalStart
             fi
         rlPhaseEnd
 
+        rlPhaseStartTest "$phase_prefix Check-first skips already-installed packages (plan)"
+            rlRun -s "$tmt -d plan --name /check-first$"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            # Second install step (check-first: true) must log that packages were skipped
+            rlAssertGrep "packages already installed, skipping" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                # 1 extra phase for apt-get update + 2 install phases
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Check-first skips only already-installed packages (partial, plan)"
+            rlRun -s "$tmt -d plan --name /check-first-partial"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            # The second install step must skip the pre-installed package and install only the missing one
+            if is_ubi "$image"; then
+                rlAssertGrep "packages already installed, skipping.*dconf" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
+            else
+                rlAssertGrep "packages already installed, skipping.*tree" $rlRun_LOG
+                rlAssertGrep "$package_manager.*\(install\|add\).*dos2unix" $rlRun_LOG
+            fi
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Check-first option via CLI (--check-first)"
+            # Insert a second install step on top of the /existing plan; the plan installs the
+            # packages first, so the CLI-inserted step (check-first: true by default) must skip them.
+            if is_ubi "$image"; then
+                rlRun -s "$tmt -d --insert --how install --package dconf --package libpng plan --name /existing"
+		rlAssertGrep "packages already installed, skipping dconf and libpng" $rlRun_LOG
+            else
+                rlRun -s "$tmt -d --insert --how install --package tree --package diffutils plan --name /existing"
+		rlAssertGrep "packages already installed, skipping diffutils and tree" $rlRun_LOG
+            fi
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Check-first option via CLI (--no-check-first) for requires"
+            rlRun -s "$tmt -d -h install --no-check-first plan --name /no-check-first-requires$"
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            if is_ubi "$image"; then
+                rlAssertGrep "$package_manager.*install.*dconf" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
+            else
+		rlAssertGrep "$package_manager.*\(install\|add\).*tree" $rlRun_LOG
+		rlAssertGrep "$package_manager.*\(install\|add\).*dos2unix" $rlRun_LOG
+            fi
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Check-first option via CLI (--no-check-first)"
+            if is_ubi "$image"; then
+                rlRun -s "$tmt -d --insert --how install --package dconf --package libpng --no-check-first plan --name /empty$"
+                rlAssertGrep "$package_manager.*install.*dconf" $rlRun_LOG
+                rlAssertGrep "$package_manager.*install.*libpng" $rlRun_LOG
+            else
+                rlRun -s "$tmt -d --insert --how install --package tree --package diffutils --no-check-first plan --name /empty$"
+                rlAssertGrep "$package_manager.*\(install\|add\).*tree" $rlRun_LOG
+                rlAssertGrep "$package_manager.*\(install\|add\).*diffutils" $rlRun_LOG
+            fi
+
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+            if is_ubuntu "$image" || is_debian "$image"; then
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
         # Limit these test cases to:
         # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
         # * image mode - the code handling is different in this case, so we need to make sure these cases work well
