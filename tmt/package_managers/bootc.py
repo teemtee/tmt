@@ -14,7 +14,7 @@ from tmt.package_managers import (
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, Path, ShellScript
+from tmt.utils import Command, CommandOutput, FrozenCommand, Path, ShellScript
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 
@@ -81,24 +81,21 @@ class BootcEngine(PackageManagerEngine):
 
         self.containerfile_directives = []
 
-    def prepare_command(self) -> tuple[Command, Command]:
+    def prepare_command(self) -> tuple[FrozenCommand, FrozenCommand]:
         """
         Prepare installation command for bootc
         """
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
 
-        command = Command('bootc')
-
         if self.guest.facts.sudo_prefix:
-            command = Command(self.guest.facts.sudo_prefix, 'bootc')
+            return (FrozenCommand(self.guest.facts.sudo_prefix, 'bootc'), FrozenCommand())
 
-        return command, Command('')
+        return (FrozenCommand('bootc'), FrozenCommand())
 
     def _get_current_bootc_image(self) -> str:
         """Get the current bootc image running on the system"""
 
-        command, _ = self.prepare_command()
-        command += Command('status', '--json')
+        command = self.command + Command('status', '--json')
 
         if not (output := self.guest.execute(command, silent=True).stdout):
             raise tmt.utils.PrepareError("Failed to get current bootc status: empty output.")
@@ -290,8 +287,9 @@ class Bootc(PackageManager[BootcEngine]):
                 # Switch to the new image for next boot
                 self.info("package", f"switching to new image {image_tag}", "green")
 
-                bootc_command, _ = self.engine.prepare_command()
-                bootc_command += Command('switch', '--transport', 'containers-storage', image_tag)
+                bootc_command = self.engine.command + Command(
+                    'switch', '--transport', 'containers-storage', image_tag
+                )
                 self.guest.execute(bootc_command)
 
                 # Reboot into the new image

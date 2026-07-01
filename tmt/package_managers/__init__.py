@@ -24,7 +24,15 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
+from tmt.utils import (
+    Command,
+    CommandOutput,
+    FrozenCommand,
+    GeneralError,
+    Path,
+    PrepareError,
+    ShellScript,
+)
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -338,8 +346,8 @@ class Options:
 
 
 class PackageManagerEngine(tmt.utils.Common):
-    command: Command
-    options: Command
+    command: FrozenCommand
+    options: FrozenCommand
 
     def __init__(self, *, guest: 'Guest', logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger)
@@ -349,7 +357,7 @@ class PackageManagerEngine(tmt.utils.Common):
         self.command, self.options = self.prepare_command()
 
     @abc.abstractmethod
-    def prepare_command(self) -> tuple[Command, Command]:
+    def prepare_command(self) -> tuple[FrozenCommand, FrozenCommand]:
         """
         Prepare installation command and subcommand options
         """

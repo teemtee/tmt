@@ -12,7 +12,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.steps.provision.mock import GuestMock
-from tmt.utils import Command, CommandOutput, PrepareError, ShellScript
+from tmt.utils import Command, CommandOutput, FrozenCommand, PrepareError, ShellScript
 
 
 class MockEngine(PackageManagerEngine):
@@ -44,13 +44,13 @@ class MockEngine(PackageManagerEngine):
             f'{installword} {extra_options} {" ".join(escape_installables(*installables))}'
         )
 
-    def prepare_command(self) -> tuple[Command, Command]:
+    def prepare_command(self) -> tuple[FrozenCommand, FrozenCommand]:
         options = Command()
         assert isinstance(self.guest, GuestMock)
         if self.guest.root is not None:
             options += Command('-r', self.guest.root)
         options += Command('--pm-cmd')
-        return (Command('mock'), options)
+        return (FrozenCommand('mock'), FrozenCommand.from_command(options))
 
     def check_presence(self, *installables: Installable) -> ShellScript:
         return ShellScript(
@@ -101,7 +101,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
     * self.guest.execute - execute a command *in the mock shell*.
     """
 
-    probe_command = Command('/usr/bin/false')
+    probe_command = FrozenCommand('/usr/bin/false')
     probe_priority = 130
     _engine_class = MockEngine
 

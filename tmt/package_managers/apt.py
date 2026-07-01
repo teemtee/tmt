@@ -16,6 +16,7 @@ from tmt.package_managers import (
 from tmt.utils import (
     Command,
     CommandOutput,
+    FrozenCommand,
     GeneralError,
     RunError,
     ShellScript,
@@ -77,22 +78,20 @@ exit $?
 
 
 class AptEngine(PackageManagerEngine):
-    install_command = Command('install')
+    install_command = FrozenCommand('install')
 
-    def prepare_command(self) -> tuple[Command, Command]:
+    def prepare_command(self) -> tuple[FrozenCommand, FrozenCommand]:
         """
         Prepare installation command for apt
         """
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
 
-        command = Command('apt')
+        options = FrozenCommand('-y')
 
         if self.guest.facts.sudo_prefix:
-            command = Command(self.guest.facts.sudo_prefix, 'apt')
+            return (FrozenCommand(self.guest.facts.sudo_prefix, 'apt'), options)
 
-        options = Command('-y')
-
-        return (command, options)
+        return (FrozenCommand('apt'), options)
 
     def _enable_apt_file(self) -> ShellScript:
         return ShellScript(
@@ -256,7 +255,7 @@ class Apt(PackageManager[AptEngine]):
         re.compile(r'(?:E:\s+)?Unable to locate package\s+([^\s]+)', re.IGNORECASE)
     ]
 
-    probe_command = Command('apt', '--version')
+    probe_command = FrozenCommand('apt', '--version')
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         presence_script = self.engine.check_presence(*installables)

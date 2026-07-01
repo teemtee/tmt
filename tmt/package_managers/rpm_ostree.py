@@ -12,23 +12,32 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, RunError, ShellScript
+from tmt.utils import (
+    Command,
+    CommandOutput,
+    FrozenCommand,
+    GeneralError,
+    PrepareError,
+    RunError,
+    ShellScript,
+)
 
 
 class RpmOstreeEngine(PackageManagerEngine):
-    def prepare_command(self) -> tuple[Command, Command]:
+    def prepare_command(self) -> tuple[FrozenCommand, FrozenCommand]:
         """
         Prepare installation command for rpm-ostree
         """
 
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
 
-        command = Command('rpm-ostree')
-
         if self.guest.facts.sudo_prefix:
-            command = Command(self.guest.facts.sudo_prefix, 'rpm-ostree')
+            command = FrozenCommand(self.guest.facts.sudo_prefix, 'rpm-ostree')
 
-        options = Command('--apply-live', '--idempotent', '--allow-inactive', '--assumeyes')
+        else:
+            command = FrozenCommand('rpm-ostree')
+
+        options = FrozenCommand('--apply-live', '--idempotent', '--allow-inactive', '--assumeyes')
 
         return (command, options)
 
@@ -124,7 +133,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
 
     _engine_class = RpmOstreeEngine
 
-    probe_command = Command('stat', '/run/ostree-booted')
+    probe_command = FrozenCommand('stat', '/run/ostree-booted')
     # Needs to be bigger than priorities of `yum`, `dnf` and `dnf5`.
     probe_priority = 100
 
