@@ -520,7 +520,7 @@ class Plan(
 
         return Environment.from_cli_options(
             raw_cli_environment_files=cast(
-                Sequence[str], cli_invocation.options.get('environment-file')
+                Sequence[str], cli_invocation.options.get('environment_file')
             )
             or [],
             raw_cli_environment=cast(Sequence[str], cli_invocation.options.get('environment'))
