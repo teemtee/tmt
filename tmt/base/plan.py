@@ -66,10 +66,6 @@ if TYPE_CHECKING:
     import tmt.log
 
 
-#: Filename associated with ``TMT_PLAN_SOURCE_SCRIPT``
-PLAN_SOURCE_SCRIPT_NAME: str = "plan-source-script.sh"
-
-
 class _RemotePlanReference(_RawFmfId):
     importing: Optional[str]
     scope: Optional[str]
@@ -476,7 +472,6 @@ class Plan(
 
         if self.my_run:
             environment['TMT_PLAN_DATA'] = EnvVarValue(self.data_directory)
-            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script)
 
         return environment
 
@@ -719,15 +714,6 @@ class Plan(
         data_directory.mkdir(exist_ok=True, parents=True)
 
         return data_directory
-
-    @functools.cached_property
-    def plan_source_script(self) -> Path:
-        plan_sourced_file_path = self.data_directory / PLAN_SOURCE_SCRIPT_NAME
-        plan_sourced_file_path.touch(exist_ok=True)
-
-        self.debug(f"Create the environment file '{plan_sourced_file_path}'.", level=2)
-
-        return plan_sourced_file_path
 
     @staticmethod
     def edit_template(raw_content: str) -> str:
