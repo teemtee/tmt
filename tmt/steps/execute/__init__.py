@@ -388,11 +388,17 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         else:
             environment = self._environment
 
-        # TODO: this was owned by plan, but at wrong position, and it will
-        # be owned by plan again once the dust of environment untangling
-        # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
-        # more.
-        environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.guest.plan_environment_path)
+        # TODO: these are owned by plan, but at wrong position, and
+        # they will be owned by plan again once the dust of environment
+        # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
+        # for more.
+        if self.guest.plan_environment_path:
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(
+                self.guest.plan_environment_path
+            )
+
+        if self.guest.plan_source_script_path:
+            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.guest.plan_source_script_path)
 
         environment.update(
             # Add variables from invocation contexts
@@ -543,7 +549,9 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 on_process_end=_reset_process,
                 test_session=True,
                 friendly_command=str(self.test.test),
-                sourced_files=[self.phase.step.plan.plan_source_script],
+                sourced_files=[self.guest.plan_source_script_path]
+                if self.guest.plan_source_script_path
+                else [],
             )
 
             self.start_time = timer.start_time_formatted
