@@ -1,0 +1,12 @@
+execute:
+    how: tmt
+discover:
+    how: shell
+    tests:
+    - name: smoke
+      test: echo
+provision:
+  how: virtual
+  ssh-option:
+    - PermitLocalCommand=yes
+    - LocalCommand=echo "LocalCommand is not allowed"
