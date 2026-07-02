@@ -75,12 +75,15 @@ class GuestLocal(tmt.Guest):
             if isinstance(self.parent, tmt.steps.Step):
                 environment.update(self.parent.plan)
 
-            # TODO: this was owned by plan, but at wrong position, and it will
-            # be owned by plan again once the dust of environment untangling
-            # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
-            # more.
+            # TODO: these are owned by plan, but at wrong position, and
+            # they will be owned by plan again once the dust of environment
+            # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
+            # for more.
             if self.plan_environment_path:
                 environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+
+            if self.plan_source_script_path:
+                environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
 
         else:
             environment = super()._prepare_command_environment(environment=environment)
