@@ -3239,11 +3239,10 @@ class GuestSsh(Guest, CommandCollector):
             options.append(f'-S{self._ssh_master_socket_path}')
 
         for option in self.ssh_option:
-            # ssh_config(5) keywords are case-insensitive
-            option_name = option.split('=', 1)[0].lower()
-            if option_name in UNSAFE_SSH_OPTIONS and not self.is_feeling_safe:
+            option_keyword, *_ = re.split(r'[=\s]', option, maxsplit=1)
+            if option_keyword.lower() in UNSAFE_SSH_OPTIONS and not self.is_feeling_safe:
                 raise GeneralError(
-                    f"SSH option '{option.split('=', 1)[0]}' is not allowed without the "
+                    f"SSH option '{option_keyword}' is not allowed without the "
                     f"'--feeling-safe' option. "
                 )
             options.append(f'-o{option}')

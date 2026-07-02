@@ -8,5 +8,5 @@ discover:
 provision:
   how: virtual
   ssh-option:
-    - PermitLocalCommand=yes
+    - PermitLocalCommand yes
     - LocalCommand=echo "LocalCommand is not allowed"
