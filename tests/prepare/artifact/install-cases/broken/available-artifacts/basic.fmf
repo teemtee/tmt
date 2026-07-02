@@ -1,0 +1,21 @@
+summary: Basic case (non-verified, broken)
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: None
+  Artifacts: foo-2.2-bad or foo-1.2-bad
+
+  Broken artifact without verification should just be skipped
+
+/upgrade:
+  summary: " (upgrading)"
+  context+:
+    available_artifact: foo-2.2
+  environment+:
+    EXPECTED_PACKAGE: foo-1.4
+
+/downgrade:
+  summary: " (downgrading)"
+  context+:
+    available_artifact: foo-1.2
+  environment+:
+    EXPECTED_PACKAGE: foo-1.4

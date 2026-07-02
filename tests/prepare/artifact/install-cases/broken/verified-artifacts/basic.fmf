@@ -1,0 +1,25 @@
+summary: Basic case
+description: |
+  System repo: foo-1.4 (baseline)
+  Pre-installed: None
+  Artifacts: foo-2.4-bad or foo-1.1-bad
+
+  Installation/verification must fail instead of going through a fallback
+
+context+:
+  # Tests are expected to fail at installation or verify step
+  xfail: "true"
+
+/upgrade:
+  summary: " (upgrading)"
+  context+:
+    verified_artifact: foo-2.4-bad
+  environment+:
+    EXPECTED_PACKAGE: foo-2.4
+
+/downgrade:
+  summary: " (downgrading)"
+  context+:
+    verified_artifact: foo-1.1-bad
+  environment+:
+    EXPECTED_PACKAGE: foo-1.1

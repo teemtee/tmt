@@ -1,0 +1,23 @@
+summary: Newer version on system (broken)
+description: |
+  System repo: foo-1.4-bad
+  Pre-installed: foo-1.0
+  Artifacts: None
+
+  The broken update does not affect because `foo` is pre-installed
+  and we do not upgrade it.
+
+environment+:
+  SYSTEM_PACKAGE: foo-1.4-bad
+  EXPECTED_PACKAGE: foo-1.0
+  PRE_INSTALLED_PACKAGE: rpms/foo-1.0/foo-1.0*.rpm
+
+/only-foo:
+  summary+: " (only foo requested)"
+
+/with-bar:
+  summary+: " (foo and bar requested)"
+  context+:
+    with_bar: "true"
+  environment+:
+    SYSTEM_PACKAGE+: " bar"
