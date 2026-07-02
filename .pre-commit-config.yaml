@@ -18,7 +18,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v2.1.0"
+    rev: "v1.19.1"
     hooks:
       - id: mypy
         language: python # Required for Renovate additional_dependencies
