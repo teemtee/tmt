@@ -218,6 +218,28 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
 #: Identity files (``-i``) are all considered in order.
 BASE_SSH_OPTIONS: tmt.utils.RawCommand = configure_ssh_options() + DEFAULT_SSH_OPTIONS
 
+#: SSH options that allow executing arbitrary commands on the runner or setting up
+#: unintended network forwarding.
+UNSAFE_SSH_OPTIONS: frozenset[str] = frozenset(
+    {
+        # Executes an arbitrary command on the local machine to establish the connection.
+        'proxycommand',
+        # Passes the connection file descriptor to a helper instead of executing
+        # ProxyCommand; still requires a helper program to run locally.
+        'proxyusefdpass',
+        # When set to yes, enables LocalCommand execution after connection.
+        'permitlocalcommand',
+        # Executes a command locally after the connection is established.
+        'localcommand',
+        # Configures local port forwarding (may expose local services to the remote).
+        'localforward',
+        # Configures remote port forwarding (may expose remote services locally).
+        'remoteforward',
+        # Configures dynamic port forwarding / SOCKS proxy.
+        'dynamicforward',
+    }
+)
+
 #: SSH master socket path is limited to this many characters.
 #:
 #: * UNIX socket path is limited to either 108 or 104 characters, depending
@@ -3216,7 +3238,15 @@ class GuestSsh(Guest, CommandCollector):
         if self.is_ssh_multiplexing_enabled:
             options.append(f'-S{self._ssh_master_socket_path}')
 
-        options.extend([f'-o{option}' for option in self.ssh_option])
+        for option in self.ssh_option:
+            # ssh_config(5) keywords are case-insensitive
+            option_name = option.split('=', 1)[0].lower()
+            if option_name in UNSAFE_SSH_OPTIONS and not self.is_feeling_safe:
+                raise GeneralError(
+                    f"SSH option '{option.split('=', 1)[0]}' is not allowed without the "
+                    f"'--feeling-safe' option. "
+                )
+            options.append(f'-o{option}')
 
         return Command(*options)
 
