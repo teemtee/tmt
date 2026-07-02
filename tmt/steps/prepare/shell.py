@@ -154,6 +154,16 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             self.step.plan.environment,
         )
 
+        # TODO: these are owned by plan, but at wrong position, and
+        # they will be owned by plan again once the dust of environment
+        # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
+        # for more.
+        if guest.plan_environment_path:
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(guest.plan_environment_path)
+
+        if guest.plan_source_script_path:
+            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(guest.plan_source_script_path)
+
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
         logger.info('overview', f'{overview} found', 'green')
@@ -243,7 +253,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 command=command,
                 cwd=worktree,
                 environment=environment,
-                sourced_files=[self.step.plan.plan_source_script],
+                sourced_files=[guest.plan_source_script_path] if guest.plan_source_script_path else [],
                 immediately=self._execute_immediately,
             )
 
