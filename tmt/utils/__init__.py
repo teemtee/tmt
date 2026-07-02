@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     import tmt.base.run
     import tmt.cli
     import tmt.utils.themes
-    from tmt._compat.typing import ParamSpec, Self, TypeAlias
+    from tmt._compat.typing import TypeAlias
     from tmt.guest import GuestLog
     from tmt.hardware.constraints import Size
 
