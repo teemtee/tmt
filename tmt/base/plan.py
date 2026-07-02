@@ -646,7 +646,7 @@ class Plan(
         ignore: list[Path] = [Path('.git')]
 
         # If we're in a git repository, honor .gitignore; xref
-        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c  # noqa: E501
+        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c
         git_root = tmt.utils.git.git_root(fmf_root=tree_root, logger=self._logger)
         if git_root:
             ignore.extend(tmt.utils.git.git_ignore(root=git_root, logger=self._logger))
