@@ -49,7 +49,6 @@ metadata specification (L1 and L2) and allows easy test execution.
 %pyproject_extras_subpkg -n tmt report-junit
 %pyproject_extras_subpkg -n tmt report-polarion
 %pyproject_extras_subpkg -n tmt link-jira
-%pyproject_extras_subpkg -n tmt prepare-artifact
 
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
@@ -135,6 +134,14 @@ Requires:       mock
 
 %description -n tmt+provision-mock %_metapackage_description
 
+%package -n     tmt+prepare-artifact
+Summary:        Dependencies required for tmt prepare artifact
+Requires:       tmt == %{version}-%{release}
+Requires:       koji
+Requires:       python3-copr
+
+%description -n tmt+prepare-artifact %_metapackage_description
+
 # Replace with pyproject_extras_subpkg at some point
 %package -n     tmt+all
 Summary:        Extra dependencies for the Test Management Tool
@@ -195,6 +202,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %{_mandir}/man1/tmt.1.gz
 %{_datadir}/bash-completion/completions/%{name}
 
+%files -n tmt+prepare-artifact -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-container -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-virtual -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-bootc -f %{_pyproject_ghost_distinfo}
