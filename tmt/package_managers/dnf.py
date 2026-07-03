@@ -258,23 +258,10 @@ class DnfEngine(PackageManagerEngine):
         repo_ids: Iterable[str] = (),
     ) -> ShellScript:
         assert provides, "provides must not be empty"
-        provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
-        cmd = (
-            self.command
-            + Command(
-                'repoquery',
-                '--queryformat',
-                rf"- nevra: '{self._full_nevra_querytag}'\n  repo_id: '%{{repoid}}'\n",
-                *[f'--repo={repo_id}' for repo_id in repo_ids],
-                '--whatprovides',
-            )
-        ).to_script()
-        return ShellScript(f"""
-        for _provide in {provides_str}; do
-            echo "'$_provide':"
-            {cmd} "$_provide"
-        done
-        """)
+        return self._repoquery_script(
+            *escape_installables(*[Package(p) for p in provides]),
+            whatprovides=True,
+        )
 
     def create_repository(self, directory: Path) -> ShellScript:
         """
@@ -511,27 +498,6 @@ class YumEngine(DnfEngine):
 
     def disable_repo(self, *repo_ids: str) -> ShellScript:
         return (self._yum_config_manager_command() + Command('--disable', *repo_ids)).to_script()
-
-    def resolve_provides(
-        self,
-        provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
-    ) -> ShellScript:
-        assert provides, "provides must not be empty"
-        provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
-        cmd = Command(
-            'repoquery',
-            '--queryformat',
-            r"- nevra: '%{full_nevra}'\n  repo_id: '%{repoid}'\n",
-            *[f'--repo={repo_id}' for repo_id in repo_ids],
-            '--whatprovides',
-        )
-        return ShellScript(f"""
-        for _provide in {provides_str}; do
-            echo "'$_provide':"
-            {cmd} "$_provide"
-        done
-        """)
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
         # Real yum 3.x (not a dnf symlink) ships repoquery as a separate
