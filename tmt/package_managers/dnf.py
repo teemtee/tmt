@@ -435,7 +435,21 @@ class YumEngine(DnfEngine):
         provides: Sequence[str],
         repo_ids: Iterable[str] = (),
     ) -> ShellScript:
-        raise PrepareError("Package manager 'yum' does not support provides resolution.")
+        assert provides, "provides must not be empty"
+        provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
+        cmd = Command(
+            'repoquery',
+            '--queryformat',
+            r"- nevra: '%{full_nevra}'\n  repo_id: '%{repoid}'\n",
+            *[f'--repo={repo_id}' for repo_id in repo_ids],
+            '--whatprovides',
+        )
+        return ShellScript(f"""
+        for _provide in {provides_str}; do
+            echo "'$_provide':"
+            {cmd} "$_provide"
+        done
+        """)
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
         # Real yum 3.x (not a dnf symlink) ships repoquery as a separate
