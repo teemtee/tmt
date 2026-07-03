@@ -27,6 +27,8 @@ class DnfEngine(PackageManagerEngine):
 
     skip_missing_packages_option = '--skip-broken'
     skip_missing_debuginfo_option = skip_missing_packages_option
+    #: Equivalent `%full_nevra` repoquery tag
+    _full_nevra_querytag: ClassVar[str] = "%{name}-%{evr}.%{arch}"
 
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command('-y')
@@ -229,7 +231,7 @@ class DnfEngine(PackageManagerEngine):
             + Command(
                 'repoquery',
                 '--queryformat',
-                r"- nevra: '%{full_nevra}'\n  repo_id: '%{repoid}'\n",
+                rf"- nevra: '{self._full_nevra_querytag}'\n  repo_id: '%{{repoid}}'\n",
                 *[f'--repo={repo_id}' for repo_id in repo_ids],
                 '--whatprovides',
             )
@@ -375,6 +377,7 @@ class Dnf5Engine(DnfEngine):
     _base_debuginfo_command = Command('dnf5', 'debuginfo-install')
     skip_missing_packages_option = '--skip-unavailable'
     skip_missing_debuginfo_option = skip_missing_packages_option
+    _full_nevra_querytag = "%{full_nevra}"
 
     def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
         """
