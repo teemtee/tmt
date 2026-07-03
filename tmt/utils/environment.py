@@ -528,6 +528,8 @@ class Environment(dict[str, EnvVarValue]):
             [ShellScript("export FOO=bar"), ShellScript("export BAZ='qu ux'")]
         """  # noqa: E501
 
+        from tmt.utils import ShellScript
+
         return [ShellScript(f'export {variable}') for variable in self.to_shell()]
 
     def copy(self) -> 'Environment':
