@@ -70,7 +70,6 @@ from tmt.utils import (
     effective_workdir_root,
 )
 from tmt.utils.environment import Environment, EnvVarValue
-from tmt.utils.environment import EnvVarName as EnvVarName
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
 

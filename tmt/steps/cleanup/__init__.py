@@ -15,8 +15,6 @@ from tmt.steps import (
     PluginTask,
 )
 from tmt.utils.environment import Environment
-from tmt.utils.environment import EnvVarName as EnvVarName
-from tmt.utils.environment import EnvVarValue as EnvVarValue
 
 
 @container

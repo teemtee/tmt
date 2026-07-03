@@ -49,7 +49,6 @@ from tmt.utils import (
     configure_bool_constant,
 )
 from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
-from tmt.utils.environment import EnvVarName as EnvVarName
 
 if TYPE_CHECKING:
     import tmt.base.plan

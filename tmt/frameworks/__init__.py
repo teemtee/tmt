@@ -7,8 +7,6 @@ import tmt.result
 import tmt.utils
 from tmt.guest import TransferOptions
 from tmt.utils.environment import Environment
-from tmt.utils.environment import EnvVarName as EnvVarName
-from tmt.utils.environment import EnvVarValue as EnvVarValue
 
 if TYPE_CHECKING:
     from tmt.base.core import DependencySimple, Test

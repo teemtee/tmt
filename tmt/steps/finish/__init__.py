@@ -18,8 +18,6 @@ from tmt.steps import (
     sync_with_guests,
 )
 from tmt.utils.environment import Environment
-from tmt.utils.environment import EnvVarName as EnvVarName
-from tmt.utils.environment import EnvVarValue as EnvVarValue
 
 
 @container
