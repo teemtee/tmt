@@ -421,6 +421,38 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def _repoquery_script(
+        self,
+        *queries: str,
+        repos: Optional[Sequence[str]] = None,
+        whatprovides: bool = False,
+        installed: bool = False,
+    ) -> ShellScript:
+        """
+        Query info about a package and structure it as a yaml to process.
+
+        An example output is:
+
+        .. code-block:: yaml
+
+            '/usr/bin/cmake':
+            - name: 'cmake'
+              nevra: 'cmake-0:4.3.0-4.fc45.i686'
+              repoid: 'rawhide'
+              from_repo: ''
+            - name: 'cmake'
+              nevra: 'cmake-0:4.3.0-4.fc45.x86_64'
+              repoid: 'rawhide'
+              from_repo: ''
+
+
+        :param queries: entities to query (must be properly shell escaped)
+        :param repos: specific repositories to query
+        :param whatprovides: inject a ``--whatprovides`` flag
+        :param installed: query only installed entities
+        """
+        raise NotImplementedError
+
     def list_packages(self, repository: "Repository") -> ShellScript:
         """
         List packages available in the specified repository.

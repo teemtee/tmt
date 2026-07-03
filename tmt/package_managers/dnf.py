@@ -30,6 +30,39 @@ class DnfEngine(PackageManagerEngine):
     #: Equivalent `%full_nevra` repoquery tag
     _full_nevra_querytag: ClassVar[str] = "%{name}-%{evr}.%{arch}"
 
+    def _repoquery_script(
+        self,
+        *queries: str,
+        repos: Optional[Sequence[str]] = None,
+        whatprovides: bool = False,
+        installed: bool = False,
+    ) -> ShellScript:
+
+        query_command = self.command + Command("repoquery")
+        if repos:
+            query_command += Command(
+                "--disablerepo=*",
+                *[f"--enablerepo={repo_id}" for repo_id in repos],
+            )
+        if installed:
+            query_command += Command("--installed")
+        query_command += Command(
+            "--queryformat",
+            r"- name: '%{name}'\n"
+            rf"  nevra: '{self._full_nevra_querytag}'\n"
+            r"  repo_id: '%{repoid}'\n"
+            r"  from_repo: '%{from_repo}'\n",
+        )
+        if whatprovides:
+            query_command += Command("--whatprovides")
+
+        return ShellScript(f"""
+        for query in {' '.join(queries)}; do
+            echo "'$query':"
+            {query_command} "$query"
+        done
+        """)
+
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command('-y')
 
@@ -286,7 +319,6 @@ class Dnf(PackageManager[DnfEngine]):
     probe_priority = 50
 
     def list_packages(self, repository: Repository) -> list[Version]:
-
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)
         stdout = output.stdout
@@ -348,7 +380,6 @@ class Dnf(PackageManager[DnfEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-
         options = options or Options()
         options.check_first = False
         # Use both install/reinstall to get all packages refreshed
@@ -362,7 +393,6 @@ class Dnf(PackageManager[DnfEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-
         output = super().install_debuginfo(*installables, options=options)
 
         # Check the packages are installed because 'debuginfo-install'
