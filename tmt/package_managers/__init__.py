@@ -44,11 +44,13 @@ YUM_REPOS_DIR = Path("/etc/yum.repos.d")
 
 class _ResolvedEntry(TypedDict):
     """
-    Single entry from the YAML output of :py:meth:`PackageManagerEngine.resolve_provides`.
+    Single entry from the YAML output of :py:meth:`PackageManagerEngine._repoquery_script`.
     """
 
+    name: str
     nevra: str
     repo_id: str
+    from_repo: str
 
 
 @container(frozen=True)
@@ -492,19 +494,7 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         Resolves each provide to the NEVRAs of packages that provide it.
 
-        The script must emit YAML mapping each provide string to a list of
-        mappings with ``nevra`` and ``repo_id`` keys, or an empty value when
-        nothing provides it, e.g.
-
-        .. code-block:: yaml
-
-            '/usr/bin/cmake':
-                - nevra: 'cmake-0:3.31.6-4.fc43.x86_64'
-                  repo_id: 'updates'
-            '/usr/bin/non-existent-provides':
-            'make':
-                - nevra: 'make-1:4.4.1-8.fc43.x86_64'
-                  repo_id: 'fedora'
+        The output is in a yaml format as defined in :py:meth:`_repoquery_script`.
 
         :param provides: Provides to resolve.
         :param repo_ids: Restrict the query to these repository IDs; searches all enabled
