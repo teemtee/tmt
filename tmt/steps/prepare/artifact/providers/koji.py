@@ -125,11 +125,11 @@ class KojiArtifactProvider(ArtifactProvider):
         Also :py:attr:`_top_url` and :py:attr:`_api_url` being the base URL for the Koji instance.
         """
         import_koji(self.logger)
+        config = koji.read_config("koji")  # type: ignore[union-attr]
+        self._api_url = api_url or config.get("server")
+        self._top_url = top_url or config.get("topurl")
 
         try:
-            config = koji.read_config("koji")  # type: ignore[union-attr]
-            self._api_url = api_url or config.get("server")
-            self._top_url = top_url or config.get("topurl")
             return ClientSession(self._api_url)
         except Exception as error:
             raise tmt.utils.GeneralError(
