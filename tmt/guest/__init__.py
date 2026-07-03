@@ -2258,7 +2258,7 @@ class Guest(
         cwd: Optional[Path] = None,
         environment: Optional[tmt.utils.Environment] = None,
         interactive: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2307,7 +2307,7 @@ class Guest(
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2337,7 +2337,7 @@ class Guest(
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2393,7 +2393,7 @@ class Guest(
         immediately: Literal[True] = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
@@ -2413,7 +2413,7 @@ class Guest(
         immediately: Literal[False] = False,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
@@ -2433,7 +2433,7 @@ class Guest(
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
@@ -3328,7 +3328,7 @@ class GuestSsh(Guest, CommandCollector):
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -3441,7 +3441,7 @@ class GuestSsh(Guest, CommandCollector):
         immediately: Literal[True] = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
@@ -3461,7 +3461,7 @@ class GuestSsh(Guest, CommandCollector):
         immediately: Literal[False] = False,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
@@ -3480,7 +3480,7 @@ class GuestSsh(Guest, CommandCollector):
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
