@@ -13,7 +13,7 @@ from tmt.result import (
     Result,
     ResultInterpret,
     ResultOutcome,
-    results_to_exit_code,
+    Results,
 )
 from tmt.utils import Common, Path
 
@@ -131,10 +131,8 @@ def assert_result(case: Union[CheckPhasesCase, CheckPhasesDuplicateCase], result
     ),
 )
 def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: int) -> None:
-    assert (
-        results_to_exit_code([MagicMock(result=outcome) for outcome in outcomes])
-        == expected_exit_code
-    )
+    results = Results([MagicMock(result=outcome) for outcome in outcomes])
+    assert results.to_exit_code() is expected_exit_code
 
 
 @pytest.mark.parametrize(
