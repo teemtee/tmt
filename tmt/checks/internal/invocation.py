@@ -8,6 +8,7 @@ from tmt.container import container
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.execute import TestInvocation
 from tmt.utils import ProcessExitCodes
+from tmt.utils.environment import Environment
 
 CHECK_NAME = 'internal/invocation'
 
@@ -41,7 +42,7 @@ class Invocation(CheckPlugin[InvocationCheck]):
         *,
         check: 'InvocationCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if ProcessExitCodes.is_pidfile(invocation.return_code):

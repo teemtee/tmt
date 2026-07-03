@@ -22,6 +22,7 @@ from tmt.package_managers import (
     PackageUrl,
 )
 from tmt.utils import Path
+from tmt.utils.environment import Environment
 
 
 @container
@@ -402,7 +403,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """

@@ -6,6 +6,9 @@ import tmt.plugins
 import tmt.result
 import tmt.utils
 from tmt.guest import TransferOptions
+from tmt.utils.environment import Environment
+from tmt.utils.environment import EnvVarName as EnvVarName
+from tmt.utils.environment import EnvVarValue as EnvVarValue
 
 if TYPE_CHECKING:
     from tmt.base.core import DependencySimple, Test
@@ -53,7 +56,7 @@ class TestFramework(abc.ABC):
         cls,
         invocation: 'TestInvocation',
         logger: tmt.log.Logger,
-    ) -> tmt.utils.Environment:
+    ) -> Environment:
         """
         Provide additional environment variables for the test.
 
@@ -64,7 +67,7 @@ class TestFramework(abc.ABC):
             might have already collected.
         """
 
-        return tmt.utils.Environment()
+        return Environment()
 
     @classmethod
     def get_test_command(

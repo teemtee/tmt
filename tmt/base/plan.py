@@ -49,17 +49,15 @@ from tmt.container import SpecBasedContainer, container, field
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.utils import (
     Command,
-    Environment,
-    EnvVarValue,
     FmfContext,
     GeneralError,
-    HasEnvironment,
     HasPlanWorkdir,
     HasRunWorkdir,
     HasUserAnchorPath,
     style,
     to_yaml,
 )
+from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
 
 if TYPE_CHECKING:
     import tmt.cli

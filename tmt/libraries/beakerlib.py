@@ -14,7 +14,8 @@ from tmt.base.core import Dependency, DependencyFmfId, DependencySimple
 from tmt.container import container, simple_field
 from tmt.convert import write
 from tmt.steps.discover import Discover
-from tmt.utils import Command, Environment, EnvVarValue, Path
+from tmt.utils import Command, Path
+from tmt.utils.environment import Environment, EnvVarValue
 
 from . import Library, LibraryError
 

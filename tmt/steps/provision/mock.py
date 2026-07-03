@@ -20,6 +20,7 @@ from tmt._compat.typing import Self
 from tmt.container import container, field
 from tmt.guest import RebootMode
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
+from tmt.utils.environment import Environment
 from tmt.utils.wait import Waiting
 
 MOCK_PIPE: Path = Path('/srv/tmt-mock')
@@ -319,7 +320,7 @@ class MockShell:
         command: Command,
         *,
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         log: Optional[tmt.log.LoggingFunction] = None,
         silent: bool = False,
@@ -580,7 +581,7 @@ class GuestMock(tmt.Guest):
         self,
         command: Union[Command, ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,

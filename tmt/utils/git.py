@@ -19,13 +19,13 @@ from tmt.utils import (
     Command,
     CommandOutput,
     Common,
-    Environment,
     GeneralError,
     GitUrlError,
     MetadataError,
     Path,
     RunError,
 )
+from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
     import tmt.base.core

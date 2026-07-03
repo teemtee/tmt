@@ -16,6 +16,9 @@ from tmt.container import container
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path
+from tmt.utils.environment import Environment
+from tmt.utils.environment import EnvVarName as EnvVarName
+from tmt.utils.environment import EnvVarValue as EnvVarValue
 from tmt.utils.templates import render_template
 
 FEATURE_PLAYEBOOK_RESOURCE = 'steps/prepare/feature'
@@ -348,7 +351,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """

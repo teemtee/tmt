@@ -14,6 +14,9 @@ from tmt.container import (
 )
 from tmt.plugins import PluginRegistry
 from tmt.utils import NormalizeKeysMixin
+from tmt.utils.environment import Environment
+from tmt.utils.environment import EnvVarName as EnvVarName
+from tmt.utils.environment import EnvVarValue as EnvVarValue
 
 if TYPE_CHECKING:
     import tmt.base.core
@@ -163,7 +166,7 @@ class Check(
         *,
         event: CheckEvent,
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list['CheckResult']:
         """
@@ -268,7 +271,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         *,
         check: CheckT,
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list['CheckResult']:
         return []
@@ -279,7 +282,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         *,
         check: CheckT,
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list['CheckResult']:
         return []

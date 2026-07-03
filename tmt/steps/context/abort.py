@@ -4,7 +4,8 @@ import tmt.log
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
-from tmt.utils import Environment, HasEnvironment, Path
+from tmt.utils import Path
+from tmt.utils.environment import Environment, HasEnvironment
 
 
 class AbortStep(tmt.utils.GeneralError):

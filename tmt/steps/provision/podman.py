@@ -24,6 +24,7 @@ from tmt.utils import (
     ShellScript,
     retry,
 )
+from tmt.utils.environment import Environment
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
 
@@ -258,7 +259,7 @@ class GuestContainer(tmt.Guest):
 
         # Filter out variables with newlines - podman's env-file format
         # does not support multiline values (one line = one variable)
-        filtered_environment = tmt.utils.Environment()
+        filtered_environment = Environment()
         for key, value in environment.items():
             if '\n' in value:
                 self.warn(
@@ -487,7 +488,7 @@ class GuestContainer(tmt.Guest):
         try:
             return self._run_guest_command(
                 Command('podman') + command,
-                environment=tmt.utils.Environment.from_environ(),
+                environment=Environment.from_environ(),
                 silent=silent,
                 **kwargs,
             )
@@ -506,7 +507,7 @@ class GuestContainer(tmt.Guest):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,

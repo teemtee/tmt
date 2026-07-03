@@ -8,7 +8,8 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.container import MetadataContainer, container
 from tmt.guest import Guest, RebootMode, SoftRebootModes
-from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
+from tmt.utils import Path, ShellScript
+from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:

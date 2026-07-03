@@ -19,6 +19,7 @@ import tmt.identifier
 import tmt.log
 import tmt.utils
 from tmt.utils import ConvertError, GeneralError, Path, format_value
+from tmt.utils.environment import Environment
 from tmt.utils.structured_field import StructuredField
 from tmt.utils.themes import style
 
@@ -1309,7 +1310,7 @@ def relevancy_to_adjust(
             rule['enabled'] = False
         else:
             try:
-                rule['environment'] = tmt.utils.Environment.from_sequence(decision, logger)
+                rule['environment'] = Environment.from_sequence(decision, logger)
             except tmt.utils.GeneralError as error:
                 raise ConvertError(
                     f"Invalid test case relevancy decision '{decision}'."

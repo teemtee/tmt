@@ -28,7 +28,9 @@ import tmt.utils.git
 import tmt.utils.url
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import Command, Environment, EnvVarValue, GeneralError, Path
+from tmt.utils import Command, GeneralError, Path
+from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import EnvVarName as EnvVarName
 
 
 def normalize_ref(

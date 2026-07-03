@@ -62,9 +62,6 @@ from tmt.utils import (
     DEFAULT_NAME,
     Command,
     CommandOutput,
-    Environment,
-    EnvVarName,
-    EnvVarValue,
     GeneralError,
     HasPhaseWorkdir,
     HasPlanWorkdir,
@@ -75,6 +72,7 @@ from tmt.utils import (
     ShellScript,
     Stopwatch,
 )
+from tmt.utils.environment import Environment, EnvVarName, EnvVarValue
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -2916,7 +2914,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> PluginReturnValueT:
         """
@@ -3303,7 +3301,7 @@ class Login(Action):
     def _login(
         self,
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
     ) -> None:
         """
         Run the interactive command
@@ -3371,7 +3369,7 @@ class Login(Action):
         self,
         results: list['tmt.result.Result'],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
     ) -> None:
         """
         Check and login after test execution

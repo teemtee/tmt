@@ -23,6 +23,7 @@ from tmt.utils import (
     normalize_string_list,
     retry_session,
 )
+from tmt.utils.environment import Environment
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
@@ -177,7 +178,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """

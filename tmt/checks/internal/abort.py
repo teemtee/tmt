@@ -1,7 +1,6 @@
 from typing import Optional
 
 import tmt.log
-import tmt.utils
 from tmt.checks import CheckPlugin, provides_check
 from tmt.checks.internal import InternalCheck
 from tmt.container import container
@@ -9,6 +8,7 @@ from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.context.abort import AbortStep
 from tmt.steps.execute import TestInvocation
 from tmt.utils import ProcessExitCodes
+from tmt.utils.environment import Environment
 
 CHECK_NAME = 'internal/abort'
 
@@ -41,7 +41,7 @@ class Abort(CheckPlugin[AbortCheck]):
         *,
         check: 'AbortCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if (

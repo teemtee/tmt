@@ -41,9 +41,6 @@ from tmt.steps.discover import Discover, DiscoverPlugin
 from tmt.utils import (
     Command,
     CommandOutput,
-    Environment,
-    EnvVarValue,
-    HasEnvironment,
     HasStepWorkdir,
     Path,
     ProcessExitCodes,
@@ -51,6 +48,8 @@ from tmt.utils import (
     Stopwatch,
     configure_bool_constant,
 )
+from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import EnvVarName as EnvVarName
 
 if TYPE_CHECKING:
     import tmt.base.plan
@@ -700,7 +699,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> None:
         self.go_prolog(logger)

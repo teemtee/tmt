@@ -1,7 +1,6 @@
 from typing import Optional
 
 import tmt.log
-import tmt.utils
 import tmt.utils.signals
 from tmt.checks import CheckPlugin, provides_check
 from tmt.checks.internal import InternalCheck
@@ -9,6 +8,7 @@ from tmt.container import container
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.execute import TestInvocation
 from tmt.utils import ProcessExitCodes
+from tmt.utils.environment import Environment
 
 CHECK_NAME = 'internal/interrupt'
 
@@ -41,7 +41,7 @@ class Interrupt(CheckPlugin[InterruptCheck]):
         *,
         check: 'InterruptCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if invocation.return_code in (ProcessExitCodes.SIGINT, ProcessExitCodes.SIGTERM) or any(

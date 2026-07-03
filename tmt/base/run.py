@@ -39,15 +39,14 @@ from tmt.recipe import RecipeManager
 from tmt.result import Result
 from tmt.utils import (
     Command,
-    Environment,
     GeneralError,
-    HasEnvironment,
     HasRunWorkdir,
     HasUserAnchorPath,
     Path,
     StateFormat,
     WorkdirArgumentType,
 )
+from tmt.utils.environment import Environment, HasEnvironment
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -73,7 +72,7 @@ class RunData(SerializableContainer):
     environment: Environment = field(
         default_factory=Environment,
         serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
     )
 
 
@@ -333,7 +332,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
 
         assert self.tree is not None  # narrow type
 
-        return tmt.utils.Environment.from_cli_options(
+        return Environment.from_cli_options(
             raw_cli_environment_files=self.opt('environment-file') or [],
             raw_cli_environment=self.opt('environment') or [],
             file_root=Path(self.tree.root) if self.tree.root else None,

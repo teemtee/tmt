@@ -10,7 +10,7 @@ from tmt.log import Logger
 from tmt.package_managers import SpecialPackageOrigin
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
-from tmt.utils import Environment
+from tmt.utils.environment import Environment
 
 
 @container

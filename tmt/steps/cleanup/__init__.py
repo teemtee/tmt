@@ -14,6 +14,9 @@ from tmt.steps import (
     PluginOutcome,
     PluginTask,
 )
+from tmt.utils.environment import Environment
+from tmt.utils.environment import EnvVarName as EnvVarName
+from tmt.utils.environment import EnvVarValue as EnvVarValue
 
 
 @container
@@ -43,7 +46,7 @@ class CleanupPlugin(tmt.steps.Plugin[CleanupStepDataT, PluginOutcome]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> PluginOutcome:
         self.go_prolog(logger)
