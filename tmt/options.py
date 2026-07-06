@@ -14,6 +14,7 @@ import click
 import tmt.lint
 import tmt.log
 import tmt.utils
+import tmt.utils.feeling_safe
 from tmt.container import container
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
@@ -250,10 +251,10 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
 SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
-        metavar='FEELING_SAFE',
+        multiple=True,
+        choices=list(tmt.utils.feeling_safe.functionalities_to_names()),
         envvar='TMT_FEELING_SAFE',
-        is_flag=True,
-        default=False,
+        default=[],
         help="""
              WARNING: with this option, tmt would be allowed to make
              potentially dangerous actions. For example, some metadata

@@ -1,0 +1,4 @@
+description: |
+  The :tmt:story:`/stories/features/feeling-safe` is no longer working
+  as a one-or-nothing switch, it now allows enabling unsafe behavior
+  in a granular manner.

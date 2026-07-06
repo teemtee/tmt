@@ -21,6 +21,7 @@ from tmt.utils import (
     ShellScript,
 )
 from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.feeling_safe import PROVISION_LOCAL_PLUGIN_UNSAFE_BEHAVIOR
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
@@ -332,7 +333,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        self.assert_feeling_safe("1.38", "The 'local' provision plugin")
+        PROVISION_LOCAL_PLUGIN_UNSAFE_BEHAVIOR.assert_is_allowed(self._logger)
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")
