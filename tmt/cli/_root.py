@@ -31,6 +31,7 @@ import tmt.policy
 import tmt.steps
 import tmt.templates
 import tmt.utils
+import tmt.utils.feeling_safe
 import tmt.utils.jira
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
@@ -183,6 +184,7 @@ def main(
     force_color: bool,
     show_time: bool,
     pre_check: bool,
+    feeling_safe: Sequence[str],
     **kwargs: Any,
 ) -> None:
     """
@@ -220,6 +222,8 @@ def main(
 
     # Save click context and fmf context for future use
     tmt.utils.Common.store_cli_invocation(click_contex)
+
+    tmt.utils.feeling_safe.allow_behavior(feeling_safe)
 
     # Run pre-checks
     if pre_check:
