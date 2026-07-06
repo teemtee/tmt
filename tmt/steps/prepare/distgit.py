@@ -255,11 +255,12 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             else:
                 raise tmt.utils.PrepareError('No src.rpm file created by the `rpmbuild -br` call.')
             # Install build requires
-            # Create the package manager command
-            cmd, _ = guest.package_manager.engine.prepare_command()
             # Can't set 'cwd' as the check for its existence fails for local workdir
-            cmd += Command("builddep", "-y", f"SRPMS/{src_rpm_name}")
-            guest.execute(command=cmd, cwd=Path(source_dir))
+            guest.execute(
+                command=guest.package_manager.engine.command
+                + Command("builddep", "-y", f"SRPMS/{src_rpm_name}"),
+                cwd=Path(source_dir),
+            )
 
         # Finally run the rpm-build -bp
         cmd = Command("rpmbuild", "-bp", spec_name, "--nodeps", *dir_defines)

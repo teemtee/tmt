@@ -1,4 +1,3 @@
-import copy
 import re
 from collections.abc import Iterable, Sequence
 from typing import ClassVar, Optional, cast
@@ -18,26 +17,35 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.package_managers._rpm import RpmVersion
-from tmt.utils import Command, CommandOutput, GeneralError, PrepareError, ShellScript
+from tmt.utils import (
+    Command,
+    CommandOutput,
+    FrozenCommand,
+    GeneralError,
+    PrepareError,
+    ShellScript,
+)
 
 
 class DnfEngine(PackageManagerEngine):
-    _base_command = Command('dnf')
-    _base_debuginfo_command = Command('debuginfo-install')
+    _base_command = FrozenCommand('dnf')
+    _base_debuginfo_command = FrozenCommand('debuginfo-install')
 
     skip_missing_packages_option = '--skip-broken'
     skip_missing_debuginfo_option = skip_missing_packages_option
 
-    def prepare_command(self) -> tuple[Command, Command]:
-        options = Command('-y')
+    def prepare_command(self) -> tuple[FrozenCommand, FrozenCommand]:
+        options = FrozenCommand('-y')
 
         if self.guest.facts.sudo_prefix:
-            command = Command(self.guest.facts.sudo_prefix) + self._base_command
+            return (
+                FrozenCommand.from_command(
+                    Command(self.guest.facts.sudo_prefix) + self._base_command
+                ),
+                options,
+            )
 
-        else:
-            command = copy.deepcopy(self._base_command)
-
-        return (command, options)
+        return (self._base_command, options)
 
     def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
         """
@@ -371,8 +379,8 @@ class Dnf(PackageManager[DnfEngine]):
 
 
 class Dnf5Engine(DnfEngine):
-    _base_command = Command('dnf5')
-    _base_debuginfo_command = Command('dnf5', 'debuginfo-install')
+    _base_command = FrozenCommand('dnf5')
+    _base_debuginfo_command = FrozenCommand('dnf5', 'debuginfo-install')
     skip_missing_packages_option = '--skip-unavailable'
     skip_missing_debuginfo_option = skip_missing_packages_option
 
@@ -399,12 +407,12 @@ class Dnf5(Dnf):
     copr_plugin: ClassVar[str] = 'dnf5-command(copr)'
     config_manager_plugin: ClassVar[str] = 'dnf5-command(config-manager)'
 
-    probe_command = Command('dnf5', '--version')
+    probe_command = FrozenCommand('dnf5', '--version')
     probe_priority = 60
 
 
 class YumEngine(DnfEngine):
-    _base_command = Command('yum')
+    _base_command = FrozenCommand('yum')
 
     def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
         if options.allow_erasing:
