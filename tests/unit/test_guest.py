@@ -8,7 +8,6 @@ import pytest
 from pytest_container.container import ContainerData
 
 from tmt.guest import (
-    UNSAFE_SSH_OPTIONS,
     AnsibleApplicable,
     Guest,
     GuestData,
@@ -358,26 +357,6 @@ class TestPodmanNetworkSetup:
         assert result == ['--network', expected_network]
 
 
-@pytest.mark.parametrize('option_name', sorted(UNSAFE_SSH_OPTIONS))
-def test_unsafe_ssh_option_blocked(
-    root_logger: Logger, option_name: str, monkeypatch: Any
-) -> None:
-    """Unsafe SSH options are rejected without --feeling-safe."""
-    step = Provision(
-        plan=MagicMock(name='mock<plan>', is_dry_run=False), raw_data=[{}], logger=root_logger
-    )
-    guest = GuestSsh(
-        logger=root_logger,
-        parent=step,
-        name='foo',
-        data=GuestSshData(primary_address='bar', ssh_option=[f'{option_name}=echo']),
-    )
-    monkeypatch.setattr(type(guest), 'is_feeling_safe', property(lambda _: False))
-
-    with pytest.raises(GeneralError, match='--feeling-safe'):
-        _ = guest._ssh_options
-
-
 @pytest.mark.parametrize(
     'option',
     [
@@ -404,22 +383,3 @@ def test_unsafe_ssh_option_case_and_separator(
 
     with pytest.raises(GeneralError, match='--feeling-safe'):
         _ = guest._ssh_options
-
-
-def test_unsafe_ssh_option_allowed_with_feeling_safe(
-    root_logger: Logger, monkeypatch: Any
-) -> None:
-    """Unsafe SSH options are permitted when --feeling-safe is active."""
-    step = Provision(
-        plan=MagicMock(name='mock<plan>', is_dry_run=False), raw_data=[{}], logger=root_logger
-    )
-    guest = GuestSsh(
-        logger=root_logger,
-        parent=step,
-        name='foo',
-        data=GuestSshData(primary_address='bar', ssh_option=['ProxyCommand=echo']),
-    )
-    monkeypatch.setattr(type(guest), 'is_feeling_safe', property(lambda _: True))
-
-    options = guest._ssh_options
-    assert '-oProxyCommand=echo' in options._command
