@@ -9,6 +9,7 @@ description: |
 environment+:
   PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
 context+:
+  # TODO(#4838)
   # Because presence check gets in the way.
   # It should fail at verify phase and test execution.
   xfail: "true"
