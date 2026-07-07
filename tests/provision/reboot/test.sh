@@ -178,7 +178,7 @@ rlJournalStart
             rlAssertGrep "Custom soft, systemd soft, and hard reboot commands are allowed only with the '--feeling-safe' option." $rlRun_LOG
             rlAssertNotGrep "cmd: /bin/bash -c '$custom_reboot'" $rlRun_LOG
 
-            rlRun -s "tmt -vv --feeling-safe run --scratch -i $run_connect $provision --soft-reboot '$custom_reboot' reboot --step provision" \
+            rlRun -s "tmt -vv --feeling-safe=provision/connect.reboot-commands run --scratch -i $run_connect $provision --soft-reboot '$custom_reboot' reboot --step provision" \
                 0 "Soft reboot with custom soft-reboot command and --feeling-safe"
             rlAssertGrep "reboot: Rebooting guest using soft mode." $rlRun_LOG
             rlAssertGrep "reboot: Reboot finished" $rlRun_LOG
@@ -210,7 +210,7 @@ rlJournalStart
             rlAssertGrep "Custom soft, systemd soft, and hard reboot commands are allowed only with the '--feeling-safe' option." $rlRun_LOG
             rlAssertNotGrep "cmd: /bin/bash -c '$custom_reboot'" $rlRun_LOG
 
-            rlRun -s "tmt -vv --feeling-safe run --scratch -i $run_connect $provision --systemd-soft-reboot '$custom_reboot' reboot --step provision --systemd-soft" \
+            rlRun -s "tmt -vv --feeling-safe=provision/connect.reboot-commands run --scratch -i $run_connect $provision --systemd-soft-reboot '$custom_reboot' reboot --step provision --systemd-soft" \
                 0 "Soft reboot with custom soft-reboot command and --feeling-safe"
             rlAssertGrep "reboot: Rebooting guest using systemd-soft mode." $rlRun_LOG
             rlAssertGrep "reboot: Reboot finished" $rlRun_LOG
@@ -230,7 +230,7 @@ rlJournalStart
             rlAssertGrep "Custom soft, systemd soft, and hard reboot commands are allowed only with the '--feeling-safe' option." $rlRun_LOG
             rlAssertNotGrep "cmd: /bin/bash -c '$custom_reboot'" $rlRun_LOG
 
-            rlRun -s "tmt -vv --feeling-safe run --scratch -i $run_connect $provision --hard-reboot '$custom_reboot' reboot --step provision --hard" \
+            rlRun -s "tmt -vv --feeling-safe=provision/connect.reboot-commands run --scratch -i $run_connect $provision --hard-reboot '$custom_reboot' reboot --step provision --hard" \
                 0 "Hard reboot with custom hard-reboot command and --feeling-safe"
             rlAssertGrep "reboot: Rebooting guest using hard mode." $rlRun_LOG
             rlAssertGrep "reboot: Reboot finished" $rlRun_LOG

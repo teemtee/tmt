@@ -83,7 +83,7 @@ rlJournalStart
             local option="$1"
             local envvar="$2"
 
-            rlRun -s "$envvar tmt --feeling-safe -vv run --id $run --scratch $option discover provision -h local execute report -h display -vvv plan --default test --name /basic"
+            rlRun -s "$envvar tmt --feeling-safe=provision/local -vv run --id $run --scratch $option discover provision -h local execute report -h display -vvv plan --default test --name /basic"
 
             rlAssertGrep "content: Spiked test." $rlRun_LOG
             rlAssertEquals \
@@ -131,10 +131,10 @@ rlJournalStart
                 policy_name_envvar=""
             fi
 
-            rlRun -s "tmt --feeling-safe -vv run --id $run --scratch $policy_root_option $policy_file_option $policy_name_option discover provision -h local execute report -h display -vvv plan --default test --name /basic" "$expected_code"
+            rlRun -s "tmt --feeling-safe=provision/local -vv run --id $run --scratch $policy_root_option $policy_file_option $policy_name_option discover provision -h local execute report -h display -vvv plan --default test --name /basic" "$expected_code"
             rlAssertGrep "$expected_error" $rlRun_LOG
 
-            rlRun -s "$policy_root_envvar $policy_file_envvar $policy_name_envvar tmt --feeling-safe -vv run --id $run --scratch discover provision -h local execute report -h display -vvv plan --default test --name /basic" "$expected_code"
+            rlRun -s "$policy_root_envvar $policy_file_envvar $policy_name_envvar tmt --feeling-safe=provision/local -vv run --id $run --scratch discover provision -h local execute report -h display -vvv plan --default test --name /basic" "$expected_code"
             rlAssertGrep "$expected_error" $rlRun_LOG
         }
 
