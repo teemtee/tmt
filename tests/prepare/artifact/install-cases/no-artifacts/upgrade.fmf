@@ -21,3 +21,12 @@ environment+:
     with_bar: "true"
   environment+:
     SYSTEM_PACKAGE+: " bar"
+
+/with-devel:
+  summary+: " (requested devel)"
+  description+: |
+    Because we request `foo-devel`, it will upgrade foo to 1.4.
+  context+:
+    want_devel: "true"
+  environment+:
+    EXPECTED_PACKAGE: foo-1.4 foo-devel-1.4

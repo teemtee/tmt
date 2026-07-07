@@ -21,9 +21,31 @@ context+:
   environment+:
     EXPECTED_PACKAGE: foo-2.4
 
+  /only-foo:
+    summary+: " (only foo requested)"
+
+  /with-devel:
+    summary+: " (requested devel)"
+    context+:
+      want_devel: "true"
+      xfail: "false"
+    environment+:
+      EXPECTED_PACKAGE+: " foo-devel-2.4"
+
 /downgrade:
   summary: " (downgrading)"
   context+:
     verified_artifact: foo-1.1
   environment+:
     EXPECTED_PACKAGE: foo-1.1
+
+  /only-foo:
+    summary+: " (only foo requested)"
+
+  /with-devel:
+    summary+: " (requested devel)"
+    context+:
+      want_devel: "true"
+      xfail: "false"
+    environment+:
+      EXPECTED_PACKAGE: " foo-devel-1.1"
