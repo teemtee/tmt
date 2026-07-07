@@ -21,7 +21,7 @@ rlJournalStart
         rlRun "pushd data"
         rlRun "test_root=\$(mktemp -d)"
         for id in {001..003}; do
-            rlRun "tmt --feeling-safe run --workdir-root $test_root --id run-$id"
+            rlRun "tmt --feeling-safe=provision/local run --workdir-root $test_root --id run-$id"
             rlAssertExists "$test_root/run-$id"
         done
     rlPhaseEnd

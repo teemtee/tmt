@@ -10,7 +10,7 @@ rlJournalStart
 
     rlPhaseStartTest "Create a couple of runs"
         for id in {001..005}; do
-            rlRun "tmt --feeling-safe run --id clean-$id"
+            rlRun "tmt --feeling-safe=all run --id clean-$id"
             rlAssertExists "$root/clean-$id"
         done
     rlPhaseEnd
