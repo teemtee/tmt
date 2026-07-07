@@ -110,7 +110,9 @@ def test_step(run_tmt: 'RunTmt'):
 
     for step in ['discover', 'provision', 'prepare']:
         tmp = tempfile.mkdtemp()
-        result = run_tmt('--feeling-safe', '--root', example('local'), 'run', '-i', tmp, step)
+        result = run_tmt(
+            '--feeling-safe', 'all', '--root', example('local'), 'run', '-i', tmp, step
+        )
         assert result.exit_code == 0
         assert step in result.output
         assert 'finish' not in result.output
