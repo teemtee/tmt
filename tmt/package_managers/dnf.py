@@ -438,6 +438,7 @@ class Dnf5(Dnf):
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+    _full_nevra_querytag = "%{nevra}"
 
     def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
         if options.allow_erasing:
@@ -453,6 +454,57 @@ class YumEngine(DnfEngine):
             command = Command(self.guest.facts.sudo_prefix) + command
 
         return command
+
+    def _repoquery_script(
+        self,
+        *queries: str,
+        repos: Optional[Sequence[str]] = None,
+        whatprovides: bool = False,
+        installed: bool = False,
+    ) -> ShellScript:
+        # The same as the dnf one, but
+        # - query_command is `repoquery`
+        # - handling `--installed` is more complicated because `repoid` is replaced with a dummy
+        #   Instead, we use a 2 step process there to get the installed nevra, and query the repoid
+        #   matching it. Duplicate repos should be handled at the higher level.
+        # - `%{from_repo} does not exist
+
+        query_command = Command("repoquery")
+        if repos:
+            query_command += Command(
+                "--disablerepo=*",
+                *[f"--enablerepo={repo_id}" for repo_id in repos],
+            )
+        query_command += Command(
+            "--queryformat",
+            r"- name: '%{name}'\n"
+            rf"  nevra: '{self._full_nevra_querytag}'\n"
+            r"  repo_id: '%{repoid}'\n"
+            r"  from_repo: '%{repoid}'\n",
+        )
+
+        if installed:
+            nevra_query = Command("repoquery", "--installed")
+            if whatprovides:
+                nevra_query += Command("--whatprovides")
+            return ShellScript(f"""
+            for query in {' '.join(queries)}; do
+                echo "'$query':"
+                full_nevra=$({nevra_query} "$query")
+                if [ -n "$full_nevra" ]; then
+                    {query_command} "$full_nevra"
+                fi
+            done
+            """)
+
+        if whatprovides:
+            query_command += Command("--whatprovides")
+        return ShellScript(f"""
+        for query in {' '.join(queries)}; do
+            echo "'$query':"
+            {query_command} "$query"
+        done
+        """)
 
     def enable_repo(self, *repo_ids: str) -> ShellScript:
         return (self._yum_config_manager_command() + Command('--enable', *repo_ids)).to_script()
