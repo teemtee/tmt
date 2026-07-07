@@ -15,6 +15,17 @@ environment+:
     available_artifact: foo-2.2
   environment+:
     EXPECTED_PACKAGE: foo-1.4
+  /only-foo:
+    summary+: " (only foo requested)"
+
+  /with-devel:
+    summary+: " (requested devel)"
+    description+: |
+      Because we request `foo-devel`, it will upgrade foo to 2.2.
+    context+:
+      want_devel: "true"
+    environment+:
+      EXPECTED_PACKAGE: foo-2.2 foo-devel-2.2
 
 /downgrade:
   summary: " (downgrading)"
@@ -22,3 +33,14 @@ environment+:
     available_artifact: foo-1.2
   environment+:
     EXPECTED_PACKAGE: foo-1.4
+  /only-foo:
+    summary+: " (only foo requested)"
+
+  /with-devel:
+    summary+: " (requested devel)"
+    description+: |
+      Because we request `foo-devel`, it will downgrade foo to 1.2.
+    context+:
+      want_devel: "true"
+    environment+:
+      EXPECTED_PACKAGE: foo-1.2 foo-devel-1.2
