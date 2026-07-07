@@ -241,16 +241,7 @@ class DnfEngine(PackageManagerEngine):
         ).to_script()
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
-        return (
-            self.command
-            + Command(
-                'repoquery',
-                '--installed',
-                '--queryformat',
-                r'%{name} %{from_repo}\n',
-                *[Package(p) for p in packages],
-            )
-        ).to_script()
+        return self._repoquery_script(*packages, installed=True)
 
     def resolve_provides(
         self,
@@ -498,13 +489,6 @@ class YumEngine(DnfEngine):
 
     def disable_repo(self, *repo_ids: str) -> ShellScript:
         return (self._yum_config_manager_command() + Command('--disable', *repo_ids)).to_script()
-
-    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
-        # Real yum 3.x (not a dnf symlink) ships repoquery as a separate
-        # yum-utils plugin and the %{from_repo} queryformat field is not
-        # guaranteed to be available.  Support can be added once tested on
-        # an actual yum 3.x system (RHEL 6 / CentOS 6 era).
-        raise NotImplementedError
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
     # decorator, it might be messing with the class inheritance as seen by pyright,
