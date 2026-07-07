@@ -469,16 +469,7 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         List source repositories for each installed package.
 
-        The script must emit one line per package in the format::
-
-            <name> <origin>
-
-        Empty lines are allowed and will be ignored by the caller.  If
-        the origin field is omitted the package is treated as having an
-        unknown source repository (equivalent to
-        :py:attr:`SpecialPackageOrigin.UNKNOWN`).  Packages whose name
-        does not appear in the output at all are treated as not installed
-        (equivalent to :py:attr:`SpecialPackageOrigin.NOT_INSTALLED`).
+        The output is in a yaml format as defined in :py:meth:`_repoquery_script`.
 
         :param packages: Package names to query.
         :returns: A shell script to list source repositories for the given packages.
@@ -658,14 +649,18 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         )
         script = self.engine.get_package_origin(result.keys())
         output = self.guest.execute(script)
-        for line in (output.stdout or '').strip().splitlines():
-            # Empty lines are allowed by the engine contract.
-            if not line.strip():
+        assert output.stdout is not None  # narrow type
+        repoquery_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
+            output.stdout
+        )
+        for package, query_result in repoquery_yaml.items():
+            if not query_result:
                 continue
-            parts = line.split(maxsplit=1)
-            package = parts[0]
-            # Omitted origin field → unknown source repository.
-            result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
+            if len(query_result) > 1:
+                self._logger.debug(f"More than 1 repo provides: {package}", level=1)
+            # TODO: Both from_repo and repoid could be useful to forward
+            origin = query_result[0]["from_repo"]
+            result[package] = origin
         return result
 
     def resolve_provides(
