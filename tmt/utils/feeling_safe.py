@@ -82,7 +82,7 @@ _ALL_ = UnsafeBehavior(name='all', label='all unsafe behavior')
 #: When enabled, allows keys defining custom reboot commands the plugin
 #: runs on the runner.
 REBOOT_KEYS_UNSAFE_BEHAVIOR = UnsafeBehavior(
-    name='prepare/connect.reboot-commands',
+    name='provision/connect.reboot-commands',
     label='custom soft, systemd soft, and hard reboot commands',
 )
 
@@ -93,8 +93,8 @@ PROVISION_MOCK_PLUGIN_UNSAFE_BEHAVIOR = UnsafeBehavior(
     name='provision/mock', label='mock provisioning plugin', locked_since='1.58'
 )
 
-# TODO: move to `provision/login`
-#: When enabled, allows usage of the :ref:`/plugins/provision/mock`
+# TODO: move to `provision/local`
+#: When enabled, allows usage of the :ref:`/plugins/provision/local`
 #: plugin.
 PROVISION_LOCAL_PLUGIN_UNSAFE_BEHAVIOR = UnsafeBehavior(
     name='provision/local', label="'local' provisioning plugin", locked_since="1.38"
