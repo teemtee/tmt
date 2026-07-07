@@ -237,6 +237,8 @@ UNSAFE_SSH_OPTIONS: frozenset[str] = frozenset(
         'remoteforward',
         # Configures dynamic port forwarding / SOCKS proxy.
         'dynamicforward',
+        # Executes a command on the local machine to retrieve known host keys.
+        'knownhostscommand',
     }
 )
 
@@ -3239,11 +3241,11 @@ class GuestSsh(Guest, CommandCollector):
             options.append(f'-S{self._ssh_master_socket_path}')
 
         for option in self.ssh_option:
-            option_keyword, *_ = re.split(r'[=\s]', option, maxsplit=1)
+            option_keyword = re.split(r'[=\s]', option.strip(), maxsplit=1)[0]
             if option_keyword.lower() in UNSAFE_SSH_OPTIONS and not self.is_feeling_safe:
                 raise GeneralError(
                     f"SSH option '{option_keyword}' is not allowed without the "
-                    f"'--feeling-safe' option. "
+                    f"'--feeling-safe' option."
                 )
             options.append(f'-o{option}')
 

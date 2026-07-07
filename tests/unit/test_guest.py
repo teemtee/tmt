@@ -364,6 +364,7 @@ class TestPodmanNetworkSetup:
         'PROXYCOMMAND=echo',  # all-caps
         'ProxyCommand echo',  # space separator
         'proxycommand echo',  # space separator, lowercase
+        ' ProxyCommand=echo',  # leading space
     ],
 )
 def test_unsafe_ssh_option_case_and_separator(
