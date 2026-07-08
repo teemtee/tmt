@@ -2270,6 +2270,12 @@ class Tree(tmt.utils.Common):
         Apply filters and conditions, return pruned nodes
         """
 
+        if conditions and not self.is_feeling_safe:
+            raise tmt.utils.GeneralError(
+                "The '--condition' option evaluates arbitrary Python expressions "
+                "and requires the '--feeling-safe' option."
+            )
+
         result = []
         for node in nodes:
             filter_vars = copy.deepcopy(node._metadata)

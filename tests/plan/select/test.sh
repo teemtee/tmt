@@ -44,6 +44,17 @@ rlJournalStart
         rlPhaseEnd
     done
 
+    rlPhaseStartTest "tmt plan ls --condition requires --feeling-safe"
+        rlRun -s "tmt plan ls --condition 'True'" 2
+        rlAssertGrep "requires the '--feeling-safe' option" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "tmt plan ls --condition with --feeling-safe"
+        rlRun -s "tmt --feeling-safe plan ls --condition 'True'"
+        rlAssertGrep "/plans/features/core" $rlRun_LOG
+        rlAssertGrep "/plans/features/basic" $rlRun_LOG
+    rlPhaseEnd
+
     for exclude in '-x' '--exclude'; do
         rlPhaseStartTest "tmt plan ls $exclude <regex>"
             rlRun "tmt plan ls | tee $output"
