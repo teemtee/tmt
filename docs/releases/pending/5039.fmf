@@ -1,0 +1,4 @@
+description: |
+    SSH options that can execute commands on the runner or set up network
+    forwarding are now blocked when specified via the ``ssh-option`` key in plan metadata.
+    Use the ``--feeling-safe`` option to allow them.

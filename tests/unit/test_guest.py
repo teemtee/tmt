@@ -22,6 +22,7 @@ from tmt.utils import (
     Command,
     CommandOutput,
     Environment,
+    GeneralError,
     OnProcessEndCallback,
     OnProcessStartCallback,
     Path,
@@ -354,3 +355,32 @@ class TestPodmanNetworkSetup:
 
         # Verify return value includes prefixed network name
         assert result == ['--network', expected_network]
+
+
+@pytest.mark.parametrize(
+    'option',
+    [
+        'ProxyCommand=echo',  # canonical casing, '=' separator
+        'PROXYCOMMAND=echo',  # all-caps
+        'ProxyCommand echo',  # space separator
+        'proxycommand echo',  # space separator, lowercase
+        ' ProxyCommand=echo',  # leading space
+    ],
+)
+def test_unsafe_ssh_option_case_and_separator(
+    root_logger: Logger, option: str, monkeypatch: Any
+) -> None:
+    """Unsafe option check is case-insensitive and handles both '=' and space separators."""
+    step = Provision(
+        plan=MagicMock(name='mock<plan>', is_dry_run=False), raw_data=[{}], logger=root_logger
+    )
+    guest = GuestSsh(
+        logger=root_logger,
+        parent=step,
+        name='foo',
+        data=GuestSshData(primary_address='bar', ssh_option=[option]),
+    )
+    monkeypatch.setattr(type(guest), 'is_feeling_safe', property(lambda _: False))
+
+    with pytest.raises(GeneralError, match='--feeling-safe'):
+        _ = guest._ssh_options

@@ -9,20 +9,20 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test guest-specific SSH options with provision $PROVISION_HOW"
-        rlRun "tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW --ssh-option ServerAliveCountMax=123456789"
+        rlRun "tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW --ssh-option ServerAliveCountMax=123456789 plan -n plan"
         rlAssertGrep "Run command: ssh .*-oServerAliveCountMax=123456789" "$run/log.txt"
     rlPhaseEnd
 
     rlPhaseStartTest "Test global SSH options with provision $PROVISION_HOW"
-        rlRun "TMT_SSH_SERVER_ALIVE_COUNT_MAX=123456789 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW"
+        rlRun "TMT_SSH_SERVER_ALIVE_COUNT_MAX=123456789 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n plan"
         rlAssertGrep "Run command: ssh .*-oServerAliveCountMax=123456789" "$run/log.txt"
 
-        rlRun "TMT_SSH_ServerAliveCountMax=123456789 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW"
+        rlRun "TMT_SSH_ServerAliveCountMax=123456789 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n plan"
         rlAssertGrep "Run command: ssh .*-oServeralivecountmax=123456789" "$run/log.txt"
     rlPhaseEnd
 
     rlPhaseStartTest "Test global SSH options occur first in ssh parameters $PROVISION_HOW"
-      rlRun "TMT_SSH_SERVER_ALIVE_INTERVAL=7 TMT_SSH_SERVER_ALIVE_COUNT_MAX=9 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW"
+      rlRun "TMT_SSH_SERVER_ALIVE_INTERVAL=7 TMT_SSH_SERVER_ALIVE_COUNT_MAX=9 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n plan"
       # check that default and custom_ssh_options are present
       rlAssertGrep "Run command: ssh .*-oServerAliveInterval=7" "$run/log.txt"
       rlAssertGrep "Run command: ssh .*-oServerAliveInterval=5" "$run/log.txt"
@@ -31,6 +31,19 @@ rlJournalStart
       # check that custom_ssh_options occur before default ssh options
       rlAssertGrep "Run command: ssh .*-oServerAliveInterval=7.*-oServerAliveInterval=5" "$run/log.txt"
       rlAssertGrep "Run command: ssh .*-oServerAliveCountMax=9.*-oServerAliveCountMax=60" "$run/log.txt"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test unsafe SSH options are not allowed $PROVISION_HOW"
+      rlRun "TMT_FEELING_SAFE=0 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n unsafe-ssh-options" 2
+      rlAssertGrep "SSH option 'PermitLocalCommand' is not allowed" "$run/log.txt"
+      rlAssertNotGrep "Run command: ssh .*-oPermitLocalCommand yes" "$run/log.txt"
+      rlAssertNotGrep "Run command: ssh .*-oLocalCommand=echo \"LocalCommand is not allowed\"" "$run/log.txt"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test unsafe SSH options are allowed with --feeling-safe $PROVISION_HOW"
+      rlRun "tmt --feeling-safe run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n unsafe-ssh-options"
+      rlAssertGrep "Run command: ssh .*-oPermitLocalCommand yes" "$run/log.txt"
+      rlAssertGrep "Run command: ssh .*-oLocalCommand=echo \"LocalCommand is not allowed\"" "$run/log.txt"
     rlPhaseEnd
 
     rlPhaseStartCleanup
