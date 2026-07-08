@@ -11,8 +11,8 @@ rlJournalStart
     # the second time finish the rest of the steps.
     # This checks that the internal objects are properly serialized or reused.
     rlPhaseStartTest
-        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run test --name /test/os-release -vvv discover provision"
-        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run test --name /test/os-release -vvv prepare execute report cleanup"
+        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt -vvvvdddd --feeling-safe run --id $run test --name /test/os-release discover provision"
+        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt -vvvvdddd --feeling-safe run --id $run test --name /test/os-release prepare execute report cleanup"
         rlAssertGrep "NAME.*Fedora Linux" $run/plan/execute/data/guest/default-0/test/os-release-1/output.txt
     rlPhaseEnd
 
