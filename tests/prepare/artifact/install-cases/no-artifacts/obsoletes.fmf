@@ -1,0 +1,37 @@
+summary: Replacement package is available
+
+environment+:
+  SYSTEM_PACKAGE+: " foo-ng-1.4"
+  EXPECTED_PACKAGE: foo-ng-1.4
+
+/basic:
+  summary+: " (only foo requested)"
+  description: |
+    System repo: foo-1.4 (baseline), foo-ng-1.4
+    Pre-installed: None
+    Artifacts: None
+
+    `foo-ng` should be picked over the obsoleted one regardless
+    of the `Provides` version provided.
+
+/pre-installed:
+  summary+: " (foo pre-installed)"
+  description: |
+    System repo: foo-1.4 (baseline), foo-ng-1.4
+    Pre-installed: foo-1.4
+    Artifacts: None
+
+    `foo-ng` should remove the old package via the `Obsoletes`
+
+  environment+:
+    PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
+
+  /only-foo:
+    summary+: " (only foo requested)"
+
+  /with-devel:
+    summary+: " (requested devel)"
+    context+:
+      want_devel: "true"
+    environment+:
+      EXPECTED_PACKAGE+: " foo-ng-devel-1.4"
