@@ -21,17 +21,27 @@ environment+:
     Pre-installed: foo-1.4
     Artifacts: None
 
-    `foo-ng` should remove the old package via the `Obsoletes`
-
   environment+:
     PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
+    EXPECTED_PACKAGE: foo-1.4
 
   /only-foo:
     summary+: " (only foo requested)"
+    description+: |
+
+      `foo-ng` is not upgraded because of `check-first` flag.
+      dnf would also only upgrade if `--best` flag is provided
+
+    environment+:
+      EXPECTED_PACKAGE: foo-1.4
 
   /with-devel:
     summary+: " (requested devel)"
+    description+: |
+
+      `foo-ng-devel` is preferred with the Obsoletes rule and
+      replaces `foo`
     context+:
       want_devel: "true"
     environment+:
-      EXPECTED_PACKAGE+: " foo-ng-devel-1.0"
+      EXPECTED_PACKAGE+: " foo-devel-1.4"
