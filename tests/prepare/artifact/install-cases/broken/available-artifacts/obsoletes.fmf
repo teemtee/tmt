@@ -65,6 +65,7 @@ environment+:
     context+:
       available_artifact: foo-1.2-bad
     environment+:
+      EXPECTED_PACKAGE: foo-ng-1.0
       SYSTEM_PACKAGE: foo-ng-1.0
       PRE_INSTALLED_PACKAGE: rpms/foo-ng-1.0/foo-ng-1.0*.rpm
 

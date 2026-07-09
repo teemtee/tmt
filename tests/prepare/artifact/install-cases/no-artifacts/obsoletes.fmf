@@ -44,4 +44,4 @@ environment+:
     context+:
       want_devel: "true"
     environment+:
-      EXPECTED_PACKAGE+: " foo-devel-1.4"
+      EXPECTED_PACKAGE: foo-ng-1.0 foo-ng-devel-1.0

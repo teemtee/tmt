@@ -7,7 +7,7 @@ description: |
   `foo` is pre-installed but we do not really want to upgrade it.
 
 environment+:
-  SYSTEM_PACKAGE: foo-1.0 foo-1.4-bad
+  SYSTEM_PACKAGE: foo-1.0 foo-1.4
   EXPECTED_PACKAGE: foo-1.0
   PRE_INSTALLED_PACKAGE: rpms/foo-1.0/foo-1.0*.rpm
 
