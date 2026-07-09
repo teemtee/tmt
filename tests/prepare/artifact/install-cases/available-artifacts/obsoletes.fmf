@@ -1,9 +1,9 @@
 summary: Replacement package is available
 
-environment+:
-  EXPECTED_PACKAGE: foo-ng-1.0
-
 /basic:
+  description+<: |
+
+    Artifact's priority wins over `Obsoletes`
   /upgrade:
     summary+: " (replacement on artifact)"
     description: |
@@ -11,10 +11,10 @@ environment+:
       Pre-installed: None
       Artifacts: foo-ng-1.0
 
-      `foo-ng` should remove the old package via the `Obsoletes`
-
     context+:
       available_artifact: foo-ng-1.0
+    environment+:
+      EXPECTED_PACKAGE: foo-ng-1.0
   /downgrade:
     summary+: " (replacement on system)"
     description: |
@@ -22,11 +22,10 @@ environment+:
       Pre-installed: None
       Artifacts: foo-1.2
 
-      `foo-ng` should remove the old package via the `Obsoletes`
-
     context+:
       available_artifact: foo-1.2
     environment+:
+      EXPECTED_PACKAGE: foo-1.2
       SYSTEM_PACKAGE: foo-ng-1.0
 
 /pre-installed:
@@ -38,8 +37,6 @@ environment+:
       Pre-installed: foo-1.4
       Artifacts: foo-ng-1.0
 
-      `foo-ng` should remove the old package via the `Obsoletes`
-
     context+:
       available_artifact: foo-ng-1.0
     environment+:
@@ -47,13 +44,25 @@ environment+:
 
     /only-foo:
       summary+: " (only foo requested)"
+      description+: |
+
+        `foo-ng` is not upgraded because of `check-first` flag.
+        dnf would also only upgrade if `--best` flag is provided
+
+      environment+:
+        EXPECTED_PACKAGE+: foo-1.4
 
     /with-devel:
       summary+: " (requested devel)"
+      description+: |
+
+        `foo` will upgrade to `foo-ng` when trying to install a `foo-devel`.
+        Artifact's priority wins over the Obsoletes.
+
       context+:
         want_devel: "true"
       environment+:
-        EXPECTED_PACKAGE+: " foo-ng-devel-1.0"
+        EXPECTED_PACKAGE: foo-ng-1.0 foo-ng-devel-1.0
 
   /downgrade:
     summary+: " (replacement on system)"
@@ -61,8 +70,6 @@ environment+:
       System repo: foo-ng-1.0
       Pre-installed: foo-ng-1.0
       Artifacts: foo-1.2
-
-      `foo-ng` already installed, nothing should change
 
     context+:
       available_artifact: foo-1.2
@@ -72,10 +79,20 @@ environment+:
 
     /only-foo:
       summary+: " (only foo requested)"
+      description+: |
+
+        Nothing is changed because of `check-first` flag.
+
+      environment+:
+        EXPECTED_PACKAGE+: foo-ng-1.0
 
     /with-devel:
       summary+: " (requested devel)"
+      description+: |
+
+        `foo` is preferred, but it cannot be installed due to the Obsoletes.
+        Package installation fallback to `foo-ng`
       context+:
         want_devel: "true"
       environment+:
-        EXPECTED_PACKAGE+: " foo-ng-devel-1.0"
+        EXPECTED_PACKAGE+: foo-ng-1.0 foo-ng-devel-1.0
