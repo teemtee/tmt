@@ -39,8 +39,8 @@ DEFAULT_SUBRESULT_CHECK_HEADER_TEMPLATE = """
 """  # noqa: E501
 
 DEFAULT_NOTE_TEMPLATE = """
-{{ "Note:" | style(fg="yellow") }} {{ NOTE_LINES.pop(0) }}
-{% for line in NOTE_LINES %}
+{{ "Note:" | style(fg="yellow") }} {{ NOTE_LINES[0] }}
+{% for line in NOTE_LINES[1:] %}
       {{ line }}
 {% endfor %}
 """
