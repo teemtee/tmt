@@ -1,0 +1,5 @@
+description: |
+    The :ref:`/plugins/prepare/install` plugin now exposes a
+    ``check-first`` option (default: enabled) which allows to skip
+    installation of packages already present on the guest, preventing
+    unintended upgrades.
