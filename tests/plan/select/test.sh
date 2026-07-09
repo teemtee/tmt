@@ -45,7 +45,7 @@ rlJournalStart
     done
 
     rlPhaseStartTest "tmt plan ls --condition requires --feeling-safe"
-        rlRun -s "tmt plan ls --condition 'True'" 2
+        rlRun -s "TMT_FEELING_SAFE=0 tmt plan ls --condition 'True'" 2
         rlAssertGrep "requires the '--feeling-safe' option" $rlRun_LOG
     rlPhaseEnd
 
@@ -65,7 +65,7 @@ rlJournalStart
     done
 
     rlPhaseStartCleanup
-        rlRun "rm -r $tmp" 0 "Remove temporary run workdir"
+        rlRun "rm -rf $tmp" 0 "Remove temporary run workdir"
         rlRun "rm $output" 0 "Remove output file"
     rlPhaseEnd
 rlJournalEnd
