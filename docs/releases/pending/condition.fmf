@@ -1,0 +1,5 @@
+description: |
+  The ``--condition`` option now requires ``--feeling-safe`` to be
+  enabled. This option evaluates arbitrary Python expressions using
+  ``eval()`` and could be exploited through CLI option injection
+  when tmt is invoked programmatically with untrusted input.

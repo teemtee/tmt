@@ -349,7 +349,7 @@ FILTERING_OPTIONS: list[ClickOptionDecoratorType] = [
         'conditions',
         metavar="EXPR",
         multiple=True,
-        help="Use arbitrary Python expression for filtering.",
+        help="Use arbitrary Python expression for filtering (requires --feeling-safe).",
     ),
     option(
         '--enabled',
@@ -390,7 +390,7 @@ FILTERING_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
         'conditions',
         metavar="EXPR",
         multiple=True,
-        help="Use arbitrary Python expression for filtering.",
+        help="Use arbitrary Python expression for filtering (requires --feeling-safe).",
     ),
     option(
         '--enabled',

@@ -2257,6 +2257,25 @@ class Tree(tmt.utils.Common):
         """
         return self._custom_fmf_context or super().fmf_context
 
+    def _collect_cli_conditions(self, cls: type[tmt.utils.Common]) -> list[str]:
+        """
+        Collect ``--condition`` options from the command line
+
+        Get conditions for the given class. Also ensure that the
+        ``--feeling-safe`` option is enabled as these can
+        potentially be dangerous.
+        """
+
+        cli_conditions: list[str] = list(cls._opt('conditions', []))
+
+        if cli_conditions and not self.is_feeling_safe:
+            raise tmt.utils.GeneralError(
+                "The '--condition' option evaluates arbitrary Python expressions "
+                "and requires the '--feeling-safe' option."
+            )
+
+        return cli_conditions
+
     def _filters_conditions(
         self,
         nodes: Sequence[CoreT],
@@ -2410,7 +2429,7 @@ class Tree(tmt.utils.Common):
 
         if apply_command_line:
             filters += list(Test._opt('filters', []))
-            conditions += list(Test._opt('conditions', []))
+            conditions += self._collect_cli_conditions(Test)
             includes += list(Test._opt('include', []))
             excludes += list(Test._opt('exclude', []))
             cmd_line_names = list(Test._opt('names', []))
@@ -2522,7 +2541,7 @@ class Tree(tmt.utils.Common):
         if apply_command_line:
             names += list(Plan._opt('names', []))
             filters += list(Plan._opt('filters', []))
-            conditions += list(Plan._opt('conditions', []))
+            conditions += self._collect_cli_conditions(Plan)
             excludes += list(Plan._opt('exclude', []))
 
         # Sanitize plan names to make sure no name includes control character
@@ -2651,7 +2670,7 @@ class Tree(tmt.utils.Common):
         if apply_command_line:
             names += list(Story._opt('names', []))
             filters += list(Story._opt('filters', []))
-            conditions += list(Story._opt('conditions', []))
+            conditions += self._collect_cli_conditions(Story)
             excludes += list(Story._opt('exclude', []))
 
         # Sanitize story names to make sure no name includes control character
