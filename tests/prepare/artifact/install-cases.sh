@@ -18,9 +18,13 @@ rlJournalStart
     rlPhaseEnd
 
 xfail_plans=(
-    "/verified-artifacts/pre-installed"
     # Intentionally should fail at install or verify stage
-    "/broken/verified-artifacts"
+    # Or some are not yet supported (#4838)
+    "^/broken/verified-artifacts"
+    "^/verified-artifacts/pre-installed/.*/only-foo$"
+    "^/verified-artifacts/obsoletes/pre-installed/downgrade/only-foo$"
+    "^/verified-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    "^/verified-artifacts/obsoletes/pre-installed/upgrade/only-foo$"
 )
 
     while IFS= read -r image; do

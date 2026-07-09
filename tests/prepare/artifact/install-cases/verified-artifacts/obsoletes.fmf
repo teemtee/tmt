@@ -27,7 +27,7 @@ description: |
       verified_artifact: foo-1.1
     environment+:
       SYSTEM_PACKAGE: foo-ng-1.0
-      EXPECTED_PACKAGE: foo-ng-1.0
+      EXPECTED_PACKAGE: foo-1.1
 
 /pre-installed:
   summary+: " (foo pre-installed)"
@@ -70,6 +70,11 @@ description: |
 
     /only-foo:
       summary+: " (only foo requested)"
+      context+:
+        # TODO(#4838)
+        # Because presence check gets in the way.
+        # It should fail at verify phase and test execution.
+        xfail: "true"
 
     /with-devel:
       summary+: " (requested devel)"
