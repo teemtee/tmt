@@ -14,22 +14,22 @@ environment+:
     description+<: |
       System repo: foo-1.4 (baseline)
       Pre-installed: None
-      Artifacts: foo-ng-1.4-bad
+      Artifacts: foo-ng-1.0-bad
 
     context+:
-      available_artifact: foo-ng-1.4-bad
+      available_artifact: foo-ng-1.0-bad
   /downgrade:
     summary+: " (replacement on system)"
     description+<: |
-      System repo: foo-ng-1.4
+      System repo: foo-ng-1.0
       Pre-installed: None
       Artifacts: foo-1.2-bad
 
     context+:
       available_artifact: foo-1.2-bad
     environment+:
-      SYSTEM_PACKAGE: foo-ng-1.4
-      EXPECTED_PACKAGE: foo-ng-1.4
+      SYSTEM_PACKAGE: foo-ng-1.0
+      EXPECTED_PACKAGE: foo-ng-1.0
 
 /pre-installed:
   summary+: " (foo pre-installed)"
@@ -38,10 +38,10 @@ environment+:
     description+<: |
       System repo: foo-1.4 (baseline)
       Pre-installed: foo-1.4
-      Artifacts: foo-ng-1.4-bad
+      Artifacts: foo-ng-1.0-bad
 
     context+:
-      available_artifact: foo-ng-1.4-bad
+      available_artifact: foo-ng-1.0-bad
     environment+:
       PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
 
@@ -58,15 +58,15 @@ environment+:
   /downgrade:
     summary+: " (replacement on system)"
     description+<: |
-      System repo: foo-ng-1.4
-      Pre-installed: foo-ng-1.4
+      System repo: foo-ng-1.0
+      Pre-installed: foo-ng-1.0
       Artifacts: foo-1.2-bad
 
     context+:
       available_artifact: foo-1.2-bad
     environment+:
-      SYSTEM_PACKAGE: foo-ng-1.4
-      PRE_INSTALLED_PACKAGE: rpms/foo-ng-1.4/foo-ng-1.4*.rpm
+      SYSTEM_PACKAGE: foo-ng-1.0
+      PRE_INSTALLED_PACKAGE: rpms/foo-ng-1.0/foo-ng-1.0*.rpm
 
     /only-foo:
       summary+: " (only foo requested)"
@@ -76,4 +76,4 @@ environment+:
       context+:
         want_devel: "true"
       environment+:
-        EXPECTED_PACKAGE+: " foo-ng-devel-1.4"
+        EXPECTED_PACKAGE+: " foo-ng-devel-1.0"
