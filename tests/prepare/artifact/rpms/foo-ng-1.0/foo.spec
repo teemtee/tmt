@@ -5,7 +5,7 @@ BuildArch:  noarch
 Summary:    Main test package
 License:    none
 
-Provides:   foo
+Provides:   foo = 3.0-2
 Obsoletes:  foo < 3.0-1
 
 %description
@@ -17,7 +17,7 @@ Replacing system package
 Summary:    Main test sub-package
 Requires:   foo-ng == %{version}-%{release}
 
-Provides:   foo-devel
+Provides:   foo-devel = 3.0-2
 Obsoletes:  foo-devel < 3.0-1
 
 %description devel
