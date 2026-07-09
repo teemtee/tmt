@@ -12,7 +12,7 @@ Older version (not verified)
 
 %package devel
 Summary:    Main test sub-package
-Requires:   foo-%{version} == %{version}-%{release}
+Requires:   foo == %{version}-%{release}
 
 %description devel
 Version locked sub-package
