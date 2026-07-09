@@ -12,7 +12,7 @@ Pre-installed version, lower than current system package (foo-1.4)
 
 %package devel
 Summary:    Main test sub-package
-Requires:   foo-%{version} == %{version}-%{release}
+Requires:   foo == %{version}-%{release}
 
 %description devel
 Version locked sub-package

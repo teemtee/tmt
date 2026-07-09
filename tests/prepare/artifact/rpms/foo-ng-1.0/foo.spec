@@ -15,7 +15,7 @@ Replacing system package
 
 %package devel
 Summary:    Main test sub-package
-Requires:   foo-ng-%{version} == %{version}-%{release}
+Requires:   foo-ng == %{version}-%{release}
 
 Provides:   foo-devel
 Obsoletes:  foo-devel < 3.0-1
