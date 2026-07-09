@@ -4,14 +4,14 @@ import tmt.log
 import tmt.utils
 from tmt.container import container
 from tmt.guest import Guest
-from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import Environment, EnvVarValue, HasIntrinsicEnvironment
 
 if TYPE_CHECKING:
     from tmt.steps.context.reboot import RebootContext
 
 
 @container
-class RestartContext(HasEnvironment):
+class RestartContext(HasIntrinsicEnvironment):
     """
     Tracks information about restarts of an action, e.g. a test script.
     """
@@ -50,7 +50,7 @@ class RestartContext(HasEnvironment):
         return self.is_requested_test()
 
     @property
-    def environment(self) -> Environment:
+    def intrinsic_environment(self) -> Environment:
         return Environment({'TMT_TEST_RESTART_COUNT': EnvVarValue(str(self.restart_counter))})
 
     def handle_restart(self, reboot: Optional['RebootContext'] = None) -> bool:

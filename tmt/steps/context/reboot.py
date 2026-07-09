@@ -9,7 +9,7 @@ import tmt.utils
 from tmt.container import MetadataContainer, container
 from tmt.guest import Guest, RebootMode, SoftRebootModes
 from tmt.utils import Path, ShellScript
-from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import Environment, EnvVarValue, HasIntrinsicEnvironment
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ class RebootData(MetadataContainer):
 
 
 @container
-class RebootContext(HasEnvironment):
+class RebootContext(HasIntrinsicEnvironment):
     """
     Tracks information about guest reboots.
     """
@@ -76,7 +76,7 @@ class RebootContext(HasEnvironment):
         return self.soft_requested or self.hard_requested
 
     @property
-    def environment(self) -> Environment:
+    def intrinsic_environment(self) -> Environment:
         environment = Environment()
 
         # Set all supported reboot variables
