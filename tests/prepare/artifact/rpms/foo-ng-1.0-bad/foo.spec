@@ -1,5 +1,5 @@
 Name:       foo-ng
-Version:    2.2
+Version:    1.0
 Release:    1
 BuildArch:  noarch
 Summary:    Main test package
@@ -12,13 +12,16 @@ Obsoletes:  foo < 3.0-1
 Requires:   some-non-existent-package
 
 %description
-Replacing package (not verified, Broken)
+Replacing system package (Broken)
 
 %files
 
 %package devel
 Summary:    Main test sub-package
 Requires:   foo-ng-%{version} == %{version}-%{release}
+
+Provides:   foo-devel
+Obsoletes:  foo-devel < 3.0-1
 
 %description devel
 Version locked sub-package
