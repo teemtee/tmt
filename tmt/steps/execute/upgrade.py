@@ -21,7 +21,7 @@ from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
-from tmt.utils import Environment, EnvVarValue, Path
+from tmt.utils import Environment, OpenEnvVarValue, Path
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
 BEFORE_UPGRADE_PREFIX = 'old'
@@ -542,7 +542,9 @@ class ExecuteUpgrade(ExecuteInternal):
 
                         self._run_tests(
                             guest=guest,
-                            extra_environment=Environment({STATUS_VARIABLE: EnvVarValue(prefix)}),
+                            extra_environment=Environment(
+                                {STATUS_VARIABLE: OpenEnvVarValue(prefix)}
+                            ),
                             logger=logger,
                         )
 

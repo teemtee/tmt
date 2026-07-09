@@ -2,7 +2,7 @@ from typing import Optional
 
 import tmt.log
 from tmt.container import container
-from tmt.utils import Environment, EnvVarValue, HasEnvironment
+from tmt.utils import Environment, HasEnvironment, OpenEnvVarValue
 
 
 @container
@@ -25,9 +25,9 @@ class RestraintContext(HasEnvironment):
     def environment(self) -> Environment:
         environment = Environment()
 
-        environment["TMT_RESTRAINT_COMPATIBLE"] = EnvVarValue(str(int(self.enabled)))
+        environment["TMT_RESTRAINT_COMPATIBLE"] = OpenEnvVarValue(str(int(self.enabled)))
 
         if self.enabled and self.taskname:
-            environment["RSTRNT_TASKNAME"] = EnvVarValue(self.taskname)
+            environment["RSTRNT_TASKNAME"] = OpenEnvVarValue(self.taskname)
 
         return environment
