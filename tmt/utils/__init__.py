@@ -83,7 +83,6 @@ if TYPE_CHECKING:
     import tmt.base.run
     import tmt.cli
     import tmt.utils.themes
-    from tmt._compat.typing import TypeAlias as TypeAlias
     from tmt.guest import GuestLog
     from tmt.hardware.constraints import Size
 
@@ -352,8 +351,6 @@ class FmfContext(dict[str, list[str]]):
             -c distro=fedora-33 -> {'distro': ['fedora']}
             -c arch=x86_64,ppc64 -> {'arch': ['x86_64', 'ppc64']}
         """
-
-        from tmt.utils.environment import Environment
 
         raw_fmf_context: dict[str, list[str]] = {}
         for key, value in Environment.from_sequence(spec, logger).items():

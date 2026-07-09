@@ -1115,7 +1115,7 @@ def read_nitrate_case(
         echo(style('contact: ', fg='green') + data['contact'])
     # Environment
     if testcase.arguments:
-        data['environment'] = tmt.utils.Environment.from_sequence(testcase.arguments, logger)
+        data['environment'] = Environment.from_sequence(testcase.arguments, logger)
         if not data['environment']:
             data.pop('environment')
         else:
