@@ -1,3 +1,25 @@
+"""
+Handling of environment variables in tmt.
+
+User-owned vs tmt-owned variables
+=================================
+
+tmt separates environment variables based on their ownership:
+
+* Variables provided by user - usually there is no special label used in
+  code when speaking about user-provided variables. See
+  :py:class:`HasEnvironment` for classes that have some user-owned
+  variables to share.
+* Variables owned by tmt - called "intrinsic" variables in code,
+  see :py:class:`HasIntrinsicEnvironment` for classes that own some
+  variables on behalf of tmt.
+
+The separation exists to provide clear barrier: tmt-owned variables are
+supposed to be the most powerful ones, and they shall overwrite
+user-provided variables of the same name. When building an environment,
+the intrinsic ones must come after all user-provided ones.
+"""
+
 import abc
 import contextlib
 import os
@@ -59,7 +81,22 @@ class HasEnvironment(abc.ABC):
     @abc.abstractmethod
     def environment(self) -> 'Environment':
         """
-        Environment variables this object wants to expose to user commands.
+        User-owned environment variables this object wants to expose to user commands.
+        """
+
+        raise NotImplementedError
+
+
+class HasIntrinsicEnvironment(abc.ABC):
+    """
+    A class that provides :py:attr:`intrinsic_environment` attribute.
+    """
+
+    @property
+    @abc.abstractmethod
+    def intrinsic_environment(self) -> 'Environment':
+        """
+        tmt-owned environment variables this object wants to expose to user commands.
         """
 
         raise NotImplementedError
@@ -536,14 +573,10 @@ class Environment(dict[str, EnvVarValue]):
         return Environment(self)
 
     def update(  # type: ignore[override]
-        self, *others: Union[dict[str, EnvVarValue], HasEnvironment]
+        self, *others: 'Environment'
     ) -> None:
         for other in others:
-            if isinstance(other, dict):
-                super().update(other)
-
-            else:
-                super().update(other.environment)
+            super().update(other)
 
     @classmethod
     def normalize(

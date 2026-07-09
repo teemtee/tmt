@@ -20,7 +20,7 @@ from tmt.utils import (
     Path,
     ShellScript,
 )
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
@@ -73,14 +73,12 @@ class GuestLocal(tmt.Guest):
             environment.update(self.environment)
 
             if isinstance(self.parent, tmt.steps.Step):
-                environment.update(self.parent.plan)
+                environment.update(self.parent.plan.environment)
 
-            # TODO: this was owned by plan, but at wrong position, and it will
-            # be owned by plan again once the dust of environment untangling
-            # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
-            # more.
-            if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+            environment.update(self.intrinsic_environment)
+
+            if isinstance(self.parent, tmt.steps.Step):
+                environment.update(self.parent.plan.intrinsic_environment)
 
         else:
             environment = super()._prepare_command_environment(environment=environment)
