@@ -48,7 +48,7 @@ xfail_plans=(
             done
             rlPhaseStartTest "$phase_prefix $plan $xfail"
                 rlRun "tmt run $extra_env -i $run --scratch -vvv --all \
-                    plan --name $plan \
+                    plan --name '^$plan$' \
                     provision -h $PROVISION_HOW --image $image" \
                     $expected_result "Run test case $plan $xfail"
             rlPhaseEnd
