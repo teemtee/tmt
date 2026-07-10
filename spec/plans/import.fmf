@@ -88,8 +88,9 @@ description: |
     ``importing`` keys:
 
     .. code-block:: yaml
+        :emphasize-lines: 4,5
 
-      /some-plan:
+        /some-plan:
             plan:
                 import:
                     scope: all-plans
