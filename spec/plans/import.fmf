@@ -84,7 +84,7 @@ description: |
 
                     ...
 
-    In order to import multiple plans set both ``scope`` and
+    In order to import multiple plans, set both ``scope`` and
     ``importing`` keys:
 
     .. code-block:: yaml
@@ -96,12 +96,12 @@ description: |
                     importing: become-parent
                     ...
 
-    Plan steps must not be defined in the remote plan reference.
-    The imported plan can be modified in several ways. First way
-    is via environment and context variables. Imported plan inherits
-    all environment and context variables from the importing plan.
-    This behavior can be changed by setting the ``inherit-context``
-    or ``inherit-environment`` options:
+    Plan steps must not be defined in the remote plan reference. The
+    imported plan can be modified in several ways. The first way is via
+    environment and context variables. The Imported plan inherits all
+    environment and context variables from the importing plan. This
+    behavior can be changed by setting the ``inherit-context`` or
+    ``inherit-environment`` options:
 
     .. code-block:: yaml
 
