@@ -21,7 +21,6 @@ from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import (
     Command,
     CommandOutput,
-    Environment,
     GeneralError,
     OnProcessEndCallback,
     OnProcessStartCallback,
@@ -29,6 +28,7 @@ from tmt.utils import (
     RunError,
     ShellScript,
 )
+from tmt.utils.environment import Environment
 from tmt.utils.wait import Waiting
 
 from . import TEST_CONTAINERS

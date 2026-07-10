@@ -2,7 +2,7 @@ from typing import Optional
 
 import tmt.log
 from tmt.container import container
-from tmt.utils import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
 
 
 @container

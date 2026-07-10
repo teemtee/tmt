@@ -52,6 +52,7 @@ from tmt.container import SpecBasedContainer, container, simple_field
 if TYPE_CHECKING:
     import tmt.cli
     import tmt.utils
+    import tmt.utils.environment
     import tmt.utils.themes
 
 # Log in workdir
@@ -96,7 +97,7 @@ LoggableValue = Union[
     int,
     bool,
     float,
-    'tmt.utils.Environment',
+    'tmt.utils.environment.Environment',
     'tmt.utils.FmfContext',
     'tmt.utils.Path',
     'tmt.utils.Command',

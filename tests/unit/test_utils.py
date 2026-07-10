@@ -39,6 +39,7 @@ from tmt.utils import (
     duration_to_seconds,
     filter_paths,
 )
+from tmt.utils.environment import Environment
 from tmt.utils.git import (
     clonable_git_url,
     git_add,
@@ -1536,7 +1537,7 @@ _test_format_value_big_list = list(range(1, 20))
             """,  # noqa: E501
         ),
         # environment
-        (tmt.utils.Environment.from_dict({'FOO': 'BAR'}), None, 'FOO\033[0m: BAR'),
+        (Environment.from_dict({'FOO': 'BAR'}), None, 'FOO\033[0m: BAR'),
         # fmf context
         (
             tmt.utils.FmfContext({'foo': ['bar', 'baz']}),

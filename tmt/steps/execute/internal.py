@@ -19,7 +19,8 @@ from tmt.steps.execute import (
     TestInvocation,
 )
 from tmt.steps.report.display import ResultRenderer
-from tmt.utils import Environment, ShellScript
+from tmt.utils import ShellScript
+from tmt.utils.environment import Environment
 from tmt.utils.themes import style
 
 #
@@ -502,7 +503,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> None:
         """

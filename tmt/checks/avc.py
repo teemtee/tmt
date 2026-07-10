@@ -21,6 +21,7 @@ from tmt.utils import (
     render_command_report,
     safe_call,
 )
+from tmt.utils.environment import Environment
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
@@ -493,7 +494,7 @@ class AvcDenials(CheckPlugin[AvcCheck]):
         *,
         check: 'AvcCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if invocation.guest.facts.has_selinux:
@@ -507,7 +508,7 @@ class AvcDenials(CheckPlugin[AvcCheck]):
         *,
         check: 'AvcCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_selinux:

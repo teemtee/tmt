@@ -29,6 +29,7 @@ from tmt.utils import (
     Path,
     ShellScript,
 )
+from tmt.utils.environment import Environment
 
 T = TypeVar('T', bound='TestDescription')
 
@@ -143,11 +144,11 @@ class TestDescription(
             for recommend in serialized_recommends
         ],
     )
-    environment: tmt.utils.Environment = field(
-        default_factory=tmt.utils.Environment,
-        normalize=tmt.utils.Environment.normalize,
+    environment: Environment = field(
+        default_factory=Environment,
+        normalize=Environment.normalize,
         serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
         exporter=lambda environment: environment.to_fmf_spec(),
     )
     check: list[tmt.checks.Check] = field(

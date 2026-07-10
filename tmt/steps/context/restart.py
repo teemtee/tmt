@@ -4,7 +4,7 @@ import tmt.log
 import tmt.utils
 from tmt.container import container
 from tmt.guest import Guest
-from tmt.utils import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
 
 if TYPE_CHECKING:
     from tmt.steps.context.reboot import RebootContext

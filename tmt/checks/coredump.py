@@ -9,6 +9,7 @@ from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Command, Path, ShellScript
+from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
     from tmt.guest import Guest
@@ -530,7 +531,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
         *,
         check: "CoredumpCheck",
         invocation: "TestInvocation",
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         """Check for crashes before the test starts."""
@@ -568,7 +569,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
         *,
         check: "CoredumpCheck",
         invocation: "TestInvocation",
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         """Check for crashes after the test finishes."""

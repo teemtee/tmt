@@ -13,7 +13,8 @@ import tmt.utils.git
 from tmt.container import container, field
 from tmt.guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.steps import safe_filename
-from tmt.utils import Command, EnvVarValue, ShellScript, Stopwatch
+from tmt.utils import Command, ShellScript, Stopwatch
+from tmt.utils.environment import Environment, EnvVarValue
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
@@ -120,7 +121,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """
@@ -143,7 +144,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             phase=self, guest=guest, logger=logger
         )
 
-        environment = environment or tmt.utils.Environment()
+        environment = environment or Environment()
         environment.update(
             guest.environment,
             guest.plan_environment,
@@ -238,7 +239,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         def _invoke_script(
             command: ShellScript,
-            environment: tmt.utils.Environment,
+            environment: Environment,
         ) -> Optional[tmt.utils.CommandOutput]:
             guest.push(source=self.phase_workdir)
 

@@ -16,7 +16,8 @@ from tmt.log import Logger
 from tmt.result import ResultInterpret
 from tmt.steps import STEPS, Step, _RawStepData
 from tmt.steps.discover import Discover, TestOrigin
-from tmt.utils import Common, Environment, FmfContext, NormalizeKeysMixin, Path, ShellScript
+from tmt.utils import Common, FmfContext, NormalizeKeysMixin, Path, ShellScript
+from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
     from tmt.base.core import (

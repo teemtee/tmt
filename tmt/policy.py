@@ -8,6 +8,7 @@ from tmt._compat.pydantic import ValidationError
 from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_field
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
+from tmt.utils.environment import Environment
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -122,7 +123,7 @@ class Instruction(MetadataContainer):
 
         if isinstance(
             current_value,
-            (float, int, bool, str, list, dict, ShellScript, tmt.utils.Environment),
+            (float, int, bool, str, list, dict, ShellScript, Environment),
         ):
             current_value = set_key(
                 key,

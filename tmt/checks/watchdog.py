@@ -16,6 +16,7 @@ from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Path, format_timestamp, render_run_exception_streams
+from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
@@ -443,7 +444,7 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
         *,
         check: WatchdogCheck,
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         # Setup a logger
@@ -502,7 +503,7 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
         *,
         check: WatchdogCheck,
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         watchdog_logger = logger.clone()

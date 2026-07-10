@@ -8,6 +8,7 @@ from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Path, ShellScript, Stopwatch
+from tmt.utils.environment import Environment
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
@@ -301,7 +302,7 @@ class Journal(CheckPlugin[JournalCheck]):
         *,
         check: 'JournalCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_systemd:
@@ -323,7 +324,7 @@ class Journal(CheckPlugin[JournalCheck]):
         *,
         check: 'JournalCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_systemd:

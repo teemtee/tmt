@@ -10,7 +10,8 @@ import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
 from tmt.guest import TransferOptions
 from tmt.result import ResultOutcome, save_failures
-from tmt.utils import Environment, EnvVarValue, GeneralError, Path
+from tmt.utils import GeneralError, Path
+from tmt.utils.environment import Environment, EnvVarValue
 
 if TYPE_CHECKING:
     from tmt.base.core import DependencySimple, Test
@@ -74,7 +75,7 @@ class Beakerlib(TestFramework):
     @classmethod
     def get_environment_variables(
         cls, invocation: 'TestInvocation', logger: tmt.log.Logger
-    ) -> tmt.utils.Environment:
+    ) -> Environment:
         # The beakerlib calls the command in this variable in the following way:
         # $BEAKERLIB_COMMAND_REPORT_RESULT "$testname" "$result" "$logfile" "$score"
         # - https://github.com/beakerlib/beakerlib/blob/5a85937f557b735f32996eb55cd6b9a33f3fe653/src/testing.sh#L1076

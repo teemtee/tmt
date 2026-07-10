@@ -8,10 +8,10 @@ import tmt
 import tmt.guest
 import tmt.queue
 import tmt.steps
-import tmt.utils
 from tmt.log import Logger
 from tmt.steps import Phase
 from tmt.utils import GeneralError
+from tmt.utils.environment import Environment
 
 
 class TestPhaseAssertFeelingSafe:
@@ -77,7 +77,7 @@ def fixture_mocked_queue(
             self,
             *,
             guest: tmt.guest.Guest,
-            environment: Optional[tmt.utils.Environment] = None,
+            environment: Optional[Environment] = None,
             logger: Logger,
         ) -> None:
             pass

@@ -7,6 +7,7 @@ from tmt.checks.internal import InternalCheck
 from tmt.container import container
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.execute import TestInvocation
+from tmt.utils.environment import Environment
 
 CHECK_NAME = 'internal/guest'
 
@@ -40,7 +41,7 @@ class GuestFailures(CheckPlugin[GuestCheck]):
         *,
         check: 'GuestCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if any(isinstance(exc, tmt.utils.RebootTimeoutError) for exc in invocation.exceptions):

@@ -25,7 +25,8 @@ from tmt.steps.prepare.verify_installation import (
     PrepareVerifyInstallation,  # pyright: ignore[reportUnknownVariableType]
     PrepareVerifyInstallationData,
 )
-from tmt.utils import Environment, Path
+from tmt.utils import Path
+from tmt.utils.environment import Environment
 
 
 @container

@@ -3,9 +3,9 @@ from typing import Optional
 import tmt.log
 import tmt.steps
 import tmt.steps.cleanup
-import tmt.utils
 from tmt.container import container
 from tmt.guest import Guest
+from tmt.utils.environment import Environment
 
 
 @container
@@ -26,7 +26,7 @@ class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """

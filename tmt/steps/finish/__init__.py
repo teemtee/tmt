@@ -17,6 +17,7 @@ from tmt.steps import (
     PullTask,
     sync_with_guests,
 )
+from tmt.utils.environment import Environment
 
 
 @container
@@ -43,7 +44,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, PluginOutcome]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> PluginOutcome:
         self.go_prolog(logger)

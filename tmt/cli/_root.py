@@ -35,6 +35,7 @@ import tmt.utils.jira
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, GeneralError, Path, effective_workdir_root
+from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
     import tmt.steps.cleanup
@@ -1999,7 +2000,7 @@ def setup_completion(shell: str, install: bool, context: Context, logger: tmt.lo
     completions = (
         Command('tmt')
         .run(
-            environment=tmt.utils.Environment.from_dict(env_var),
+            environment=Environment.from_dict(env_var),
             cwd=None,
             logger=context.obj.logger,
         )

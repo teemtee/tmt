@@ -60,8 +60,6 @@ from tmt.package_managers import (
 )
 from tmt.utils import (
     Command,
-    Environment,
-    EnvVarValue,
     GeneralError,
     OnProcessEndCallback,
     OnProcessStartCallback,
@@ -71,6 +69,7 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
+from tmt.utils.environment import Environment, EnvVarValue
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
 
@@ -1350,11 +1349,11 @@ class GuestData(
         unserialize=lambda serialized: GuestFacts.from_serialized(serialized),
     )
 
-    environment: tmt.utils.Environment = field(
-        default_factory=tmt.utils.Environment,
-        normalize=tmt.utils.Environment.normalize,
+    environment: Environment = field(
+        default_factory=Environment,
+        normalize=Environment.normalize,
         serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
         exporter=lambda environment: environment.to_fmf_spec(),
         help="""
             Environment variables to be defined for this guest. These will be available
@@ -1679,7 +1678,7 @@ class CommandCollector(abc.ABC):
         *,
         sourced_files: Optional[list[Path]] = None,
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
     ) -> None:
         """
         Collect a command for later batch execution.
@@ -1765,7 +1764,7 @@ class Guest(
 
     hardware: Optional[tmt.hardware.Hardware]
 
-    environment: tmt.utils.Environment
+    environment: Environment
 
     ansible: Optional[GuestAnsible]
 
@@ -1926,7 +1925,7 @@ class Guest(
             and self.plan_environment_path.exists()
             and self.plan_environment_path.stat().st_size > 0
         ):
-            return tmt.utils.Environment.from_file(
+            return Environment.from_file(
                 filename=self.plan_environment_path.name,
                 root=self.plan_environment_path.parent,
                 logger=self._logger,
@@ -2241,8 +2240,8 @@ class Guest(
     # go away while works on https://github.com/teemtee/tmt/pull/4364
     # continue.
     def _prepare_command_environment(
-        self, environment: Optional[tmt.utils.Environment] = None
-    ) -> tmt.utils.Environment:
+        self, environment: Optional[Environment] = None
+    ) -> Environment:
         """
         Prepare meaningful environment for a command.
 
@@ -2253,7 +2252,7 @@ class Guest(
         """
 
         if environment is None:
-            environment = tmt.utils.Environment()
+            environment = Environment()
 
             environment.update(self.environment)
 
@@ -2280,7 +2279,7 @@ class Guest(
         friendly_command: Optional[str] = None,
         silent: bool = False,
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         interactive: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
         **kwargs: Any,
@@ -2411,7 +2410,7 @@ class Guest(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[True] = True,
@@ -2431,7 +2430,7 @@ class Guest(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[False] = False,
@@ -2451,7 +2450,7 @@ class Guest(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,
@@ -3007,7 +3006,7 @@ class GuestSsh(Guest, CommandCollector):
         *,
         sourced_files: Optional[list[Path]] = None,
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
     ) -> None:
         """
         Collect a command for image mode container build.
@@ -3466,7 +3465,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[True] = True,
@@ -3486,7 +3485,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[False] = False,
@@ -3505,7 +3504,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,

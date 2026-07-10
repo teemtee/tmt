@@ -15,12 +15,12 @@ from tmt.guest import RebootMode, TransferOptions
 from tmt.steps import Step
 from tmt.utils import (
     Command,
-    EnvVarValue,
     OnProcessEndCallback,
     OnProcessStartCallback,
     Path,
     ShellScript,
 )
+from tmt.utils.environment import Environment, EnvVarValue
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
@@ -65,10 +65,10 @@ class GuestLocal(tmt.Guest):
     # the environment with the tmt process environment, since the guest
     # is the same as the runner.
     def _prepare_command_environment(
-        self, environment: Optional[tmt.utils.Environment] = None
-    ) -> tmt.utils.Environment:
+        self, environment: Optional[Environment] = None
+    ) -> Environment:
         if environment is None:
-            environment = tmt.utils.Environment.from_environ()
+            environment = Environment.from_environ()
 
             environment.update(self.environment)
 
@@ -149,7 +149,7 @@ class GuestLocal(tmt.Guest):
         self,
         command: Union[Command, ShellScript],
         cwd: Optional[Path] = None,
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,

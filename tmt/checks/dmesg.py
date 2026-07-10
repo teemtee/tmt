@@ -11,6 +11,7 @@ from tmt.container import container, field
 from tmt.guest import GuestCapability
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Path, Stopwatch
+from tmt.utils.environment import Environment
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
@@ -211,7 +212,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         *,
         check: 'DmesgCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
@@ -232,7 +233,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         *,
         check: 'DmesgCheck',
         invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):

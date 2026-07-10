@@ -4,7 +4,6 @@ import fmf.utils
 
 import tmt.log
 import tmt.steps
-import tmt.utils
 from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
@@ -18,6 +17,7 @@ from tmt.steps import (
     sync_with_guests,
 )
 from tmt.utils import uniq
+from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
     import tmt.base.core
@@ -53,7 +53,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, PluginOutcome]):
         self,
         *,
         guest: 'tmt.guest.Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> PluginOutcome:
         """

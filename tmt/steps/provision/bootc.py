@@ -14,6 +14,7 @@ from tmt.container import container, field
 from tmt.package_managers.bootc import LOCALHOST_BOOTC_IMAGE_PREFIX
 from tmt.steps.provision.testcloud import GuestTestcloud
 from tmt.utils import Path
+from tmt.utils.environment import Environment
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -25,9 +26,7 @@ DEFAULT_IMAGE_BUILDER = "quay.io/centos-bootc/bootc-image-builder:latest"
 CONTAINER_STORAGE_DIR = tmt.utils.Path("/var/lib/containers/storage")
 
 PODMAN_MACHINE_NAME = 'podman-machine-tmt'
-PODMAN_ENV = tmt.utils.Environment.from_dict(
-    {"CONTAINER_CONNECTION": f'{PODMAN_MACHINE_NAME}-root'}
-)
+PODMAN_ENV = Environment.from_dict({"CONTAINER_CONNECTION": f'{PODMAN_MACHINE_NAME}-root'})
 
 DEFAULT_PODMAN_MACHINE_CPU = 2
 DEFAULT_PODMAN_MACHINE_MEM: 'Size' = tmt.hardware.UNITS('2048 MB')

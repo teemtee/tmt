@@ -83,7 +83,8 @@ import tmt.steps
 from tmt.container import container
 from tmt.guest import Guest, TransferOptions
 from tmt.steps import safe_filename
-from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
+from tmt.utils import Path, ShellScript
+from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
 from tmt.utils.templates import render_template
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'

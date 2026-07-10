@@ -64,7 +64,6 @@ from tmt.container import (
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import ResultInterpret
 from tmt.utils import (
-    Environment,
     FmfContext,
     Path,
     ShellScript,
@@ -72,6 +71,7 @@ from tmt.utils import (
     to_yaml,
     verdict,
 )
+from tmt.utils.environment import Environment
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
@@ -1198,11 +1198,11 @@ class Test(
         normalize=normalize_require,
         exporter=lambda value: [dependency.to_minimal_spec() for dependency in value],
     )
-    environment: tmt.utils.Environment = field(
-        default_factory=tmt.utils.Environment,
-        normalize=tmt.utils.Environment.normalize,
+    environment: Environment = field(
+        default_factory=Environment,
+        normalize=Environment.normalize,
         serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
         exporter=lambda environment: environment.to_fmf_spec(),
     )
 

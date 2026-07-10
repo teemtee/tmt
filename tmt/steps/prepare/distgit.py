@@ -11,6 +11,7 @@ from tmt.package_managers import Package
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
 from tmt.utils import Command, Path, ShellScript, uniq
+from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
     import tmt.base.core
@@ -184,7 +185,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[tmt.utils.Environment] = None,
+        environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """
@@ -196,7 +197,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
         if self.is_dry_run:
             return outcome
 
-        environment = environment or tmt.utils.Environment()
+        environment = environment or Environment()
 
         # Packages required for this plugin to work and additional required packages
         explicit_requires = [Package(p) for p in self.get('require', [])] + [Package('rpm-build')]
