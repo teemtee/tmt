@@ -24,17 +24,6 @@ rlJournalStart
             continue
         fi
 
-        if is_centos_stream_9 "$image" || is_centos_stream_10 "$image"; then
-            # TODO(#4941):
-            # dnf repoquery fails
-            # - Error: 'Package' object has no attribute 'full_nevra'
-            # - Or gives an output of
-            #   'bar':
-            #    - nevra: '%{full_nevra}'
-            #      repo_id: 'tmt-artifact-shared'
-            continue
-        fi
-
         phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Test repository-file provider"

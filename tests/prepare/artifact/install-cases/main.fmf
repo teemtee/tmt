@@ -4,7 +4,8 @@ discover:
       - /test
 prepare:
   - name: Setup system
-    order: 20
+    # Just after essential requires, otherwise we hit https://github.com/teemtee/tmt/issues/5044
+    order: 31
     how: shell
     script: |
       # Prepare the system repo

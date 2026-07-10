@@ -3,7 +3,8 @@ discover:
 prepare:
   - name: Sanity checks before artifact repo setup
     how: shell
-    order: 20
+    # Just after essential requires, otherwise we hit https://github.com/teemtee/tmt/issues/5044
+    order: 31
     script: ./pre_artifact_check.sh
   - name: Main artifact to test
     how: artifact
