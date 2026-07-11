@@ -84,6 +84,9 @@ T = TypeVar('T')
 #: Name of the :ref:`plan environment file <step-variables>`.
 PLAN_ENVIRONMENT_FILENAME = 'variables.env'
 
+#: Name of the :ref:`plan source script <step-variables>`.
+PLAN_SOURCE_SCRIPT_FILENAME: str = "plan-source-script.sh"
+
 #: How many seconds to wait for a connection to succeed after guest boot.
 #: This is the default value tmt would use unless told otherwise.
 DEFAULT_CONNECT_TIMEOUT = 2 * 60
@@ -1914,6 +1917,22 @@ class Guest(
 
         return path
 
+    @functools.cached_property
+    def plan_source_script_path(self) -> Optional[Path]:
+        """
+        A path to the :ref:`plan source script <step-variables>` file.
+        """
+
+        if not isinstance(self.parent, tmt.steps.provision.Provision):
+            return None
+
+        path = self.parent.plan.data_directory / f'{PLAN_SOURCE_SCRIPT_FILENAME}-{self.safe_name}'
+        path.touch(exist_ok=True)
+
+        self.debug(f"Create the plan source script  '{path}'.", level=2)
+
+        return path
+
     @property
     def plan_environment(self) -> Environment:
         """
@@ -2259,12 +2278,15 @@ class Guest(
             if isinstance(self.parent, tmt.steps.Step):
                 environment.update(self.parent.plan)
 
-            # TODO: this was owned by plan, but at wrong position, and it will
-            # be owned by plan again once the dust of environment untangling
-            # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
-            # more.
+            # TODO: these are owned by plan, but at wrong position, and
+            # they will be owned by plan again once the dust of environment
+            # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
+            # for more.
             if self.plan_environment_path:
                 environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+
+            if self.plan_source_script_path:
+                environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
 
         else:
             # Create a copy of given environment - this prevents any
