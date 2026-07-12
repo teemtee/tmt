@@ -1939,7 +1939,8 @@ class Guest(
     def intrinsic_environment(self) -> Environment:
         environment = Environment()
 
-        environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+        if self.plan_environment_path is not None:
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
 
         return environment
 
