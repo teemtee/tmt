@@ -336,7 +336,11 @@ class Plan(
                 self._initialize_worktree()
 
         # Expand all environment and context variables in the node
-        with self.environment.as_environ():
+        environment = Environment()
+
+        environment.update(self.environment, self.intrinsic_environment)
+
+        with environment.as_environ():
             expand_node_data(node.data, self.fmf_context)  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
 
         # Initialize test steps
