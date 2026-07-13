@@ -1,7 +1,7 @@
 description: |
-    The :tmt:story:`disk </spec/hardware/disk>` can no longer
-    be written as a dictionary. This has been a legacy syntax that is
-    not used by real-life users anymore.
+    The :tmt:story:`disk hardware requirement </spec/hardware/disk>` can
+    no longer be written as a dictionary. This has been a legacy syntax
+    that is not used by real-life users anymore.
 
     .. code-block:: yaml
 
