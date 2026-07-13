@@ -1,0 +1,62 @@
+# In general, we need variables that are defined by multiple sources,
+# and we observe who overwrites who. We also need variables that stay
+# not overwritten, so we could verify all sources contributed.
+#
+# VAR1: claimed by `test[].environment`
+# VAR2: claimed by `plan.environment-file` key
+# VAR3: claimed by `plan.environment` key
+# VAR4: claimed by `provision[].environment` key
+# VAR5: claimed by plan environment file
+# VAR6: claimed by `tmt run --environment-file` CLI option
+# VAR7: claimed by `tmt run --environment` CLI option
+
+/test:
+    test: LINE_PREFIX=execute.0 ./dump-envvars.sh
+
+    environment:
+        VAR1: test.environment
+        VAR2: test.environment
+        VAR3: test.environment
+        VAR4: test.environment
+        VAR5: test.environment
+        VAR6: test.environment
+        VAR7: test.environment
+
+/plan:
+    environment:
+      VAR3: plan.environment
+      VAR4: plan.environment
+      VAR5: plan.environment
+      VAR6: plan.environment
+      VAR7: plan.environment
+
+    environment-file:
+        - plan-environment.env
+
+    discover:
+        how: fmf
+
+    provision:
+        how: local
+        environment:
+            VAR4: provision.environment
+            VAR5: provision.environment
+            VAR6: provision.environment
+            VAR7: provision.environment
+
+    prepare:
+        - how: shell
+          script: LINE_PREFIX=prepare.0 ./dump-envvars.sh
+
+        - how: shell
+          script: ./populate-plan-environment-file.sh
+
+        - how: shell
+        - script: LINE_PREFIX=prepare.2 ./dump-envvars.sh
+
+    execute:
+        how: tmt
+
+    finish:
+        how: shell
+        script: LINE_PREFIX=finish.0 ./dump-envvars.sh
