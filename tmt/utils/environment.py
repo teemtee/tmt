@@ -42,6 +42,12 @@ from tmt._compat.typing import Self
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
+    from tmt.base.core import Test
+    from tmt.base.plan import Plan
+    from tmt.base.run import Run
+    from tmt.guest import Guest
+    from tmt.steps.context import StepContext
+    from tmt.steps.execute import TestInvocation
     from tmt.utils import FmfContext, ShellScript
 
 
@@ -634,3 +640,128 @@ class Environment(dict[str, EnvVarValue]):
         finally:
             os.environ.clear()
             os.environ.update(environ_backup)
+
+    @classmethod
+    def _build_environment(
+        cls,
+        *,
+        base_environment: Optional[Self] = None,
+        test: Optional['Test'] = None,
+        plan: Optional['Plan'] = None,
+        run: Optional['Run'] = None,
+        guest: Optional['Guest'] = None,
+        test_invocation: Optional['TestInvocation'] = None,
+        step_contexts: Optional[Sequence['StepContext']] = None,
+        intrinsic_only: bool = False,
+        logger: tmt.log.Logger,
+    ) -> Self:
+        """
+        Build environment from various sources, in the correct order.
+
+        :param base_environment: if set, add variables to this
+            environment. Otherwise, new empty one is used.
+        :param intrinsic_only: add intrinsic environment variables only,
+            user-owned variables would not be included.
+        """
+
+        base_environment = base_environment or cls()
+
+        # 1. test[].environment
+        if not intrinsic_only and test is not None:
+            base_environment.update(test.environment)
+
+        # 2. plan.environment-file
+        # 3. plan.environment
+        # 4. importing plan "native" environment
+        if not intrinsic_only and plan is not None:
+            base_environment.update(plan.environment)
+
+        # 5. provision[].environment
+        if not intrinsic_only and guest is not None:
+            base_environment.update(guest.environment)
+
+        # 6. $TMT_PLAN_ENVIRONMENT_FILE
+        if not intrinsic_only and guest is not None:
+            base_environment.update(guest.plan_environment)
+
+        # 7. command-line input
+        # 7.1 `tmt run`
+        if not intrinsic_only and run is not None:
+            base_environment.update(run.environment)
+
+        # 7.2 `tmt * export` - TODO
+        # 7.3 `tmt try` - TODO
+
+        # 8. intrinsic variables
+        if test is not None and test_invocation is not None:
+            base_environment.update(
+                test.test_framework.get_environment_variables(test_invocation, logger)
+            )
+
+        if plan is not None:
+            base_environment.update(plan.intrinsic_environment)
+
+        if guest is not None:
+            base_environment.update(guest.intrinsic_environment)
+
+        if test_invocation is not None:
+            base_environment.update(test_invocation.intrinsic_environment)
+
+        for context in step_contexts or []:
+            base_environment.update(context.intrinsic_environment)
+
+        return base_environment
+
+    @classmethod
+    def build_environment(
+        cls,
+        *,
+        test: Optional['Test'] = None,
+        plan: Optional['Plan'] = None,
+        run: Optional['Run'] = None,
+        guest: Optional['Guest'] = None,
+        test_invocation: Optional['TestInvocation'] = None,
+        step_contexts: Optional[Sequence['StepContext']] = None,
+        logger: tmt.log.Logger,
+    ) -> Self:
+        """
+        Build environment from various sources, in the correct order.
+        """
+
+        return cls._build_environment(
+            test=test,
+            plan=plan,
+            run=run,
+            guest=guest,
+            test_invocation=test_invocation,
+            step_contexts=step_contexts,
+            intrinsic_only=False,
+            logger=logger,
+        )
+
+    def refresh_intrinsics(
+        self,
+        *,
+        test: Optional['Test'] = None,
+        plan: Optional['Plan'] = None,
+        run: Optional['Run'] = None,
+        guest: Optional['Guest'] = None,
+        test_invocation: Optional['TestInvocation'] = None,
+        step_contexts: Optional[Sequence['StepContext']] = None,
+        logger: tmt.log.Logger,
+    ) -> Self:
+        """
+        Refresh intrinsic variables from various sources.
+        """
+
+        return self._build_environment(
+            base_environment=self,
+            test=test,
+            plan=plan,
+            run=run,
+            guest=guest,
+            test_invocation=test_invocation,
+            step_contexts=step_contexts,
+            intrinsic_only=True,
+            logger=logger,
+        )

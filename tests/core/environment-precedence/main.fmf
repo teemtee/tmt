@@ -1,0 +1,4 @@
+summary: Verify environment variable precedence
+description: |
+    Verify whether various sources of environment variables are correctly
+    incorporated into the final environment.

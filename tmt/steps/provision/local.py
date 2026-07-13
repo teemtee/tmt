@@ -70,20 +70,18 @@ class GuestLocal(tmt.Guest):
         if environment is None:
             environment = Environment.from_environ()
 
-            environment.update(self.environment)
+            environment.update(
+                Environment.build_environment(
+                    plan=self.parent.plan if self.parent else None,
+                    run=self.parent.plan.my_run if self.parent else None,
+                    guest=self,
+                    logger=self._logger,
+                )
+            )
 
-            if isinstance(self.parent, tmt.steps.Step):
-                environment.update(self.parent.plan.environment)
+            return environment
 
-            environment.update(self.intrinsic_environment)
-
-            if isinstance(self.parent, tmt.steps.Step):
-                environment.update(self.parent.plan.intrinsic_environment)
-
-        else:
-            environment = super()._prepare_command_environment(environment=environment)
-
-        return environment
+        return super()._prepare_command_environment(environment=environment)
 
     def _run_ansible(
         self,
