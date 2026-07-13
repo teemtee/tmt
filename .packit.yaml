@@ -50,7 +50,8 @@ _:
   - &copr-under-packit
     job: copr_build
     additional_repos:
-      - copr://@teemtee/stable
+      - copr://@teemtee/latest
+      - copr://@teemtee/_temp_dependencies
 
   # Copr jobs under the teemtee project
   - &copr-under-teemtee
@@ -58,6 +59,8 @@ _:
     list_on_homepage: true
     preserve_project: true
     owner: "@teemtee"
+    additional_repos:
+      - copr://@teemtee/_temp_dependencies
 
   # Test jobs base setup
   - &test-base
