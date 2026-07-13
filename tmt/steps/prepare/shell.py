@@ -144,11 +144,11 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             phase=self, guest=guest, logger=logger
         )
 
-        environment = environment or Environment()
-        environment.update(
-            guest.environment,
-            guest.plan_environment,
-            self.step.plan.environment,
+        environment = Environment.build_environment(
+            plan=self.step.plan,
+            run=self.step.plan.my_run,
+            guest=guest,
+            logger=logger,
         )
 
         # Give a short summary
@@ -261,12 +261,12 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             script_log_filepath.parent.mkdir(parents=True, exist_ok=True)
             script_log_filepath.touch()
 
-            script_environment = environment.copy()
-            script_environment.update(
-                self.step.plan.intrinsic_environment,
-                guest.intrinsic_environment,
-                reboot_context.intrinsic_environment,
-                pidfile_context.intrinsic_environment,
+            script_environment = environment.copy().refresh_intrinsics(
+                plan=self.step.plan,
+                run=self.step.plan.my_run,
+                guest=guest,
+                step_contexts=(reboot_context, pidfile_context),
+                logger=logger,
             )
 
             pull_options = DEFAULT_PULL_OPTIONS.copy()

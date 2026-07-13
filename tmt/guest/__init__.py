@@ -2263,17 +2263,12 @@ class Guest(
         """
 
         if environment is None:
-            environment = Environment()
-
-            environment.update(self.environment)
-
-            if isinstance(self.parent, tmt.steps.Step):
-                environment.update(self.parent.plan.environment)
-
-            environment.update(self.intrinsic_environment)
-
-            if isinstance(self.parent, tmt.steps.Step):
-                environment.update(self.parent.plan.intrinsic_environment)
+            environment = Environment.build_environment(
+                plan=self.parent.plan if isinstance(self.parent, tmt.steps.Step) else None,
+                run=self.parent.plan.my_run if isinstance(self.parent, tmt.steps.Step) else None,
+                guest=self,
+                logger=self._logger,
+            )
 
         else:
             # Create a copy of given environment - this prevents any
