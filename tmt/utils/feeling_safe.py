@@ -86,7 +86,6 @@ UNSAFE_SSH_OPTIONS_UNSAFE_BEHAVIOR = UnsafeBehavior(
     name='provision.unsafe-ssh-options', label='unsafe SSH option'
 )
 
-
 # TODO: move to `provision/connect`
 #: When enabled, allows keys defining custom reboot commands the plugin
 #: runs on the runner.

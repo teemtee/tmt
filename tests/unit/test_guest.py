@@ -4,9 +4,11 @@ from typing import Any, Optional, Union
 from unittest.mock import MagicMock, Mock
 
 import _pytest.logging
+import _pytest.monkeypatch
 import pytest
 from pytest_container.container import ContainerData
 
+import tmt.utils.feeling_safe
 from tmt.guest import (
     AnsibleApplicable,
     Guest,
@@ -368,7 +370,7 @@ class TestPodmanNetworkSetup:
     ],
 )
 def test_unsafe_ssh_option_case_and_separator(
-    root_logger: Logger, option: str, monkeypatch: Any
+    root_logger: Logger, option: str, monkeypatch: _pytest.monkeypatch.MonkeyPatch
 ) -> None:
     """Unsafe option check is case-insensitive and handles both '=' and space separators."""
     step = Provision(
@@ -380,7 +382,8 @@ def test_unsafe_ssh_option_case_and_separator(
         name='foo',
         data=GuestSshData(primary_address='bar', ssh_option=[option]),
     )
-    monkeypatch.setattr(type(guest), 'is_feeling_safe', property(lambda _: False))
+
+    monkeypatch.setattr(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIOR', set())
 
     with pytest.raises(GeneralError, match='--feeling-safe'):
         _ = guest._ssh_options
