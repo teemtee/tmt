@@ -48,7 +48,7 @@ from tmt.utils import (
     Stopwatch,
     configure_bool_constant,
 )
-from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import Environment, EnvVar, EnvVarValue, HasEnvironment
 
 if TYPE_CHECKING:
     import tmt.base.plan
@@ -80,105 +80,113 @@ SUBMITTED_FILES_FILENAME = "submitted-files.log"
 # Environment variables
 #
 
-ENV_TMT_TEST_NAME = EnvVar(
-    name='TMT_TEST_NAME',
-    scope=EnvVar.Scope.TEST,
-    doc="""
-         The test name, as a resolved FMF object name starting with
-         ``/`` from the root of the hierarchy.
-         """,
-)
 
-ENV_TMT_TEST_INVOCATION_PATH = EnvVar(
-    name='TMT_TEST_INVOCATION_PATH',
-    scope=EnvVar.Scope.TEST,
-    doc="""
-         Path to the directory where tmt stores information about the
-         current test invocation.
-         """,
-)
+class ENV_TMT_TEST_NAME(EnvVar):  # noqa: N801
+    """
+    The test name, as a resolved FMF object name starting with
+    ``/`` from the root of the hierarchy.
+    """
 
-ENV_TMT_TEST_DATA = EnvVar(
-    name='TMT_TEST_DATA',
-    scope=EnvVar.Scope.TEST,
-    doc="""
-         Path to the directory where test can store logs and other
-         artifacts generated during its execution. These will be pulled
-         back from the guest and available for inspection after the
-         test execution is finished.
-         """,
-)
+    name = 'TMT_TEST_NAME'
+    scope = EnvVar.Scope.TEST
 
-ENV_TMT_TEST_SUBMITTED_FILES = EnvVar(
-    name='TMT_TEST_SUBMITTED_FILES',
-    scope=EnvVar.Scope.TEST,
-)
 
-ENV_TMT_TEST_SERIAL_NUMBER = EnvVar(
-    name='TMT_TEST_SERIAL_NUMBER',
-    scope=EnvVar.Scope.TEST,
-    doc="""
-         The serial number of running test in the whole plan. Each test
-         is assigned its own serial number.
-         """,
-)
+class ENV_TMT_TEST_INVOCATION_PATH(EnvVar):  # noqa: N801
+    """
+    Path to the directory where tmt stores information about the
+    current test invocation.
+    """
 
-ENV_TMT_TEST_METADATA = EnvVar(
-    name='TMT_TEST_METADATA',
-    scope=EnvVar.Scope.TEST,
-    doc="""
-         Path to a YAML-formatted file with test metadata collected
-         during the ``discover`` step.
-         """,
-)
+    name = 'TMT_TEST_INVOCATION_PATH'
+    scope = EnvVar.Scope.TEST
 
-ENV_TMT_TEST_ITERATION_ID = EnvVar(
-    name='TMT_TEST_ITERATION_ID',
-    scope=EnvVar.Scope.TEST,
-    doc="""
-         The iteration ID is a combination of a unique run ID and the
-         test serial number. The value is different for each new test
-         execution.
 
-         .. versionadded:: 1.32
-         """,
-)
+class ENV_TMT_TEST_DATA(EnvVar):  # noqa: N801
+    """
+    Path to the directory where test can store logs and other
+    artifacts generated during its execution. These will be pulled
+    back from the guest and available for inspection after the
+    test execution is finished.
+    """
 
-ENV_TMT_SOURCE_DIR = EnvVar(
-    name='TMT_SOURCE_DIR',
-    scope=EnvVar.Scope.TEST,
-    doc="""
-         Path to directory with downloaded and extracted sources if the
-         ``dist-git-source`` option was used in the ``discover`` step.
-         """,
-)
+    name = 'TMT_TEST_DATA'
+    scope = EnvVar.Scope.TEST
 
-ENV_TMT_PLAN_ENVIRONMENT_FILE = EnvVar(
-    name='TMT_PLAN_ENVIRONMENT_FILE',
-    scope=EnvVar.Scope.PREPARE | EnvVar.Scope.EXECUTE | EnvVar.Scope.FINISH | EnvVar.Scope.TEST,
-    doc="""
-         Path to the file containing environment variables that should
-         be sourced after prepare and execute steps. These variables
-         will be accessible for all subsequent steps and have lower
-         priority than variables specified by the ``environment`` key,
-         ``environment-file`` key, or the command line. Variables inside
-         the file **have to be** in the format of ``NAME=VALUE`` and
-         each variable should be on a separate line. Other content form
-         is **not** allowed, use ``TMT_PLAN_SOURCE_SCRIPT`` instead to
-         include other bash commands.
 
-         Note that this is not shared between guests of the given plan,
-         each guest has its own dedicated file.
+class ENV_TMT_TEST_SUBMITTED_FILES(EnvVar):  # noqa: N801
+    name = 'TMT_TEST_SUBMITTED_FILES'
+    scope = EnvVar.Scope.TEST
 
-         Example of the file content::
 
-             COUNT=1
-             VARIABLE=VALUE
-             ANOTHER_VARIABLE=ANOTHER_VALUE
+class ENV_TMT_TEST_SERIAL_NUMBER(EnvVar):  # noqa: N801
+    """
+    The serial number of running test in the whole plan. Each test
+    is assigned its own serial number.
+    """
 
-         .. versionadded:: 1.29
-         """,
-)
+    name = 'TMT_TEST_SERIAL_NUMBER'
+    scope = EnvVar.Scope.TEST
+
+
+class ENV_TMT_TEST_METADATA(EnvVar):  # noqa: N801
+    """
+    Path to a YAML-formatted file with test metadata collected
+    during the ``discover`` step.
+    """
+
+    name = 'TMT_TEST_METADATA'
+    scope = EnvVar.Scope.TEST
+
+
+class ENV_TMT_TEST_ITERATION_ID(EnvVar):  # noqa: N801
+    """
+    The iteration ID is a combination of a unique run ID and the
+    test serial number. The value is different for each new test
+    execution.
+
+    .. versionadded:: 1.32
+    """
+
+    name = 'TMT_TEST_ITERATION_ID'
+    scope = EnvVar.Scope.TEST
+
+
+class ENV_TMT_SOURCE_DIR(EnvVar):  # noqa: N801
+    """
+    Path to directory with downloaded and extracted sources if the
+    ``dist-git-source`` option was used in the ``discover`` step.
+    """
+
+    name = 'TMT_SOURCE_DIR'
+    scope = EnvVar.Scope.TEST
+
+
+class ENV_TMT_PLAN_ENVIRONMENT_FILE(EnvVar):  # noqa: N801
+    """
+    Path to the file containing environment variables that should
+    be sourced after prepare and execute steps. These variables
+    will be accessible for all subsequent steps and have lower
+    priority than variables specified by the ``environment`` key,
+    ``environment-file`` key, or the command line. Variables inside
+    the file **have to be** in the format of ``NAME=VALUE`` and
+    each variable should be on a separate line. Other content form
+    is **not** allowed, use ``TMT_PLAN_SOURCE_SCRIPT`` instead to
+    include other bash commands.
+
+    Note that this is not shared between guests of the given plan,
+    each guest has its own dedicated file.
+
+    Example of the file content::
+
+        COUNT=1
+        VARIABLE=VALUE
+        ANOTHER_VARIABLE=ANOTHER_VALUE
+
+    .. versionadded:: 1.29
+    """
+
+    name = 'TMT_PLAN_ENVIRONMENT_FILE'
+    scope = EnvVar.Scope.PREPARE | EnvVar.Scope.EXECUTE | EnvVar.Scope.FINISH | EnvVar.Scope.TEST
 
 
 @container
