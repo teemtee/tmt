@@ -69,7 +69,20 @@ rlJournalStart
         rlAssertGrep "fail P001 unknown key \"summaryABCDEF\" is used" $rlRun_LOG
 
         rlRun -s "$tmt plan lint invalid-plugin-key" 0
-        rlAssertGrep 'warn C000 key "wrong" not recognized by schema$' $rlRun_LOG
+
+        # Make sure the noise is not there.
+        rlAssertNotGrep 'warn C000 key "wrong" not recognized by schema$' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 value of "how" is not "ansible"' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/errata' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 value of "how" is not "errata"' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/install' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 value of "how" is not "install"' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 value of "how" is not "shell"' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 key "name" not recognized by schema /schemas/prepare/artifact' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/artifact' $rlRun_LOG
+        rlAssertNotGrep 'warn C000 value of "how" is not "artifact"' $rlRun_LOG
+
+        # this is the relevant warning
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/feature' $rlRun_LOG
 
         rlRun -s "$tmt plan lint empty_env_file" 1
@@ -97,8 +110,17 @@ rlJournalStart
 
     rlPhaseStartTest "Lint of missing required property"
         rlRun -s "$tmt plan lint missing_required" 0
-        rlAssertGrep "warn C000 \"project-id\" is a required property by schema /schemas/report/polarion" "$rlRun_LOG"
-        rlAssertGrep "warn C000 fmf node failed schema validation" "$rlRun_LOG"
+
+        # Make sure the noise is not there.
+        rlAssertNotGrep "warn C000 value of \"how\" is not \"display\"" $rlRun_LOG
+        rlAssertNotGrep "warn C000 value of \"how\" is not \"html\"" $rlRun_LOG
+        rlAssertNotGrep "warn C000 value of \"how\" is not \"junit\"" $rlRun_LOG
+        rlAssertNotGrep "warn C000 value of \"how\" is not \"polarion\"" $rlRun_LOG
+        rlAssertNotGrep "warn C000 \"project-id\" is a required property by schema /schemas/report/polarion" $rlRun_LOG
+
+        # Make sure the relevant warning is there.
+        rlAssertGrep "warn C000 \"project\" is a required property by schema /schemas/report/reportportal" $rlRun_LOG
+        rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Lint of duplicate ids"
