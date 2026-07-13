@@ -937,8 +937,6 @@ def constraint_to_beaker_filter(
         # Make sure user is aware constraint would have no effect.
         logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
 
-    print(f'{constraint=} -> {transformed=}')
-
     return transformed
 
 

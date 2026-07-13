@@ -18,6 +18,7 @@ from tmt.hardware.constraints import (
     Spec,
     TextConstraint,
 )
+from tmt.utils import GeneralError, SpecificationError
 
 BaseConstraintT = TypeVar('BaseConstraintT', bound=BaseConstraint, covariant=True)  # noqa: PLC0105
 ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: PLC0105
@@ -127,6 +128,9 @@ class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
     """
 
     def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
+        if peer_index is None:
+            raise GeneralError('Cannot parse indexed constraint without peer constraint.')
+
         return self.constraint_class.from_specification(
             f'{self.constraint_name}[{peer_index}].{self.child_constraint_name}',
             str(spec[self.child_constraint_name]),
@@ -377,7 +381,7 @@ def _parse_requirements(spec: Spec) -> BaseConstraint:
 
             return
 
-        raise Exception(f"Unhandled hardware requirement '{requirement}'.")
+        raise SpecificationError(f"Unknown hardware requirement '{requirement}'.")
 
     for l1_name in sorted(spec.keys()):
         l1_value = spec[l1_name]
