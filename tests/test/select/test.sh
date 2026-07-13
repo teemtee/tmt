@@ -106,16 +106,16 @@ rlJournalStart
 
     rlPhaseStartTest "Select tests using a condition"
         # Enabled
-        rlRun "tmt --feeling-safe test ls --condition 'enabled == True' | grep -v 'warn: ' | tee $output"
+        rlRun "tmt --feeling-safe=cli.condition test ls --condition 'enabled == True' | grep -v 'warn: ' | tee $output"
         rlAssertGrep '/tests/enabled/default' $output
         rlAssertGrep '/tests/enabled/defined' $output
         rlAssertNotGrep '/tests/enabled/disabled' $output
-        rlRun "tmt --feeling-safe test ls --condition 'enabled == False' | grep -v 'warn: ' | tee $output"
+        rlRun "tmt --feeling-safe=cli.condition test ls --condition 'enabled == False' | grep -v 'warn: ' | tee $output"
         rlAssertNotGrep '/tests/enabled/default' $output
         rlAssertNotGrep '/tests/enabled/defined' $output
         rlAssertGrep '/tests/enabled/disabled' $output
 
-        for tmt in 'tmt --feeling-safe test ls' 'tmt --feeling-safe run -rv discover finish test'; do
+        for tmt in 'tmt --feeling-safe=cli.condition test ls' 'tmt --feeling-safe=cli.condition run -rv discover finish test'; do
             if [[ "$tmt" == *" run "* ]]; then
                 redirect="2>&1 >/dev/null"
             else
