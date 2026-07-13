@@ -49,6 +49,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.templates
 import tmt.utils
+import tmt.utils.feeling_safe
 import tmt.utils.git
 import tmt.utils.jira
 from tmt._compat.typing import Self
@@ -2257,7 +2258,9 @@ class Tree(tmt.utils.Common):
         """
         return self._custom_fmf_context or super().fmf_context
 
-    def _collect_cli_conditions(self, cls: type[tmt.utils.Common]) -> list[str]:
+    def _collect_cli_conditions(
+        self, cls: type[tmt.utils.Common], logger: tmt.log.Logger
+    ) -> list[str]:
         """
         Collect ``--condition`` options from the command line
 
@@ -2268,11 +2271,8 @@ class Tree(tmt.utils.Common):
 
         cli_conditions: list[str] = list(cls._opt('conditions', []))
 
-        if cli_conditions and not self.is_feeling_safe:
-            raise tmt.utils.GeneralError(
-                "The '--condition' option evaluates arbitrary Python expressions "
-                "and requires the '--feeling-safe' option."
-            )
+        if cli_conditions:
+            tmt.utils.feeling_safe.CONDITION_CLI_OPTION_UNSAFE_BEHAVIOR.assert_is_allowed(logger)
 
         return cli_conditions
 
@@ -2429,7 +2429,7 @@ class Tree(tmt.utils.Common):
 
         if apply_command_line:
             filters += list(Test._opt('filters', []))
-            conditions += self._collect_cli_conditions(Test)
+            conditions += self._collect_cli_conditions(Test, logger)
             includes += list(Test._opt('include', []))
             excludes += list(Test._opt('exclude', []))
             cmd_line_names = list(Test._opt('names', []))
@@ -2541,7 +2541,7 @@ class Tree(tmt.utils.Common):
         if apply_command_line:
             names += list(Plan._opt('names', []))
             filters += list(Plan._opt('filters', []))
-            conditions += self._collect_cli_conditions(Plan)
+            conditions += self._collect_cli_conditions(Plan, logger)
             excludes += list(Plan._opt('exclude', []))
 
         # Sanitize plan names to make sure no name includes control character
@@ -2670,7 +2670,7 @@ class Tree(tmt.utils.Common):
         if apply_command_line:
             names += list(Story._opt('names', []))
             filters += list(Story._opt('filters', []))
-            conditions += self._collect_cli_conditions(Story)
+            conditions += self._collect_cli_conditions(Story, logger)
             excludes += list(Story._opt('exclude', []))
 
         # Sanitize story names to make sure no name includes control character

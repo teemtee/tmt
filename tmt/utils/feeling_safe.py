@@ -78,6 +78,15 @@ class UnsafeBehavior:
 #: Represents all possible unsafe behavior.
 _ALL_ = UnsafeBehavior(name='all', label='all unsafe behavior')
 
+CONDITION_CLI_OPTION_UNSAFE_BEHAVIOR = UnsafeBehavior(
+    name='cli.condition', label="'--condition' command-line option"
+)
+
+UNSAFE_SSH_OPTIONS_UNSAFE_BEHAVIOR = UnsafeBehavior(
+    name='provision.unsafe-ssh-options', label='unsafe SSH option'
+)
+
+
 # TODO: move to `provision/connect`
 #: When enabled, allows keys defining custom reboot commands the plugin
 #: runs on the runner.
@@ -104,6 +113,8 @@ PROVISION_LOCAL_PLUGIN_UNSAFE_BEHAVIOR = UnsafeBehavior(
 #: All unsafe behavior recognized by tmt.
 KNOWN_UNSAFE_BEHAVIOR: set[UnsafeBehavior] = {
     _ALL_,
+    CONDITION_CLI_OPTION_UNSAFE_BEHAVIOR,
+    UNSAFE_SSH_OPTIONS_UNSAFE_BEHAVIOR,
     REBOOT_KEYS_UNSAFE_BEHAVIOR,
     PROVISION_MOCK_PLUGIN_UNSAFE_BEHAVIOR,
     PROVISION_LOCAL_PLUGIN_UNSAFE_BEHAVIOR,

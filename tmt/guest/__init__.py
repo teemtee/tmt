@@ -40,6 +40,7 @@ import tmt.package_managers
 import tmt.steps
 import tmt.steps.scripts
 import tmt.utils
+import tmt.utils.feeling_safe
 import tmt.utils.wait
 from tmt._compat.typing import Self
 from tmt.ansible import (
@@ -3241,11 +3242,12 @@ class GuestSsh(Guest, CommandCollector):
 
         for option in self.ssh_option:
             option_keyword = re.split(r'[=\s]', option.strip(), maxsplit=1)[0]
-            if option_keyword.lower() in UNSAFE_SSH_OPTIONS and not self.is_feeling_safe:
-                raise GeneralError(
-                    f"SSH option '{option_keyword}' is not allowed without the "
-                    f"'--feeling-safe' option."
+
+            if option_keyword.lower() in UNSAFE_SSH_OPTIONS:
+                tmt.utils.feeling_safe.UNSAFE_SSH_OPTIONS_UNSAFE_BEHAVIOR.assert_is_allowed(
+                    self._logger
                 )
+
             options.append(f'-o{option}')
 
         return Command(*options)
