@@ -170,7 +170,7 @@ def test_cpu_vendor_name(root_logger: Logger) -> None:
 
 def test_disk_driver(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_requirements({'disk': {'driver': 'mpt3sas'}}), root_logger
+        _parse_requirements({'disk': [{'driver': 'mpt3sas'}]}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -178,7 +178,7 @@ def test_disk_driver(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_requirements({'disk': {'driver': '!= mpt3sas'}}), root_logger
+        _parse_requirements({'disk': [{'driver': '!= mpt3sas'}]}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -186,7 +186,7 @@ def test_disk_driver(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_requirements({'disk': {'driver': '~ mpt3.*'}}), root_logger
+        _parse_requirements({'disk': [{'driver': '~ mpt3.*'}]}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -194,7 +194,7 @@ def test_disk_driver(root_logger: Logger) -> None:
     }
 
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
-        _parse_requirements({'disk': {'driver': '!~ mpt3.*'}}), root_logger
+        _parse_requirements({'disk': [{'driver': '!~ mpt3.*'}]}), root_logger
     )
 
     assert result.to_mrack() == {
@@ -204,7 +204,7 @@ def test_disk_driver(root_logger: Logger) -> None:
 
 def test_disk_size(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['disk.size'](
-        _parse_requirements({'disk': {'size': '>= 40 GiB'}}), root_logger
+        _parse_requirements({'disk': [{'size': '>= 40 GiB'}]}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'size': {'_op': '>=', '_value': '42949672960'}}}
@@ -212,25 +212,25 @@ def test_disk_size(root_logger: Logger) -> None:
 
 def test_disk_model_name(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-        _parse_requirements({'disk': {'model-name': 'PERC H310'}}), root_logger
+        _parse_requirements({'disk': [{'model-name': 'PERC H310'}]}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '==', '_value': 'PERC H310'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-        _parse_requirements({'disk': {'model-name': '!= PERC H310'}}), root_logger
+        _parse_requirements({'disk': [{'model-name': '!= PERC H310'}]}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '!=', '_value': 'PERC H310'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-        _parse_requirements({'disk': {'model-name': '~ PERC.*'}}), root_logger
+        _parse_requirements({'disk': [{'model-name': '~ PERC.*'}]}), root_logger
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': 'like', '_value': 'PERC%'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-        _parse_requirements({'disk': {'model-name': '!~ PERC.*'}}), root_logger
+        _parse_requirements({'disk': [{'model-name': '!~ PERC.*'}]}), root_logger
     )
 
     assert result.to_mrack() == {'not': {'disk': {'model': {'_op': 'like', '_value': 'PERC%'}}}}

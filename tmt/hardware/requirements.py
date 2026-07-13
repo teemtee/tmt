@@ -89,6 +89,8 @@ class _TrivialParser(_Parser[ConstraintT]):
 class SingleLevelParser(_TrivialParser[ConstraintT]):
     """
     A single-level parser for requirements that have no child keys.
+
+    For constraints like ``memory`` or ``hostname``.
     """
 
     def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
@@ -103,6 +105,8 @@ class SingleLevelParser(_TrivialParser[ConstraintT]):
 class DoubleLevelParser(_TrivialParser[ConstraintT]):
     """
     A double-level parser for requirements that do have child keys.
+
+    For constraints like ``cpu.cores`` or ``virtualization.is-supported``.
     """
 
     @functools.cached_property
@@ -125,6 +129,8 @@ class DoubleLevelParser(_TrivialParser[ConstraintT]):
 class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
     """
     A double-level parser for requirements that do have child keys and peers.
+
+    For constraints like ``disk[].size`` or ``network[].type``.
     """
 
     def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
@@ -177,7 +183,7 @@ def custom_parser(fn: RequirementParser[BaseConstraint]) -> RequirementParser[Ba
     Function name is expected to provide the hardware requirement name it
     parses:
 
-    * the initial ``parser_`` prefix is stripped away,
+    * the initial ``parse_`` prefix is stripped away,
     * the first ``_`` is replaced with ``.``,
     * ``_`` characters are relaced with ``-``.
 
