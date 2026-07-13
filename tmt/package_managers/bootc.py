@@ -1,3 +1,4 @@
+import dataclasses
 import uuid
 from collections.abc import Iterator
 from typing import Any, Optional
@@ -314,14 +315,23 @@ class Bootc(PackageManager[BootcEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        presence = self.check_presence(*installables)
+        options = options or Options()
+        to_install = self._check_first_filter(*installables, options=options, present=False)
 
-        missing_installables: set[Installable] = {
-            installable for installable, present in presence.items() if not present
-        }
+        if not to_install:
+            if options.check_first:
+                self.debug(
+                    'packages already installed, skipping '
+                    + fmf.utils.listed(sorted(str(i) for i in installables))
+                )
+            return CommandOutput(stdout=None, stderr=None)
 
-        if missing_installables:
-            self.engine.install(*missing_installables, options=options)
+        if options.check_first and len(to_install) < len(installables):
+            skipped = sorted(str(i) for i in installables if i not in to_install)
+            self.debug('packages already installed, skipping ' + fmf.utils.listed(skipped))
+
+        no_check_options = dataclasses.replace(options, check_first=False)
+        self.engine.install(*to_install, options=no_check_options)
 
         return CommandOutput(stdout=None, stderr=None)
 
