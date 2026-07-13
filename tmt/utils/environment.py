@@ -22,6 +22,7 @@ the intrinsic ones must come after all user-provided ones.
 
 import abc
 import contextlib
+import enum
 import os
 import re
 import shlex
@@ -48,6 +49,9 @@ if TYPE_CHECKING:
 #: A type of environment variable name.
 EnvVarName: 'TypeAlias' = str
 
+_IncomingEnvVarName: 'TypeAlias' = Union[type['EnvVar'], 'EnvVarName']
+
+
 # This one is not an alias: a full-fledged class makes type linters
 # enforce strict instantiation of objects rather than accepting
 # strings where `EnvVarValue` is expected.
@@ -72,57 +76,54 @@ class EnvVarValue(str):
         )
 
 
-@container
 class EnvVar:
     """
-    An environment variable recognized by tmt.
+    Base class defining an environment variable.
+
+    To define new environment variable, subclass this class:
+
+    .. code-block:: python
+
+        class ENV_TMT_TEST_NAME(EnvVar):  # noqa: N801
+            '''
+            User-facing documentation of the variable.
+            '''
+
+            name = 'TMT_FOO'
+            scope = EnvVar.Scope.TEST
     """
 
-    class Scope:
+    class Scope(enum.Flag):
         """
         Scopes of environment variables.
         """
 
         #: Environment variable is consumed by tmt process itself.
-        TMT = {'tmt'}
+        TMT = enum.auto()
 
         #: Environment variable is exposed to ``discover`` phases.
-        DISCOVER = {'discover'}
+        DISCOVER = enum.auto()
 
         #: Environment variable is exposed to ``provision`` phases.
-        PROVISION = {'provision'}
+        PROVISION = enum.auto()
 
         #: Environment variable is exposed to ``prepare`` phases.
-        PREPARE = {'prepare'}
+        PREPARE = enum.auto()
 
         #: Environment variable is exposed to ``execute`` phases.
-        EXECUTE = {'execute'}
+        EXECUTE = enum.auto()
 
         #: Environment variable is exposed to ``finish`` phases.
-        FINISH = {'finish'}
+        FINISH = enum.auto()
 
         #: Environment variable is exposed to individual tests..
-        TEST = {'test'}
+        TEST = enum.auto()
 
     #: Name of the environment variable
     name: EnvVarName
 
     #: Scope of the environment variable.
-    scope: set[str] = simple_field(default_factory=set[str])
-
-    def __init__(
-        self,
-        *,
-        name: str,
-        scope: Optional[set[str]] = None,
-        doc: Optional[str] = None,
-    ) -> None:
-        self.name = name
-        self.scope = scope or set()
-
-        self.__doc__ = (
-            textwrap.dedent(doc).strip() if doc else 'This environment variable is undocumented.'
-        )
+    scope: Scope
 
 
 class HasEnvironment(abc.ABC):
@@ -155,7 +156,7 @@ class HasIntrinsicEnvironment(abc.ABC):
         raise NotImplementedError
 
 
-class Environment(dict[str, EnvVarValue]):
+class Environment(dict[EnvVarName, EnvVarValue]):
     """
     Represents a set of environment variables.
 
@@ -164,19 +165,19 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
 
-    def __init__(self, data: Optional[dict[Union[EnvVar, EnvVarName], EnvVarValue]] = None) -> None:
+    def __init__(self, data: Optional[dict[_IncomingEnvVarName, EnvVarValue]] = None) -> None:
         super().__init__(
             {
-                (key.name if isinstance(key, EnvVar) else key): value
+                (key.name if not isinstance(key, str) else key): value
                 for key, value in (data or {}).items()
             }
         )
 
-    def __getitem__(self, key: Union[EnvVar, EnvVarName]) -> EnvVarValue:
-        return super().__getitem__(key.name if isinstance(key, EnvVar) else key)
+    def __getitem__(self, key: _IncomingEnvVarName) -> EnvVarValue:
+        return super().__getitem__(key.name if not isinstance(key, str) else key)
 
-    def __setitem__(self, key: Union[EnvVar, EnvVarName], value: EnvVarValue) -> None:
-        super().__setitem__((key.name if isinstance(key, EnvVar) else key), value)
+    def __setitem__(self, key: _IncomingEnvVarName, value: EnvVarValue) -> None:
+        super().__setitem__((key.name if not isinstance(key, str) else key), value)
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':
@@ -634,7 +635,11 @@ class Environment(dict[str, EnvVarValue]):
         return [ShellScript(f'export {variable}') for variable in self.to_shell()]
 
     def copy(self) -> 'Environment':
-        return Environment(self)
+        environment = Environment()
+
+        environment.update(self)
+
+        return environment
 
     def update(  # type: ignore[override]
         self, *others: 'Environment'
