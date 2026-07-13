@@ -1,4 +1,8 @@
+import abc
 from typing import TYPE_CHECKING, Optional
+
+from tmt.container import container
+from tmt.utils.environment import HasIntrinsicEnvironment
 
 if TYPE_CHECKING:
     from tmt.steps.context.reboot import RebootContext
@@ -15,3 +19,8 @@ def is_guest_healthy(
         return False
 
     return True
+
+
+@container
+class StepContext(HasIntrinsicEnvironment, abc.ABC):
+    pass

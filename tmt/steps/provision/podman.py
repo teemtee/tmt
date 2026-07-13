@@ -252,7 +252,9 @@ class GuestContainer(tmt.Guest):
 
         assert isinstance(self.parent, Provision)  # narrow type
 
-        environment = self.parent.plan.environment
+        environment = Environment.build_environment(
+            plan=self.parent.plan, run=self.parent.plan.my_run, guest=self, logger=self._logger
+        )
 
         if not environment:
             return []
