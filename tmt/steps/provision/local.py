@@ -214,12 +214,12 @@ class GuestLocal(tmt.Guest):
 
         self.assert_reachable()
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop the guest
         """
 
-        self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
+        logger.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
     def reboot(
         self,
