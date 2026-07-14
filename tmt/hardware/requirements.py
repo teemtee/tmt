@@ -25,8 +25,6 @@ from tmt.utils import GeneralError, SpecificationError
 BaseConstraintT = TypeVar('BaseConstraintT', bound=BaseConstraint, covariant=True)  # noqa: PLC0105
 ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: PLC0105
 
-BaseConstraintT = TypeVar('BaseConstraintT', bound=BaseConstraint, covariant=True)  # noqa: PLC0105
-ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: PLC0105
 
 #: Type of a requirement parser.
 class RequirementParser(Protocol, Generic[BaseConstraintT]):
@@ -142,7 +140,7 @@ class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
         if peer_index is None:
             raise GeneralError('Cannot parse indexed constraint without peer constraint.')
 
-        return self.constraint_class.from_specification(
+        return self.constraint_class_factory.constraint_class.from_specification(
             f'{self.constraint_name}[{peer_index}].{self.child_constraint_name}',
             str(spec[self.child_constraint_name]),
             **self.kwargs,

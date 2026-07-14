@@ -38,27 +38,10 @@ def test_maximal_constraint(root_logger: Logger) -> None:
     assert hw.constraint is not None
 
     result = constraint_to_beaker_filter(hw.constraint, root_logger)
-<<<<<<< HEAD
-    assert result.to_mrack() == {
-        'and': [
-            {},
-<<<<<<< HEAD
-            {'pool': {'_op': '!=', '_value': 'foo.*'}},
-=======
-            {
-                'pool': {
-                    '_op': '!=',
-                    '_value': 'foo.*',
-                },
-            },
->>>>>>> b38039300 (squash: more tests)
-=======
-
     assert result.to_mrack() == {
         'and': [
             {},
             {'pool': {'_op': '!=', '_value': 'foo.*'}},
->>>>>>> f16120b3d (squash: more test fixes)
             {},
             {'and': [{}, {}]},
             {'cpu': {'cores': {'_op': '==', '_value': '2'}}},
@@ -228,41 +211,25 @@ def test_disk_size(root_logger: Logger) -> None:
 
 def test_disk_model_name(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-<<<<<<< HEAD
         _parse_requirements({'disk': [{'model-name': 'PERC H310'}]}), root_logger
-=======
-        _parse_requirements({'disk': {'model-name': 'PERC H310'}}), root_logger
->>>>>>> b38039300 (squash: more tests)
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '==', '_value': 'PERC H310'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-<<<<<<< HEAD
         _parse_requirements({'disk': [{'model-name': '!= PERC H310'}]}), root_logger
-=======
-        _parse_requirements({'disk': {'model-name': '!= PERC H310'}}), root_logger
->>>>>>> b38039300 (squash: more tests)
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': '!=', '_value': 'PERC H310'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-<<<<<<< HEAD
         _parse_requirements({'disk': [{'model-name': '~ PERC.*'}]}), root_logger
-=======
-        _parse_requirements({'disk': {'model-name': '~ PERC.*'}}), root_logger
->>>>>>> b38039300 (squash: more tests)
     )
 
     assert result.to_mrack() == {'disk': {'model': {'_op': 'like', '_value': 'PERC%'}}}
 
     result = _CONSTRAINT_TRANSFORMERS['disk.model-name'](
-<<<<<<< HEAD
         _parse_requirements({'disk': [{'model-name': '!~ PERC.*'}]}), root_logger
-=======
-        _parse_requirements({'disk': {'model-name': '!~ PERC.*'}}), root_logger
->>>>>>> b38039300 (squash: more tests)
     )
 
     assert result.to_mrack() == {'not': {'disk': {'model': {'_op': 'like', '_value': 'PERC%'}}}}
