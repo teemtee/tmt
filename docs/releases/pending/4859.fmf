@@ -1,0 +1,14 @@
+description: |
+    The :tmt:story:`disk hardware requirement </spec/hardware/disk>` can
+    no longer be written as a dictionary. This has been a legacy syntax
+    that is not used by real-life users anymore.
+
+    .. code-block:: yaml
+
+        # Not supported anymore:
+        disk:
+            size: 10 GB
+
+        # Correct form:
+        disk:
+          - size: 10 GB
