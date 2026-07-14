@@ -1,5 +1,6 @@
 description: |
-    The :ref:`/plugins/prepare/install` plugin now exposes a
-    ``check-first`` option (default: enabled) which allows to skip
-    installation of packages already present on the guest, preventing
-    unintended upgrades.
+    The :ref:`/plugins/prepare/install` plugin now exposes a ``check-first``
+    option. This checks the package presence before installation, which can
+    prevent the unintended upgrades on systems that intrinsically pass
+    ``--best`` like on centos10. The default and previous behavior is to
+    enable this. Change this option if you need to opt-out.
