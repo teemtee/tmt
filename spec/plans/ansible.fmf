@@ -21,6 +21,10 @@ description: |
         provisioning plugins (e.g. :ref:`/plugins/provision/virtual.testcloud`).
         It is not implemented (yet) for :ref:`/plugins/provision/container` and :ref:`/plugins/provision/local` provisioning plugins.
 
+    .. versionadded:: pending
+
+        The plan's context is exposed under the ``tmt.context`` variable.
+
     .. versionadded:: 1.60
 
 example:
