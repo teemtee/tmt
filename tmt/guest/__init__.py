@@ -2550,7 +2550,7 @@ class Guest(
         on_process_end: Optional[OnProcessEndCallback] = None,
         sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
-    ) -> tmt.utils.CommandOutput:
+    ) -> Optional[tmt.utils.CommandOutput]:
         """
         Execute a command on the guest.
 
