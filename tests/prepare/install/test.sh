@@ -279,7 +279,7 @@ rlJournalStart
                 rlAssertGrep "install -y libpng" $rlRun_LOG
             else
                 rlAssertGrep "packages already installed, skipping tree" $rlRun_LOG
-                rlAssertGrep "\(install\|add\) -y dos2unix" $rlRun_LOG
+                rlAssertGrep "\(install\|add\).*dos2unix" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
@@ -336,8 +336,8 @@ rlJournalStart
                 rlAssertGrep "install -y dconf" $rlRun_LOG
             else
                 rlRun -s "$tmt -d --insert --how install --package tree --no-check-first plan --name /empty$"
-                rlAssertNotGrep "\(rpm -q --whatprovides\| info -e \) tree" $rlRun_LOG
-                rlAssertGrep "\(install\|add\) -y tree" $rlRun_LOG
+                rlAssertNotGrep "\(rpm -q --whatprovides tree >&2\| info -e tree\) " $rlRun_LOG
+                rlAssertGrep "\(install\|add\).*tree" $rlRun_LOG
             fi
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
@@ -355,11 +355,12 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
             if is_ubi "$image"; then
-                rlAssertGrep "install -y dconf" $rlRun_LOG
-                rlAssertGrep "install -y libpng" $rlRun_LOG
+                rlAssertGrep "install.*dconf" $rlRun_LOG
+                rlAssertGrep "install.*libpng" $rlRun_LOG
             else
-		        rlAssertGrep "\(install\|add\) -y tree" $rlRun_LOG
-		        rlAssertGrep "\(install\|add\) -y dos2unix" $rlRun_LOG
+                rlAssertNotGrep "rpm -q --whatprovides .* >&2" $rlRun_LOG
+                rlAssertGrep "\(install\|add\).*tree" $rlRun_LOG
+                rlAssertGrep "\(install\|add\).*dos2unix" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
