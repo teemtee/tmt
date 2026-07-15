@@ -1147,33 +1147,18 @@ class Step(
 
         debug1(f'Update {self.__class__.__name__.lower()} phases by CLI invocations')
 
-        def _to_raw_step_datum(
-            options: dict[str, Any],
-            invocation: Optional['tmt.cli.CliInvocation'] = None,
-            explicit_only: bool = False,
-        ) -> _RawStepData:
+        def _to_raw_step_datum(options: dict[str, Any]) -> _RawStepData:
             """
             Convert CLI options to fmf-like raw step data dictionary.
 
             This means dropping all keys that cannot come from an fmf node, like
-            keys representing CLI options. In explicit-only mode, keep only values
-            provided via command line or environment.
+            keys representing CLI options.
             """
 
             def _iter_options() -> Iterator[tuple[str, Any]]:
                 for name, value in options.items():
                     if name in ('update', 'update_missing', 'insert', 'allowed-how'):
                         continue
-
-                    if explicit_only and name != 'how':
-                        assert invocation is not None
-                        value_source = invocation.option_sources.get(name)
-
-                        if value_source not in (
-                            ParameterSource.COMMANDLINE,
-                            ParameterSource.ENVIRONMENT,
-                        ):
-                            continue
 
                     yield key_to_option(name), value
 
@@ -1334,9 +1319,21 @@ class Step(
             elif invocation.options.get('insert'):
                 debug3('inserting new phase')
 
-                raw_datum = _to_raw_step_datum(
-                    invocation.options, invocation=invocation, explicit_only=True
-                )
+                raw_datum = _to_raw_step_datum(invocation.options)
+
+                for opt in list(raw_datum.keys()):
+                    if opt in ('name', 'how'):
+                        continue
+
+                    key = option_to_key(opt)
+                    value_source = invocation.option_sources.get(key)
+
+                    if value_source not in (
+                        ParameterSource.COMMANDLINE,
+                        ParameterSource.ENVIRONMENT,
+                    ):
+                        del raw_datum[opt]
+
                 raw_datum = _ensure_name(raw_datum)
 
                 raw_data.append(raw_datum)
