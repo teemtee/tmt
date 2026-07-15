@@ -80,7 +80,11 @@ class GuestLocal(tmt.Guest):
             # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
             # more.
             if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+                from tmt.steps.execute import ENV_TMT_PLAN_ENVIRONMENT_FILE
+
+                environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(
+                    self.plan_environment_path
+                )
 
         else:
             environment = super()._prepare_command_environment(environment=environment)
