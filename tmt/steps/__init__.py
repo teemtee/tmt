@@ -1320,19 +1320,26 @@ class Step(
                 debug3('inserting new phase')
 
                 raw_datum = _to_raw_step_datum(invocation.options)
+                # Keep inserted phase data aligned with explicit user intent:
+                # preserve structural keys and options provided via CLI/env,
+                # and drop values not explicitly provided via CLI/env.
+                filtered_raw_datum: dict[str, Any] = {}
 
-                for opt in list(raw_datum.keys()):
+                for opt, value in raw_datum.items():
                     if opt in ('name', 'how'):
+                        filtered_raw_datum[opt] = value
                         continue
 
                     key = option_to_key(opt)
                     value_source = invocation.option_sources.get(key)
 
-                    if value_source not in (
+                    if value_source in (
                         ParameterSource.COMMANDLINE,
                         ParameterSource.ENVIRONMENT,
                     ):
-                        del raw_datum[opt]
+                        filtered_raw_datum[opt] = value
+
+                raw_datum = cast(_RawStepData, filtered_raw_datum)
 
                 raw_datum = _ensure_name(raw_datum)
 
