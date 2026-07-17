@@ -196,11 +196,13 @@ class KojiArtifactProvider(ArtifactProvider):
         """
         assert self.build_info is not None
         package_name = self.build_info["package_name"]
+        build_version = self.build_info["version"]
+        build_release = self.build_info["release"]
         version_info = RpmVersion.from_rpm_meta(rpm_meta)
         path = (
             f"packages/{package_name}/"
-            f"{version_info.version}/"
-            f"{version_info.release}/"
+            f"{build_version}/"
+            f"{build_release}/"
             f"{version_info.arch}/"
             f"{version_info.nvra}.rpm"
         )
