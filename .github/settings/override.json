@@ -1,0 +1,43 @@
+{
+  "id": 17224740,
+  "name": "Merging into main (release lead can override)",
+  "target": "branch",
+  "source_type": "Repository",
+  "source": "teemtee/tmt",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "~DEFAULT_BRANCH"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 2,
+        "dismiss_stale_reviews_on_push": false,
+        "required_reviewers": [],
+        "require_code_owner_review": false,
+        "dismissal_restriction": {
+          "enabled": false,
+          "allowed_actors": []
+        },
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false,
+        "allowed_merge_methods": [
+          "squash"
+        ]
+      }
+    }
+  ],
+  "bypass_actors": [
+    {
+      "actor_id": 17396698,
+      "actor_type": "Team",
+      "bypass_mode": "pull_request"
+    }
+  ]
+}
