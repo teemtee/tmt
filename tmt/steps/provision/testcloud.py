@@ -25,6 +25,7 @@ import tmt.utils
 import tmt.utils.wait
 from tmt.container import container, field
 from tmt.guest import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
+from tmt.hardware.constraints import SIZE_CONSTRAINT_FACTORY
 from tmt.utils import (
     Command,
     Path,
@@ -977,7 +978,7 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.memory is None:
             return
 
-        memory_constraint = tmt.hardware.SizeConstraint.from_specification(
+        memory_constraint = SIZE_CONSTRAINT_FACTORY.constraint_class.from_specification(
             'memory', str(self.memory)
         )
 
@@ -994,7 +995,7 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.disk is None:
             return
 
-        disk_size_constraint = tmt.hardware.SizeConstraint.from_specification(
+        disk_size_constraint = SIZE_CONSTRAINT_FACTORY.constraint_class.from_specification(
             'disk[0].size', str(self.disk)
         )
 
