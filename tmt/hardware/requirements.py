@@ -14,11 +14,11 @@ from tmt.hardware.constraints import (
     BaseConstraint,
     CompoundConstraint,
     Constraint,
+    ConstraintFactory,
     Operator,
     Or,
     Spec,
     TextConstraint,
-    _ConstraintFactory,
 )
 from tmt.utils import GeneralError, SpecificationError
 
@@ -81,7 +81,7 @@ class _TrivialParser(_Parser[ConstraintT]):
     #: Constraint class factory whose
     #: :py:meth:`_ConstraintFactory.constraint_class`
     #: would be used to parse and represent the requirement.
-    constraint_class_factory: _ConstraintFactory[ConstraintT]
+    constraint_class_factory: ConstraintFactory[ConstraintT]
 
     #: Optional keyword arguments to pass to
     #: :py:meth:`Constraint.from_specification` method.

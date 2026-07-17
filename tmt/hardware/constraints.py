@@ -891,26 +891,26 @@ ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: 
 # A mapping or list would work, but custom class can carry constraint
 # type better.
 @container
-class _ConstraintFactory(Generic[ConstraintT]):
+class ConstraintFactory(Generic[ConstraintT]):
     #: Class whose ``from_specification`` method should be used to create
     #: new instances of the given constraint type.
     constraint_class: type[ConstraintT]
 
 
 #: Factory for :py:class:`SizeConstraint` constraints.
-SIZE_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=SizeConstraint)
+SIZE_CONSTRAINT_FACTORY = ConstraintFactory(constraint_class=SizeConstraint)
 
 #: Factory for :py:class:`FlagConstraint` constraints.
-FLAG_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=FlagConstraint)
+FLAG_CONSTRAINT_FACTORY = ConstraintFactory(constraint_class=FlagConstraint)
 
 #: Factory for :py:class:`IntegerConstraint` constraints.
-INTEGER_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=IntegerConstraint)
+INTEGER_CONSTRAINT_FACTORY = ConstraintFactory(constraint_class=IntegerConstraint)
 
 #: Factory for :py:class:`NumberConstraint` constraints.
-NUMBER_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=NumberConstraint)
+NUMBER_CONSTRAINT_FACTORY = ConstraintFactory(constraint_class=NumberConstraint)
 
 #: Factory for :py:class:`TextConstraint` constraints.
-TEXT_CONSTRAINT_FACTORY = _ConstraintFactory(constraint_class=TextConstraint)
+TEXT_CONSTRAINT_FACTORY = ConstraintFactory(constraint_class=TextConstraint)
 
 
 @container(repr=False)
