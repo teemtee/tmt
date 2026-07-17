@@ -1,0 +1,6 @@
+description: |
+    Test results now record real duration of the test, even across
+    all possible guest reboots and test restarts. Previously,
+    ``start-time``, ``end-time``, and ``duration`` keys of
+    :tmt:story:`/spec/results` recorded only the very last test
+    invocation.
