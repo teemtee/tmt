@@ -1,9 +1,7 @@
 {
-  "id": 17224362,
   "name": "Merging into main (rules enforced for everybody)",
   "target": "branch",
   "source_type": "Repository",
-  "source": "teemtee/tmt",
   "enforcement": "active",
   "conditions": {
     "ref_name": {
@@ -23,7 +21,7 @@
     {
       "type": "pull_request",
       "parameters": {
-        "required_approving_review_count": 0,
+        "required_approving_review_count": 2,
         "dismiss_stale_reviews_on_push": false,
         "required_reviewers": [],
         "require_code_owner_review": false,
