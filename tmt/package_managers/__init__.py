@@ -49,7 +49,7 @@ class _ResolvedEntry(TypedDict):
 
     name: str
     nevra: str
-    repo_id: str
+    repoid: str
     from_repo: str
 
 
@@ -699,7 +699,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                 try:
                     result[provide].append(
                         RpmVersion.from_nevra(
-                            resolved_provide['nevra'], repo_id=resolved_provide['repo_id']
+                            resolved_provide['nevra'], repo_id=resolved_provide['repoid']
                         )
                     )
                 except ValueError as error:
