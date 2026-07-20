@@ -10,7 +10,9 @@ setup_distro_environment() {
         rlDie "Image mode is not covered"
     elif [ "$PROVISION_HOW" = "container" ]; then
         rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
-        build_container_images
+        for image in $IMAGES; do
+            build_container_image "${image#$TEST_IMAGE_PREFIX/}"
+        done
     elif [ "$PROVISION_HOW" = "virtual" ]; then
         rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
     else
