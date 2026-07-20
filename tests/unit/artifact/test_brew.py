@@ -39,7 +39,7 @@ def test_brew_valid_draft_build(mock_brew, mock_call_api, artifact_provider):
     mock_call_api.side_effect = lambda method, *a, **kw: (
         mock_rpms
         if method == "listBuildRPMs"
-        else {"id": draft_id, "package_name": "test-package"}
+        else {"id": draft_id, "package_name": "test-package", "version": "1.0", "release": "1.el9"}
     )
 
     provider = artifact_provider(f"brew.build:{draft_id}")
