@@ -50,7 +50,7 @@ class DnfEngine(PackageManagerEngine):
             "--queryformat",
             r"- name: '%{name}'\n"
             rf"  nevra: '{self._full_nevra_querytag}'\n"
-            r"  repo_id: '%{repoid}'\n"
+            r"  repoid: '%{repoid}'\n"
             r"  from_repo: '%{from_repo}'\n",
         )
         if whatprovides:
@@ -458,7 +458,7 @@ class YumEngine(DnfEngine):
             "--queryformat",
             r"- name: '%{name}'\n"
             rf"  nevra: '{self._full_nevra_querytag}'\n"
-            r"  repo_id: '%{repoid}'\n"
+            r"  repoid: '%{repoid}'\n"
             r"  from_repo: '%{repoid}'\n",
         )
 
