@@ -480,7 +480,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
+        repo_ids: Optional[Iterable[str]] = None,
     ) -> ShellScript:
         """
         Resolves each provide to the NEVRAs of packages that provide it.
@@ -666,7 +666,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
+        repo_ids: Optional[Iterable[str]] = None,
     ) -> dict[str, list['RpmVersion']]:
         """
         Map each provide to the :py:class:`RpmVersion` objects of packages that provide it.

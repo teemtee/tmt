@@ -33,7 +33,7 @@ class DnfEngine(PackageManagerEngine):
     def _repoquery_script(
         self,
         *queries: str,
-        repos: Optional[Sequence[str]] = None,
+        repos: Optional[Iterable[str]] = None,
         whatprovides: bool = False,
         installed: bool = False,
     ) -> ShellScript:
@@ -246,12 +246,13 @@ class DnfEngine(PackageManagerEngine):
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
+        repo_ids: Optional[Iterable[str]] = None,
     ) -> ShellScript:
         assert provides, "provides must not be empty"
         return self._repoquery_script(
             *escape_installables(*[Package(p) for p in provides]),
             whatprovides=True,
+            repos=repo_ids,
         )
 
     def create_repository(self, directory: Path) -> ShellScript:
@@ -436,7 +437,7 @@ class YumEngine(DnfEngine):
     def _repoquery_script(
         self,
         *queries: str,
-        repos: Optional[Sequence[str]] = None,
+        repos: Optional[Iterable[str]] = None,
         whatprovides: bool = False,
         installed: bool = False,
     ) -> ShellScript:
