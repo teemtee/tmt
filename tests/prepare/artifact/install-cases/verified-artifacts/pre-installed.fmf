@@ -48,4 +48,4 @@ context+:
       want_devel: "true"
       xfail: "false"
     environment+:
-      EXPECTED_PACKAGE: " foo-devel-1.1"
+      EXPECTED_PACKAGE+: " foo-devel-1.1"
