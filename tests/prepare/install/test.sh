@@ -79,7 +79,9 @@ rlJournalStart
             rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
             rlRun "SECONDARY_IMAGES='$TEST_CONTAINER_IMAGES_SECONDARY'"
 
-            build_container_images
+            for image in $IMAGES; do
+                build_container_image "${image#$TEST_IMAGE_PREFIX/}"
+            done
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
