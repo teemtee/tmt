@@ -298,6 +298,39 @@ reportPrivateUsage = false
 reportUnknownMemberType = false
 reportUnnecessaryCast = false  # Unnecessary "cast" call; type is already...
 
+[tool.ty]
+environment.root = ["./tmt"]
+
+[tool.ty.rules]
+# TODO: ty is very much in its Beta stage, not ready for production.
+# Disabling all rules that fail, for the sake of experiment, and will
+# enable them one by one when the tool becomes ready.
+unresolved-attribute = "ignore"
+unknown-argument = "ignore"
+unresolved-reference = "ignore"
+invalid-argument-type = "ignore"
+invalid-return-type = "ignore"
+no-matching-overload = "ignore"
+invalid-type-form = "ignore"
+not-subscriptable = "ignore"
+unsupported-operator = "ignore"
+possibly-missing-attribute = "ignore"
+invalid-assignment = "ignore"
+unresolved-import = "ignore"
+invalid-method-override = "ignore"
+unsupported-base = "ignore"
+invalid-key = "ignore"
+redundant-cast = "ignore"
+deprecated = "ignore"
+missing-argument = "ignore"
+too-many-positional-arguments = "ignore"
+invalid-yield = "ignore"
+possibly-missing-submodule = "ignore"
+invalid-generic-class = "ignore"
+call-top-callable = "ignore"
+inconsistent-mro = "ignore"
+invalid-legacy-type-variable = "ignore"
+
 [tool.ruff]
 line-length = 99
 src = ["tmt", "tests"]
