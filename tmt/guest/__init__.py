@@ -83,6 +83,7 @@ from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError
 if TYPE_CHECKING:
     import tmt.base.core
     from tmt._compat.typing import TypeAlias
+    from tmt.steps import Topology
     from tmt.steps.provision import Provision, ProvisionPlugin, ProvisionStepDataT
 
 
@@ -1848,6 +1849,9 @@ class Guest(
     #: Guest logs active and available for collection.
     guest_logs: list[GuestLog]
 
+    #: Environment from the guest topology.
+    _environment_from_topology: Optional[Environment] = None
+
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
@@ -2033,7 +2037,22 @@ class Guest(
         if self.plan_source_script_path:
             environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
 
+        if self._environment_from_topology is not None:
+            environment.update(self._environment_from_topology)
+
         return environment
+
+    @property
+    def topology(self) -> 'Topology':
+        from tmt.steps import GuestTopology, Topology
+
+        if not isinstance(self.parent, tmt.steps.provision.Provision):
+            return Topology([])
+
+        topology = Topology(self.parent.ready_guests)
+        topology.guest = GuestTopology(self)
+
+        return topology
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
@@ -2102,6 +2121,26 @@ class Guest(
         """
 
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
+
+    def install_topology(self) -> None:
+        if not isinstance(self.parent, tmt.steps.provision.Provision):
+            return
+
+        worktree = self.parent.plan.worktree
+        assert worktree is not None  # narrow type
+
+        self._environment_from_topology = self.topology.push(
+            dirpath=worktree,
+            guest=self,
+            logger=self._logger,
+            filename_base=tmt.steps.safe_filename(
+                tmt.steps.TEST_TOPOLOGY_FILENAME_BASE,
+                # TODO: This needs to be resolved, parent phases do not need to be `Phase`
+                # instances.
+                self.parent.phases()[0],  # type: ignore[arg-type]
+                self,
+            ),
+        )
 
     def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
         """
