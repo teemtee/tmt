@@ -1368,7 +1368,7 @@ class GuestTestcloud(tmt.GuestSsh):
                 mode,
                 lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
                 waiting,
-                post_trigger_action=lambda: self._cleanup_ssh_master_process(),
+                post_trigger_action=self._cleanup_ssh_master_process,
             )
 
         if command:
@@ -1394,7 +1394,7 @@ class GuestTestcloud(tmt.GuestSsh):
                 mode,
                 lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
                 waiting,
-                post_trigger_action=lambda: self._cleanup_ssh_master_process(),
+                post_trigger_action=self._cleanup_ssh_master_process,
             )
 
         raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
