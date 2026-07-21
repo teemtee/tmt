@@ -1126,6 +1126,10 @@ The syntax is the same as in ``adjust`` and :tmt:story:`/spec/context`.
 
 
 
+.. include:: guide/matrix.inc.rst
+
+
+
 .. _multihost-testing:
 
 Multihost Testing
