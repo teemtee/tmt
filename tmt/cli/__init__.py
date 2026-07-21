@@ -168,11 +168,7 @@ class CliInvocation:
         if not self.context:
             return {}
 
-        return {
-            key: source
-            for key in self.options
-            if (source := self.context.get_parameter_source(key)) is not None
-        }
+        return self.context._parameter_source
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
