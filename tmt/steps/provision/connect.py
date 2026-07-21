@@ -175,7 +175,7 @@ class GuestConnect(tmt.guest.GuestSsh):
                 mode,
                 lambda: self._run_guest_command(self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
                 waiting,
-                post_trigger_action=lambda: self._cleanup_ssh_master_process(),
+                post_trigger_action=self._cleanup_ssh_master_process,
             )
 
         if command is not None:
@@ -194,7 +194,7 @@ class GuestConnect(tmt.guest.GuestSsh):
                 mode,
                 lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
                 waiting,
-                post_trigger_action=lambda: self._cleanup_ssh_master_process(),
+                post_trigger_action=self._cleanup_ssh_master_process,
             )
 
         if mode == RebootMode.SYSTEMD_SOFT and self.systemd_soft_reboot is not None:
@@ -209,7 +209,7 @@ class GuestConnect(tmt.guest.GuestSsh):
                 mode,
                 lambda: self._run_guest_command(self.systemd_soft_reboot.to_shell_command()),  # type: ignore[union-attr]
                 waiting,
-                post_trigger_action=lambda: self._cleanup_ssh_master_process(),
+                post_trigger_action=self._cleanup_ssh_master_process,
             )
 
         return super().reboot(mode=mode, waiting=waiting)
