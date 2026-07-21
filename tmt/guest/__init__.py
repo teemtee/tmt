@@ -2543,6 +2543,7 @@ class Guest(
         mode: RebootMode,
         action: Callable[[], Any],
         wait: Waiting,
+        post_trigger_action: Optional[Callable[[], Any]] = None,
     ) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
@@ -2562,6 +2563,9 @@ class Guest(
         :param mode: which boot mode to perform.
         :param action: a callable which will trigger the requested reboot.
         :param waiting: deadline for the reboot.
+        :param post_trigger_action: a callable which will be invoked
+            after successfully triggering the requested reboot, i.e.
+            after ``action`` completes.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
@@ -2591,6 +2595,9 @@ class Guest(
                 self.debug("Seems the connection was closed too fast, ignoring.")
             else:
                 raise
+
+        if post_trigger_action is not None:
+            post_trigger_action()
 
         # Wait until we get new boot mark, connection will drop and will be
         # unreachable for some time
@@ -3319,16 +3326,42 @@ class GuestSsh(Guest, CommandCollector):
 
             self._ssh_master_process = None
 
+    def _assert_ssh_master_process(self) -> None:
+        """
+        Make sure the SSH master process is up and running when enabled.
+        """
+
+        if not self.is_ssh_multiplexing_enabled:
+            return
+
+        with self._ssh_master_process_lock:
+            if (
+                self._ssh_master_process is not None
+                and self._ssh_master_process.poll() is not None
+            ):
+                self._logger.debug(
+                    f'SSH master process {self._ssh_master_process.pid} has been terminated'
+                    f' unexpectedly with exit code {self._ssh_master_process.returncode}.',
+                    level=3,
+                )
+
+                self._ssh_master_process = None
+
+            if self._ssh_master_process is None:
+                self._logger.debug(
+                    'SSH master process is not running and will be spawned.',
+                    level=3,
+                )
+
+                self._ssh_master_process = self._spawn_ssh_master_process()
+
     @property
     def _ssh_command(self) -> Command:
         """
         A base SSH command shared by all SSH processes
         """
 
-        if self.is_ssh_multiplexing_enabled:
-            with self._ssh_master_process_lock:
-                if self._ssh_master_process is None:
-                    self._ssh_master_process = self._spawn_ssh_master_process()
+        self._assert_ssh_master_process()
 
         return self._base_ssh_command
 
@@ -3862,7 +3895,12 @@ class GuestSsh(Guest, CommandCollector):
 
         self.debug(f"{mode.name.capitalize()} reboot using command '{command}'.")
 
-        return self.perform_reboot(mode, lambda: self.execute(command), waiting)
+        return self.perform_reboot(
+            mode,
+            lambda: self.execute(command),
+            waiting,
+            post_trigger_action=self._cleanup_ssh_master_process,
+        )
 
     def remove(self) -> None:
         """
