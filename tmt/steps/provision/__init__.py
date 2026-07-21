@@ -692,8 +692,9 @@ class Provision(tmt.steps.Step):
         # 2. guest topology. Now that we know about all guests, we can
         # create and upload topology files to all guests.
         #
-        # TODO: maybe there's a way to run this from elsewhere, but since
-        # it requires all guests to be provisioned and known...
+        # Maybe there's a way to run this from elsewhere, but since it
+        # requires all guests to be provisioned and known, this seems
+        # to be the first opportunity.
         for guest in self.ready_guests:
             guest.install_topology()
 
