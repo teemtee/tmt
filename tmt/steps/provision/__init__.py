@@ -678,13 +678,25 @@ class Provision(tmt.steps.Step):
                 causes=[outcome.exc for outcome in failed_outcomes if outcome.exc is not None],
             )
 
-        # Push the plan workdir to the provisioned guests as the last
-        # step. This is a counterpart of the PullTask in Finish.go().
-        # Without it `tmt run provision finish login` would break on
-        # non-existent plan data directory.
+        # Push important stuff to the provisioned guests, as the last
+        # step.
+        #
+        # 1. Plan workdir. This is a counterpart of the PullTask in
+        # Finish.go(). Without it `tmt run provision finish login` would
+        # break on non-existent plan data directory.
+        #
         # TODO simplify as part of the data pulling/pushing cleanup
         # https://github.com/teemtee/tmt/issues/4067
         sync_with_guests(self, 'push', PushTask(self.guests, self._logger), self._logger)
+
+        # 2. guest topology. Now that we know about all guests, we can
+        # create and upload topology files to all guests.
+        #
+        # Maybe there's a way to run this from elsewhere, but since it
+        # requires all guests to be provisioned and known, this seems
+        # to be the first opportunity.
+        for guest in self.ready_guests:
+            guest.install_topology()
 
         # To separate "provision" from the follow-up logging visually
         self.info('')

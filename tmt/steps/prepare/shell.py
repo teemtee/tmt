@@ -12,7 +12,6 @@ import tmt.utils
 import tmt.utils.git
 from tmt.container import container, field
 from tmt.guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
-from tmt.steps import safe_filename
 from tmt.utils import Command, ShellScript, Stopwatch
 from tmt.utils.environment import Environment, EnvVarValue
 
@@ -205,32 +204,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         if error is not None:
             return self._save_error_outcome(
                 label=f'{self.name} / remote script repository',
-                timer=timer,
-                guest=guest,
-                exception=error,
-                outcome=outcome,
-            )
-
-        def _prepare_topology() -> None:
-            topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
-            topology.guest = tmt.steps.GuestTopology(guest)
-
-            environment.update(
-                topology.push(
-                    dirpath=worktree,
-                    guest=guest,
-                    logger=logger,
-                    filename_base=safe_filename(
-                        tmt.steps.TEST_TOPOLOGY_FILENAME_BASE, self, guest
-                    ),
-                )
-            )
-
-        _, error, timer = Stopwatch.measure(_prepare_topology)
-
-        if error is not None:
-            return self._save_error_outcome(
-                label=f'{self.name} / guest topology',
                 timer=timer,
                 guest=guest,
                 exception=error,
