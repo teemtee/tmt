@@ -1735,7 +1735,7 @@ class GuestBeaker(tmt.guest.GuestSsh):
                 mode,
                 lambda: self._run_guest_command(reboot_script.to_shell_command()),
                 waiting,
-                post_trigger_action=lambda: self._cleanup_ssh_master_process(),
+                post_trigger_action=self._cleanup_ssh_master_process,
             )
 
         return super().reboot(

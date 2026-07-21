@@ -3899,7 +3899,7 @@ class GuestSsh(Guest, CommandCollector):
             mode,
             lambda: self.execute(command),
             waiting,
-            post_trigger_action=lambda: self._cleanup_ssh_master_process(),
+            post_trigger_action=self._cleanup_ssh_master_process,
         )
 
     def remove(self) -> None:
