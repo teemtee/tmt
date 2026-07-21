@@ -57,7 +57,7 @@ from tmt.utils import (
     style,
     to_yaml,
 )
-from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment, HasIntrinsicEnvironment
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -224,6 +224,7 @@ class Plan(
     HasUserAnchorPath,
     HasPlanWorkdir,
     HasEnvironment,
+    HasIntrinsicEnvironment,
     Core,
     tmt.export.Exportable['Plan'],
     tmt.lint.Lintable['Plan'],
@@ -335,7 +336,11 @@ class Plan(
                 self._initialize_worktree()
 
         # Expand all environment and context variables in the node
-        with self.environment.as_environ():
+        environment = Environment()
+
+        environment.update(self.environment, self.intrinsic_environment)
+
+        with environment.as_environ():
             expand_node_data(node.data, self.fmf_context)  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
 
         # Initialize test steps
@@ -458,11 +463,7 @@ class Plan(
     _environment_from_importing: Environment = field(default_factory=Environment, internal=True)
 
     @property
-    def _environment_from_intrinsics(self) -> Environment:
-        """
-        Environment variables derived from the plan properties.
-        """
-
+    def intrinsic_environment(self) -> Environment:
         environment = Environment(
             {
                 'TMT_VERSION': EnvVarValue(tmt.__version__),
@@ -549,7 +550,6 @@ class Plan(
                     **self._environment_from_importing,
                     **self._environment_from_cli,
                     **self.my_run.environment,
-                    **self._environment_from_intrinsics,
                 }
             )
 
@@ -558,7 +558,6 @@ class Plan(
                 **self._environment_from_fmf,
                 **self._environment_from_importing,
                 **self._environment_from_cli,
-                **self._environment_from_intrinsics,
             }
         )
 

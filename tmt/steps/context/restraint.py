@@ -2,11 +2,11 @@ from typing import Optional
 
 import tmt.log
 from tmt.container import container
-from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
+from tmt.utils.environment import Environment, EnvVarValue, HasIntrinsicEnvironment
 
 
 @container
-class RestraintContext(HasEnvironment):
+class RestraintContext(HasIntrinsicEnvironment):
     """
     Provides restraint-related context for execution.
     """
@@ -22,7 +22,7 @@ class RestraintContext(HasEnvironment):
     taskname: Optional[str] = None
 
     @property
-    def environment(self) -> Environment:
+    def intrinsic_environment(self) -> Environment:
         environment = Environment()
 
         environment["TMT_RESTRAINT_COMPATIBLE"] = EnvVarValue(str(int(self.enabled)))
