@@ -4,4 +4,5 @@ summary: Verify tmt policies work as expected
   test: ./test-test.sh
 
 /plan:
-  test: ./test-plan.sh
+  framework: shell
+  test: $PYTEST ./test_plan.py
