@@ -73,6 +73,7 @@ from tmt.utils import (
     Stopwatch,
 )
 from tmt.utils.environment import Environment, EnvVarName, EnvVarValue
+from tmt.utils.environment import HasEnvironment as HasEnvironment
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
