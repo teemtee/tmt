@@ -947,6 +947,55 @@ class GuestFacts(SerializableContainer):
             them with markers for the future parsing.
         """
 
+        # Add required facts as well. If we are given a subset of facts,
+        # make sure we include all their requirements.
+        #
+        # We just care about adding them to the list of facts to emit;
+        # the correct order will be resolved below, when emitting snippets.
+
+        if facts:
+            # Facts that already have their requirements resolved. Starting
+            # as an empty set, and facts - initial and required - will be
+            # added as we encounter them.
+            facts_with_resolved_requires = set()
+
+            # Facts with unresolved requirements. All initial facts start
+            # here, and all requirements are added as we go, to resolve
+            # their requirements as well.
+            facts_with_unresolved_requires = set(facts)
+
+            while facts_with_unresolved_requires:
+                name = facts_with_unresolved_requires.pop()
+                fact = self._facts()[name]
+
+                # No requirements? Cool, resolved.
+                if not fact.requires:
+                    facts_with_resolved_requires.add(name)
+                    continue
+
+                # Let's see which requirements are still pending.
+                pending_requires = {
+                    name for name in fact.requires if name not in facts_with_resolved_requires
+                }
+
+                # No pending requirements? Also nice, resolved.
+                if not pending_requires:
+                    facts_with_resolved_requires.add(name)
+                    continue
+
+                # We are left with some pending requirements, add them
+                # to the stack, and resolve their requirements as well.
+                facts_with_unresolved_requires.update(pending_requires)
+
+            facts = tuple(facts_with_resolved_requires)
+
+        # Facts that remain to be emitted into the collection script.
+        pending_facts = [
+            (name, fact, snippet)
+            for name, fact, snippet in self._fact_snippets[:]
+            if name in facts
+        ]
+
         # Since facts may have requirements, we need some basic ordering.
         # It is really trivial: facts are processed in a queue-like
         # fashion; if a fact requires facts that have not been yet emitted
@@ -955,12 +1004,6 @@ class GuestFacts(SerializableContainer):
         # Hopefully, we would then emit the required facts first, then
         # reaching those that were blocked.
 
-        # Facts that remain to be emitted into the collection script.
-        pending_facts = [
-            (name, fact, snippet)
-            for name, fact, snippet in self._fact_snippets[:]
-            if name in facts
-        ]
         # Facts that were already emitted into the collection script.
         # If a pending fact requires these, it can be emitted as well
         # since its requirements are already ready.
