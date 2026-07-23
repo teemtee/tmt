@@ -3410,7 +3410,9 @@ class GuestSsh(Guest, CommandCollector):
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
-                environment=self._prepare_command_environment(),
+                # Ansible runs on the control node, so it inherits the tmt
+                # process (parent) environment.
+                environment=Environment.from_environ(),
                 log=log,
             )
         except tmt.utils.RunError as exc:

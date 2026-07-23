@@ -462,7 +462,9 @@ class GuestContainer(tmt.Guest):
             return self._run_guest_command(
                 podman_command,
                 cwd=self.parent.plan.worktree,
-                environment=self._prepare_command_environment(),
+                # Ansible runs on the control node, so it inherits the tmt
+                # process (parent) environment.
+                environment=Environment.from_environ(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
