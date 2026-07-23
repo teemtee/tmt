@@ -131,7 +131,9 @@ class GuestLocal(tmt.Guest):
                     '-i', 'localhost,',
                     playbook,
                 ),
-                environment=self._prepare_command_environment(),
+                # Ansible runs on the control node, so it inherits the tmt
+                # process (parent) environment.
+                environment=Environment.from_environ(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
