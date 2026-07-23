@@ -84,7 +84,7 @@ Provides:       tmt-provision-virtual == %{version}-%{release}
 Obsoletes:      tmt-provision-virtual < %{version}-%{release}
 %endif
 Requires:       tmt == %{version}-%{release}
-Requires:       python3-testcloud >= 0.11.7
+Requires:       python3-testcloud >= 0.11.9
 Requires:       libvirt-daemon-config-network
 Requires:       openssh-clients
 # Recommend qemu system emulators for supported arches
@@ -92,6 +92,7 @@ Recommends:     qemu-kvm-core
 %if 0%{?fedora}
 Recommends:     qemu-system-aarch64-core
 Recommends:     qemu-system-ppc-core
+Recommends:     qemu-system-riscv-core
 Recommends:     qemu-system-s390x-core
 Recommends:     qemu-system-x86-core
 %endif
