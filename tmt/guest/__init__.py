@@ -1408,7 +1408,7 @@ class GuestFacts(SerializableContainer):
             if [ -n "$image" ]; then
                 if [ "$image" = "null" ]; then echo 'false'; else echo 'true'; fi
             else
-                echo 'unknown'
+                echo 'false'
             fi
         else
             echo 'false'
