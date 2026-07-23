@@ -73,7 +73,6 @@ The outer wrapper handles the following 3 execution modes:
 """
 
 import functools
-import os
 from typing import Any, Optional
 
 import jinja2
@@ -186,8 +185,8 @@ def effective_pidfile_root() -> Path:
     :py:const:`TEST_PIDFILE_ROOT` is picked.
     """
 
-    if 'TMT_TEST_PIDFILE_ROOT' in os.environ:
-        return Path(os.environ['TMT_TEST_PIDFILE_ROOT'])
+    if 'TMT_TEST_PIDFILE_ROOT' in Environment.environ:
+        return Path(Environment.environ['TMT_TEST_PIDFILE_ROOT'])
 
     return TEST_PIDFILE_ROOT
 
