@@ -16,8 +16,8 @@ function fetch_downloaded_packages () {
         container_id="$(podman run -d $image sleep 3600)"
 
         rlRun "podman exec $container_id bash -c \"set -x; \
-                                                    dnf install -y 'dnf-command(download)' \
-                                                    && dnf download --destdir /tmp tree diffutils \
+                                                    dnf install -y 'dnf-command(download)'; \
+                                                    dnf download --destdir /tmp tree diffutils \
                                                     && mv /tmp/tree*.rpm /tmp/tree.rpm \
                                                     && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
         rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
