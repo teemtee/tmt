@@ -28,7 +28,9 @@ function build_rpm() {
     local rpm_dir=$LIB_DIR/../rpms/$1
     if [[ ! -d "$rpm_dir/build" ]]; then
         rlRun "pushd $rpm_dir"
-        rlRun "rpmbuild --define='_topdir build' -bb *.spec" 0 "Build rpm"
+        # _topdir: keep all the artifacts in the rpms directory
+        # _binary_payload, _rpmformat: keep the rpms compatible with centos 7
+        rlRun "rpmbuild --define='_topdir build' --define='_binary_payload w9.gzdio' --define='_rpmformat 4' -bb *.spec" 0 "Build rpm"
         rlRun "cp build/RPMS/*/* ./" 0 "Move rpms next to spec file"
         rlRun "popd"
     fi

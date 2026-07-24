@@ -15,7 +15,6 @@ rlJournalStart
     while IFS= read -r image; do
         if ! is_fedora_rawhide "$image"; then
             # Running only against rawhide right now due to hard-coded pattern
-            # TODO(#4941): Make this run more generically
             continue
         fi
 

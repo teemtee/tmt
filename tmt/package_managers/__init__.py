@@ -44,11 +44,13 @@ YUM_REPOS_DIR = Path("/etc/yum.repos.d")
 
 class _ResolvedEntry(TypedDict):
     """
-    Single entry from the YAML output of :py:meth:`PackageManagerEngine.resolve_provides`.
+    Single entry from the YAML output of :py:meth:`PackageManagerEngine._repoquery_script`.
     """
 
+    name: str
     nevra: str
-    repo_id: str
+    repoid: str
+    from_repo: str
 
 
 @container(frozen=True)
@@ -421,6 +423,38 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def _repoquery_script(
+        self,
+        *queries: str,
+        repos: Optional[Sequence[str]] = None,
+        whatprovides: bool = False,
+        installed: bool = False,
+    ) -> ShellScript:
+        """
+        Query info about a package and structure it as a yaml to process.
+
+        An example output is:
+
+        .. code-block:: yaml
+
+            '/usr/bin/cmake':
+            - name: 'cmake'
+              nevra: 'cmake-0:4.3.0-4.fc45.i686'
+              repoid: 'rawhide'
+              from_repo: ''
+            - name: 'cmake'
+              nevra: 'cmake-0:4.3.0-4.fc45.x86_64'
+              repoid: 'rawhide'
+              from_repo: ''
+
+
+        :param queries: entities to query (must be properly shell escaped)
+        :param repos: specific repositories to query
+        :param whatprovides: inject a ``--whatprovides`` flag
+        :param installed: query only installed entities
+        """
+        raise NotImplementedError
+
     def list_packages(self, repository: "Repository") -> ShellScript:
         """
         List packages available in the specified repository.
@@ -435,16 +469,7 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         List source repositories for each installed package.
 
-        The script must emit one line per package in the format::
-
-            <name> <origin>
-
-        Empty lines are allowed and will be ignored by the caller.  If
-        the origin field is omitted the package is treated as having an
-        unknown source repository (equivalent to
-        :py:attr:`SpecialPackageOrigin.UNKNOWN`).  Packages whose name
-        does not appear in the output at all are treated as not installed
-        (equivalent to :py:attr:`SpecialPackageOrigin.NOT_INSTALLED`).
+        The output is in a yaml format as defined in :py:meth:`_repoquery_script`.
 
         :param packages: Package names to query.
         :returns: A shell script to list source repositories for the given packages.
@@ -455,24 +480,12 @@ class PackageManagerEngine(tmt.utils.Common):
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
+        repo_ids: Optional[Iterable[str]] = None,
     ) -> ShellScript:
         """
         Resolves each provide to the NEVRAs of packages that provide it.
 
-        The script must emit YAML mapping each provide string to a list of
-        mappings with ``nevra`` and ``repo_id`` keys, or an empty value when
-        nothing provides it, e.g.
-
-        .. code-block:: yaml
-
-            '/usr/bin/cmake':
-                - nevra: 'cmake-0:3.31.6-4.fc43.x86_64'
-                  repo_id: 'updates'
-            '/usr/bin/non-existent-provides':
-            'make':
-                - nevra: 'make-1:4.4.1-8.fc43.x86_64'
-                  repo_id: 'fedora'
+        The output is in a yaml format as defined in :py:meth:`_repoquery_script`.
 
         :param provides: Provides to resolve.
         :param repo_ids: Restrict the query to these repository IDs; searches all enabled
@@ -636,20 +649,24 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         )
         script = self.engine.get_package_origin(result.keys())
         output = self.guest.execute(script)
-        for line in (output.stdout or '').strip().splitlines():
-            # Empty lines are allowed by the engine contract.
-            if not line.strip():
+        assert output.stdout is not None  # narrow type
+        repoquery_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
+            output.stdout
+        )
+        for package, query_result in repoquery_yaml.items():
+            if not query_result:
                 continue
-            parts = line.split(maxsplit=1)
-            package = parts[0]
-            # Omitted origin field → unknown source repository.
-            result[package] = parts[1] if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
+            if len(query_result) > 1:
+                self._logger.debug(f"More than 1 repo provides: {package}", level=1)
+            # TODO: Both from_repo and repoid could be useful to forward
+            origin = query_result[0]["from_repo"]
+            result[package] = origin
         return result
 
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
+        repo_ids: Optional[Iterable[str]] = None,
     ) -> dict[str, list['RpmVersion']]:
         """
         Map each provide to the :py:class:`RpmVersion` objects of packages that provide it.
@@ -682,7 +699,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                 try:
                     result[provide].append(
                         RpmVersion.from_nevra(
-                            resolved_provide['nevra'], repo_id=resolved_provide['repo_id']
+                            resolved_provide['nevra'], repo_id=resolved_provide['repoid']
                         )
                     )
                 except ValueError as error:

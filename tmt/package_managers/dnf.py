@@ -30,6 +30,39 @@ class DnfEngine(PackageManagerEngine):
     #: Equivalent `%full_nevra` repoquery tag
     _full_nevra_querytag: ClassVar[str] = "%{name}-%{evr}.%{arch}"
 
+    def _repoquery_script(
+        self,
+        *queries: str,
+        repos: Optional[Iterable[str]] = None,
+        whatprovides: bool = False,
+        installed: bool = False,
+    ) -> ShellScript:
+
+        query_command = self.command + Command("repoquery")
+        if repos:
+            query_command += Command(
+                "--disablerepo=*",
+                *[f"--enablerepo={repo_id}" for repo_id in repos],
+            )
+        if installed:
+            query_command += Command("--installed")
+        query_command += Command(
+            "--queryformat",
+            r"- name: '%{name}'\n"
+            rf"  nevra: '{self._full_nevra_querytag}'\n"
+            r"  repoid: '%{repoid}'\n"
+            r"  from_repo: '%{from_repo}'\n",
+        )
+        if whatprovides:
+            query_command += Command("--whatprovides")
+
+        return ShellScript(f"""
+        for query in {' '.join(queries)}; do
+            echo "'$query':"
+            {query_command} "$query"
+        done
+        """)
+
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command('-y')
 
@@ -208,40 +241,19 @@ class DnfEngine(PackageManagerEngine):
         ).to_script()
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
-        return (
-            self.command
-            + Command(
-                'repoquery',
-                '--installed',
-                '--queryformat',
-                r'%{name} %{from_repo}\n',
-                *[Package(p) for p in packages],
-            )
-        ).to_script()
+        return self._repoquery_script(*packages, installed=True)
 
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
+        repo_ids: Optional[Iterable[str]] = None,
     ) -> ShellScript:
         assert provides, "provides must not be empty"
-        provides_str = ' '.join(escape_installables(*[Package(p) for p in provides]))
-        cmd = (
-            self.command
-            + Command(
-                'repoquery',
-                '--queryformat',
-                rf"- nevra: '{self._full_nevra_querytag}'\n  repo_id: '%{{repoid}}'\n",
-                *[f'--repo={repo_id}' for repo_id in repo_ids],
-                '--whatprovides',
-            )
-        ).to_script()
-        return ShellScript(f"""
-        for _provide in {provides_str}; do
-            echo "'$_provide':"
-            {cmd} "$_provide"
-        done
-        """)
+        return self._repoquery_script(
+            *escape_installables(*[Package(p) for p in provides]),
+            whatprovides=True,
+            repos=repo_ids,
+        )
 
     def create_repository(self, directory: Path) -> ShellScript:
         """
@@ -286,7 +298,6 @@ class Dnf(PackageManager[DnfEngine]):
     probe_priority = 50
 
     def list_packages(self, repository: Repository) -> list[Version]:
-
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)
         stdout = output.stdout
@@ -348,7 +359,6 @@ class Dnf(PackageManager[DnfEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-
         options = options or Options()
         options.check_first = False
         # Use both install/reinstall to get all packages refreshed
@@ -362,7 +372,6 @@ class Dnf(PackageManager[DnfEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-
         output = super().install_debuginfo(*installables, options=options)
 
         # Check the packages are installed because 'debuginfo-install'
@@ -408,6 +417,7 @@ class Dnf5(Dnf):
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+    _full_nevra_querytag = "%{nevra}"
 
     def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
         if options.allow_erasing:
@@ -424,25 +434,62 @@ class YumEngine(DnfEngine):
 
         return command
 
+    def _repoquery_script(
+        self,
+        *queries: str,
+        repos: Optional[Iterable[str]] = None,
+        whatprovides: bool = False,
+        installed: bool = False,
+    ) -> ShellScript:
+        # The same as the dnf one, but
+        # - query_command is `repoquery`
+        # - handling `--installed` is more complicated because `repoid` is replaced with a dummy
+        #   Instead, we use a 2 step process there to get the installed nevra, and query the repoid
+        #   matching it. Duplicate repos should be handled at the higher level.
+        # - `%{from_repo} does not exist
+
+        query_command = Command("repoquery")
+        if repos:
+            query_command += Command(
+                "--disablerepo=*",
+                *[f"--enablerepo={repo_id}" for repo_id in repos],
+            )
+        query_command += Command(
+            "--queryformat",
+            r"- name: '%{name}'\n"
+            rf"  nevra: '{self._full_nevra_querytag}'\n"
+            r"  repoid: '%{repoid}'\n"
+            r"  from_repo: '%{repoid}'\n",
+        )
+
+        if installed:
+            nevra_query = Command("repoquery", "--installed")
+            if whatprovides:
+                nevra_query += Command("--whatprovides")
+            return ShellScript(f"""
+            for query in {' '.join(queries)}; do
+                echo "'$query':"
+                full_nevra=$({nevra_query} "$query")
+                if [ -n "$full_nevra" ]; then
+                    {query_command} "$full_nevra"
+                fi
+            done
+            """)
+
+        if whatprovides:
+            query_command += Command("--whatprovides")
+        return ShellScript(f"""
+        for query in {' '.join(queries)}; do
+            echo "'$query':"
+            {query_command} "$query"
+        done
+        """)
+
     def enable_repo(self, *repo_ids: str) -> ShellScript:
         return (self._yum_config_manager_command() + Command('--enable', *repo_ids)).to_script()
 
     def disable_repo(self, *repo_ids: str) -> ShellScript:
         return (self._yum_config_manager_command() + Command('--disable', *repo_ids)).to_script()
-
-    def resolve_provides(
-        self,
-        provides: Sequence[str],
-        repo_ids: Iterable[str] = (),
-    ) -> ShellScript:
-        raise PrepareError("Package manager 'yum' does not support provides resolution.")
-
-    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
-        # Real yum 3.x (not a dnf symlink) ships repoquery as a separate
-        # yum-utils plugin and the %{from_repo} queryformat field is not
-        # guaranteed to be available.  Support can be added once tested on
-        # an actual yum 3.x system (RHEL 6 / CentOS 6 era).
-        raise NotImplementedError
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
     # decorator, it might be messing with the class inheritance as seen by pyright,
