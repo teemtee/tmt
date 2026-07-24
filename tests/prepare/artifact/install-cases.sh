@@ -26,6 +26,14 @@ xfail_plans=(
     "^/verified-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
     "^/verified-artifacts/obsoletes/pre-installed/upgrade/only-foo$"
 )
+xfail_plans_nobest=(
+    # On dnf4 these plans fail because of the intrinsic --best flag passed (#4838)
+    "/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    "^/broken/available-artifacts/basic"
+    "^/broken/available-artifacts/obsoletes/basic"
+    "^/broken/available-artifacts/.*pre-installed/.*/with-devel$"
+    "^/broken/no-artifacts/.*/pre-installed/with-devel$"
+)
 
     while IFS= read -r image; do
         if ! is_fedora "$image" && ! is_centos "$image"; then
@@ -52,6 +60,15 @@ xfail_plans=(
                     break
                 fi
             done
+            if is_centos_stream_9 "$image" || is_centos_stream_10 "$image"; then
+                for check_pattern in ${xfail_plans_nobest[@]}; do
+                    if [[ "$plan" =~ $check_pattern ]]; then
+                        xfail="(XFAIL)"
+                        expected_result=2
+                        break
+                    fi
+                done
+            fi
             rlPhaseStartTest "$phase_prefix $plan $xfail"
                 rlRun "tmt run $extra_env -i $run --scratch -vvv --all \
                     plan --name '^$plan$' \
