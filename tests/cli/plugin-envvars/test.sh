@@ -11,7 +11,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Verify plugin envvars are delivered"
-        rlRun "run_tmt=\"tmt -vvvd --feeling-safe --log-topic=cli-invocations run --id $rundir --scratch\""
+        rlRun "run_tmt=\"tmt -vvvd --feeling-safe=all --log-topic=cli-invocations run --id $rundir --scratch\""
 
         rlRun -s "$run_tmt"
         rlAssertGrep "ReportPlugin.delegate\(step=report, data=None, raw_data=\{'how': 'html', 'absolute-paths': False, 'display-guest': 'auto', 'name': 'default-0'\}\)" $rundir/log.txt -E
@@ -41,7 +41,7 @@ rlJournalStart
 # Disabled: report/reportportal ignores `--dry`, we can't have it connecting anywhere.
 # See https://github.com/teemtee/tmt/issues/4851
 #    rlPhaseStartTest "Verify multi-value plugin option"
-#        rlRun "run_tmt_reportportal=\"tmt --context report-portal=1 -vvv --feeling-safe --log-topic=cli-invocations run --id $rundir --scratch --dry\""
+#        rlRun "run_tmt_reportportal=\"tmt --context report-portal=1 -vvv --feeling-safe=all --log-topic=cli-invocations run --id $rundir --scratch --dry\""
 #
 #        rlRun -s "TMT_PLUGIN_REPORT_REPORTPORTAL_UPLOAD_LOG_PATTERN=\"cool.log my-special-log\" $run_tmt_reportportal"
 #        rlAssertGrep "ReportPlugin.delegate\(step=report, data=None, raw_data=\{'how': 'reportportal',.*'upload-log-pattern': \('cool.log', 'my-special-log'\).*\)" $rundir/log.txt -E

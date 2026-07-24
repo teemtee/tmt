@@ -27,6 +27,14 @@ description: |
     and command line options. When not specified, keys and options
     deemed unsafe would lead to an error.
 
+    It is possible to allow either all unsafe behavior, with
+    ``--feeling-safe=all``, or allow just a subset. This may be very
+    handy when the otherwise useful behavior could be constrained by
+    other means user controls. For example, CI maintainer would like
+    to allow custom reboot scripts the :py:ref:`/plugins/provision/connect`
+    plugin supports while still preventing use of the
+    :py:ref:`/plugins/provision/local` plugin.
+
     .. versionadded:: 1.30
 
 # TODO: add examples once we actually get some :)

@@ -6,7 +6,7 @@ require: [tmt]
 check: [avc]
 duration: 10m
 environment:
-    TMT_FEELING_SAFE: 1
+    TMT_FEELING_SAFE: all
 
 adjust:
   - check: []
