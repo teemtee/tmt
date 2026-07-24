@@ -1,10 +1,11 @@
 from typing import TYPE_CHECKING, Literal, Optional, TypeVar, cast
 
 import fmf.utils
+from click.core import ParameterSource
 
 import tmt.log
 import tmt.steps
-from tmt.container import container, simple_field
+from tmt.container import container, option_to_key, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
@@ -332,6 +333,31 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
         # 3. for each collection, which now groups a set of packages and
         # all guests they need to be installed on, add new phase that
         # would take care of installation.
+        def _cli_check_first_override() -> Optional[bool]:
+            """
+            Return an explicit CLI/env override of prepare/install check-first.
+
+            Auto-generated requires/recommends phases are not created from CLI
+            phase data, so read the value from prepare invocations with
+            ``how=install`` instead of using the prepare step option map.
+            """
+
+            check_first_key = option_to_key('check-first')
+
+            for invocation in reversed(self.__class__.cli_invocations):
+                if invocation.options.get('how') != 'install':
+                    continue
+
+                source = invocation.option_sources.get(check_first_key)
+                if source not in (ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
+                    continue
+
+                check_first = invocation.options.get(check_first_key)
+                if isinstance(check_first, bool):
+                    return check_first
+
+            return None
+
         def _emit_phase(
             pruned_collections: list[DependencyCollection],
             name: str,
@@ -340,6 +366,8 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             missing: Literal['skip', 'fail'] = 'fail',
         ) -> None:
             from tmt.steps.prepare.install import PrepareInstallData
+
+            check_first_override = _cli_check_first_override()
 
             for collection in pruned_collections:
                 if not collection.dependencies:
@@ -354,6 +382,9 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                     package=collection.dependencies,
                     missing=missing,
                 )
+
+                if check_first_override is not None:
+                    data.check_first = check_first_override
 
                 self._phases.append(PreparePlugin.delegate(self, data=data))
 

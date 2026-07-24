@@ -117,6 +117,10 @@ class FieldMetadata(Generic[T]):
     #: Marks the fields as a flag.
     is_flag: bool = False
 
+    #: If set, pass the field default to Click even when the field is a flag.
+    #: By default flag defaults are omitted and Click uses ``False``.
+    pass_default_to_cli: bool = False
+
     #: Marks the field as accepting multiple values. When used on command line,
     #: the option could be used multiple times, accumulating values.
     multiple: bool = False
@@ -232,7 +236,9 @@ class FieldMetadata(Generic[T]):
                 }
             )
 
-            if self.default is not dataclasses.MISSING and not self.is_flag:
+            if self.default is not dataclasses.MISSING and (
+                not self.is_flag or self.pass_default_to_cli
+            ):
                 self._option_kwargs['default'] = self.default
 
             self._option = option(*self._option_args, **self._option_kwargs)
@@ -710,6 +716,7 @@ def field(
     help: Optional[str] = None,
     help_example_values: Optional[list[str]] = None,
     show_default: bool = False,
+    pass_default_to_cli: bool = False,
     internal: bool = False,
     # Input data normalization - not needed, the field is a boolean
     # flag.
@@ -738,6 +745,7 @@ def field(
     help: Optional[str] = None,
     help_example_values: Optional[list[str]] = None,
     show_default: bool = False,
+    pass_default_to_cli: bool = False,
     internal: bool = False,
     # Input data normalization
     normalize: Optional[NormalizeCallback[T]] = None,
@@ -765,6 +773,7 @@ def field(
     help: Optional[str] = None,
     help_example_values: Optional[list[str]] = None,
     show_default: bool = False,
+    pass_default_to_cli: bool = False,
     internal: bool = False,
     # Input data normalization
     normalize: Optional[NormalizeCallback[T]] = None,
@@ -791,6 +800,7 @@ def field(
     help: Optional[str] = None,
     help_example_values: Optional[list[str]] = None,
     show_default: bool = False,
+    pass_default_to_cli: bool = False,
     internal: bool = False,
     # Input data normalization
     normalize: Optional[NormalizeCallback[T]] = None,
@@ -818,6 +828,7 @@ def field(
     help: Optional[str] = None,
     help_example_values: Optional[list[str]] = None,
     show_default: bool = False,
+    pass_default_to_cli: bool = False,
     internal: bool = False,
     # Input data normalization
     normalize: Optional[NormalizeCallback[T]] = None,
@@ -864,6 +875,9 @@ def field(
         the documentation as interesting examples of the field usage.
     :param show_default: show default value
         Passed directly to :py:func:`click.option`.
+    :param pass_default_to_cli: if set, pass ``default`` to Click even for
+        flags. Use for flags whose intended default is not Click's implicit
+        ``False``.
     :param internal: if set, the field is treated as internal-only, and will not
         appear when showing objects via ``show()`` method, or in export created
         by :py:meth:`Core._export`.
@@ -910,6 +924,7 @@ def field(
                 default=default,
                 default_factory=default_factory,
                 show_default=show_default,
+                pass_default_to_cli=pass_default_to_cli,
                 is_flag=is_flag,
                 multiple=multiple,
                 _choices=choices,

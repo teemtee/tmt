@@ -1,0 +1,49 @@
+summary: Verify --no-check-first is applied to required packages
+prepare: []
+
+discover: []
+
+execute:
+    how: tmt
+
+adjust:
+  - when: distro == ubuntu,debian
+    prepare+<:
+      - how: shell
+        script: apt-get update
+
+  - when: distro != rhel
+    prepare+:
+      - how: install
+        check-first: true
+        # should get overridden by CLI --no-check-first
+        package:
+          - tree
+          - dos2unix
+
+    discover+:
+      - how: shell
+        tests:
+          - name: test-with-requires
+            test: /bin/true
+            require:
+              - tree
+              - dos2unix
+
+  - when: distro == rhel
+    prepare+:
+      - how: install
+        check-first: true
+        # should get overridden by CLI --no-check-first
+        package:
+          - dconf
+          - libpng
+
+    discover+:
+      - how: shell
+        tests:
+          - name: test-with-requires
+            test: /bin/true
+            require:
+              - dconf
+              - libpng
