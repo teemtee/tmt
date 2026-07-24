@@ -31,6 +31,55 @@ adjust+:
 /install:
     discover+:
         test: (install|artifact)
+    # Parallelize for each container, sync with TEST_CONTAINER_IMAGES in tests/images.sh
+    environment+:
+        # See TEST_IMAGE_PREFIX in tests/images.sh
+        TEST_CONTAINER_IMAGES: "localhost/tmt/container/test"
+    /alpine:
+        environment+:
+            TEST_CONTAINER_IMAGES+: /alpine:latest
+    /centos:
+        environment+:
+            TEST_CONTAINER_IMAGES+: /centos
+        /7:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /7/upstream:latest
+        /stream9:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /stream9/upstream:latest
+        /stream10:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /stream10/upstream:latest
+    /fedora:
+        environment+:
+            TEST_CONTAINER_IMAGES+: /fedora
+        /rawhide:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /rawhide/upstream:latest
+        /eln:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /eln/upstream:latest
+        /44:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /44/upstream:latest
+        /43:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /43/upstream:latest
+    /ubi:
+        environment+:
+            TEST_CONTAINER_IMAGES+: /ubi
+        /8:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /8/upstream:latest
+        /9:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /9/upstream:latest
+    /ubuntu/22.04:
+        environment+:
+            TEST_CONTAINER_IMAGES+: /ubuntu/22.04/upstream:latest
+    /debian/12.7:
+        environment+:
+            TEST_CONTAINER_IMAGES+: /debian/12.7/upstream:latest
 
 /ansible:
     discover+:

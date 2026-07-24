@@ -1,13 +1,14 @@
-summary: Newer version on system
+summary: Newer version on system (broken)
 description: |
-  System repo: foo-1.0, foo-1.4 (baseline)
+  System repo: foo-1.0, foo-1.4-bad
   Pre-installed: foo-1.0
   Artifacts: None
 
-  `foo` is pre-installed but we do not really want to upgrade it.
+  The broken update does not affect because `foo` is pre-installed
+  and we do not upgrade it.
 
 environment+:
-  SYSTEM_PACKAGE: foo-1.0 foo-1.4
+  SYSTEM_PACKAGE: foo-1.0 foo-1.4-bad
   EXPECTED_PACKAGE: foo-1.0
   PRE_INSTALLED_PACKAGE: rpms/foo-1.0/foo-1.0*.rpm
 
@@ -16,8 +17,6 @@ environment+:
 
 /with-bar:
   summary+: " (foo and bar requested)"
-  description+: |
-    Installing another dependency (`bar`) should not upgrade `foo`.
   context+:
     with_bar: "true"
   environment+:
@@ -26,8 +25,8 @@ environment+:
 /with-devel:
   summary+: " (requested devel)"
   description+: |
-    Because we request `foo-devel`, it will upgrade foo to 1.4.
+    This would fail because no other source of foo-devel is available.
   context+:
     want_devel: "true"
   environment+:
-    EXPECTED_PACKAGE: foo-1.4 foo-devel-1.4
+    EXPECTED_PACKAGE+: " foo-devel-1.0"
