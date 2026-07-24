@@ -311,8 +311,8 @@ __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 How do I migrate STI tests to tmt?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`Standard Test Interface`__ tests are enabled using ``tests.yml``
-Ansible playbooks together with the `Standard Test Roles`__ which
+Standard Test Interface tests are enabled using ``tests.yml``
+Ansible playbooks together with the Standard Test Roles which
 make it easier to execute tests, check their results and perform
 additional actions such as installing required packages. The
 configuration, however, can sometimes be confusing and quite hard
@@ -333,9 +333,6 @@ of the files is up to you. See the :ref:`guide` for more details.
 
     With ``tmt``, files used in the ``script`` or ``test``
     key are expected to be executable, unlike with STI.
-
-__ https://docs.fedoraproject.org/en-US/ci/standard-test-interface/
-__ https://docs.fedoraproject.org/en-US/ci/standard-test-roles/
 
 
 Simple Script
