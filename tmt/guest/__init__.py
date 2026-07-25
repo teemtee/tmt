@@ -2273,6 +2273,31 @@ class Guest(
 
         return environment
 
+    def _prepare_ansible_command_environment(
+        self, environment: Optional[Environment] = None
+    ) -> Environment:
+        """
+        Prepare environment for an ``ansible-playbook`` command.
+
+        Unlike commands running on the guest, ``ansible-playbook`` runs on the
+        control node and therefore inherits the tmt (parent) process
+        environment, extended with the command environment prepared for the
+        guest.
+
+        :param environment: if set, it is passed to
+            :py:meth:`_prepare_command_environment` as the desired command
+            environment.
+        :returns: the tmt process environment merged with the prepared command
+            environment.
+        """
+
+        return Environment(
+            {
+                **Environment.from_environ(),
+                **self._prepare_command_environment(environment),
+            }
+        )
+
     def _run_guest_command(
         self,
         command: Command,
@@ -3410,9 +3435,7 @@ class GuestSsh(Guest, CommandCollector):
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
-                # Ansible runs on the control node, so it inherits the tmt
-                # process (parent) environment.
-                environment=Environment.from_environ(),
+                environment=self._prepare_ansible_command_environment(),
                 log=log,
             )
         except tmt.utils.RunError as exc:
