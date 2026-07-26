@@ -1,7 +1,7 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-steps='discover provision prepare execute report finish'
+steps='discover provision prepare execute finish report cleanup'
 
 rlJournalStart
     rlPhaseStartSetup
