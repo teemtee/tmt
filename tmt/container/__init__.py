@@ -232,7 +232,7 @@ class FieldMetadata(Generic[T]):
                 }
             )
 
-            if self.default is not dataclasses.MISSING and not self.is_flag:
+            if self.default is not dataclasses.MISSING:
                 self._option_kwargs['default'] = self.default
 
             self._option = option(*self._option_args, **self._option_kwargs)
