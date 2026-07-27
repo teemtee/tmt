@@ -99,7 +99,7 @@ rlJournalStart
                           plan --name /plans/sanity/lint \
                           discover -h shell --fmf-id finish 2>&1 | \
                           tee output" 2
-        rlAssertGrep "Error: no such option: --fmf-id" output -i
+        rlAssertGrep "Error: no such option:? '?--fmf-id'?" output -iE
     rlPhaseEnd
 
     # Raise an exception if --fmf-id uses w/o --url and git root doesn't exist
