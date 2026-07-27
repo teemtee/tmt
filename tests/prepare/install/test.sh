@@ -16,8 +16,8 @@ function fetch_downloaded_packages () {
         container_id="$(podman run -d $image sleep 3600)"
 
         rlRun "podman exec $container_id bash -c \"set -x; \
-                                                    dnf install -y 'dnf-command(download)' \
-                                                    && dnf download --destdir /tmp tree diffutils \
+                                                    dnf install -y 'dnf-command(download)'; \
+                                                    dnf download --destdir /tmp tree diffutils \
                                                     && mv /tmp/tree*.rpm /tmp/tree.rpm \
                                                     && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
         rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
@@ -79,7 +79,9 @@ rlJournalStart
             rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
             rlRun "SECONDARY_IMAGES='$TEST_CONTAINER_IMAGES_SECONDARY'"
 
-            build_container_images
+            for image in $IMAGES; do
+                build_container_image "${image#$TEST_IMAGE_PREFIX/}"
+            done
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
