@@ -3,3 +3,8 @@ require+:
 tag+:
   - provision-only
   - provision-mock
+adjust:
+  - enabled: false
+    because: |
+      Current implementation is flaky with the tests failing in timeout.
+      https://github.com/teemtee/tmt/issues/5081
