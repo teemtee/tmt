@@ -21,7 +21,7 @@ rlJournalStart
         rlRun "grep '^    report$' -A5 '$rlRun_LOG' | grep -i interactive"
     rlPhaseEnd
 
-    for step in discover provision prepare execute report finish; do
+    for step in discover provision prepare execute finish report; do
         rlPhaseStartTest "Selected step ($step)"
             rlRun -s "$tmt login -c true -s $step"
 
