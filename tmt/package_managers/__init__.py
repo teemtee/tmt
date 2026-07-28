@@ -436,7 +436,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
     def _repoquery_script(
         self,
-        *queries: str,
+        *package_specs: str,
         repos: Optional[Sequence[str]] = None,
         whatprovides: bool = False,
         installed: bool = False,
@@ -459,7 +459,8 @@ class PackageManagerEngine(tmt.utils.Common):
               from_repo: ''
 
 
-        :param queries: entities to query (must be properly shell escaped)
+        :param package_specs: packages, capabilities, or other entities to repoquery
+            (must be properly shell escaped)
         :param repos: specific repositories to query
         :param whatprovides: inject a ``--whatprovides`` flag
         :param installed: query only installed entities

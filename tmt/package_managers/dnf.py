@@ -32,7 +32,7 @@ class DnfEngine(PackageManagerEngine):
 
     def _repoquery_script(
         self,
-        *queries: str,
+        *package_specs: str,
         repos: Optional[Iterable[str]] = None,
         whatprovides: bool = False,
         installed: bool = False,
@@ -57,7 +57,7 @@ class DnfEngine(PackageManagerEngine):
             query_command += Command("--whatprovides")
 
         return ShellScript(f"""
-        for query in {' '.join(queries)}; do
+        for query in {' '.join(package_specs)}; do
             echo "'$query':"
             {query_command} "$query"
         done
@@ -436,7 +436,7 @@ class YumEngine(DnfEngine):
 
     def _repoquery_script(
         self,
-        *queries: str,
+        *package_specs: str,
         repos: Optional[Iterable[str]] = None,
         whatprovides: bool = False,
         installed: bool = False,
@@ -467,7 +467,7 @@ class YumEngine(DnfEngine):
             if whatprovides:
                 nevra_query += Command("--whatprovides")
             return ShellScript(f"""
-            for query in {' '.join(queries)}; do
+            for query in {' '.join(package_specs)}; do
                 echo "'$query':"
                 full_nevra=$({nevra_query} "$query")
                 if [ -n "$full_nevra" ]; then
@@ -479,7 +479,7 @@ class YumEngine(DnfEngine):
         if whatprovides:
             query_command += Command("--whatprovides")
         return ShellScript(f"""
-        for query in {' '.join(queries)}; do
+        for query in {' '.join(package_specs)}; do
             echo "'$query':"
             {query_command} "$query"
         done
