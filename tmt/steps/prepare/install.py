@@ -86,7 +86,6 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         option='--check-first / --no-check-first',
         is_flag=True,
         show_default=True,
-        pass_default_to_cli=True,
         help='Check whether packages are already installed before attempting to install them.',
     )
 
