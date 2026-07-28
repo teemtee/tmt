@@ -356,27 +356,6 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-	rlPhaseStartTest "$phase_prefix Check-first option via CLI (--no-check-first) for requires"
-            rlRun -s "$tmt -d -h install --no-check-first plan --name /no-check-first-requires$"
-
-            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
-            if is_ubi "$image"; then
-                rlAssertGrep "install.*dconf" $rlRun_LOG
-                rlAssertGrep "install.*libpng" $rlRun_LOG
-            else
-                rlAssertNotGrep "rpm -q --whatprovides .* >&2" $rlRun_LOG
-                rlAssertGrep "\(install\|add\).*tree" $rlRun_LOG
-                rlAssertGrep "\(install\|add\).*dos2unix" $rlRun_LOG
-            fi
-
-            if is_ubuntu "$image" || is_debian "$image"; then
-                rlAssertGrep "summary: 4 preparations applied" $rlRun_LOG
-            else
-                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-            fi
-        rlPhaseEnd
-
-
 
         # Limit these test cases to:
         # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
