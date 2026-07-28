@@ -49,7 +49,7 @@ class DnfEngine(PackageManagerEngine):
         query_command += Command(
             "--queryformat",
             r"- name: '%{name}'\n"
-            rf"  nevra: '{self._full_nevra_querytag}'\n"
+            rf"  full_nevra: '{self._full_nevra_querytag}'\n"
             r"  repoid: '%{repoid}'\n"
             r"  from_repo: '%{from_repo}'\n",
         )
@@ -457,7 +457,7 @@ class YumEngine(DnfEngine):
         query_command += Command(
             "--queryformat",
             r"- name: '%{name}'\n"
-            rf"  nevra: '{self._full_nevra_querytag}'\n"
+            rf"  full_nevra: '{self._full_nevra_querytag}'\n"
             r"  repoid: '%{repoid}'\n"
             r"  from_repo: '%{repoid}'\n",
         )

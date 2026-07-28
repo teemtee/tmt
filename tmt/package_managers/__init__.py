@@ -53,7 +53,7 @@ class _ResolvedEntry(TypedDict):
     #: Display name of the package.
     name: str
     #: Display name-epoch:version-release.arch of the package. Even epoch 0 is included.
-    nevra: str
+    full_nevra: str
     #: Display id of repository the package is in.
     #:
     #: .. note::
@@ -450,11 +450,11 @@ class PackageManagerEngine(tmt.utils.Common):
 
             '/usr/bin/cmake':
             - name: 'cmake'
-              nevra: 'cmake-0:4.3.0-4.fc45.i686'
+              full_nevra: 'cmake-0:4.3.0-4.fc45.i686'
               repoid: 'rawhide'
               from_repo: ''
             - name: 'cmake'
-              nevra: 'cmake-0:4.3.0-4.fc45.x86_64'
+              full_nevra: 'cmake-0:4.3.0-4.fc45.x86_64'
               repoid: 'rawhide'
               from_repo: ''
 
@@ -720,7 +720,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                 try:
                     result[provide].append(
                         RpmVersion.from_nevra(
-                            resolved_provide['nevra'], repo_id=resolved_provide['repoid']
+                            resolved_provide['full_nevra'], repo_id=resolved_provide['repoid']
                         )
                     )
                 except ValueError as error:
