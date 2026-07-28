@@ -35,6 +35,16 @@ plans:
             how: fmf
             order: 50
             url-content-type: git
+            dist-git-source: false
+            dist-git-init: false
+            dist-git-download-only: false
+            dist-git-install-builddeps: false
+            dist-git-merge: false
+            dist-git-remove-fmf-root: false
+            fmf-id: false
+            modified-only: false
+            prune: false
+            sync-repo: false
         tests:
           - name: /discover-shell/shell-test
             discover-phase: discover-shell
