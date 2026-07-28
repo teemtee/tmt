@@ -46,7 +46,7 @@ class _ResolvedEntry(TypedDict):
     """
     Single entry from the YAML output of :py:meth:`PackageManagerEngine._repoquery_script`.
 
-    Naming convention match the ``dnf repoquery`` query tags. See the ``dnf-repoquery``
+    Naming convention matches the ``dnf repoquery`` query tags. See the ``dnf-repoquery``
     man page for a full breakdown.
     """
 
@@ -437,7 +437,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def _repoquery_script(
         self,
         *package_specs: str,
-        repos: Optional[Sequence[str]] = None,
+        repos: Optional[Iterable[str]] = None,
         whatprovides: bool = False,
         installed: bool = False,
     ) -> ShellScript:
