@@ -45,11 +45,22 @@ YUM_REPOS_DIR = Path("/etc/yum.repos.d")
 class _ResolvedEntry(TypedDict):
     """
     Single entry from the YAML output of :py:meth:`PackageManagerEngine._repoquery_script`.
+
+    Naming convention match the ``dnf repoquery`` query tags. See the ``dnf-repoquery``
+    man page for a full breakdown.
     """
 
+    #: Display name of the package.
     name: str
+    #: Display name-epoch:version-release.arch of the package. Even epoch 0 is included.
     nevra: str
+    #: Display id of repository the package is in.
+    #:
+    #: .. note::
+    #:    This is different when queried against an installed package or an available one.
+    #:    When querying an installed package the same info is now in the ``from_repo`` tag.
     repoid: str
+    #: Display id of repository the package is installed from. Empty for not installed packages.
     from_repo: str
 
 
