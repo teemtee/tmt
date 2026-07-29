@@ -2273,6 +2273,9 @@ class Guest(
 
         return environment
 
+    # TODO: the existence of this method is very questionable, it may
+    # go away while works on https://github.com/teemtee/tmt/pull/4364
+    # continue.
     def _prepare_ansible_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
