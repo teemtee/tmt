@@ -4,7 +4,7 @@
 - [ ] Review the release notes content and update the text as needed
 - [ ] Write release notes for any essential changes which were missed
 - [ ] Verify the rendering locally using `make docs` or the `docs/readthedocs.org:tmt` GitHub action check
-- [ ] Use `./scripts/list-new-contributors` to identify new contributors, update `docs/overview.rst` accordingly
+- [ ] Use `./scripts/list-new-contributors` to identify new contributors, update `docs/overview.rst` and `.mailmap` files accordingly
 - [ ] Commit and push all release notes and contributor changes
 - [ ] Make sure that the full test coverage has been successfully executed
 - [ ] Merge the release pull request
