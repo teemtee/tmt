@@ -273,12 +273,17 @@ class _RecipeStep(SpecBasedContainer[_RawRecipeStep, _RawRecipeStep], Serializab
     phases: list[_RawStepData]
 
     @classmethod
-    def from_step(cls, step: 'Step') -> '_RecipeStep':
+    def from_step(cls, step: 'Step', logger: Logger) -> '_RecipeStep':
         enabled = bool(step.enabled)
-        return _RecipeStep(
-            enabled=enabled,
-            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
-        )
+        try:
+            phases = [phase.to_minimal_spec() for phase in step.data]
+        except tmt.utils.SpecificationError:
+            if enabled:
+                raise
+            logger.warning(f"Skipping invalid '{step.name}' step during recipe generation.")
+            phases = []
+
+        return _RecipeStep(enabled=enabled, phases=phases)
 
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
@@ -326,12 +331,13 @@ class _RecipeDiscoverStep(_RecipeStep):
         )
 
     @classmethod
-    def from_step(cls, step: 'Step') -> '_RecipeDiscoverStep':
+    def from_step(cls, step: 'Step', logger: Logger) -> '_RecipeDiscoverStep':
+        recipe_step = super().from_step(step, logger)
+
         assert isinstance(step, Discover)
-        enabled = bool(step.enabled)
         return _RecipeDiscoverStep(
-            enabled=enabled,
-            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
+            enabled=recipe_step.enabled,
+            phases=recipe_step.phases,
             tests=[_RecipeTest.from_test_origin(test_origin) for test_origin in step.tests()],
         )
 
@@ -361,8 +367,8 @@ class _RecipeExecuteStep(_RecipeStep):
         )
 
     @classmethod
-    def from_step(cls, step: 'Step') -> '_RecipeExecuteStep':
-        enabled = bool(step.enabled)
+    def from_step(cls, step: 'Step', logger: Logger) -> '_RecipeExecuteStep':
+        recipe_step = super().from_step(step, logger)
 
         # The 'script' field is consumed by _discover_from_execute() to create
         # tests in the discover step. Keeping it in the recipe would cause
@@ -370,15 +376,13 @@ class _RecipeExecuteStep(_RecipeStep):
         phases = cast(
             list[_RawStepData],
             [
-                {key: value for key, value in phase.to_minimal_spec().items() if key != 'script'}
-                for phase in step.data
-            ]
-            if enabled
-            else [],
+                {key: value for key, value in phase.items() if key != 'script'}
+                for phase in recipe_step.phases
+            ],
         )
 
         return _RecipeExecuteStep(
-            enabled=enabled,
+            enabled=recipe_step.enabled,
             phases=phases,
             results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
         )
@@ -446,7 +450,7 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
         )
 
     @classmethod
-    def from_plan(cls, plan: 'Plan') -> '_RecipePlan':
+    def from_plan(cls, plan: 'Plan', logger: Logger) -> '_RecipePlan':
         return _RecipePlan(
             name=plan.name,
             summary=plan.summary,
@@ -462,13 +466,13 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
             adjust=plan.adjust,
             environment=plan._environment_from_fmf,
             context=plan.context,
-            discover=_RecipeDiscoverStep.from_step(plan.discover),
-            provision=_RecipeStep.from_step(plan.provision),
-            prepare=_RecipeStep.from_step(plan.prepare),
-            execute=_RecipeExecuteStep.from_step(plan.execute),
-            report=_RecipeStep.from_step(plan.report),
-            finish=_RecipeStep.from_step(plan.finish),
-            cleanup=_RecipeStep.from_step(plan.cleanup),
+            discover=_RecipeDiscoverStep.from_step(plan.discover, logger),
+            provision=_RecipeStep.from_step(plan.provision, logger),
+            prepare=_RecipeStep.from_step(plan.prepare, logger),
+            execute=_RecipeExecuteStep.from_step(plan.execute, logger),
+            report=_RecipeStep.from_step(plan.report, logger),
+            finish=_RecipeStep.from_step(plan.finish, logger),
+            cleanup=_RecipeStep.from_step(plan.cleanup, logger),
         )
 
     def to_minimal_spec(self) -> _RawRecipePlan:
@@ -593,7 +597,7 @@ class RecipeManager(Common):
                 environment=run.environment,
                 context=run.fmf_context,
             ),
-            plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
+            plans=[_RecipePlan.from_plan(plan, self._logger) for plan in run.plans],
         )
         self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_spec()))
 
