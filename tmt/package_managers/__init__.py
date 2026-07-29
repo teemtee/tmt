@@ -438,8 +438,8 @@ class PackageManagerEngine(tmt.utils.Common):
         self,
         *package_specs: str,
         repos: Optional[Iterable[str]] = None,
-        whatprovides: bool = False,
-        installed: bool = False,
+        packages_only: bool = True,
+        installed_only: bool = False,
     ) -> ShellScript:
         """
         Query info about a package and structure it as a yaml to process.
@@ -461,8 +461,8 @@ class PackageManagerEngine(tmt.utils.Common):
 
         :param package_specs: packages, capabilities, or other entities to repoquery
         :param repos: specific repositories to query
-        :param whatprovides: inject a ``--whatprovides`` flag
-        :param installed: query only installed entities
+        :param packages_only: query only for package names
+        :param installed_only: query only installed entities
         """
         raise NotImplementedError
 

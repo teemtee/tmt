@@ -34,8 +34,8 @@ class DnfEngine(PackageManagerEngine):
         self,
         *package_specs: str,
         repos: Optional[Iterable[str]] = None,
-        whatprovides: bool = False,
-        installed: bool = False,
+        packages_only: bool = True,
+        installed_only: bool = False,
     ) -> ShellScript:
 
         query_command = self.command + Command("repoquery")
@@ -44,7 +44,7 @@ class DnfEngine(PackageManagerEngine):
                 "--disablerepo=*",
                 *[f"--enablerepo={repo_id}" for repo_id in repos],
             )
-        if installed:
+        if installed_only:
             query_command += Command("--installed")
         query_command += Command(
             "--queryformat",
@@ -53,7 +53,7 @@ class DnfEngine(PackageManagerEngine):
             r"  repoid: '%{repoid}'\n"
             r"  from_repo: '%{from_repo}'\n",
         )
-        if whatprovides:
+        if not packages_only:
             query_command += Command("--whatprovides")
 
         return ShellScript(f"""
@@ -241,7 +241,7 @@ class DnfEngine(PackageManagerEngine):
         ).to_script()
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
-        return self._repoquery_script(*packages, installed=True)
+        return self._repoquery_script(*packages, installed_only=True)
 
     def resolve_provides(
         self,
@@ -251,7 +251,7 @@ class DnfEngine(PackageManagerEngine):
         assert provides, "provides must not be empty"
         return self._repoquery_script(
             *provides,
-            whatprovides=True,
+            packages_only=False,
             repos=repo_ids,
         )
 
@@ -438,8 +438,8 @@ class YumEngine(DnfEngine):
         self,
         *package_specs: str,
         repos: Optional[Iterable[str]] = None,
-        whatprovides: bool = False,
-        installed: bool = False,
+        packages_only: bool = True,
+        installed_only: bool = False,
     ) -> ShellScript:
         # The same as the dnf one, but
         # - query_command is `repoquery`
@@ -462,9 +462,9 @@ class YumEngine(DnfEngine):
             r"  from_repo: '%{repoid}'\n",
         )
 
-        if installed:
+        if installed_only:
             nevra_query = Command("repoquery", "--installed")
-            if whatprovides:
+            if not packages_only:
                 nevra_query += Command("--whatprovides")
             return ShellScript(f"""
             for query in {' '.join(package_specs)}; do
@@ -476,7 +476,7 @@ class YumEngine(DnfEngine):
             done
             """)
 
-        if whatprovides:
+        if not packages_only:
             query_command += Command("--whatprovides")
         return ShellScript(f"""
         for query in {' '.join(escape_installables(*[Package(pkg) for pkg in package_specs]))}; do
