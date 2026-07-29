@@ -17,6 +17,11 @@ repos:
         args: [--branch, main]
       - id: trailing-whitespace
 
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: "3.0.0"
+    hooks:
+      - id: check-mailmap
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.19.1"
     hooks:
