@@ -57,7 +57,7 @@ class DnfEngine(PackageManagerEngine):
             query_command += Command("--whatprovides")
 
         return ShellScript(f"""
-        for query in {' '.join(package_specs)}; do
+        for query in {' '.join(escape_installables(*[Package(pkg) for pkg in package_specs]))}; do
             echo "'$query':"
             {query_command} "$query"
         done
@@ -250,7 +250,7 @@ class DnfEngine(PackageManagerEngine):
     ) -> ShellScript:
         assert provides, "provides must not be empty"
         return self._repoquery_script(
-            *escape_installables(*[Package(p) for p in provides]),
+            *provides,
             whatprovides=True,
             repos=repo_ids,
         )
@@ -479,7 +479,7 @@ class YumEngine(DnfEngine):
         if whatprovides:
             query_command += Command("--whatprovides")
         return ShellScript(f"""
-        for query in {' '.join(package_specs)}; do
+        for query in {' '.join(escape_installables(*[Package(pkg) for pkg in package_specs]))}; do
             echo "'$query':"
             {query_command} "$query"
         done
