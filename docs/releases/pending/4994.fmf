@@ -1,6 +1,7 @@
 description: |
     The :ref:`/plugins/prepare/install` plugin now exposes a ``check-first``
-    option. This checks the package presence before installation, which can
-    prevent the unintended upgrades on systems that intrinsically pass
-    ``--best`` like on centos10. The default and previous behavior is to
-    enable this. Change this option if you need to opt-out.
+    key. When enabled, which is the default and also the behavior of tmt so
+    far, package presence is checked before installation, which can prevent
+    unintended upgrades on systems that use some form of the ``--best`` option,
+    like CentOS Stream 10. Disable this feature to skip the package presence
+    check before installation.
