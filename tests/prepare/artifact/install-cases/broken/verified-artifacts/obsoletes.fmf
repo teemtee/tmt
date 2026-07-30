@@ -20,7 +20,7 @@ context+:
 
   /downgrade:
     summary+: " (replacement on system)"
-    description: |
+    description+<: |
       System repo: foo-ng-1.0
       Pre-installed: None
       Artifacts: foo-1.1-bad
@@ -34,7 +34,7 @@ context+:
   summary+: " (foo pre-installed)"
   /upgrade:
     summary+: " (replacement on artifact)"
-    description: |
+    description+<: |
       System repo: foo-1.4 (baseline)
       Pre-installed: foo-1.4
       Artifacts: foo-ng-1.0-bad
@@ -54,7 +54,7 @@ context+:
 
   /downgrade:
     summary+: " (replacement on system)"
-    description: |
+    description+<: |
       System repo: foo-ng-1.0
       Pre-installed: foo-ng-1.0
       Artifacts: foo-1.1-bad

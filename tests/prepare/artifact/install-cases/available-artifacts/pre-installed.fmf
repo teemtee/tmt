@@ -10,7 +10,7 @@ environment+:
   PRE_INSTALLED_PACKAGE: rpms/foo-1.4/foo-1.4*.rpm
 
 /upgrade:
-  summary: " (upgrading)"
+  summary+: " (upgrading)"
   context+:
     available_artifact: foo-2.2
   environment+:
@@ -28,7 +28,7 @@ environment+:
       EXPECTED_PACKAGE: foo-2.2 foo-devel-2.2
 
 /downgrade:
-  summary: " (downgrading)"
+  summary+: " (downgrading)"
   context+:
     available_artifact: foo-1.2
   environment+:

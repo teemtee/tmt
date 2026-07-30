@@ -7,14 +7,14 @@ description: |
   Broken artifact without verification should just be skipped
 
 /upgrade:
-  summary: " (upgrading)"
+  summary+: " (upgrading)"
   context+:
     available_artifact: foo-2.2-bad
   environment+:
     EXPECTED_PACKAGE: foo-1.4
 
 /downgrade:
-  summary: " (downgrading)"
+  summary+: " (downgrading)"
   context+:
     available_artifact: foo-1.2-bad
   environment+:

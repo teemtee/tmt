@@ -13,7 +13,7 @@ context+:
   xfail: "true"
 
 /upgrade:
-  summary: " (upgrading)"
+  summary+: " (upgrading)"
   context+:
     verified_artifact: foo-2.4-bad
   environment+:
@@ -28,7 +28,7 @@ context+:
       want_devel: "true"
 
 /downgrade:
-  summary: " (downgrading)"
+  summary+: " (downgrading)"
   context+:
     verified_artifact: foo-1.1-bad
   environment+:

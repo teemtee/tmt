@@ -7,14 +7,14 @@ description: |
   Normal installation case with an artifact
 
 /upgrade:
-  summary: " (upgrading)"
+  summary+: " (upgrading)"
   context+:
     verified_artifact: foo-2.4
   environment+:
     EXPECTED_PACKAGE: foo-2.4
 
 /downgrade:
-  summary: " (downgrading)"
+  summary+: " (downgrading)"
   context+:
     verified_artifact: foo-1.1
   environment+:
