@@ -285,7 +285,7 @@ rlJournalStart
                 rlAssertGrep "install.*libpng" $rlRun_LOG
             else
                 rlAssertGrep "packages already installed, skipping tree" $rlRun_LOG
-                rlAssertGrep "install.*dos2unix" $rlRun_LOG
+                rlAssertGrep "\(install\|add\).*dos2unix" $rlRun_LOG
             fi
 
             if is_ubuntu "$image" || is_debian "$image"; then
