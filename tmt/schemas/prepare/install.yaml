@@ -19,6 +19,9 @@ properties:
     enum:
       - install
 
+  check-first:
+    type: boolean
+
   copr:
     oneOf:
       - type: string
