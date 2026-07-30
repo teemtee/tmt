@@ -19,8 +19,7 @@ rlJournalStart
         fi
 
         if is_centos_7 "$image"; then
-            # TODO(#4941):
-            # Centos 7 not supported because of missing provides resolution on `yum`
+            # RPMs built in copr are incompatible with CentOS 7
             continue
         fi
 

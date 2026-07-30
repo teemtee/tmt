@@ -23,12 +23,6 @@ rlJournalStart
             continue
         fi
 
-        if is_centos_7 "$image"; then
-            # TODO(#4941):
-            # Centos 7 not supported because of missing provides resolution on `yum`
-            continue
-        fi
-
         phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Test file provider"
@@ -36,10 +30,14 @@ rlJournalStart
             # TODO: get this more dynamically https://github.com/fedora-copr/copr/issues/4119
             rlRun "REMOTE_RPM_URL=https://packages.redhat.com/api/pulp-content/public-copr/lecris/_tmt_test/fedora-rawhide-x86_64/Packages/b/bar-1.0-1.noarch.rpm"
 
-            rlRun "tmt run -i $run --scratch -vvv --all \
-                provision -h $PROVISION_HOW --image $image \
-                prepare --how artifact --provide file:$REMOTE_RPM_URL" \
-                0 "Run remote file"
+
+            if ! is_centos_7 "$image"; then
+                # Remote rpm file is not compatible with CentOS 7. See note in lib/common.sh
+                rlRun "tmt run -i $run --scratch -vvv --all \
+                    provision -h $PROVISION_HOW --image $image \
+                    prepare --how artifact --provide file:$REMOTE_RPM_URL" \
+                    0 "Run remote file"
+            fi
             rlRun "tmt run -i $run --scratch -vvv --all \
                 provision -h $PROVISION_HOW --image $image \
                 prepare --how artifact --provide file:$LIB_DIR/../rpms/bar/bar-1.0-1.noarch.rpm" \
