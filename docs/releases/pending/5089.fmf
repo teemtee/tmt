@@ -1,0 +1,6 @@
+description: |
+  :ref:`/plugins/prepare/artifact` plugin will now enforce installing a specific
+  NVR of a package when ``verify`` is passed and there is a unique package in the
+  artifact provider set to choose from. This effectively replaces the requested
+  package (or equivalent matching request) from the test's
+  :tmt:story:`/spec/tests/require` or :tmt:story:`/spec/tests/recommend` list.
