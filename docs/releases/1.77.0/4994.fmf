@@ -5,3 +5,6 @@ description: |
     unintended upgrades on systems that use some form of the ``--best`` option,
     like CentOS Stream 10. Disable this feature to skip the package presence
     check before installation.
+
+# More important than the rest.
+order: 40
