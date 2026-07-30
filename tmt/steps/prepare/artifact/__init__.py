@@ -102,6 +102,12 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     artifact repositories. User-defined ``prepare/install`` phases are
     not covered by this verification.
 
+    Also when ``verify`` is enabled and there is a unique package NVR in
+    the provider's repository that matches a requested package to install,
+    the installation of the provided package NVR is enforced. If there are
+    multiple package NVR that would match, this is left to the package
+    manager to handle.
+
     Currently, the following artifact providers are supported:
 
     **Koji**
