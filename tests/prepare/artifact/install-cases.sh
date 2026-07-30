@@ -62,7 +62,7 @@ xfail_plans_nobest=(
                     break
                 fi
             done
-            if is_centos_stream_9 "$image" || is_centos_stream_10 "$image"; then
+            if is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
                 for check_pattern in ${xfail_plans_nobest[@]}; do
                     if [[ "$plan" =~ $check_pattern ]]; then
                         xfail="(XFAIL)"
