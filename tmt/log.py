@@ -58,7 +58,6 @@ if TYPE_CHECKING:
     import tmt.utils
     import tmt.utils.environment
     import tmt.utils.themes
-    from tmt._compat.typing import TypeAlias
 
 # Log in workdir
 LOG_FILENAME = 'log.txt'

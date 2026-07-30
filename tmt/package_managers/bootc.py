@@ -373,7 +373,7 @@ class Bootc(PackageManager[BootcEngine]):
             return
 
         self.assert_config_manager()
-        self.verbose('enable repo', fmf.utils.listed(repo_ids), 'green')
+        self.verbose('enable repo', fmf.utils.listed(repo_ids), color='green')
         self.engine.enable_repo(*repo_ids)
 
     def disable_repo(self, *repo_ids: str) -> None:
@@ -381,7 +381,7 @@ class Bootc(PackageManager[BootcEngine]):
             return
 
         self.assert_config_manager()
-        self.verbose('disable repo', fmf.utils.listed(repo_ids), 'green')
+        self.verbose('disable repo', fmf.utils.listed(repo_ids), color='green')
         self.engine.disable_repo(*repo_ids)
 
     def finalize_installation(self) -> CommandOutput:
