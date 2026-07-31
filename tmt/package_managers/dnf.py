@@ -1,6 +1,7 @@
 import copy
 import re
-from collections.abc import Iterable, Iterator, Sequence
+import shlex
+from collections.abc import Iterable, Sequence
 from typing import ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
@@ -491,28 +492,25 @@ class YumEngine(DnfEngine):
     def disable_repo(self, *repo_ids: str) -> ShellScript:
         return (self._yum_config_manager_command() + Command('--disable', *repo_ids)).to_script()
 
-    def _sanitize_rpm_whatprovides(
-        self, installables: Iterable[Installable]
-    ) -> Iterator[Installable]:
+    def _sanitize_rpm_whatprovides(self, original_installable: Installable) -> Installable:
         """
         ``rpm -q --whatprovides`` fails when used on a NEVRA (or other combinations).
 
         This is used to sanitized the nevras out of those queries and replace them with the name
         only.
         """
-        for maybe_nevra in installables:
-            try:
-                rpm_info = RpmVersion.from_nevra(str(maybe_nevra))
-                yield Package(rpm_info.name)
-            except ValueError:
-                yield maybe_nevra
+        try:
+            rpm_info = RpmVersion.from_nevra(str(original_installable))
+            return Package(rpm_info.name)
+        except ValueError:
+            return original_installable
 
     def _construct_presence_script(
         self, *installables: Installable, what_provides: bool = True
     ) -> ShellScript:
         if what_provides:
             return super()._construct_presence_script(
-                *self._sanitize_rpm_whatprovides(installables),
+                *[self._sanitize_rpm_whatprovides(pkg) for pkg in installables],
                 what_provides=what_provides,
             )
         return super()._construct_presence_script(
@@ -521,7 +519,12 @@ class YumEngine(DnfEngine):
         )
 
     def check_presence(self, *installables: Installable) -> ShellScript:
-        return super().check_presence(*self._sanitize_rpm_whatprovides(installables))
+        queries: list[str] = []
+        for original_installable in installables:
+            sanitized = shlex.quote(str(self._sanitize_rpm_whatprovides(original_installable)))
+            original = shlex.quote(str(original_installable))
+            queries.append(f"rpm -q --whatprovides {sanitized} >&2 || echo {original}")
+        return ShellScript("\n".join(queries))
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
     # decorator, it might be messing with the class inheritance as seen by pyright,
