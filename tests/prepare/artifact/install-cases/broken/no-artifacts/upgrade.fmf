@@ -24,8 +24,6 @@ environment+:
 
 /with-devel:
   summary+: " (requested devel)"
-  description+: |
-    This would fail because no other source of foo-devel is available.
   context+:
     want_devel: "true"
   environment+:

@@ -28,6 +28,7 @@ xfail_plans=(
 )
 xfail_plans_nobest=(
     # On dnf4 these plans fail because of the intrinsic --best flag passed (#4838)
+    # Missing ^ here is intetional, to cover both /broken/available-artifacts and /available-artifacts
     "/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
     "^/broken/available-artifacts/basic"
     "^/broken/available-artifacts/obsoletes/basic"

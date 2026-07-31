@@ -16,8 +16,6 @@ context+:
   summary+: " (upgrading)"
   context+:
     verified_artifact: foo-2.4-bad
-  environment+:
-    EXPECTED_PACKAGE: foo-2.4-bad
 
   /only-foo:
     summary+: " (only foo requested)"
@@ -31,8 +29,6 @@ context+:
   summary+: " (downgrading)"
   context+:
     verified_artifact: foo-1.1-bad
-  environment+:
-    EXPECTED_PACKAGE: foo-1.1-bad
 
   /only-foo:
     summary+: " (only foo requested)"
