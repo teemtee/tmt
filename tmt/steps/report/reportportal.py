@@ -1,8 +1,7 @@
 import datetime
-import os
 import re
 from re import Pattern
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 import requests
 import urllib3.exceptions
@@ -53,45 +52,6 @@ def yaml_to_dict(data: str, yaml_type: tmt.utils.YamlTypType = "safe") -> dict[s
     d: dict[str, Any] = _yaml_to_dict(data, yaml_type=yaml_type)
 
     return d
-
-
-def _flag_env_to_default(option: str, default: bool) -> bool:
-    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
-    if env_var not in os.environ:
-        return default
-    return bool(os.getenv(env_var) == '1')
-
-
-@overload
-def _str_env_to_default(option: str, default: None) -> Optional[str]:
-    pass
-
-
-@overload
-def _str_env_to_default(option: str, default: str) -> str:
-    pass
-
-
-def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
-    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
-    if env_var not in os.environ or os.getenv(env_var) is None:
-        return default
-    return str(os.getenv(env_var))
-
-
-def _pattern_list_env_to_default(option: str, default: list[Pattern[str]]) -> list[Pattern[str]]:
-    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
-    if env_var not in os.environ or os.getenv(env_var) is None:
-        return default
-    return tmt.utils.normalize_pattern_list(
-        option,
-        [item.strip() for item in str(os.getenv(env_var)).split(',') if item.strip()],
-        tmt.log.Logger.get_bootstrap_logger(),
-    )
-
-
-def _size_env_to_default(option: str, default: 'Size') -> 'Size':
-    return tmt.hardware.UNITS(_str_env_to_default(option, str(default)))
 
 
 def _normalize_log_size_limit(
@@ -163,28 +123,28 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     url: Optional[str] = field(
         option="--url",
         metavar="URL",
-        default=_str_env_to_default('url', None),
+        default=None,
         help="The URL of the ReportPortal instance where the data should be sent to.",
     )
 
     token: Optional[str] = field(
         option="--token",
         metavar="TOKEN",
-        default=_str_env_to_default('token', None),
+        default=None,
         help="The token to use for upload to the ReportPortal instance (from the user profile).",
     )
 
     project: Optional[str] = field(
         option="--project",
         metavar="PROJECT_NAME",
-        default=_str_env_to_default('project', None),
+        default=None,
         help="Name of the project into which the results should be uploaded.",
     )
 
     launch: Optional[str] = field(
         option="--launch",
         metavar="LAUNCH_NAME",
-        default=_str_env_to_default('launch', None),
+        default=None,
         help="""
            Set the launch name, otherwise name of the plan is used by default.
            Should be defined with 'suite-per-plan' option or it will be named after the first plan.
@@ -194,7 +154,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     launch_description: Optional[str] = field(
         option="--launch-description",
         metavar="DESCRIPTION",
-        default=_str_env_to_default('launch_description', None),
+        default=None,
         help="""
              Pass the description for ReportPortal launch with 'suite-per-plan' option
              or append the original (plan summary) with additional info.
@@ -204,14 +164,14 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
 
     launch_per_plan: bool = field(
         option="--launch-per-plan",
-        default=_flag_env_to_default('launch_per_plan', False),
+        default=False,
         is_flag=True,
         help="Mapping launch per plan, creating one or more launches with no suite structure.",
     )
 
     suite_per_plan: bool = field(
         option="--suite-per-plan",
-        default=_flag_env_to_default('suite_per_plan', False),
+        default=False,
         is_flag=True,
         help="""
              Mapping suite per plan, creating one launch and continuous uploading suites into it.
@@ -223,7 +183,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     upload_to_launch: Optional[str] = field(
         option="--upload-to-launch",
         metavar="LAUNCH_ID",
-        default=_str_env_to_default('upload_to_launch', None),
+        default=None,
         help="""
            Pass the launch ID for an additional test/suite upload to an existing launch. ID can be
            found in the launch URL. Keep the launch structure with options 'launch/suite-per-plan'.
@@ -234,7 +194,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     upload_to_suite: Optional[str] = field(
         option="--upload-to-suite",
         metavar="SUITE_ID",
-        default=_str_env_to_default('upload_to_suite', None),
+        default=None,
         help="""
              Pass the suite ID for an additional test upload to a suite
              within an existing launch. ID can be found in the suite URL.
@@ -244,7 +204,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
 
     launch_rerun: bool = field(
         option="--launch-rerun",
-        default=_flag_env_to_default('launch_rerun', False),
+        default=False,
         is_flag=True,
         help="""
              Rerun the last launch based on its name and unique test paths to create Retry item
@@ -255,7 +215,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     defect_type: Optional[str] = field(
         option="--defect-type",
         metavar="DEFECT_NAME",
-        default=_str_env_to_default('defect_type', None),
+        default=None,
         help="""
              Pass the defect type to be used for failed test, which is defined in the project
              (e.g. 'Idle'). 'To Investigate' is used by default.
@@ -265,7 +225,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     log_size_limit: 'Size' = field(
         option="--log-size-limit",
         metavar="SIZE",
-        default=_size_env_to_default('log_size_limit', DEFAULT_LOG_SIZE_LIMIT),
+        default=DEFAULT_LOG_SIZE_LIMIT,
         help=f"""
               Size limit in bytes for log upload to ReportPortal.
               The default limit is {DEFAULT_LOG_SIZE_LIMIT}.
@@ -279,7 +239,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     traceback_size_limit: 'Size' = field(
         option="--traceback-size-limit",
         metavar="SIZE",
-        default=_size_env_to_default('traceback_size_limit', DEFAULT_TRACEBACK_SIZE_LIMIT),
+        default=DEFAULT_TRACEBACK_SIZE_LIMIT,
         help=f"""
               Size limit in bytes for traceback log upload to ReportPortal.
               The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT}.
@@ -294,7 +254,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     exclude_variables: str = field(
         option="--exclude-variables",
         metavar="PATTERN",
-        default=_str_env_to_default('exclude_variables', "^TMT_.*"),
+        default="^TMT_.*",
         help="""
              Regular expression for excluding environment variables
              from reporting to ReportPortal ('^TMT_.*' used by default).
@@ -307,14 +267,15 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     api_version: str = field(
         option="--api-version",
         metavar="VERSION",
-        default=_str_env_to_default('api_version', "v1"),
+        default='v1',
         help="Override the default reportportal API version (v1).",
     )
 
     artifacts_url: Optional[str] = field(
         metavar="ARTIFACTS_URL",
         option="--artifacts-url",
-        default=_str_env_to_default('artifacts_url', os.getenv('TMT_REPORT_ARTIFACTS_URL')),
+        envvar='TMT_REPORT_ARTIFACTS_URL',
+        default=None,
         help="Link to test artifacts provided for report plugins.",
     )
 
@@ -337,7 +298,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     link_template: Optional[str] = field(
         metavar="TEMPLATE",
         option="--link-template",
-        default=_str_env_to_default('link_template', None),
+        default=None,
         help="""
              Jinja template that will be rendered for each test result and appended to the end
              of its description. The following variables are passed to the template:
@@ -349,9 +310,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="PATTERN",
         option="--upload-log-pattern",
         multiple=True,
-        default_factory=lambda: _pattern_list_env_to_default(
-            'upload_log_pattern', DEFAULT_LOG_PATTERNS[:]
-        ),
+        default_factory=DEFAULT_LOG_PATTERNS.copy,
         normalize=tmt.utils.normalize_pattern_list,
         serialize=lambda patterns: [pattern.pattern for pattern in patterns],
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
@@ -366,7 +325,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
 
     auto_analysis: bool = field(
         option="--auto-analysis",
-        default=_flag_env_to_default('auto_analysis', False),
+        default=False,
         is_flag=True,
         help="""
              Enable immediate auto-analysis of failed tests in ReportPortal. When enabled,
