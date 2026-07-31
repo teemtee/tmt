@@ -1,0 +1,11 @@
+description: |
+    This is the **last release where Python 3.9 is supported** on
+    the test :term:`runner`. The minimal requirement since
+    ``tmt-1.79`` to be released in September 2026 is Python 3.12.
+    Please make sure that you are using a supported Python version
+    on the system running ``tmt`` or use one of our `container
+    images`__. Note that this change does not affect in any way
+    :ref:`guest-compatibility`, i.e. the System Under Test where
+    tests are being executed.
+
+    __ https://quay.io/organization/teemtee/
