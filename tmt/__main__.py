@@ -1,17 +1,40 @@
 import sys
 
+#: An entry point to which subcommands should be attached.
+ENTRY_POINT_NAME = 'tmt.subcommand'
+
 
 def import_cli_commands() -> None:
     """
     Import CLI commands from their packages
     """
 
-    # TODO: some kind of `import tmt.cli.*` would be nice
-    import tmt.cli.about  # noqa: F401,I001,RUF100  # type: ignore[reportUnusedImport]
-    import tmt.cli.init  # noqa: F401,I001,RUF100  # type: ignore[reportUnusedImport]
-    import tmt.cli.lint  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]
-    import tmt.cli.status  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]
-    import tmt.cli.trying  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]
+    # TODO: the whole import compat needs some type annotation polishing,
+    # the amount of waivers needed below is stunning.
+
+    # Cannot import on module-level - early import might trigger various
+    # side-effects, raise exceptions, and that must happen under the
+    # tight control of whoever invoked this function.
+    from tmt._compat.importlib.metadata import (
+        entry_points,  # type: ignore[reportUnknownVariableType,unused-ignore]
+    )
+
+    try:
+        eps = entry_points()
+
+        if hasattr(eps, "select"):
+            entry_point_group = eps.select(  # type: ignore[reportUnknownVariable,unused-ignore]
+                group=ENTRY_POINT_NAME
+            )
+
+        else:
+            entry_point_group = eps[ENTRY_POINT_NAME]  # type: ignore[assignment]
+
+        for found in entry_point_group:  # type: ignore[reportUnkownVariable,unused-ignore]
+            found.load()
+
+    except Exception as exc:
+        raise Exception('Failed to discover and import tmt subcommands.') from exc
 
 
 def run_cli() -> None:
