@@ -18,7 +18,24 @@ rlJournalStart
     rlPhaseEnd
 
 xfail_plans=(
-    "/verified-artifacts/pre-installed"
+    # Intentionally should fail at install or verify stage
+    # Or some are not yet supported (#4838)
+    "^/broken/verified-artifacts"
+    "^/verified-artifacts/pre-installed/.*/only-foo$"
+    "^/verified-artifacts/obsoletes/pre-installed/downgrade/only-foo$"
+    "^/verified-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    "^/verified-artifacts/obsoletes/pre-installed/upgrade/only-foo$"
+)
+xfail_plans_nobest=(
+    # On dnf4 these plans fail because of the intrinsic --best flag passed (#4838)
+    # Missing ^ here is intetional, to cover both /broken/available-artifacts and /available-artifacts
+    "/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    "^/broken/available-artifacts/basic"
+    "^/broken/available-artifacts/obsoletes/basic"
+    "^/broken/available-artifacts/.*pre-installed/.*/with-devel$"
+    "^/broken/no-artifacts/.*/pre-installed/with-devel$"
+    "^/broken/no-artifacts/obsoletes/basic$"
+    "^/broken/no-artifacts/upgrade/with-devel$"
 )
 
     while IFS= read -r image; do
@@ -46,9 +63,18 @@ xfail_plans=(
                     break
                 fi
             done
+            if is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
+                for check_pattern in ${xfail_plans_nobest[@]}; do
+                    if [[ "$plan" =~ $check_pattern ]]; then
+                        xfail="(XFAIL)"
+                        expected_result=2
+                        break
+                    fi
+                done
+            fi
             rlPhaseStartTest "$phase_prefix $plan $xfail"
                 rlRun "tmt run $extra_env -i $run --scratch -vvv --all \
-                    plan --name $plan \
+                    plan --name '^$plan$' \
                     provision -h $PROVISION_HOW --image $image" \
                     $expected_result "Run test case $plan $xfail"
             rlPhaseEnd

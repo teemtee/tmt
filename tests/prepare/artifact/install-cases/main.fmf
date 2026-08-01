@@ -45,13 +45,35 @@ prepare:
 execute:
   how: tmt
 
+# Plans and tests are controlled via context and environments
 context:
   want_devel: "false"
   with_bar: "false"
   xfail: "false"
+  # available_artifact
+  # verified_artifact
 
 environment:
   SYSTEM_PACKAGE: foo-1.4
   EXPECTED_PACKAGE: ""
   PRE_INSTALLED_PACKAGE: ""
   DNF_CMD: dnf
+
+/test:
+  /:
+    inherit: false
+
+  test: |
+    rpm -q $EXPECTED_PACKAGE
+  require:
+    - foo
+
+  adjust:
+    - when: want_devel == true
+      require:
+        - foo-devel
+    - when: with_bar == true
+      require+:
+        - bar
+    - when: xfail == true
+      result: xfail
