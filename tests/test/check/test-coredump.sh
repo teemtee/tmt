@@ -66,6 +66,18 @@ rlJournalStart
             rlRun "find $run/plan/execute/data/guest/default-0/coredump/segfault-1/checks/ -maxdepth 1 \
                     # grep needed as find returns 0 even without match \
             \\\( -name 'dump._usr_bin_bash_SIGSEGV_*.core' -o -name 'dump._usr_bin_sleep_SIGSEGV_*.core' \\\) -print | grep -q ."
+            rlRun "dump_info=\$(find $run/plan/execute/data/guest/default-0/coredump/segfault-1/checks/ -maxdepth 1 \
+                    \\\( -name 'dump._usr_bin_bash_SIGSEGV_*.txt' -o -name 'dump._usr_bin_sleep_SIGSEGV_*.txt' \\\) -print -quit)"
+            rlAssertGrep "PID:" "$dump_info"
+            rlAssertGrep "Signal:" "$dump_info"
+            rlAssertNotGrep "TIME.*PID.*UID.*GID.*SIG.*COREFILE.*EXE" "$dump_info"
+            rlRun "coredump_logs=$run/coredump-logs.txt"
+            rlRun "yq '.[] | select(.name == \"/coredump/segfault\") | .check | .[] | select(.name == \"coredump\" and .event == \"after-test\") | .log | .[]' $results > $coredump_logs"
+            rlAssertGrep "checks/dump\\._usr_bin_\\(bash\\|sleep\\)_SIGSEGV_[0-9]\\+\\.txt" "$coredump_logs"
+            rlAssertGrep "checks/dump\\._usr_bin_\\(bash\\|sleep\\)_SIGSEGV_[0-9]\\+\\.core" "$coredump_logs"
+            rlAssertNotGrep "coredump-latest" "$coredump_logs"
+            rlAssertNotGrep "avc-mark\\.txt" "$coredump_logs"
+            rlAssertNotGrep "journal-cursor\\.txt" "$coredump_logs"
             rlLogInfo "$(ls -l $run/plan/execute/data/guest/default-0/coredump/segfault-1/checks/)"
         fi
     rlPhaseEnd
