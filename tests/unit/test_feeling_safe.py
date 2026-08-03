@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Sequence
 
 import _pytest.logging
 import _pytest.monkeypatch
@@ -7,7 +8,11 @@ import pytest
 import tmt
 from tmt.log import Logger
 from tmt.utils import GeneralError
-from tmt.utils.feeling_safe import UnsafeBehavior
+from tmt.utils.feeling_safe import (
+    UnsafeBehavior,
+    allow_behaviors,
+    is_allowed,
+)
 
 from . import MATCH, assert_log
 
@@ -55,3 +60,56 @@ def test_assert_is_allowed(
             ),
             levelno=logging.WARNING,
         )
+
+
+@pytest.mark.parametrize(
+    ("allowed_behaviors", "requested_behaviors", "expected"),
+    [
+        # with `all``, everything is allowed
+        (
+            ('all',),
+            ('provision/local',),
+            True,
+        ),
+        # with `none``, nothing is allowed
+        (
+            ('none',),
+            ('provision/local',),
+            False,
+        ),
+        # with both `all`` and `none``, nothing is allowed
+        (
+            ('all', 'none'),
+            ('provision/local',),
+            False,
+        ),
+        # with exact name, the name is allowed
+        (
+            ('provision/local',),
+            ('provision/local',),
+            True,
+        ),
+        # with exact but different name, the name is not allowed
+        (
+            ('provision/mock',),
+            ('provision/local',),
+            False,
+        ),
+    ],
+    ids=(
+        'with `all`, everything is allowed',
+        'with `none`, nothing is allowed',
+        'with both `all` and `none`, nothing is allowed',
+        'with exact name, the name is allowed',
+        'with exact but different name, the name is not allowed',
+    ),
+)
+def test_is_allowed(
+    allowed_behaviors: Sequence[str],
+    requested_behaviors: Sequence[str],
+    expected: bool,
+    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
+) -> None:
+    allow_behaviors(*allowed_behaviors)
+
+    assert is_allowed(*requested_behaviors) is expected
