@@ -73,11 +73,11 @@ class RLock(_Lock[threading.RLock, T]):
         # is not assigned to any global name. Instead, it is wrapped by
         # the lock, and "borrowed" to caller using the context manager
         # approach:
-        SHARED_DATA: Lock[list[str]] = RLock([])
+        SHARED_DATA: RLock[list[str]] = RLock([])
 
         ...
 
-        # `data` below is the list given to `Lock()` above:
+        # `data` below is the list given to `RLock()` above:
         with SHARED_DATA as data:
             data += [...]
 
