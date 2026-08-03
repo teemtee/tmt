@@ -135,16 +135,16 @@ ALLOWED_BEHAVIORS: set[UnsafeBehavior] = set()
 
 def names_to_behaviors(*names: str) -> Iterator[UnsafeBehavior]:
     known_behavior_map = {behavior.name: behavior for behavior in KNOWN_UNSAFE_BEHAVIORS}
-    requsted_behavior_names = set(names)
+    requested_behavior_names = set(names)
 
-    unknown_but_requested_names = requsted_behavior_names.difference(known_behavior_map.keys())
+    unknown_but_requested_names = requested_behavior_names.difference(known_behavior_map.keys())
 
     if unknown_but_requested_names:
         from tmt.utils import GeneralError
 
         raise GeneralError(f"Unknown unsafe behavior {listed(unknown_but_requested_names)}.")
 
-    for name in requsted_behavior_names:
+    for name in requested_behavior_names:
         yield known_behavior_map[name]
 
 
