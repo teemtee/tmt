@@ -29,6 +29,7 @@ import tmt.steps.provision
 import tmt.steps.report
 import tmt.templates
 import tmt.utils
+import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.jira
 from tmt._compat.pathlib import Path
@@ -659,37 +660,17 @@ class Plan(
             self.worktree.mkdir(exist_ok=True)
             return
 
-        # Sync metadata root to the worktree, honoring .gitignore; xref
-        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c
         self.debug(f"Sync the worktree to '{self.worktree}'.", level=2)
 
-        # Collect parent .gitignore filters when tree_root is a
-        # subdirectory of the git repository root.
-        parent_filters: list[str] = []
         git_root = tmt.utils.git.git_root(fmf_root=tree_root, logger=self._logger)
-        if git_root:
-            current = tree_root.resolve()
-            root = git_root.resolve()
-            while current != root:
-                current = current.parent
-                gitignore = current / '.gitignore'
-                if gitignore.is_file():
-                    parent_filters.extend(('--filter', f'dir-merge,- {gitignore}'))
 
         with self.tmpdir(prefix='rsync-') as rsync_tempdir:
-            self.run(
-                Command(
-                    "rsync",
-                    "-ar",
-                    '--temp-dir',
-                    rsync_tempdir,
-                    *parent_filters,
-                    "--include=**.gitignore",
-                    "--exclude=/.git",
-                    "--filter=:- .gitignore",
-                    f"{tree_root}/",
-                    self.worktree,
-                )
+            tmt.utils.filesystem.rsync_with_gitignore_filter(
+                tree_root,
+                self.worktree,
+                self._logger,
+                git_root=git_root,
+                temp_dir=rsync_tempdir,
             )
 
     @functools.cached_property

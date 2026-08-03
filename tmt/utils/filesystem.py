@@ -63,12 +63,14 @@ def _copy_tree_cp(
         return False
 
 
-def _copy_tree_rsync(
+def rsync_with_gitignore_filter(
     src: Path,
     dst: Path,
     logger: tmt.log.Logger,
-    git_root: Path,
-) -> bool:
+    *,
+    git_root: Optional[Path] = None,
+    temp_dir: Optional[Path] = None,
+) -> None:
     """
     Copy directory using ``rsync -a`` with native ``.gitignore``
     filtering.
@@ -76,36 +78,58 @@ def _copy_tree_rsync(
     Uses rsync's ``--filter=':- .gitignore'`` to honour
     ``.gitignore`` rules at every directory level within the source
     tree, without needing ``git`` to be invoked.  When ``src`` is a
-    subdirectory of the repository, any ``.gitignore`` files between
+    subdirectory of ``git_root``, any ``.gitignore`` files between
     ``src`` and ``git_root`` are included as additional merge filters
     so that repository-wide ignore rules still apply.
 
     The ``.git`` directory is always excluded.
 
-    :returns: ``True`` if successful, ``False`` if ``rsync`` command
-        fails with :py:class:`RunError`.
+    :param git_root: path to the git repository root.  When ``None``,
+        only ``.gitignore`` files inside ``src`` are honoured.
+    :param temp_dir: optional directory for rsync temporary files,
+        useful when the default temp directory is on a different
+        filesystem.
+    :raises RunError: when the rsync command fails.
     """
-    try:
-        parent_filters: list[str] = []
+
+    parent_filters: list[str] = []
+    if git_root:
         current = src.resolve()
         root = git_root.resolve()
-        while current != root:
+        while current not in (root, current.parent):
             current = current.parent
             gitignore = current / '.gitignore'
             if gitignore.is_file():
                 parent_filters.extend(('--filter', f'dir-merge,- {gitignore}'))
 
-        Command(
-            'rsync',
-            '-a',
-            *parent_filters,
-            "--include=**.gitignore",
-            "--exclude=/.git",
-            "--filter=:- .gitignore",
-            f"{src}/",
-            str(dst),
-        ).run(cwd=None, logger=logger, join=True, silent=True)
+    temp_dir_args = ('--temp-dir', str(temp_dir)) if temp_dir else ()
 
+    Command(
+        'rsync',
+        '-a',
+        *temp_dir_args,
+        *parent_filters,
+        "--include=**.gitignore",
+        "--exclude=/.git",
+        "--filter=:- .gitignore",
+        f"{src}/",
+        str(dst),
+    ).run(cwd=None, logger=logger, join=True, silent=True)
+
+
+def _copy_tree_rsync(
+    src: Path,
+    dst: Path,
+    logger: tmt.log.Logger,
+    git_root: Path,
+) -> bool:
+    """
+    :py:func:`rsync_with_gitignore_filter` wrapper returning a
+    boolean success status for the :py:func:`copy_tree` fallback
+    chain.
+    """
+    try:
+        rsync_with_gitignore_filter(src, dst, logger, git_root=git_root)
         return True
     except RunError:
         return False
