@@ -281,7 +281,7 @@ SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
         multiple=True,
-        choices=list(tmt.utils.feeling_safe.functionalities_to_names()),
+        choices=[behavior.name for behavior in tmt.utils.feeling_safe.KNOWN_UNSAFE_BEHAVIORS],
         envvar='TMT_FEELING_SAFE',
         default=[],
         help="""

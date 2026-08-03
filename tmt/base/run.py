@@ -47,7 +47,7 @@ from tmt.utils import (
     WorkdirArgumentType,
 )
 from tmt.utils.environment import Environment, HasEnvironment
-from tmt.utils.feeling_safe import ALLOWED_BEHAVIOR, format_allowed_behavior
+from tmt.utils.feeling_safe import is_feeling_safe
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -663,8 +663,14 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
         self.debug(f"tmt version: {tmt.__version__}")
         self.debug('tmt command line', Command(*sys.argv))
 
-        if ALLOWED_BEHAVIOR:
-            self.warn(f'User is feeling safe: {format_allowed_behavior()} allowed')
+        # Report user's "feeling safe?" mode.
+        feeling_safe, strong_feeling_safe_decision, feeling_safe_message = is_feeling_safe()
+
+        if feeling_safe or strong_feeling_safe_decision:
+            self.warn(feeling_safe_message)
+
+        else:
+            self.debug(feeling_safe_message)
 
         self.show_runner(self._logger)
 
