@@ -383,7 +383,7 @@ def test_unsafe_ssh_option_case_and_separator(
         data=GuestSshData(primary_address='bar', ssh_option=[option]),
     )
 
-    monkeypatch.setattr(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIOR', set())
+    monkeypatch.setattr(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIORS', set())
 
     with pytest.raises(GeneralError, match='--feeling-safe'):
         _ = guest._ssh_options
