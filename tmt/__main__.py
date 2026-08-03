@@ -1,4 +1,4 @@
-import sys
+import traceback
 
 
 def import_cli_commands() -> None:
@@ -38,33 +38,33 @@ def run_cli() -> None:
 
         tmt.cli._root.main()
 
-    except ImportError as error:
-        print("Error: tmt package does not seem to be installed")
-        raise SystemExit(1) from error
     except Exception as error:
-        # ignore[reportUnboundVariable]: linter is right here, `tmt` may be
-        # unbound. In theory, `import tmt.utils` might have raised an exception
-        # that is not `ImportError`, and we might end up touching `tmt.utils`
-        # that's not fully imported. And we cannot `except tmt.utils` either,
-        # as the module does not exist in the global scope yet.
+        # `tmt` may be unbound. In theory, `import tmt.utils` might have
+        # raised an exception, and we might end up touching `tmt.utils`
+        # that's not fully imported.
         #
-        # Silence the linter, but be careful and make sure to report the
-        # possible - although very unlikely - secondary exception. Sounds
-        # pointless, but let's make investigation easier for us.
-        #
-        # ignore[unused-ignore]: mypy does not recognize this issue, and therefore
-        # the waiver seems pointless to it...
+        # Yet the reporting tools we have available are very nice, it would
+        # be a shame to not use them if we can. Let's try using our tools,
+        # and fall back to the very basic tools if anything goes wrong.
+
         try:
-            tmt.utils.show_exception(error)  # type: ignore[reportUnboundVariable,unused-ignore]
+            # If we already succeeded importing `tmt.utils`, this will proceed
+            # safely, pretty much a no-op. If we failed to import `tmt.utils`,
+            # this will fail, but that's fine, we are ready for double fault.
+            from tmt.utils import show_exception
+
+            show_exception(error)
+
             raise SystemExit(2) from error
 
-        except Exception as nested_error:
-            import traceback
-
-            print(f"Error: failed while reporting exception: {nested_error}", file=sys.stderr)
+        except Exception:
+            # No need to capture the exception in a variable: we are still
+            # inside an `except` clause, Python will chain exceptions for
+            # us. Reporting "the original" exception will include "the
+            # current" one as well.
             traceback.print_exc()
 
-            raise SystemExit(2) from nested_error
+            raise SystemExit(2) from error
 
 
 if __name__ == "__main__":
