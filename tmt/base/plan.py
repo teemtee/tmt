@@ -659,43 +659,34 @@ class Plan(
             self.worktree.mkdir(exist_ok=True)
             return
 
-        # Sync metadata root to the worktree
+        # Sync metadata root to the worktree, honoring .gitignore; xref
+        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c
         self.debug(f"Sync the worktree to '{self.worktree}'.", level=2)
 
-        ignore: list[Path] = [Path('.git')]
-
-        # If we're in a git repository, honor .gitignore; xref
-        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c
+        # Collect parent .gitignore filters when tree_root is a
+        # subdirectory of the git repository root.
+        parent_filters: list[str] = []
         git_root = tmt.utils.git.git_root(fmf_root=tree_root, logger=self._logger)
         if git_root:
-            ignore.extend(tmt.utils.git.git_ignore(root=git_root, logger=self._logger))
+            current = tree_root.resolve()
+            root = git_root.resolve()
+            while current != root:
+                current = current.parent
+                gitignore = current / '.gitignore'
+                if gitignore.is_file():
+                    parent_filters.extend(('--filter', f'dir-merge,- {gitignore}'))
 
-        self.debug(
-            "Ignoring the following paths during worktree sync",
-            tmt.utils.format_value(ignore),
-            level=4,
-        )
-
-        with (
-            tempfile.NamedTemporaryFile(mode='w') as excludes_tempfile,
-            self.tmpdir(prefix='rsync-') as rsync_tempdir,
-        ):
-            excludes_tempfile.write('\n'.join(str(path) for path in ignore))
-
-            # Make sure ignored paths are saved before telling rsync to use them.
-            # With Python 3.12, we could use `delete_on_false=False` and call `close()`.
-            excludes_tempfile.flush()
-
-            # Note: rsync doesn't use reflinks right now, so in the future it'd be even better to
-            # use e.g. `cp` but filtering out the above.
+        with self.tmpdir(prefix='rsync-') as rsync_tempdir:
             self.run(
                 Command(
                     "rsync",
                     "-ar",
                     '--temp-dir',
                     rsync_tempdir,
-                    "--exclude-from",
-                    excludes_tempfile.name,
+                    *parent_filters,
+                    "--include=**.gitignore",
+                    "--exclude=/.git",
+                    "--filter=:- .gitignore",
                     f"{tree_root}/",
                     self.worktree,
                 )
