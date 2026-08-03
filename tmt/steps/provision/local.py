@@ -1,4 +1,3 @@
-import os
 import shlex
 from collections.abc import Sequence
 from typing import Any, Optional, Union
@@ -341,7 +340,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         self._guest.start()
         self._guest.setup()
 
-        if os.environ.get(tmt.steps.scripts.SCRIPTS_DEST_DIR_VARIABLE):
+        if tmt.utils.Environment.environ.get(tmt.steps.scripts.SCRIPTS_DEST_DIR_VARIABLE):
             self.warn(
                 f"The '{tmt.steps.scripts.SCRIPTS_DEST_DIR_VARIABLE}' variable "
                 "is not supported in 'local' provision, the default scripts path "

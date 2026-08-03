@@ -7,6 +7,7 @@ from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Optional,
     Union,
     cast,
@@ -73,6 +74,14 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment and
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
+
+    environ: ClassVar['Environment']
+
+    @classmethod
+    def _init_environ(cls) -> None:
+        cls.environ = Environment(
+            {key: EnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
+        )
 
     def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
         super().__init__(data or {})
@@ -462,7 +471,7 @@ class Environment(dict[str, EnvVarValue]):
         Extract environment variables from the live environment
         """
 
-        return Environment({key: EnvVarValue(value) for key, value in os.environ.items()})
+        return cls.environ.copy()
 
     @classmethod
     def from_fmf_context(cls, fmf_context: 'FmfContext') -> 'Environment':
@@ -593,11 +602,16 @@ class Environment(dict[str, EnvVarValue]):
             provision/prepare/execute/finish phases.
         """
 
-        environ_backup = os.environ.copy()
-        os.environ.clear()
-        os.environ.update(self.to_environ())
+        environ_backup = Environment.from_environ()
+
+        os.environ.clear()  # noqa: TID251
+        os.environ.update(self.to_environ())  # noqa: TID251
+
         try:
             yield
         finally:
-            os.environ.clear()
-            os.environ.update(environ_backup)
+            os.environ.clear()  # noqa: TID251
+            os.environ.update(environ_backup)  # noqa: TID251
+
+
+Environment._init_environ()
