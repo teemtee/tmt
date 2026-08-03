@@ -3,10 +3,41 @@ Utility functions for filesystem operations.
 """
 
 import shutil
+from typing import Optional
 
 import tmt.log
+import tmt.utils.git
 from tmt._compat.pathlib import Path
 from tmt.utils import Command, GeneralError, RunError
+
+
+def _git_root(src: Path, logger: tmt.log.Logger) -> Optional[Path]:
+    """
+    Return the git repository root containing ``src``, or ``None``.
+    """
+    try:
+        return tmt.utils.git.git_root(fmf_root=src, logger=logger)
+    except Exception:
+        return None
+
+
+def _get_git_excludes(src: Path, logger: tmt.log.Logger) -> list[Path]:
+    """
+    Collect paths to exclude based on git configuration.
+
+    Used only as input for the :py:func:`shutil.copytree` fallback.
+    Returns ``.git`` plus all paths ignored by git, or an empty list
+    on failure.
+    """
+    excludes: list[Path] = [Path('.git')]
+
+    try:
+        excludes.extend(tmt.utils.git.git_ignore(root=src, logger=logger))
+    except Exception:
+        logger.debug("Failed to collect git-ignored paths, proceeding without exclusions.")
+        return []
+
+    return excludes
 
 
 def _copy_tree_cp(
@@ -24,35 +55,94 @@ def _copy_tree_cp(
         with :py:class:`RunError`.
     """
     try:
-        # The '/./' at the end of the source path tells cp to copy the *contents* of the directory
-        # rather than creating a new subdirectory in the destination
         Command('cp', '-a', '--reflink=auto', f"{src}/./", str(dst)).run(
             cwd=None, logger=logger, join=True, silent=True
         )
         return True
     except RunError:
         return False
-    # Let other exceptions (e.g. permissions, disk full) propagate
+
+
+def _copy_tree_rsync(
+    src: Path,
+    dst: Path,
+    logger: tmt.log.Logger,
+    git_root: Path,
+) -> bool:
+    """
+    Copy directory using ``rsync -a`` with native ``.gitignore``
+    filtering.
+
+    Uses rsync's ``--filter=':- .gitignore'`` to honour
+    ``.gitignore`` rules at every directory level within the source
+    tree, without needing ``git`` to be invoked.  When ``src`` is a
+    subdirectory of the repository, any ``.gitignore`` files between
+    ``src`` and ``git_root`` are included as additional merge filters
+    so that repository-wide ignore rules still apply.
+
+    The ``.git`` directory is always excluded.
+
+    :returns: ``True`` if successful, ``False`` if ``rsync`` command
+        fails with :py:class:`RunError`.
+    """
+    try:
+        parent_filters: list[str] = []
+        current = src.resolve()
+        root = git_root.resolve()
+        while current != root:
+            current = current.parent
+            gitignore = current / '.gitignore'
+            if gitignore.is_file():
+                parent_filters.extend(('--filter', f'dir-merge,- {gitignore}'))
+
+        Command(
+            'rsync',
+            '-a',
+            *parent_filters,
+            "--include=**.gitignore",
+            "--exclude=/.git",
+            "--filter=:- .gitignore",
+            f"{src}/",
+            str(dst),
+        ).run(cwd=None, logger=logger, join=True, silent=True)
+
+        return True
+    except RunError:
+        return False
 
 
 def _copy_tree_shutil(
     src: Path,
     dst: Path,
     logger: tmt.log.Logger,
+    excludes: list[Path],
 ) -> None:
     """
     Perform copy using shutil.copytree.
 
     This is typically a fallback strategy. The destination directory must
     exist before calling this function.
+
+    :param excludes: list of relative paths to exclude from the copy.
     """
     logger.debug(f"Performing shutil.copytree from '{src}' to '{dst}'")
+
+    exclude_names = {str(path).rstrip('/') for path in excludes}
+
+    def _ignore(directory: str, contents: list[str]) -> set[str]:
+        rel = Path(directory).relative_to(src)
+        return {
+            name
+            for name in contents
+            if str(rel / name).rstrip('/') in exclude_names or name.rstrip('/') in exclude_names
+        }
 
     shutil.copytree(
         src,
         dst,
         symlinks=True,
         dirs_exist_ok=True,
+        ignore=_ignore if excludes else None,
     )
 
 
@@ -64,39 +154,27 @@ def copy_tree(
     """
     Copy directory efficiently, trying different strategies.
 
-    Attempts strategies in order:
+    Files and directories ignored by git (per ``.gitignore`` rules) and
+    the ``.git`` directory itself are excluded from the copy when the
+    source is inside a git repository. When outside a git repo, all
+    files are copied.
 
-    #. ``cp -a --reflink=auto`` (copy-on-write, with ``cp``'s own
-       fallback).
+    Attempts strategies in order, depending on context:
 
-       * Reflinks provide fast, space-efficient copies that behave like
-         normal copies
-       * They don't use additional storage space unless the file is
-         modified
-       * Supported on btrfs (Fedora default since F33) and XFS (CentOS
-         Stream 8+)
-       * Using ``--reflink=auto`` means ``cp`` automatically falls back
-         to standard copy if reflink isn't supported by the filesystem
+    When inside a git repository:
 
-    #. :py:func:`shutil.copytree` as a final fallback.
+    #. ``rsync -a`` with native ``.gitignore`` filtering via
+       ``--filter=':- .gitignore'``.
+    #. :py:func:`shutil.copytree` with ``ignore`` as a fallback.
 
-       * Used if the ``cp`` command fails for any reason
-       * Maintains symlinks (``symlinks=True``)
-       * Merges with existing destination directories (``dirs_exist_ok=True``)
+    When outside a git repository:
+
+    #. ``cp -a --reflink=auto`` (copy-on-write when supported).
+    #. :py:func:`shutil.copytree` as a fallback.
 
     Symlinks are always preserved. The destination directory `dst` and its
     parents will be created if they do not exist. File permissions and timestamps
     are preserved in all copy strategies.
-
-    Example usage:
-
-    .. code-block:: python
-
-        # Copy a directory tree with all its content
-        copy_tree(Path("/path/to/source"), Path("/path/to/destination"), logger)
-
-        # Copy with relative paths
-        copy_tree(workdir / "original", workdir / "backup", logger)
 
     :param src: Source directory path. Must exist and be a directory.
     :param dst: Destination directory path.
@@ -107,32 +185,38 @@ def copy_tree(
     logger.debug(f"Copying directory tree from '{src}' to '{dst}'")
 
     if not src.is_dir():
-        # Add an explicit check for src, as 'cp' or 'shutil.copytree' might give
-        # less clear or varied errors. This ensures a consistent error message.
         raise GeneralError(f"Source '{src}' for copy_tree is not a directory or does not exist.")
 
-    # Ensure destination directory `dst` and its parents exist.
-    # This is crucial for `cp` and helpful for `shutil.copytree` (as it creates parent dirs).
     dst.mkdir(parents=True, exist_ok=True)
 
-    # 1. Try 'cp -a --reflink=auto' copy.
-    #    'cp' itself handles fallback from reflink to standard copy if reflink=auto is used.
-    logger.debug(f"Attempting copy from '{src}' to '{dst}' using 'cp' with reflink")
-    if _copy_tree_cp(src, dst, logger):
-        logger.debug(
-            "Copy finished using 'cp -a --reflink=auto' strategy (or its internal fallback)."
-        )
-        return
+    git_root = _git_root(src, logger)
 
-    # 2. Fallback to shutil.copytree
-    logger.debug("cp command failed, falling back to shutil.copytree strategy.")
-    try:
-        _copy_tree_shutil(src, dst, logger)
-        logger.debug("Copy finished using shutil.copytree strategy.")
-    except Exception as error:
-        # Catching a broad Exception here because shutil.copytree can raise various errors
-        # (e.g., OSError, FileExistsError if dst is a file after mkdir, etc.)
-        # and we want to wrap them all in GeneralError.
-        raise GeneralError(
-            f"Failed to copy directory tree from '{src}' to '{dst}' using all strategies."
-        ) from error
+    if git_root is not None:
+        logger.debug(f"Attempting copy from '{src}' to '{dst}' using rsync with .gitignore filter")
+        if _copy_tree_rsync(src, dst, logger, git_root):
+            logger.debug("Copy finished using rsync strategy.")
+            return
+
+        logger.debug("rsync failed, falling back to shutil.copytree strategy.")
+        excludes = _get_git_excludes(src, logger)
+        try:
+            _copy_tree_shutil(src, dst, logger, excludes)
+            logger.debug("Copy finished using shutil.copytree strategy.")
+        except Exception as error:
+            raise GeneralError(
+                f"Failed to copy directory tree from '{src}' to '{dst}' using all strategies."
+            ) from error
+    else:
+        logger.debug(f"Attempting copy from '{src}' to '{dst}' using cp with reflink")
+        if _copy_tree_cp(src, dst, logger):
+            logger.debug("Copy finished using cp --reflink=auto strategy.")
+            return
+
+        logger.debug("cp command failed, falling back to shutil.copytree strategy.")
+        try:
+            _copy_tree_shutil(src, dst, logger, [])
+            logger.debug("Copy finished using shutil.copytree strategy.")
+        except Exception as error:
+            raise GeneralError(
+                f"Failed to copy directory tree from '{src}' to '{dst}' using all strategies."
+            ) from error
