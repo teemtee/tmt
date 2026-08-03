@@ -8,8 +8,9 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.container import MetadataContainer, container
 from tmt.guest import Guest, RebootMode, SoftRebootModes
+from tmt.steps.context import StepContext
 from tmt.utils import Path, ShellScript
-from tmt.utils.environment import Environment, EnvVarValue, HasIntrinsicEnvironment
+from tmt.utils.environment import Environment, EnvVarValue
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ class RebootData(MetadataContainer):
 
 
 @container
-class RebootContext(HasIntrinsicEnvironment):
+class RebootContext(StepContext):
     """
     Tracks information about guest reboots.
     """
