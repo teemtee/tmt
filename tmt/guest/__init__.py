@@ -40,6 +40,7 @@ import tmt.package_managers
 import tmt.steps
 import tmt.steps.scripts
 import tmt.utils
+import tmt.utils.environment
 import tmt.utils.wait
 from tmt._compat.typing import Self
 from tmt.ansible import (
@@ -1718,6 +1719,7 @@ class Guest(
     # TODO: `Guest` does "have" environment, but it's a genuine attribute,
     # not a property, and this interface will not work.
     # tmt.utils.HasEnvironment,
+    tmt.utils.environment.HasIntrinsicEnvironment,
     tmt.utils.Common,
 ):
     """
@@ -1932,6 +1934,15 @@ class Guest(
             )
 
         return Environment()
+
+    @property
+    def intrinsic_environment(self) -> Environment:
+        environment = Environment()
+
+        if self.plan_environment_path is not None:
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+
+        return environment
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
@@ -2257,14 +2268,12 @@ class Guest(
             environment.update(self.environment)
 
             if isinstance(self.parent, tmt.steps.Step):
-                environment.update(self.parent.plan)
+                environment.update(self.parent.plan.environment)
 
-            # TODO: this was owned by plan, but at wrong position, and it will
-            # be owned by plan again once the dust of environment untangling
-            # settles. Follow https://github.com/teemtee/tmt/issues/4241 for
-            # more.
-            if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+            environment.update(self.intrinsic_environment)
+
+            if isinstance(self.parent, tmt.steps.Step):
+                environment.update(self.parent.plan.intrinsic_environment)
 
         else:
             # Create a copy of given environment - this prevents any
