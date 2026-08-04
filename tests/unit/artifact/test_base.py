@@ -1,3 +1,4 @@
+import logging
 import re
 from unittest.mock import MagicMock
 
@@ -35,6 +36,12 @@ class MockProvider(ArtifactProvider):
         pass
 
 
+class EmptyProvider(MockProvider):
+    @property
+    def artifacts(self):
+        return []
+
+
 @pytest.fixture
 def mock_provider(root_logger):
     mock_prepare_artifact = MagicMock()
@@ -59,6 +66,43 @@ def test_download_artifacts(tmp_path, root_logger, mock_provider):
     assert file_path in paths
     assert file_path.exists()
     assert file_path.read_text() == "ok"
+
+
+def test_empty_provider_raises_by_default(tmp_path, root_logger):
+    guest = MagicMock()
+    mock_prepare_artifact = MagicMock()
+    provider = EmptyProvider(
+        "mock:empty",
+        repository_priority=50,
+        logger=root_logger,
+        parent=mock_prepare_artifact,
+    )
+
+    with pytest.raises(
+        tmt.utils.PrepareError,
+        match=r"No artifacts downloaded from provider 'mock:empty'\.",
+    ):
+        provider.fetch_contents(guest, tmp_path, [])
+
+
+def test_empty_provider_allowed_with_warning(tmp_path, root_logger, caplog):
+    guest = MagicMock()
+    mock_prepare_artifact = MagicMock()
+    provider = EmptyProvider(
+        "mock:empty",
+        repository_priority=50,
+        logger=root_logger,
+        parent=mock_prepare_artifact,
+    )
+
+    paths = provider.fetch_contents(guest, tmp_path, [], allow_empty=True)
+
+    assert paths == []
+    assert any(
+        record.levelno == logging.WARNING
+        and "No artifacts downloaded from provider 'mock:empty'." in record.message
+        for record in caplog.records
+    )
 
 
 def test_persist_artifact_metadata(tmp_path, mock_provider):

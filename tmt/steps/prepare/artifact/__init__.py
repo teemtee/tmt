@@ -50,6 +50,13 @@ class PrepareArtifactData(PrepareStepData):
             """,
     )
 
+    allow_empty: bool = field(
+        default=False,
+        option='--allow-empty/--no-allow-empty',
+        is_flag=True,
+        help='Allow providers that download no artifacts.',
+    )
+
     verify: bool = field(
         default=True,
         option='--verify/--no-verify',
@@ -272,7 +279,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 download_path = self.plan_workdir / "artifacts" / provider.sanitized_id
 
                 # First, fetch the contents (download artifacts)
-                provider.fetch_contents(guest, download_path)
+                provider.fetch_contents(guest, download_path, allow_empty=self.data.allow_empty)
 
                 # Then, have the provider contribute to the shared repository
                 provider.contribute_to_shared_repo(

@@ -165,6 +165,8 @@ class ArtifactProvider(ABC):
         guest: Guest,
         download_path: tmt.utils.Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
+        *,
+        allow_empty: bool = False,
     ) -> list[tmt.utils.Path]:
         """
         Fetch all artifacts to the specified destination.
@@ -175,6 +177,8 @@ class ArtifactProvider(ABC):
             downloaded.
         :param exclude_patterns: if set, artifacts whose names match any
             of the given regular expressions would not be downloaded.
+        :param allow_empty: if set, providers with no downloaded artifacts
+            would emit a warning instead of an error.
         :returns: a list of paths to the downloaded artifacts.
         :raises GeneralError: Unexpected errors outside the download process.
         :note: Errors during individual artifact downloads are
@@ -218,6 +222,14 @@ class ArtifactProvider(ABC):
                 raise tmt.utils.GeneralError(
                     f"Unexpected error downloading '{artifact}'."
                 ) from error
+
+        if not downloaded_paths:
+            message = f"No artifacts downloaded from provider '{self.raw_id}'."
+
+            if allow_empty:
+                self.logger.warning(message)
+            else:
+                raise tmt.utils.PrepareError(message)
 
         self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
