@@ -266,7 +266,7 @@ class CoredumpCheck(Check):
         logger: tmt.log.Logger,
         check_files_path: Path,
         previous_dumps_file: Path,
-    ) -> list[str]:
+    ) -> tuple[list[str], list[Path]]:
         """
         Get any new crashes that have been detected since the test started.
 
@@ -307,10 +307,11 @@ class CoredumpCheck(Check):
             output = guest.execute(ShellScript(cmd), silent=True).stdout
 
             if not output:
-                return []
+                return [], []
 
             # Process each crash entry
             crashes: list[str] = []
+            crash_files: list[Path] = []
             for line in output.splitlines():
                 fields = line.split()
                 if len(fields) < 10:  # Ensure we have enough fields
@@ -350,9 +351,10 @@ class CoredumpCheck(Check):
                 info_filepath = check_files_path / f"dump.{exe}_{sig}_{pid}.txt"
                 guest.execute(
                     ShellScript(
-                        f"sh -c {guest.facts.sudo_prefix} coredumpctl info --all --no-pager {pid} > {info_filepath!s}"  # noqa: E501
+                        f"{guest.facts.sudo_prefix} coredumpctl info --all --no-pager {pid} > {info_filepath!s}"  # noqa: E501
                     )
                 )
+                crash_files.append(info_filepath)
                 logger.debug(f"Saved crash info to {info_filepath}")
 
                 # Try to save the coredump if available
@@ -365,6 +367,7 @@ class CoredumpCheck(Check):
                                 f"{guest.facts.sudo_prefix} coredumpctl dump --all --no-pager -o {dump_path!s} {pid}"  # noqa: E501
                             )
                         )
+                        crash_files.append(dump_path)
                         logger.debug(f"Saved coredump to {dump_path}")
                     except tmt.utils.RunError as exc:
                         logger.debug(f"Failed to save coredump for PID {pid}: {exc}")
@@ -374,11 +377,11 @@ class CoredumpCheck(Check):
                 # This is a new, non-ignored crash
                 crashes.append(crash_info)
 
-            return crashes
+            return crashes, crash_files
 
         except tmt.utils.RunError as exc:
             logger.debug(f"Failed to check for crashes: {exc}")
-            return []
+            return [], []
 
     def _check_coredump(
         self, invocation: "TestInvocation", logger: tmt.log.Logger
@@ -392,27 +395,17 @@ class CoredumpCheck(Check):
         log_files: list[Path] = []
 
         # Check for crashes by comparing with the saved file of previous dumps
-        crashes = self._get_crashes(
+        crashes, crash_files = self._get_crashes(
             invocation.guest,
             logger,
             invocation.check_files_path,
             self.coredump_last_dumps_filepath,
         )
 
-        # Get list of generated files
-        try:
-            files_output = invocation.guest.execute(
-                Command("find", invocation.check_files_path, "-type", "f")
-            ).stdout
-
-            if files_output:
-                for file_path in files_output.splitlines():
-                    path = Path(file_path)
-                    if path.exists() and invocation.phase.step_workdir:
-                        rel_path = path.relative_to(invocation.phase.step_workdir)
-                        log_files.append(rel_path)
-        except tmt.utils.RunError:
-            logger.debug("Failed to list coredump files")
+        if invocation.phase.step_workdir:
+            log_files.extend(
+                path.relative_to(invocation.phase.step_workdir) for path in crash_files
+            )
 
         log_files.append(save_failures(invocation, invocation.check_files_path, crashes))
 
