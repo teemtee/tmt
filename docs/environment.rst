@@ -1,19 +1,12 @@
-.. _environment-variable-precedence:
+.. _environment-variables:
 
 :tocdepth: 2
 
-Environment precedence
-~~~~~~~~~~~~~~~~~~~~~~
+Environment variables
+~~~~~~~~~~~~~~~~~~~~~
 
-.. important::
-
-    The following is the description of how things are. It is **not**
-    describing the desired state, for that see notes and progress report
-    in the `Document the order of precedence of environment variable sources`__
-    issue. Individual sets of variables will switch places as we progress
-    towards the desired ordering.
-
-    __ https://github.com/teemtee/tmt/issues/4241
+Exposed by tmt
+^^^^^^^^^^^^^^
 
 The following sections describe various sets of environment variables
 exposed by tmt to various user-provided actions - scripts and commands
@@ -22,42 +15,29 @@ provided by the user via plan and test metadata keys, from
 variables are listed in their order of precedence from least to greatest:
 the last listed variables override variables from previous set.
 
-1. User-provided guest environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-As set via :ref:`environment </plugins/provision/common-keys>` key of
-individual ``provision`` phases. Applies to user commands executed on
-the given guest.
-
-2. User-provided test environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. User-provided test environment
+:::::::::::::::::::::::::::::::::
 
 As set via :tmt:story:`environment </spec/tests/environment>` key of
 individual tests.
 
-3. User-controlled plan environment file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2. User-provided plan environment
+:::::::::::::::::::::::::::::::::
 
-Environment variables loaded from a file the ``TMT_PLAN_ENVIRONMENT_FILE``
-environment variable points at.
-
-4. User-provided plan environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-4.1. ``environment-file`` plan key
-::::::::::::::::::::::::::::::::::
+2.1. ``environment-file`` plan key
+----------------------------------
 
 Environment variables loaded from files listed in the
 :tmt:story:`environment </spec/plans/environment-file>` plan key.
 
-4.2. ``environment`` plan key
-:::::::::::::::::::::::::::::
+2.2. ``environment`` plan key
+-----------------------------
 
 Environment variables set via
 :tmt:story:`environment </spec/plans/environment>` plan key.
 
-5. Environment inherited from the importing plan
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3. Environment inherited from the importing plan
+::::::::::::::::::::::::::::::::::::::::::::::::
 
 .. note::
 
@@ -65,22 +45,22 @@ Environment variables set via
     :tmt:story:`imported </spec/plans/import-plans>`. Local plans do not
     have an importing plan, and have no plan to inherit environment from.
 
-5.1. Importing plan's ``environment-file`` plan key
-:::::::::::::::::::::::::::::::::::::::::::::::::::
+3.1. Importing plan's ``environment-file`` plan key
+---------------------------------------------------
 
 Environment variables loaded from files listed in the
 importing plan's :tmt:story:`environment </spec/plans/environment-file>`
 plan key.
 
-5.2. Importing plan's ``environment`` plan key
-::::::::::::::::::::::::::::::::::::::::::::::
+3.2. Importing plan's ``environment`` plan key
+----------------------------------------------
 
 Environment variables set via
 importing plan's :tmt:story:`environment </spec/plans/environment>` plan
 key.
 
-5.3. Importing plan's importing plan
-::::::::::::::::::::::::::::::::::::
+3.3. Importing plan's importing plan
+------------------------------------
 
 This set is the recursive aspect of the inherited environment:
 
@@ -95,48 +75,44 @@ This set is the recursive aspect of the inherited environment:
 The chain of importing plans is followed to its end, until there is no
 importing plan to inherit from.
 
-6. Command-line options of ``tmt run`` command
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-6.1. ``--environment-file`` option
+4. User-provided guest environment
 ::::::::::::::::::::::::::::::::::
 
-6.2. ``--environment`` option
-:::::::::::::::::::::::::::::
+As set via :ref:`environment </plugins/provision/common-keys>` key of
+individual ``provision`` phases. Applies to user commands executed on
+the given guest.
+
+5. User-controlled plan environment file
+::::::::::::::::::::::::::::::::::::::::
+
+Environment variables loaded from a file the ``TMT_PLAN_ENVIRONMENT_FILE``
+environment variable points at.
+
+6. User-provided environment from command-line
+::::::::::::::::::::::::::::::::::::::::::::::
+
+6.1 ``tmt run`` command-line
+----------------------------
+
+6.1.1 Command-line options from the previous ``tmt run`` invocation
+-------------------------------------------------------------------
+
+Environment variables saved in the run directory by a previous ``tmt run``
+invocation.
+
+6.1.2 ``--environment-file`` option
+-----------------------------------
+
+6.1.3 ``--environment`` option
+------------------------------
 
 .. note::
 
     This set includes also files with environment variables when such
     files are given to ``tmt run`` using the ``@<filepath>`` form.
 
-7. Run environment
-^^^^^^^^^^^^^^^^^^
-
-7.1. Environment from the previous run
-::::::::::::::::::::::::::::::::::::::
-
-.. note::
-
-    Applies to ``tmt run`` command alone, and only when ``tmt run`` is
-    reusing an existing workdir, populated by a previous ``tmt run``
-    command.
-
-Environment variables given to the previous run via ``--environment-file``
-or ``--environment`` variables.
-
-7.2. ``--environment-file`` option
-::::::::::::::::::::::::::::::::::
-
-7.3. ``--environment`` option
-:::::::::::::::::::::::::::::
-
-.. note::
-
-    This set includes also files with environment variables when such
-    files are given to ``tmt run`` using the ``@<filepath>`` form.
-
-8. Variables exposed by tmt, run, plan, steps, and plugins
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7. Variables exposed by tmt, run, plan, steps, plugins, and test frameworks
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 These are the strongest sets of environment variables, always overriding
 preexisting ones.
@@ -144,8 +120,8 @@ preexisting ones.
 The variables here are not ordered by their order of precedence. They
 are owned and exposed by various tmt internal components and subsystems,
 and they do not conflict with each other. From the user perspective, they
-behave as a single set which overrides variables from the previous sets,
-and their internal ordering is not relevant.
+behave as a single set which overrides variables from all the previous
+sets, and their internal ordering is not relevant.
 
 Instead, they are grouped by plan steps, with notes mentioning possible
 limitations.
@@ -261,7 +237,7 @@ limitations.
 
 
 Consumed by tmt itself
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. note::
 
