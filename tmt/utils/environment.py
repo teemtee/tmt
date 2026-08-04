@@ -696,7 +696,7 @@ class Environment(dict[str, EnvVarValue]):
             # 7.2 `tmt * export` - TODO
             # 7.3 `tmt try` - TODO
 
-        # 8. intrinsic variables
+        # 7. intrinsic variables
         if test is not None and test_invocation is not None:
             base_environment.update(
                 test.test_framework.get_environment_variables(test_invocation, logger)
