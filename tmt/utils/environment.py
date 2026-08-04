@@ -670,29 +670,29 @@ class Environment(dict[str, EnvVarValue]):
         if not intrinsic_only and test is not None:
             base_environment.update(test.environment)
 
-        # 2. plan.environment-file
-        # 3. plan.environment
-        # 4. importing plan "native" environment
+        # 2.1 plan.environment-file
+        # 2.2 plan.environment
+        # 3. importing plan "native" environment
         if not intrinsic_only and plan is not None:
             base_environment.update(plan.environment)
 
-        # 5. provision[].environment
+        # 4. provision[].environment
         if not intrinsic_only and guest is not None:
             base_environment.update(guest.environment)
 
-        # 6. $TMT_PLAN_ENVIRONMENT_FILE
+        # 5. $TMT_PLAN_ENVIRONMENT_FILE
         if not intrinsic_only and guest is not None:
             base_environment.update(guest.plan_environment)
 
-        # 7. command-line input
-        # 7.1 `tmt run`
+        # 6. command-line input
+        # 6.1 `tmt run`
         if not intrinsic_only and run is not None:
             base_environment.update(run.environment)
 
-        # 7.2 `tmt * export` - TODO
-        # 7.3 `tmt try` - TODO
+        # 6.2 `tmt * export` - TODO
+        # 6.3 `tmt try` - TODO
 
-        # 8. intrinsic variables
+        # 7. intrinsic variables
         if test is not None and test_invocation is not None:
             base_environment.update(
                 test.test_framework.get_environment_variables(test_invocation, logger)
