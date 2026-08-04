@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Any, Union
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,6 +13,7 @@ from tmt.result import (
     Result,
     ResultInterpret,
     ResultOutcome,
+    SubResult,
     results_to_exit_code,
 )
 from tmt.utils import Common, Path
@@ -1084,3 +1085,47 @@ def test_result_web_link_missing_in_serialized() -> None:
 
     restored = Result.from_serialized(serialized)
     assert restored.web_link is None
+
+
+def test_result_minimal_spec_omits_internal_and_unset_timing_fields() -> None:
+    """Minimal result spec should not contain internal class hints or unset timing fields."""
+
+    def assert_no_class_hint(spec: Any) -> None:
+        if isinstance(spec, dict):
+            assert "__class__" not in spec
+
+            for value in spec.values():
+                assert_no_class_hint(value)
+
+        elif isinstance(spec, list):
+            for item in spec:
+                assert_no_class_hint(item)
+
+    result = Result(
+        name="/test",
+        result=ResultOutcome.PASS,
+        start_time="2026-08-02T12:00:00.000000Z",
+        end_time="2026-08-02T12:00:01.000000Z",
+        duration="00:00:01",
+        subresult=[
+            SubResult(name="/test/sub", result=ResultOutcome.PASS),
+        ],
+        check=[
+            CheckResult(name="check1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
+        ],
+    )
+
+    minimal_spec = result.to_minimal_spec()
+
+    assert_no_class_hint(minimal_spec)
+    assert minimal_spec["start-time"] == "2026-08-02T12:00:00.000000Z"
+    assert minimal_spec["end-time"] == "2026-08-02T12:00:01.000000Z"
+    assert minimal_spec["duration"] == "00:00:01"
+
+    for nested_result in [minimal_spec["subresult"][0], minimal_spec["check"][0]]:
+        assert "start-time" not in nested_result
+        assert "end-time" not in nested_result
+        assert "duration" not in nested_result
+
+    restored = Result.from_serialized(minimal_spec)
+    assert restored.to_minimal_spec() == minimal_spec

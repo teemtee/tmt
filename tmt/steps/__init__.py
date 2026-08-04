@@ -1058,7 +1058,7 @@ class Step(
         assert self.plan.my_run is not None  # narrow type
 
         try:
-            raw_results = [result.to_serialized() for result in results]
+            raw_results = [result.to_minimal_spec() for result in results]
 
             self.plan.my_run.write_state(self.step_workdir / 'results', raw_results)
 

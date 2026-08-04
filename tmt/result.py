@@ -7,7 +7,7 @@ import tmt.container
 import tmt.log
 import tmt.utils
 from tmt.checks import CheckEvent, CheckResultInterpret
-from tmt.container import SerializableContainer, container, field
+from tmt.container import SerializableContainer, container, container_field, field
 from tmt.utils import GeneralError, Path
 from tmt.utils.themes import style
 
@@ -139,6 +139,29 @@ class ResultGuestData(SerializableContainer):
     role: Optional[str] = None
     primary_address: Optional[str] = None
 
+    def to_minimal_spec(self) -> RawResult:
+        """
+        Convert to a form suitable for saving in a public results file.
+        """
+
+        def _produce_spec() -> dict[str, Any]:
+            spec: dict[str, Any] = {}
+
+            for key in self.keys():
+                _, option, value, _, metadata = container_field(self, key)
+
+                if metadata.serialize_callback:
+                    value = metadata.serialize_callback(value)
+
+                if value in (None, [], {}):
+                    continue
+
+                spec[option] = value
+
+            return spec
+
+        return _produce_spec()
+
     @classmethod
     def from_guest(cls, *, guest: 'tmt.guest.Guest') -> 'ResultGuestData':
         """
@@ -212,6 +235,37 @@ class BaseResult(SerializableContainer):
 
     def __post_init__(self) -> None:
         self.original_result = self.result
+
+    def to_minimal_spec(self) -> RawResult:
+        """
+        Convert to a form suitable for saving in a public results file.
+        """
+
+        def _produce_spec() -> dict[str, Any]:
+            spec: dict[str, Any] = {}
+
+            for key in self.keys():
+                _, option, value, _, metadata = container_field(self, key)
+
+                if isinstance(value, (BaseResult, ResultGuestData)):
+                    value = value.to_minimal_spec()
+
+                elif isinstance(value, list) and all(
+                    isinstance(item, BaseResult) for item in value
+                ):
+                    value = [item.to_minimal_spec() for item in value]
+
+                elif metadata.serialize_callback:
+                    value = metadata.serialize_callback(value)
+
+                if value in (None, [], {}):
+                    continue
+
+                spec[option] = value
+
+            return spec
+
+        return _produce_spec()
 
     def show(self) -> str:
         """
