@@ -593,6 +593,7 @@ class VerboseLoggingFunction(Protocol):
         self,
         key: str,
         value: Optional[str] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: VerbosityLevel = 1,
@@ -606,6 +607,7 @@ class Print(Protocol):
     def __call__(
         self,
         text: Optional[str] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         file: Optional[TextIO] = None,
         nl: bool = True,
@@ -978,6 +980,7 @@ class Logger:
     def print_format(
         self,
         text: str,
+        *,
         color: 'tmt.utils.themes.Style' = None,
     ) -> str:
         """
@@ -998,6 +1001,7 @@ class Logger:
     def print(
         self,
         text: Optional[str] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         file: Optional[TextIO] = None,
         nl: bool = True,
@@ -1012,6 +1016,7 @@ class Logger:
         self,
         key: str,
         value: Optional[LoggableValue] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         topic: Optional[Topic] = None,
@@ -1027,6 +1032,7 @@ class Logger:
         self,
         key: str,
         value: Optional[LoggableValue] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: VerbosityLevel = 1,
@@ -1050,6 +1056,7 @@ class Logger:
         self,
         key: str,
         value: Optional[LoggableValue] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: DebugLevel = 1,
@@ -1072,6 +1079,7 @@ class Logger:
     def warning(
         self,
         message: str,
+        *,
         shift: int = 0,
         stacklevel: int = 1,
         source: Optional[str] = None,
@@ -1094,14 +1102,16 @@ class Logger:
     def warn(
         self,
         message: str,
+        *,
         shift: int,
         stacklevel: int = 1,
     ) -> None:
-        return self.warning(message, shift, stacklevel=stacklevel + 1)
+        return self.warning(message, shift=shift, stacklevel=stacklevel + 1)
 
     def fail(
         self,
         message: str,
+        *,
         shift: int = 0,
         stacklevel: int = 1,
     ) -> None:
