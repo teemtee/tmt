@@ -164,14 +164,14 @@ def test_deeply_nested_directories(tmppath: Path, root_logger: tmt.log.Logger):
 
 
 @mock.patch('os.access', return_value=False)
-@mock.patch('tmt.utils.filesystem._copy_tree_cp', return_value=False)
 @mock.patch(
-    'tmt.utils.filesystem._copy_tree_shutil',
-    side_effect=PermissionError("Simulated permission error"),
+    'tmt.utils.filesystem._COPY_TREE_STRATEGIES',
+    (
+        mock.MagicMock(return_value=False),
+        mock.MagicMock(side_effect=PermissionError("Simulated permission error")),
+    ),
 )
 def test_permission_error_handling(
-    mock_shutil,
-    mock_cp,
     mock_access,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
@@ -198,20 +198,25 @@ def test_nonexistent_source_directory(tmppath: Path, root_logger: tmt.log.Logger
     assert "not a directory or does not exist" in str(excinfo.value)
 
 
-@mock.patch('tmt.utils.filesystem._copy_tree_shutil', wraps=tmt.utils.filesystem._copy_tree_shutil)
-@mock.patch('tmt.utils.filesystem._copy_tree_cp', return_value=False)
+@mock.patch(
+    'tmt.utils.filesystem._COPY_TREE_STRATEGIES',
+    (
+        mock.MagicMock(return_value=False),
+        mock.MagicMock(wraps=tmt.utils.filesystem._copy_tree_shutil),
+    ),
+)
 def test_fallback_to_shutil_copy_from_cp_failure(
-    mock_copy_tree_cp,
-    mock_copy_tree_shutil,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
     """Test fallback to shutil.copytree when _copy_tree_cp fails."""
     source_dir, dest_dir, _ = copy_tree_paths
+    mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
+
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
-    mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, root_logger)
-    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, root_logger)
+    mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, mock.ANY)
+    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, mock.ANY)
 
     # Verify files were copied using the fallback approach (shutil.copytree)
     for file_path in _EXPECTED_TEST_FILES:
@@ -236,16 +241,21 @@ def test_metadata_cp_reflink(copy_tree_paths: CopyTreePathConfig, root_logger: t
     _run_metadata_test_for_item(dest_dir, test_dir)
 
 
-@mock.patch('tmt.utils.filesystem._copy_tree_shutil', wraps=tmt.utils.filesystem._copy_tree_shutil)
-@mock.patch('tmt.utils.filesystem._copy_tree_cp', return_value=False)
+@mock.patch(
+    'tmt.utils.filesystem._COPY_TREE_STRATEGIES',
+    (
+        mock.MagicMock(return_value=False),
+        mock.MagicMock(wraps=tmt.utils.filesystem._copy_tree_shutil),
+    ),
+)
 def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
-    mock_copy_tree_cp,
-    mock_copy_tree_shutil,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
     """Test metadata preservation by shutil.copytree when cp command fails."""
     source_dir, dest_dir, _ = copy_tree_paths
+    mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
+
     timestamp = time.time() - 7200  # Two hours ago
 
     test_file = _setup_metadata_test_item(
@@ -262,25 +272,27 @@ def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
 
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
-    mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, root_logger)
-    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, root_logger)
+    mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, mock.ANY)
+    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, mock.ANY)
     _run_metadata_test_for_item(dest_dir, test_file)
     _run_metadata_test_for_item(dest_dir, test_dir)
 
 
 @mock.patch(
-    'tmt.utils.filesystem._copy_tree_shutil',
-    side_effect=OSError("Simulated shutil.copytree failure"),
+    'tmt.utils.filesystem._COPY_TREE_STRATEGIES',
+    (
+        mock.MagicMock(return_value=False),
+        mock.MagicMock(side_effect=OSError("Simulated shutil.copytree failure")),
+    ),
 )
-@mock.patch('tmt.utils.filesystem._copy_tree_cp', return_value=False)
 def test_all_strategies_fail(
-    mock_copy_tree_cp,
-    mock_copy_tree_shutil,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
     """Test GeneralError is raised when all copy strategies fail."""
     source_dir, dest_dir, _ = copy_tree_paths
+    mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
+
     with pytest.raises(tmt.utils.GeneralError):
         tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
