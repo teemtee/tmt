@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, ClassVar, NoReturn, Optional
 import packaging.version
 from fmf.utils import listed  # type: ignore[reportUnknownVariableType,unused-ignore]
 
-from tmt.container import container
+from tmt.container import container, simple_field
 
 if TYPE_CHECKING:
     from tmt.log import Logger
@@ -31,6 +31,8 @@ class UnsafeBehavior:
     #: the behavior, emitting only a warning about the future
     #: versions.
     locked_since: Optional[str] = None
+
+    alias: tuple[str, ...] = simple_field(default_factory=tuple)
 
     #: All unsafe behavior recognized by tmt.
     KNOWN_UB: ClassVar[set['UnsafeBehavior']] = set()
@@ -56,7 +58,8 @@ class UnsafeBehavior:
         from tmt.utils import GeneralError
 
         raise GeneralError(
-            f"{self.label.capitalize()} is allowed only with the '--feeling-safe' option."
+            f"{self.label[0].upper()}{self.label[1:]} is allowed"
+            "only with the '--feeling-safe' option."
         )
 
     def assert_is_allowed(self, logger: 'Logger') -> None:
@@ -88,10 +91,10 @@ class UnsafeBehavior:
 
 
 #: Represents all possible unsafe behavior.
-_ALL_ = UnsafeBehavior(name='all', label='all unsafe behavior')
+_ALL_ = UnsafeBehavior(name='all', label='all unsafe behavior', alias=('1',))
 
 #: Represents no unsafe behavior.
-_NONE_ = UnsafeBehavior(name='none', label='no unsafe behavior')
+_NONE_ = UnsafeBehavior(name='none', label='no unsafe behavior', alias=('0',))
 
 UB_CONDITION_CLI_OPTION = UnsafeBehavior(
     name='cli.condition', label="'--condition' command-line option"
@@ -101,7 +104,12 @@ UB_UNSAFE_SSH_OPTIONS = UnsafeBehavior(
     name='provision.unsafe-ssh-options', label='unsafe SSH option'
 )
 
-# TODO: move to `provision/connect`
+# TODO: the following entries would be better hosted in different files,
+# possibly even registered when the plugin they belong to is discovered.
+# But that hits some import-ordering issues when `--feeling-safe` option
+# is defined, plugins may not be discovered yet. Once that's fixed,
+# these should move to their respective plugins.
+
 #: When enabled, allows keys defining custom reboot commands the plugin
 #: runs on the runner.
 UB_REBOOT_KEYS = UnsafeBehavior(
@@ -109,14 +117,12 @@ UB_REBOOT_KEYS = UnsafeBehavior(
     label='custom soft, systemd soft, and hard reboot commands',
 )
 
-# TODO: move to `provision/mock`
 #: When enabled, allows usage of the :ref:`/plugins/provision/mock`
 #: plugin.
 UB_PROVISION_MOCK_PLUGIN = UnsafeBehavior(
     name='provision/mock', label='mock provisioning plugin', locked_since='1.58'
 )
 
-# TODO: move to `provision/local`
 #: When enabled, allows usage of the :ref:`/plugins/provision/local`
 #: plugin.
 UB_PROVISION_LOCAL_PLUGIN = UnsafeBehavior(
@@ -127,8 +133,33 @@ UB_PROVISION_LOCAL_PLUGIN = UnsafeBehavior(
 ALLOWED_BEHAVIORS: set[UnsafeBehavior] = set()
 
 
+def unsafe_behavior_names() -> list[str]:
+    # Could be simpler, but this way we can get the list of names nicely
+    # sorted, with the wildcards at the end.
+    return [
+        *sorted(
+            behavior.name
+            for behavior in UnsafeBehavior.KNOWN_UB
+            if behavior not in (_ALL_, _NONE_)
+        ),
+        _ALL_.name,
+        *_ALL_.alias,
+        _NONE_.name,
+        *_NONE_.alias,
+    ]
+
+
+def _known_ub_map() -> dict[str, UnsafeBehavior]:
+    return {
+        **{ub.name: ub for ub in UnsafeBehavior.KNOWN_UB},
+        **dict.fromkeys(_ALL_.alias, _ALL_),
+        **dict.fromkeys(_NONE_.alias, _NONE_),
+    }
+
+
 def name_to_unsafe_behavior(*names: str) -> Iterator[UnsafeBehavior]:
-    known_ub_map = {ub.name: ub for ub in UnsafeBehavior.KNOWN_UB}
+    known_ub_map = _known_ub_map()
+
     requested_ub_names = set(names)
 
     unknown_but_requested_names = requested_ub_names.difference(known_ub_map.keys())
@@ -166,7 +197,7 @@ def is_allowed(*names: str) -> bool:
 
     global ALLOWED_BEHAVIORS
 
-    known_ub_map = {ub.name: ub for ub in UnsafeBehavior.KNOWN_UB}
+    known_ub_map = _known_ub_map()
 
     try:
         return all(known_ub_map[name].is_allowed for name in names)
