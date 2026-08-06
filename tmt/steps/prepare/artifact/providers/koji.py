@@ -185,9 +185,14 @@ class KojiArtifactProvider(ArtifactProvider):
         shared_repo_dir: tmt.utils.Path,
         exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
     ) -> None:
-        guest.execute(
-            ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
-        )
+        try:
+            guest.execute(
+                ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
+            )
+        except Exception:
+            self.logger.warning(f"No artifacts to contribute from '{source_path}'.")
+            return
+
         self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")
 
     def make_rpm_artifact(self, rpm_meta: dict[str, Any]) -> ArtifactInfo:
