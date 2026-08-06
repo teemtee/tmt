@@ -218,7 +218,11 @@ class ArtifactProvider(ABC):
                 raise tmt.utils.GeneralError(
                     f"Unexpected error downloading '{artifact}'."
                 ) from error
-
+        if not downloaded_paths:
+            raise tmt.utils.GeneralError(
+                f"No artifacts were downloaded for provider '{self.raw_id}'. "
+                f"Verify the provider identifier is correct."
+            )
         self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
 
