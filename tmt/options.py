@@ -195,14 +195,43 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         '--verbose',
         count=True,
         default=0,
-        help='Show more details. Use multiple times to raise verbosity.',
+        help="""
+             Make the user-focused output more verbose. Can be used
+             up to three times (``-v`` to ``-vvv``) for increasingly
+             detailed output:
+
+             * ``-v``: Phase inputs and outputs are shown. The essential
+               phase input and output such as discovered test names,
+               required packages or individual test results.
+             * ``-vv``: Investigation details are shown. Details needed
+               when investigating what went wrong such as log paths,
+               remote links, external sources, guest facts, duration
+               deadlines or executed commands.
+             * ``-vvv``: Full output. Command outputs, full test output,
+               rendered script, other constructed input, queued/executed
+               tasks.
+             """,
     ),
     option(
         '-d',
         '--debug',
         count=True,
         default=0,
-        help='Provide debugging information. Repeat to see more details.',
+        help="""
+             Make the developer-focused debugging output more verbose.
+             Can be used up to three times (``-d`` to ``-ddd``, or
+             ``TMT_DEBUG=1`` to ``TMT_DEBUG=3``) for increasingly
+             detailed logging:
+
+             * ``-d``/``TMT_DEBUG=1``: High-level info. Framework choice,
+               policy application or reboot actions.
+             * ``-dd``/``TMT_DEBUG=2``: Detailed operations. Actions
+               such as step load, wake up, guest pull/push or playbook
+               paths.
+             * ``-ddd``/``TMT_DEBUG=3``: Internal plumbing. The
+               low-level implementation details such as workdir handling,
+               process termination, key normalization and similar.
+             """,
     ),
     option(
         '-q',
@@ -700,7 +729,7 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
                                 # Found a flag
                                 continue
                             if option.count:
-                                # Found options like '-ddddd'
+                                # Found options like '-ddd'
                                 continue
 
                         # Consume all remaining arguments. Think `ls /foo /bar ...`, it's not

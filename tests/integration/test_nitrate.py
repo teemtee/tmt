@@ -226,7 +226,7 @@ class NitrateImport(Base):
     def test_import_manual_confirmed(self):
         # TODO: import does not respect --root param anyhow (could)
         self.runner_output = CliRunner().invoke(
-            '-vvvvdddd',
+            '-vvvddd',
             '--root',
             self.tmpdir / "import_case",
             "test",

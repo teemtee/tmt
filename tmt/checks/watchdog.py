@@ -174,7 +174,7 @@ class WatchdogCheck(Check):
         Perform a ping check
         """
 
-        logger.debug('pinging', level=4)
+        logger.debug('pinging', level=3)
 
         log = render_report_path(invocation)
 
@@ -289,7 +289,7 @@ class WatchdogCheck(Check):
 
         assert isinstance(invocation.guest, tmt.guest.GuestSsh)
 
-        logger.debug('checking SSH port', level=4)
+        logger.debug('checking SSH port', level=3)
 
         log = render_report_path(invocation)
 

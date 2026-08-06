@@ -86,16 +86,16 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     """
 
     def log_visit(self, node: Union[docutils.nodes.Node, docutils.nodes.Body]) -> None:
-        self.logger.debug('visit ', str(node), level=4, topic=tmt.log.Topic.HELP_RENDERING)
+        self.logger.debug('visit ', str(node), level=3, topic=tmt.log.Topic.HELP_RENDERING)
 
     def log_departure(self, node: Union[docutils.nodes.Node, docutils.nodes.Body]) -> None:
-        self.logger.debug('depart', str(node), level=4, topic=tmt.log.Topic.HELP_RENDERING)
+        self.logger.debug('depart', str(node), level=3, topic=tmt.log.Topic.HELP_RENDERING)
 
     def __init__(self, document: docutils.nodes.document, logger: Logger) -> None:
         super().__init__(document)
 
         self.logger = logger
-        self.debug = functools.partial(logger.debug, level=4, topic=tmt.log.Topic.HELP_RENDERING)
+        self.debug = functools.partial(logger.debug, level=3, topic=tmt.log.Topic.HELP_RENDERING)
 
         #: Collects all rendered paragraps - text, blocks, lists, etc.
         self._rendered_paragraphs: list[str] = []
@@ -446,7 +446,7 @@ def render_rst(text: str, logger: Logger) -> str:
     Render a ReST document
     """
 
-    logger.debug('text', text, level=4, topic=tmt.log.Topic.HELP_RENDERING)
+    logger.debug('text', text, level=3, topic=tmt.log.Topic.HELP_RENDERING)
 
     document = parse_rst(text)
     visitor = RestVisitor(document, logger)
