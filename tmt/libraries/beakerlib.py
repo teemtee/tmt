@@ -432,7 +432,9 @@ class BeakerLibFromUrl(BeakerLib):
             self.parent.debug(f"Failed to find library {self} at {self.url}")
             raise LibraryError
         self.parent.debug(f"Library {self} is copied into {directory}")
-        tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
+        tmt.utils.filesystem.copy_tree(
+            src=library_path, dst=local_library_path, logger=self._logger
+        )
 
         self.parent.verbose(
             'using remote git library',
@@ -462,15 +464,15 @@ class BeakerLibFromUrl(BeakerLib):
 
         # Copy fmf metadata
         tmt.utils.filesystem.copy_tree(
-            clone_dir / '.fmf',
-            directory / '.fmf',
-            self._logger,
+            src=clone_dir / '.fmf',
+            dst=directory / '.fmf',
+            logger=self._logger,
         )
         if self.path:
             tmt.utils.filesystem.copy_tree(
-                clone_dir / self.path.unrooted() / '.fmf',
-                directory / self.path.unrooted() / '.fmf',
-                self._logger,
+                src=clone_dir / self.path.unrooted() / '.fmf',
+                dst=directory / self.path.unrooted() / '.fmf',
+                logger=self._logger,
             )
 
 
@@ -530,12 +532,14 @@ class BeakerLibFromPath(BeakerLib):
 
         self.parent.debug(f"Copy local library '{self.fmf_node_path}' to '{directory}'.", level=3)
         # Copy only the required library
-        tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
+        tmt.utils.filesystem.copy_tree(
+            src=library_path, dst=local_library_path, logger=self._logger
+        )
         # Remove metadata file(s) and create one with full data
         self._merge_metadata(library_path, local_library_path)
         # Copy fmf metadata
         tmt.utils.filesystem.copy_tree(
-            self.path / '.fmf',
-            directory / '.fmf',
-            self._logger,
+            src=self.path / '.fmf',
+            dst=directory / '.fmf',
+            logger=self._logger,
         )

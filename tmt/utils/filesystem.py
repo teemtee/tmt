@@ -2,23 +2,61 @@
 Utility functions for filesystem operations.
 """
 
+import contextlib
+import enum
 import shutil
-from typing import Callable
+from collections.abc import Generator
+from typing import Optional, Protocol
 
 import tmt.log
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import TypeAlias
 from tmt.utils import Command, GeneralError, RunError, show_exception_as_warning
 from tmt.utils.environment import Environment
 
-CopyStrategy: TypeAlias = Callable[[Path, Path, tmt.log.Logger], bool]
+
+class TmpDirCreator(Protocol):
+    @contextlib.contextmanager
+    def __call__(
+        self, prefix: Optional[str] = None, suffix: Optional[str] = None
+    ) -> Generator[Path, None, None]:  # type: ignore[reportReturnType,unused-ignore]
+        pass
+
+
+class StrategyOutcome(enum.Enum):
+    """
+    Possible outcomes of a :py:class:`CopyStrategy` strategy.
+    """
+
+    #: Strategy was successful, and copied the tree as requested.
+    SUCCESS = enum.auto()
+
+    #: Strategy failed to copy the tree.
+    FAIL = enum.auto()
+
+    #: For some reason, it was not possible for the strategy to even
+    #: attempt copying the tree.
+    YIELD = enum.auto()
+
+
+class CopyStrategy(Protocol):
+    def __call__(
+        self,
+        *,
+        src: Path,
+        dst: Path,
+        tmpdir_creator: Optional[TmpDirCreator] = None,
+        logger: tmt.log.Logger,
+    ) -> StrategyOutcome:  # type: ignore[reportReturnType,unused-ignore]
+        pass
 
 
 def _copy_tree_cp(
+    *,
     src: Path,
     dst: Path,
+    tmpdir_creator: Optional[TmpDirCreator] = None,
     logger: tmt.log.Logger,
-) -> bool:
+) -> StrategyOutcome:
     """
     Attempt to copy directory using ``cp -a --reflink=auto``.
 
@@ -54,16 +92,62 @@ def _copy_tree_cp(
             exception=exc, message="'cp --reflink=auto' failed", logger=logger
         )
 
-        return False
+        return StrategyOutcome.FAIL
 
-    return True
+    return StrategyOutcome.SUCCESS
+
+
+def _copy_tree_rsync(
+    *,
+    src: Path,
+    dst: Path,
+    tmpdir_creator: Optional[TmpDirCreator] = None,
+    logger: tmt.log.Logger,
+) -> StrategyOutcome:
+    """
+    Copy directory using ``rsync -a``.
+
+    :returns: ``True`` if successful, ``False`` if ``rsync`` command
+        fails with :py:class:`RunError`.
+    """
+
+    if tmpdir_creator is None:
+        logger.debug(
+            f"Copy tree '{src}' => '{dst}' using 'rsync -a' strategy"
+            " not possible without a temporary directory."
+        )
+
+        return StrategyOutcome.YIELD
+
+    logger.debug(f"Copy tree '{src}' => '{dst}' using 'rsync -a' strategy.")
+
+    with tmpdir_creator(prefix='rsync-') as rsync_tempdir:
+        try:
+            Command(
+                'rsync',
+                '-ar',
+                '--temp-dir',
+                rsync_tempdir,
+                f"{src}/",
+                dst,
+            ).run(cwd=None, environment=Environment.from_environ(), silent=True, logger=logger)
+
+        # Let other exceptions (e.g. permissions, disk full) propagate
+        except RunError as exc:
+            show_exception_as_warning(exception=exc, message="'rsync' failed", logger=logger)
+
+            return StrategyOutcome.FAIL
+
+    return StrategyOutcome.SUCCESS
 
 
 def _copy_tree_shutil(
+    *,
     src: Path,
     dst: Path,
+    tmpdir_creator: Optional[TmpDirCreator] = None,
     logger: tmt.log.Logger,
-) -> bool:
+) -> StrategyOutcome:
     """
     Perform copy using :py:func:`shutil.copytree`.
 
@@ -84,18 +168,21 @@ def _copy_tree_shutil(
         dirs_exist_ok=True,
     )
 
-    return True
+    return StrategyOutcome.SUCCESS
 
 
 _COPY_TREE_STRATEGIES: tuple[CopyStrategy, ...] = (
+    _copy_tree_rsync,
     _copy_tree_cp,
     _copy_tree_shutil,
 )
 
 
 def copy_tree(
+    *,
     src: Path,
     dst: Path,
+    tmpdir_creator: Optional[TmpDirCreator] = None,
     logger: tmt.log.Logger,
 ) -> None:
     """
@@ -121,6 +208,9 @@ def copy_tree(
         directory.
     :param dst: Destination directory path. If it does not exist, it
         will be created.
+    :param tmpdir_creator: a context manager that, when invoked, would
+        create and hold a temporary directory. Some strategies may
+        require such a directory for their work.
     :param logger: Logger to use for debug messages.
     :raises GeneralError: when copying fails using all strategies, or if
         ``src`` does not exist or is not a directory.
@@ -138,8 +228,15 @@ def copy_tree(
 
     for strategy in _COPY_TREE_STRATEGIES:
         try:
-            if strategy(src, dst, logger.descend()):
+            outcome = strategy(
+                src=src, dst=dst, tmpdir_creator=tmpdir_creator, logger=logger.descend()
+            )
+
+            if outcome is StrategyOutcome.SUCCESS:
                 return
+
+            if outcome in (StrategyOutcome.FAIL, StrategyOutcome.YIELD):
+                continue
 
         except Exception as exc:
             raise GeneralError(f"Failed to copy tree '{src}' => '{dst}'.") from exc
