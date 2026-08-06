@@ -10,7 +10,7 @@ from tmt.log import Logger
 from tmt.utils import GeneralError
 from tmt.utils.feeling_safe import (
     UnsafeBehavior,
-    allow_behaviors,
+    allow_unsafe_behavior,
     is_allowed,
 )
 
@@ -110,6 +110,6 @@ def test_is_allowed(
     expected: bool,
     monkeypatch: _pytest.monkeypatch.MonkeyPatch,
 ) -> None:
-    allow_behaviors(*allowed_behaviors)
+    allow_unsafe_behavior(*allowed_behaviors)
 
     assert is_allowed(*requested_behaviors) is expected

@@ -223,7 +223,7 @@ def main(
     # Save click context and fmf context for future use
     tmt.utils.Common.store_cli_invocation(click_contex)
 
-    tmt.utils.feeling_safe.allow_behaviors(*feeling_safe)
+    tmt.utils.feeling_safe.allow_unsafe_behavior(*feeling_safe)
 
     # Run pre-checks
     if pre_check:

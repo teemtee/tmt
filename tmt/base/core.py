@@ -2272,7 +2272,7 @@ class Tree(tmt.utils.Common):
         cli_conditions: list[str] = list(cls._opt('conditions', []))
 
         if cli_conditions:
-            tmt.utils.feeling_safe.CONDITION_CLI_OPTION_UNSAFE_BEHAVIOR.assert_is_allowed(logger)
+            tmt.utils.feeling_safe.UB_CONDITION_CLI_OPTION.assert_is_allowed(logger)
 
         return cli_conditions
 

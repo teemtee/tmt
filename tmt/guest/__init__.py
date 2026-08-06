@@ -3416,9 +3416,7 @@ class GuestSsh(Guest, CommandCollector):
             option_keyword = re.split(r'[=\s]', option.strip(), maxsplit=1)[0]
 
             if option_keyword.lower() in UNSAFE_SSH_OPTIONS:
-                tmt.utils.feeling_safe.UNSAFE_SSH_OPTIONS_UNSAFE_BEHAVIOR.assert_is_allowed(
-                    self._logger
-                )
+                tmt.utils.feeling_safe.UB_UNSAFE_SSH_OPTIONS.assert_is_allowed(self._logger)
 
             options.append(f'-o{option}')
 
