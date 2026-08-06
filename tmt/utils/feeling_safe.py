@@ -1,9 +1,9 @@
 """
-Unsafe behavior and "feeling safe" handling.
+Unsafe behavior ("UB") and "feeling safe" handling.
 """
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, NoReturn, Optional
+from typing import TYPE_CHECKING, ClassVar, NoReturn, Optional
 
 import packaging.version
 from fmf.utils import listed  # type: ignore[reportUnknownVariableType,unused-ignore]
@@ -31,6 +31,12 @@ class UnsafeBehavior:
     #: the behavior, emitting only a warning about the future
     #: versions.
     locked_since: Optional[str] = None
+
+    #: All unsafe behavior recognized by tmt.
+    KNOWN_UB: ClassVar[set['UnsafeBehavior']] = set()
+
+    def __post_init__(self) -> None:
+        UnsafeBehavior.KNOWN_UB.add(self)
 
     @property
     def is_allowed(self) -> bool:
@@ -87,18 +93,18 @@ _ALL_ = UnsafeBehavior(name='all', label='all unsafe behavior')
 #: Represents no unsafe behavior.
 _NONE_ = UnsafeBehavior(name='none', label='no unsafe behavior')
 
-CONDITION_CLI_OPTION_UNSAFE_BEHAVIOR = UnsafeBehavior(
+UB_CONDITION_CLI_OPTION = UnsafeBehavior(
     name='cli.condition', label="'--condition' command-line option"
 )
 
-UNSAFE_SSH_OPTIONS_UNSAFE_BEHAVIOR = UnsafeBehavior(
+UB_UNSAFE_SSH_OPTIONS = UnsafeBehavior(
     name='provision.unsafe-ssh-options', label='unsafe SSH option'
 )
 
 # TODO: move to `provision/connect`
 #: When enabled, allows keys defining custom reboot commands the plugin
 #: runs on the runner.
-REBOOT_KEYS_UNSAFE_BEHAVIOR = UnsafeBehavior(
+UB_REBOOT_KEYS = UnsafeBehavior(
     name='provision/connect.reboot-commands',
     label='custom soft, systemd soft, and hard reboot commands',
 )
@@ -106,51 +112,39 @@ REBOOT_KEYS_UNSAFE_BEHAVIOR = UnsafeBehavior(
 # TODO: move to `provision/mock`
 #: When enabled, allows usage of the :ref:`/plugins/provision/mock`
 #: plugin.
-PROVISION_MOCK_PLUGIN_UNSAFE_BEHAVIOR = UnsafeBehavior(
+UB_PROVISION_MOCK_PLUGIN = UnsafeBehavior(
     name='provision/mock', label='mock provisioning plugin', locked_since='1.58'
 )
 
 # TODO: move to `provision/local`
 #: When enabled, allows usage of the :ref:`/plugins/provision/local`
 #: plugin.
-PROVISION_LOCAL_PLUGIN_UNSAFE_BEHAVIOR = UnsafeBehavior(
+UB_PROVISION_LOCAL_PLUGIN = UnsafeBehavior(
     name='provision/local', label="'local' provisioning plugin", locked_since="1.38"
 )
-
-
-#: All unsafe behavior recognized by tmt.
-KNOWN_UNSAFE_BEHAVIORS: set[UnsafeBehavior] = {
-    _ALL_,
-    _NONE_,
-    CONDITION_CLI_OPTION_UNSAFE_BEHAVIOR,
-    UNSAFE_SSH_OPTIONS_UNSAFE_BEHAVIOR,
-    REBOOT_KEYS_UNSAFE_BEHAVIOR,
-    PROVISION_MOCK_PLUGIN_UNSAFE_BEHAVIOR,
-    PROVISION_LOCAL_PLUGIN_UNSAFE_BEHAVIOR,
-}
 
 #: Behavior currently enabled.
 ALLOWED_BEHAVIORS: set[UnsafeBehavior] = set()
 
 
-def names_to_behaviors(*names: str) -> Iterator[UnsafeBehavior]:
-    known_behavior_map = {behavior.name: behavior for behavior in KNOWN_UNSAFE_BEHAVIORS}
-    requested_behavior_names = set(names)
+def name_to_unsafe_behavior(*names: str) -> Iterator[UnsafeBehavior]:
+    known_ub_map = {ub.name: ub for ub in UnsafeBehavior.KNOWN_UB}
+    requested_ub_names = set(names)
 
-    unknown_but_requested_names = requested_behavior_names.difference(known_behavior_map.keys())
+    unknown_but_requested_names = requested_ub_names.difference(known_ub_map.keys())
 
     if unknown_but_requested_names:
         from tmt.utils import GeneralError
 
         raise GeneralError(f"Unknown unsafe behavior {listed(unknown_but_requested_names)}.")
 
-    for name in requested_behavior_names:
-        yield known_behavior_map[name]
+    for name in requested_ub_names:
+        yield known_ub_map[name]
 
 
-def allow_behaviors(*behaviors: str) -> None:
+def allow_unsafe_behavior(*ubs: str) -> None:
     """
-    Allow the given behaviors.
+    Allow the given unsafe behaviors.
 
     All other unsafe behaviors would not be allowed: the
     list of allowed behaviors is emptied, and then populated with
@@ -161,21 +155,21 @@ def allow_behaviors(*behaviors: str) -> None:
 
     ALLOWED_BEHAVIORS.clear()
 
-    for behavior in names_to_behaviors(*behaviors):
-        ALLOWED_BEHAVIORS.add(behavior)
+    for ub in name_to_unsafe_behavior(*ubs):
+        ALLOWED_BEHAVIORS.add(ub)
 
 
 def is_allowed(*names: str) -> bool:
     """
-    Check whether the given behaviors are allowed.
+    Check whether the given unsafe behaviors are allowed.
     """
 
     global ALLOWED_BEHAVIORS
 
-    known_behavior_map = {behavior.name: behavior for behavior in KNOWN_UNSAFE_BEHAVIORS}
+    known_ub_map = {ub.name: ub for ub in UnsafeBehavior.KNOWN_UB}
 
     try:
-        return all(known_behavior_map[name].is_allowed for name in names)
+        return all(known_ub_map[name].is_allowed for name in names)
 
     except KeyError as exc:
         from tmt.utils import GeneralError
@@ -183,33 +177,22 @@ def is_allowed(*names: str) -> bool:
         raise GeneralError(f"Unknown unsafe behavior {listed([exc.args[0]])}.") from exc
 
 
-def is_feeling_safe() -> tuple[bool, bool, str]:
+def log_feeling_safe(logger: 'Logger') -> None:
     """
-    Find out whether tmt runs in a "feeling safe" mode, and how much.
-
-    Besides the obvious statement and helpful message for logging, it
-    is also determined how strongly user felt about this mode: not
-    feeling safe and providing ``--feeling-safe=none`` option is stronger
-    than just running tmt and relying on unsafe behavior being disabled
-    by default.
-
-    :returns: a tuple of 3 items: whether tmt runs in the "feeling safe"
-        mode, how strong is this decision, and user-friendly message
-        for logging.
+    Log how safe is the user feeling.
     """
 
     if not ALLOWED_BEHAVIORS:
-        return (False, False, f'User is not feeling safe: {_NONE_.label} allowed')
+        logger.debug(f'User is not feeling safe: {_NONE_.label} allowed.')
 
-    if _NONE_ in ALLOWED_BEHAVIORS:
-        return (False, True, f'User is not feeling safe: {_NONE_.label} allowed')
+    elif _NONE_ in ALLOWED_BEHAVIORS:
+        logger.warning(f'User is not feeling safe: {_NONE_.label} allowed.')
 
-    if _ALL_ in ALLOWED_BEHAVIORS:
-        return (True, True, f'User is feeling safe: {_ALL_.label} allowed')
+    elif _ALL_ in ALLOWED_BEHAVIORS:
+        logger.warning(f'User is feeling safe: {_ALL_.label} allowed.')
 
-    return (
-        True,
-        True,
-        'User is feeling safe:'
-        f' {listed(behavior.label for behavior in ALLOWED_BEHAVIORS)} allowed',
-    )
+    else:
+        logger.warning(
+            'User is feeling safe:'
+            f' {listed(behavior.label for behavior in ALLOWED_BEHAVIORS)} allowed.'
+        )

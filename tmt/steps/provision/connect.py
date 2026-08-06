@@ -8,7 +8,7 @@ import tmt.utils
 from tmt.container import container, field, option_to_key
 from tmt.guest import RebootMode
 from tmt.utils import Command, ShellScript
-from tmt.utils.feeling_safe import REBOOT_KEYS_UNSAFE_BEHAVIOR
+from tmt.utils.feeling_safe import UB_REBOOT_KEYS
 from tmt.utils.wait import Waiting
 
 
@@ -321,7 +321,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             raise tmt.utils.SpecificationError('Provide a host name or an ip address to connect.')
 
         if any((self.data.soft_reboot, self.data.systemd_soft_reboot, self.data.hard_reboot)):
-            REBOOT_KEYS_UNSAFE_BEHAVIOR.assert_is_allowed(self._logger)
+            UB_REBOOT_KEYS.assert_is_allowed(self._logger)
 
         data = ConnectGuestData.from_plugin(self)
 
