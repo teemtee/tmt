@@ -378,9 +378,19 @@ The following environment variables can be used to modify
 behaviour of the ``tmt`` command.
 
 TMT_DEBUG
-    Emit debugging information. Using this environment variable has the
-    same effect as the equal number of ``-d`` options. The value can go
-    from ``0`` to ``4`` for increasingly detailed logging.
+    Make the developer-focused debugging output more verbose. Using this
+    environment variable has the same effect as the equal number of
+    ``-d`` options. The value go from ``0`` to ``3`` for increasingly
+    detailed logging:
+
+    * ``-d``/``TMT_DEBUG=1``: High-level info. Framework choice,
+      policy application or reboot actions.
+    * ``-dd``/``TMT_DEBUG=2``: Detailed operations. Actions
+      such as step load, wake up, guest pull/push or playbook
+      paths.
+    * ``-ddd``/``TMT_DEBUG=3``: Internal plumbing. The
+      low-level implementation details such as workdir handling,
+      process termination, key normalization and similar.
 
 TMT_PLUGINS
     Path to a directory with additional plugins. Multiple paths
