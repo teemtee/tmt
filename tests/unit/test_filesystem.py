@@ -9,7 +9,7 @@ import pytest
 import tmt.log
 import tmt.utils
 import tmt.utils.filesystem
-from tmt.utils import Path
+from tmt.utils import Command, Path
 
 # A dictionary mapping file paths to their content for test setup.
 # This reduces duplication and improves readability in tests.
@@ -206,12 +206,12 @@ def test_fallback_to_shutil_copy_from_cp_failure(
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
-    """Test fallback to shutil.copytree when _copy_tree_cp fails."""
+    """Test fallback to shutil.copytree when _copy_tree_cp fails (non-git source)."""
     source_dir, dest_dir, _ = copy_tree_paths
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
     mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, root_logger)
-    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, root_logger)
+    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, root_logger, [])
 
     # Verify files were copied using the fallback approach (shutil.copytree)
     for file_path in _EXPECTED_TEST_FILES:
@@ -263,7 +263,7 @@ def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
     mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, root_logger)
-    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, root_logger)
+    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, root_logger, [])
     _run_metadata_test_for_item(dest_dir, test_file)
     _run_metadata_test_for_item(dest_dir, test_dir)
 
@@ -279,7 +279,7 @@ def test_all_strategies_fail(
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
-    """Test GeneralError is raised when all copy strategies fail."""
+    """Test GeneralError is raised when all copy strategies fail (non-git source)."""
     source_dir, dest_dir, _ = copy_tree_paths
     with pytest.raises(tmt.utils.GeneralError):
         tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
@@ -311,3 +311,220 @@ def test_copy_to_existing_destination(
     # Check symlink if supported
     if symlinks_supported:
         assert Path.is_symlink(dest_dir / "symlink.txt")
+
+
+@mock.patch('tmt.utils.filesystem.tmt.utils.git.git_ignore')
+def test_get_git_excludes(
+    mock_git_ignore,
+    tmppath: Path,
+    root_logger: tmt.log.Logger,
+):
+    """Test _get_git_excludes returns .git and gitignored paths."""
+    source_dir = tmppath / "src"
+    source_dir.mkdir()
+    mock_git_ignore.return_value = [Path('build/'), Path('cache.pyc')]
+
+    result = tmt.utils.filesystem._get_git_excludes(source_dir, root_logger)
+
+    mock_git_ignore.assert_called_once_with(root=source_dir, logger=root_logger)
+    assert Path('.git') in result
+    assert Path('build/') in result
+    assert Path('cache.pyc') in result
+
+
+@mock.patch(
+    'tmt.utils.filesystem.tmt.utils.git.git_ignore',
+    side_effect=tmt.utils.RunError('git failed', tmt.utils.Command('git'), 1),
+)
+def test_get_git_excludes_git_ignore_fails(
+    mock_git_ignore,
+    tmppath: Path,
+    root_logger: tmt.log.Logger,
+):
+    """Test _get_git_excludes returns empty list when git_ignore fails."""
+    source_dir = tmppath / "src"
+    source_dir.mkdir()
+
+    result = tmt.utils.filesystem._get_git_excludes(source_dir, root_logger)
+
+    assert result == []
+
+
+def test_copy_tree_rsync_with_gitignore_filter(tmppath: Path, root_logger: tmt.log.Logger):
+    """Test that _copy_tree_rsync uses native .gitignore filtering."""
+    source_dir = tmppath / "src"
+    dest_dir = tmppath / "dst"
+    source_dir.mkdir()
+    dest_dir.mkdir()
+
+    (source_dir / "keep.txt").write_text("keep")
+    (source_dir / ".gitignore").write_text("build/\n")
+    (source_dir / "build").mkdir()
+    (source_dir / "build" / "output.o").write_text("compiled")
+    (source_dir / ".git").mkdir()
+    (source_dir / ".git" / "config").write_text("gitconfig")
+
+    result = tmt.utils.filesystem._copy_tree_rsync(source_dir, dest_dir, root_logger, source_dir)
+
+    assert result is True
+    assert (dest_dir / "keep.txt").exists()
+    assert (dest_dir / "keep.txt").read_text() == "keep"
+    assert (dest_dir / ".gitignore").exists()
+    assert not (dest_dir / "build").exists()
+    assert not (dest_dir / ".git").exists()
+
+
+def test_copy_tree_shutil_with_excludes(tmppath: Path, root_logger: tmt.log.Logger):
+    """Test that _copy_tree_shutil excludes specified paths, including nested ones."""
+    source_dir = tmppath / "src"
+    dest_dir = tmppath / "dst"
+    source_dir.mkdir()
+    dest_dir.mkdir()
+
+    (source_dir / "keep.txt").write_text("keep")
+    (source_dir / "build").mkdir()
+    (source_dir / "build" / "output.o").write_text("compiled")
+    (source_dir / ".git").mkdir()
+    (source_dir / ".git" / "config").write_text("gitconfig")
+    (source_dir / "sub").mkdir()
+    (source_dir / "sub" / "nested.txt").write_text("nested")
+    (source_dir / "sub" / "keep_nested.txt").write_text("keep nested")
+
+    excludes = [Path('.git'), Path('build/'), Path('sub/nested.txt')]
+
+    tmt.utils.filesystem._copy_tree_shutil(source_dir, dest_dir, root_logger, excludes)
+
+    assert (dest_dir / "keep.txt").exists()
+    assert (dest_dir / "keep.txt").read_text() == "keep"
+    assert not (dest_dir / "build").exists()
+    assert not (dest_dir / ".git").exists()
+
+    # Nested file matching a full relative path exclude should be excluded ...
+    assert not (dest_dir / "sub" / "nested.txt").exists()
+    # ... while sibling files in the same subdirectory are still copied.
+    assert (dest_dir / "sub" / "keep_nested.txt").exists()
+    assert (dest_dir / "sub" / "keep_nested.txt").read_text() == "keep nested"
+
+
+def test_copy_tree_honors_gitignore(tmppath: Path, root_logger: tmt.log.Logger):
+    """Test that copy_tree excludes .gitignore'd files when source is a git repo."""
+    source_dir = tmppath / "git_repo"
+    dest_dir = tmppath / "dest"
+    source_dir.mkdir()
+
+    # Initialize a git repo
+    Command('git', 'init').run(cwd=source_dir, logger=root_logger)
+    Command('git', 'config', 'user.email', 'test@test.com').run(
+        cwd=source_dir,
+        logger=root_logger,
+    )
+    Command('git', 'config', 'user.name', 'Test').run(
+        cwd=source_dir,
+        logger=root_logger,
+    )
+
+    # Create tracked files
+    (source_dir / "tracked.txt").write_text("tracked content")
+    (source_dir / "src").mkdir()
+    (source_dir / "src" / "main.py").write_text("print('hello')")
+
+    # Create .gitignore
+    (source_dir / ".gitignore").write_text("build/\n*.pyc\n")
+
+    # Git add and commit tracked files
+    Command('git', 'add', '.').run(cwd=source_dir, logger=root_logger)
+    Command('git', 'commit', '-m', 'init').run(cwd=source_dir, logger=root_logger)
+
+    # Create ignored files (after commit so they are untracked+ignored)
+    (source_dir / "build").mkdir()
+    (source_dir / "build" / "output.o").write_text("compiled")
+    (source_dir / "src" / "cache.pyc").write_text("bytecode")
+
+    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+
+    # Tracked files should be copied
+    assert (dest_dir / "tracked.txt").exists()
+    assert (dest_dir / "tracked.txt").read_text() == "tracked content"
+    assert (dest_dir / "src" / "main.py").exists()
+    assert (dest_dir / ".gitignore").exists()
+
+    # Ignored files should NOT be copied
+    assert not (dest_dir / "build").exists()
+    assert not (dest_dir / "src" / "cache.pyc").exists()
+
+    # .git directory should NOT be copied
+    assert not (dest_dir / ".git").exists()
+
+
+def test_copy_tree_honors_gitignore_from_subdirectory(tmppath: Path, root_logger: tmt.log.Logger):
+    """
+    Test that copy_tree correctly excludes gitignored paths when the copy
+    source is a subdirectory of the git repository root.
+
+    Regression test: ``git ls-files`` must be run with the copy source as
+    its working directory so returned paths are relative to it, matching
+    what rsync/shutil need. Previously exclude paths were computed relative
+    to the git repository root instead, which misaligned them whenever
+    ``src`` was not the repository root itself.
+    """
+    repo_root = tmppath / "repo"
+    dest_dir = tmppath / "dest"
+    repo_root.mkdir()
+
+    Command('git', 'init').run(cwd=repo_root, logger=root_logger)
+    Command('git', 'config', 'user.email', 'test@test.com').run(
+        cwd=repo_root,
+        logger=root_logger,
+    )
+    Command('git', 'config', 'user.name', 'Test').run(
+        cwd=repo_root,
+        logger=root_logger,
+    )
+
+    # .gitignore lives at the repository root and applies to the whole tree.
+    (repo_root / ".gitignore").write_text("build/\n*.pyc\n")
+
+    # The directory we will actually copy is a subdirectory of the repo root.
+    source_dir = repo_root / "project"
+    source_dir.mkdir()
+    (source_dir / "tracked.txt").write_text("tracked content")
+    (source_dir / "src").mkdir()
+    (source_dir / "src" / "main.py").write_text("print('hello')")
+
+    Command('git', 'add', '.').run(cwd=repo_root, logger=root_logger)
+    Command('git', 'commit', '-m', 'init').run(cwd=repo_root, logger=root_logger)
+
+    # Create ignored files inside the subdirectory being copied, after the commit.
+    (source_dir / "build").mkdir()
+    (source_dir / "build" / "output.o").write_text("compiled")
+    (source_dir / "src" / "cache.pyc").write_text("bytecode")
+
+    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+
+    # Tracked files should be copied
+    assert (dest_dir / "tracked.txt").exists()
+    assert (dest_dir / "tracked.txt").read_text() == "tracked content"
+    assert (dest_dir / "src" / "main.py").exists()
+
+    # Ignored files should NOT be copied
+    assert not (dest_dir / "build").exists()
+    assert not (dest_dir / "src" / "cache.pyc").exists()
+
+
+def test_copy_tree_non_git_repo_copies_everything(tmppath: Path, root_logger: tmt.log.Logger):
+    """Test that copy_tree copies everything when source is not a git repo."""
+    source_dir = tmppath / "not_git"
+    dest_dir = tmppath / "dest"
+    source_dir.mkdir()
+
+    (source_dir / "file.txt").write_text("content")
+    (source_dir / "build").mkdir()
+    (source_dir / "build" / "output.o").write_text("compiled")
+    (source_dir / ".gitignore").write_text("build/\n")
+
+    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+
+    # Everything should be copied since this is not a git repo
+    assert (dest_dir / "file.txt").exists()
+    assert (dest_dir / "build" / "output.o").exists()
+    assert (dest_dir / ".gitignore").exists()
