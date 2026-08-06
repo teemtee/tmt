@@ -58,8 +58,8 @@ class UnsafeBehavior:
         from tmt.utils import GeneralError
 
         raise GeneralError(
-            f"{self.label[0].upper()}{self.label[1:]} is allowed"
-            "only with the '--feeling-safe' option."
+            f"{self.label[0].upper()}{self.label[1:]}"
+            " is allowed only with the '--feeling-safe' option."
         )
 
     def assert_is_allowed(self, logger: 'Logger') -> None:
