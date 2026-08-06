@@ -4,11 +4,13 @@ Utility functions for filesystem operations.
 
 import contextlib
 import enum
+import functools
 import shutil
 from collections.abc import Generator
-from typing import Optional, Protocol
+from typing import Literal, Optional, Protocol, overload
 
 import tmt.log
+import tmt.utils.git
 from tmt._compat.pathlib import Path
 from tmt.utils import Command, GeneralError, RunError, show_exception_as_warning
 from tmt.utils.environment import Environment
@@ -45,6 +47,8 @@ class CopyStrategy(Protocol):
         src: Path,
         dst: Path,
         tmpdir_creator: Optional[TmpDirCreator] = None,
+        exclude_gitignore: bool = False,
+        git_root: Optional[Path] = None,
         logger: tmt.log.Logger,
     ) -> StrategyOutcome:  # type: ignore[reportReturnType,unused-ignore]
         pass
@@ -55,6 +59,8 @@ def _copy_tree_cp(
     src: Path,
     dst: Path,
     tmpdir_creator: Optional[TmpDirCreator] = None,
+    exclude_gitignore: bool = False,
+    git_root: Optional[Path] = None,
     logger: tmt.log.Logger,
 ) -> StrategyOutcome:
     """
@@ -76,6 +82,14 @@ def _copy_tree_cp(
         :py:attr:`StrategyOutcome.FAIL` when the ``cp`` command
         fails.
     """
+
+    if exclude_gitignore:
+        logger.debug(
+            f"Copy tree '{src}' => '{dst}' using 'cp --reflink=auto' strategy"
+            " does not support gitignore filtering."
+        )
+
+        return StrategyOutcome.YIELD
 
     logger.debug(f"Copy tree '{src}' => '{dst}' using 'cp --reflink=auto' strategy.")
 
@@ -103,6 +117,8 @@ def _copy_tree_rsync(
     src: Path,
     dst: Path,
     tmpdir_creator: Optional[TmpDirCreator] = None,
+    exclude_gitignore: bool = False,
+    git_root: Optional[Path] = None,
     logger: tmt.log.Logger,
 ) -> StrategyOutcome:
     """
@@ -125,6 +141,21 @@ def _copy_tree_rsync(
 
     logger.debug(f"Copy tree '{src}' => '{dst}' using 'rsync -a' strategy.")
 
+    # Honor filtering
+    filters: list[str] = []
+
+    if exclude_gitignore and git_root is not None:
+        current = src.resolve()
+        root = git_root.resolve()
+
+        while current not in (root, current.parent):
+            current = current.parent
+
+            gitignore = current / '.gitignore'
+
+            if gitignore.is_file():
+                filters += ['--filter', f'dir-merge,- {gitignore}']
+
     with tmpdir_creator(prefix='rsync-') as rsync_tempdir:
         try:
             Command(
@@ -132,6 +163,10 @@ def _copy_tree_rsync(
                 '-ar',
                 '--temp-dir',
                 rsync_tempdir,
+                *filters,
+                '--include=**.gitignore',
+                '--exclude=/.git',
+                '--filter=:- .gitignore',
                 f"{src}/",
                 dst,
             ).run(cwd=None, environment=Environment.from_environ(), silent=True, logger=logger)
@@ -150,6 +185,8 @@ def _copy_tree_shutil(
     src: Path,
     dst: Path,
     tmpdir_creator: Optional[TmpDirCreator] = None,
+    exclude_gitignore: bool = False,
+    git_root: Optional[Path] = None,
     logger: tmt.log.Logger,
 ) -> StrategyOutcome:
     """
@@ -166,12 +203,34 @@ def _copy_tree_shutil(
 
     logger.debug(f"Copy tree '{src}' => '{dst}' using 'shutil.copytree' strategy.")
 
-    shutil.copytree(
+    _copytree = functools.partial(
+        shutil.copytree,
         src,
         dst,
         symlinks=True,
         dirs_exist_ok=True,
     )
+
+    if exclude_gitignore and git_root is not None:
+        exclude_paths = {
+            str(path).rstrip('/')
+            for path in tmt.utils.git.git_ignore(root=git_root, logger=logger)
+        }
+
+        def _ignore(path: str, entries: list[str]) -> set[str]:
+            current_dirpath_relative = Path(path).relative_to(src)
+
+            return {
+                entry
+                for entry in entries
+                if str(current_dirpath_relative / entry).rstrip('/') in exclude_paths
+                or entry.rstrip('/') in exclude_paths
+            }
+
+        _copytree(ignore=_ignore)
+
+    else:
+        _copytree()
 
     return StrategyOutcome.SUCCESS
 
@@ -183,11 +242,39 @@ _COPY_TREE_STRATEGIES: tuple[CopyStrategy, ...] = (
 )
 
 
+@overload
 def copy_tree(
     *,
     src: Path,
     dst: Path,
     tmpdir_creator: Optional[TmpDirCreator] = None,
+    exclude_gitignore: Literal[False] = False,
+    git_root: None = None,
+    logger: tmt.log.Logger,
+) -> None:
+    pass
+
+
+@overload
+def copy_tree(
+    *,
+    src: Path,
+    dst: Path,
+    tmpdir_creator: Optional[TmpDirCreator] = None,
+    exclude_gitignore: Literal[True] = True,
+    git_root: Path,
+    logger: tmt.log.Logger,
+) -> None:
+    pass
+
+
+def copy_tree(
+    *,
+    src: Path,
+    dst: Path,
+    tmpdir_creator: Optional[TmpDirCreator] = None,
+    exclude_gitignore: bool = False,
+    git_root: Optional[Path] = None,
     logger: tmt.log.Logger,
 ) -> None:
     """
@@ -216,6 +303,12 @@ def copy_tree(
     :param tmpdir_creator: a context manager that, when invoked, would
         create and hold a temporary directory. Some strategies may
         require such a directory for their work.
+    :param exclude_gitignore: if set, exclude files ``git`` would ignore
+        because of them being listed in one of the ``.gitignore`` files
+        in the repository. ``git_root`` must be provided as well,
+        otherwise this feature would remain disabled.
+    :param git_root: path to the root of the git repository to search
+        for ``.gitignore`` files when ``exclude_gitignore`` is set.
     :param logger: Logger to use for debug messages.
     :raises GeneralError: when copying fails using all strategies, or if
         ``src`` does not exist or is not a directory.
@@ -234,7 +327,12 @@ def copy_tree(
     for strategy in _COPY_TREE_STRATEGIES:
         try:
             outcome = strategy(
-                src=src, dst=dst, tmpdir_creator=tmpdir_creator, logger=logger.descend()
+                src=src,
+                dst=dst,
+                tmpdir_creator=tmpdir_creator,
+                exclude_gitignore=exclude_gitignore,
+                git_root=git_root,
+                logger=logger.descend(),
             )
 
             if outcome is StrategyOutcome.SUCCESS:
