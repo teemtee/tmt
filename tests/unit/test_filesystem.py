@@ -1,8 +1,9 @@
+import contextlib
 import os
 import stat
 import subprocess
 import time
-from typing import Optional, cast
+from typing import Any, Generator, Optional, cast
 from unittest import mock
 from unittest.mock import MagicMock
 
@@ -65,6 +66,15 @@ def fixture_copy_tree_paths(tmppath: Path) -> CopyTreePathConfig:
     return source_dir, dest_dir, symlinks_supported
 
 
+@pytest.fixture(name="tmpdir_creator")
+def fixture_tmpdir_creator(tmppath: Path) -> tmt.utils.filesystem.TmpDirCreator:
+    @contextlib.contextmanager
+    def _tmpdir_creator(prefix: Optional[str] = None, suffix: Optional[str] = None) -> Generator[Path, None, None]:
+        yield tmppath
+
+    return _tmpdir_creator
+
+
 def _assert_permissions_copied(src_path: Path, dest_path: Path) -> None:
     """
     Assert that file/directory permissions are copied correctly.
@@ -121,6 +131,7 @@ def _run_metadata_test_for_item(
 @pytest.mark.parametrize('strategy', _STRATEGIES)
 def test_copy_tree_basic(
     strategy: tmt.utils.filesystem.CopyStrategy,
+    tmpdir_creator: tmt.utils.filesystem.TmpDirCreator,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ) -> None:
@@ -130,7 +141,7 @@ def test_copy_tree_basic(
 
     source_dir, dest_dir, symlinks_supported = copy_tree_paths
 
-    strategy(source_dir, dest_dir, root_logger)
+    strategy(src=source_dir, dst=dest_dir, tmpdir_creator=tmpdir_creator, logger=root_logger)
 
     # Check if all files were copied and their content is correct
     for path, content in _EXPECTED_TEST_FILES.items():
@@ -148,7 +159,7 @@ def test_copy_tree_basic(
 
 @pytest.mark.parametrize('strategy', _STRATEGIES)
 def test_copy_empty_source_directory(
-    strategy: tmt.utils.filesystem.CopyStrategy, tmppath: Path, root_logger: tmt.log.Logger
+    strategy: tmt.utils.filesystem.CopyStrategy, tmpdir_creator: tmt.utils.filesystem.TmpDirCreator, tmppath: Path, root_logger: tmt.log.Logger
 ) -> None:
     """
     Test copying an empty source directory.
@@ -158,7 +169,7 @@ def test_copy_empty_source_directory(
     empty_dst = tmppath / "empty_dst"
     empty_src.mkdir()
 
-    strategy(empty_src, empty_dst, root_logger)
+    strategy(src=empty_src, dst=empty_dst, tmpdir_creator=tmpdir_creator, logger=root_logger)
 
     # Verify the destination directory exists and is empty
     assert empty_dst.exists()
@@ -168,7 +179,7 @@ def test_copy_empty_source_directory(
 
 @pytest.mark.parametrize('strategy', _STRATEGIES)
 def test_deeply_nested_directories(
-    strategy: tmt.utils.filesystem.CopyStrategy, tmppath: Path, root_logger: tmt.log.Logger
+    strategy: tmt.utils.filesystem.CopyStrategy, tmpdir_creator: tmt.utils.filesystem.TmpDirCreator, tmppath: Path, root_logger: tmt.log.Logger
 ) -> None:
     """Test copying deeply nested directory structures."""
     deep_src = tmppath / "deep_src"
@@ -182,7 +193,7 @@ def test_deeply_nested_directories(
         current_dir.mkdir()
         (current_dir / f"file_at_level_{level}.txt").write_text(f"{test_content} at level {level}")
 
-    strategy(deep_src, deep_dst, root_logger)
+    strategy(src=deep_src, dst=deep_dst, tmpdir_creator=tmpdir_creator, logger=root_logger)
 
     # Check if the deepest directory and file exist in the copied structure
     deepest_path = Path(
@@ -213,7 +224,7 @@ def test_permission_error_handling(
         subprocess.check_call(['chattr', '+i', str(dest_dir)])
 
     with pytest.raises(tmt.utils.GeneralError, match=r'(?i)Failed to copy tree'):
-        tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+        tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
 
 def test_nonexistent_source_directory(tmppath: Path, root_logger: tmt.log.Logger) -> None:
@@ -225,7 +236,7 @@ def test_nonexistent_source_directory(tmppath: Path, root_logger: tmt.log.Logger
     destination = tmppath / "destination"
 
     with pytest.raises(tmt.utils.GeneralError, match=r'.*not a directory or does not exist.*'):
-        tmt.utils.filesystem.copy_tree(nonexistent_src, destination, root_logger)
+        tmt.utils.filesystem.copy_tree(src=nonexistent_src, dst=destination, logger=root_logger)
 
 
 @mock.patch(
@@ -247,10 +258,10 @@ def test_fallback(
 
     mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
 
-    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+    tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
-    cast(MagicMock, mock_copy_tree_cp).assert_called_once_with(source_dir, dest_dir, mock.ANY)
-    cast(MagicMock, mock_copy_tree_shutil).assert_called_once_with(source_dir, dest_dir, mock.ANY)
+    cast(MagicMock, mock_copy_tree_cp).assert_called_once_with(src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY)
+    cast(MagicMock, mock_copy_tree_shutil).assert_called_once_with(src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY)
 
     # Verify files were copied using the fallback approach (shutil.copytree)
     for file_path in _EXPECTED_TEST_FILES:
@@ -260,6 +271,7 @@ def test_fallback(
 @pytest.mark.parametrize('strategy', _STRATEGIES)
 def test_metadata_preservation(
     strategy: tmt.utils.filesystem.CopyStrategy,
+    tmpdir_creator: tmt.utils.filesystem.TmpDirCreator,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ) -> None:
@@ -283,7 +295,7 @@ def test_metadata_preservation(
         source_dir, "meta_dir_shutil", is_dir=True, mode=0o500, atime=timestamp, mtime=timestamp
     )
 
-    strategy(source_dir, dest_dir, root_logger)
+    strategy(src=source_dir, dst=dest_dir, tmpdir_creator=tmpdir_creator, logger=root_logger)
 
     _run_metadata_test_for_item(dest_dir, test_file)
     _run_metadata_test_for_item(dest_dir, test_dir)
@@ -308,7 +320,7 @@ def test_all_strategies_fail(
     mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
 
     with pytest.raises(tmt.utils.GeneralError):
-        tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+        tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     cast(MagicMock, mock_copy_tree_cp).assert_called_once()
     cast(MagicMock, mock_copy_tree_shutil).assert_called_once()
@@ -317,6 +329,7 @@ def test_all_strategies_fail(
 @pytest.mark.parametrize('strategy', _STRATEGIES)
 def test_copy_to_existing_destination(
     strategy: tmt.utils.filesystem.CopyStrategy,
+    tmpdir_creator: tmt.utils.filesystem.TmpDirCreator,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ) -> None:
@@ -332,7 +345,7 @@ def test_copy_to_existing_destination(
     (dest_dir / "subdir" / "existing_in_subdir.txt").write_text("pre-existing in subdir")
     (dest_dir / "file1.txt").write_text("old file1 content")
 
-    strategy(source_dir, dest_dir, root_logger)
+    strategy(src=source_dir, dst=dest_dir, tmpdir_creator=tmpdir_creator, logger=root_logger)
 
     # Check that source files were copied and overwrite conflicting ones
     assert (dest_dir / "file1.txt").read_text() == _EXPECTED_TEST_FILES["file1.txt"]
