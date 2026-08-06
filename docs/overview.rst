@@ -401,8 +401,8 @@ TMT_FEELING_SAFE
     executing tests directly on the test runner using the ``local``
     provision method. See ``tmt --help`` for all possible values.
 
-    WARNING: Use with caution, only when you can fully trust
-    the ``tmt`` metadata  or if you know what you are doing.
+    Use with caution, only when you can fully trust the ``tmt`` metadata
+    or if you know what you are doing.
 
 TMT_EXPOSABLE_RUNNER_DEVICES
     Guests may require access to devices of the runner, and only devices
