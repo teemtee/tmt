@@ -6,6 +6,7 @@ import _pytest.monkeypatch
 import pytest
 
 import tmt
+import tmt.utils.feeling_safe
 from tmt.log import Logger
 from tmt.utils import GeneralError
 from tmt.utils.feeling_safe import (
@@ -41,6 +42,9 @@ def test_assert_is_allowed(
     monkeypatch: _pytest.monkeypatch.MonkeyPatch,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
+    # Make sure to not pollute the UB registry with test-only instances.
+    monkeypatch.setattr(tmt.utils.feeling_safe.UnsafeBehavior, 'KNOWN_UB', set())
+
     ub = UnsafeBehavior(name='test', label='test unsafe behavior', locked_since=deprecated_version)
 
     monkeypatch.setattr(tmt, '__version__', tmt_version)

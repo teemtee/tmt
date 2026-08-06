@@ -1,4 +1,12 @@
 description: |
   The :tmt:story:`/stories/features/feeling-safe` is no longer working
-  as a one-or-nothing switch, it now allows enabling unsafe behavior
+  as a all-or-nothing switch, it now allows enabling unsafe behavior
   in a granular manner.
+
+  Users of :tmt:story:`/stories/features/feeling-safe` need to account
+  for the following changes:
+
+  * ``--feeling-safe`` command-line option now requires a value.
+  * ``TMT_FEELING_SAFE=0|1`` values are still supported, as aliases for
+    ``TMT_FEELING_SAFE=none|all``.
+  * step-level ``--feeling-safe`` option is no longer supported.
