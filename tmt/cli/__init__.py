@@ -224,6 +224,19 @@ class HelpFormatter(click.HelpFormatter):
     Custom help formatter capable of rendering ReST syntax
     """
 
+    def __init__(
+        self,
+        *args: Any,
+        max_width: Optional[int] = None,
+        **kwargs: Any,
+    ) -> None:
+        if max_width is None:
+            import tmt.utils
+
+            max_width = tmt.utils.OUTPUT_WIDTH
+
+        super().__init__(*args, max_width=max_width, **kwargs)  # type: ignore[misc]
+
     # Override parent implementation
     def write_dl(
         self,

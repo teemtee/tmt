@@ -196,9 +196,20 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         count=True,
         default=0,
         help="""
-             Make output more verbose, show more details. Can be used
-             up to four times (``-v`` to ``-vvvv``) for increasingly
-             detailed output.
+             Make the user-focused output more verbose. Can be used
+             up to three times (``-v`` to ``-vvv``) for increasingly
+             detailed output:
+
+             * ``-v``: Phase inputs and outputs are shown. The essential
+               phase input and output such as discovered test names,
+               required packages or individual test results.
+             * ``-vv``: Investigation details are shown. Details needed
+               when investigating what went wrong such as log paths,
+               remote links, external sources, guest facts, duration
+               deadlines or executed commands.
+             * ``-vvv``: Full output. Command outputs, full test output,
+               rendered script, other constructed input, queued/executed
+               tasks.
              """,
     ),
     option(
@@ -207,9 +218,19 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         count=True,
         default=0,
         help="""
-             Emit debugging information. Can be used up to four times
-             (``-d`` to ``-dddd``, or ``TMT_DEBUG=1`` to ``TMT_DEBUG=4``)
-             for increasingly detailed logging.
+             Make the developer-focused debugging output more verbose.
+             Can be used up to three times (``-d`` to ``-ddd``, or
+             ``TMT_DEBUG=1`` to ``TMT_DEBUG=3``) for increasingly
+             detailed logging:
+
+             * ``-d``/``TMT_DEBUG=1``: High-level info. Framework choice,
+               policy application or reboot actions.
+             * ``-dd``/``TMT_DEBUG=2``: Detailed operations. Actions
+               such as step load, wake up, guest pull/push or playbook
+               paths.
+             * ``-ddd``/``TMT_DEBUG=3``: Internal plumbing. The
+               low-level implementation details such as workdir handling,
+               process termination, key normalization and similar.
              """,
     ),
     option(
@@ -708,7 +729,7 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
                                 # Found a flag
                                 continue
                             if option.count:
-                                # Found options like '-ddddd'
+                                # Found options like '-ddd'
                                 continue
 
                         # Consume all remaining arguments. Think `ls /foo /bar ...`, it's not

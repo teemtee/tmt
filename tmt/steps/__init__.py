@@ -449,7 +449,7 @@ class StepData(
         Called before normalization, useful for tweaking raw data
         """
 
-        logger.debug(f'{cls.__name__}: original raw data', str(raw_data), level=4)
+        logger.debug(f'{cls.__name__}: original raw data', str(raw_data), level=3)
 
     def post_normalization(self, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
         """
@@ -732,7 +732,7 @@ class Step(
 
     @property
     def _cli_invocation_logger(self) -> tmt.log.VerboseLoggingFunction:
-        return functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
+        return functools.partial(self.debug, level=3, topic=tmt.log.Topic.CLI_INVOCATIONS)
 
     @property
     def _preserved_workdir_members(self) -> set[str]:

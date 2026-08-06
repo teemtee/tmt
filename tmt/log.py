@@ -66,10 +66,10 @@ LOG_FILENAME = 'log.txt'
 INDENT = 4
 
 #: A type of verbosity level values accepted by logging functions.
-VerbosityLevel: 'TypeAlias' = Literal[0, 1, 2, 3, 4]
+VerbosityLevel: 'TypeAlias' = Literal[0, 1, 2, 3]
 
 #: A type of debug level values accepted by logging functions.
-DebugLevel: 'TypeAlias' = Literal[0, 1, 2, 3, 4]
+DebugLevel: 'TypeAlias' = Literal[0, 1, 2, 3]
 
 #: Supported verbosity levels.
 VERBOSITY_LEVELS: tuple[VerbosityLevel, ...] = tuple(typing.get_args(VerbosityLevel))
@@ -336,9 +336,9 @@ def normalize_debug_level(raw_value: Any) -> Optional[DebugLevel]:  # noqa: RET5
             textwrap.dedent(
                 f"""
             Debug level '{raw_value}' is invalid. Supported debug levels are
-            {DEBUG_LEVELS[1]} (-{'d' * DEBUG_LEVELS[1]})
+            {DEBUG_LEVELS[1]} (-{'d' * DEBUG_LEVELS[1]} or TMT_DEBUG={DEBUG_LEVELS[1]})
             to
-            {DEBUG_LEVELS[-1]} (-{'d' * DEBUG_LEVELS[-1]}).
+            {DEBUG_LEVELS[-1]} (-{'d' * DEBUG_LEVELS[-1]} or TMT_DEBUG={DEBUG_LEVELS[-1]}).
             """
             )
             .replace('\n', ' ')

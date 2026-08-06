@@ -300,7 +300,7 @@ def _socket_path_trivial(
 
     socket_path = socket_dir / f'{guest_id}.socket'
 
-    logger.debug(f"Possible SSH master socket path '{socket_path}' (trivial method).", level=4)
+    logger.debug(f"Possible SSH master socket path '{socket_path}' (trivial method).", level=3)
 
     if not limit_size:
         return socket_path
@@ -345,7 +345,7 @@ def _socket_path_hash(
         socket_path = socket_dir / f'{digest}.socket'
         socket_reservation_path = f'{socket_path}.reservation'
 
-        logger.debug(f"Possible SSH master socket path '{socket_path}' (hash method).", level=4)
+        logger.debug(f"Possible SSH master socket path '{socket_path}' (hash method).", level=3)
 
         if limit_size and len(str(socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
             return None
@@ -357,7 +357,7 @@ def _socket_path_hash(
             fd = os.open(socket_reservation_path, flags=os.O_CREAT | os.O_EXCL)
 
         except FileExistsError:
-            logger.debug(f"Proposed SSH socket '{socket_path}' already reserved.", level=4)
+            logger.debug(f"Proposed SSH socket '{socket_path}' already reserved.", level=3)
             continue
 
         # Successfully reserved the socket path, we can close the
@@ -875,7 +875,7 @@ class GuestFacts(SerializableContainer):
                 guest.debug(
                     f'Discovered {debug_label}',
                     package_manager_class.NAME,
-                    level=4,
+                    level=3,
                 )
                 return package_manager_class.NAME
 
@@ -3200,7 +3200,7 @@ class GuestSsh(Guest, CommandCollector):
 
         if socket_path is not None:
             self.debug(
-                f"SSH master socket path will be '{socket_path}' (trivial method).", level=4
+                f"SSH master socket path will be '{socket_path}' (trivial method).", level=3
             )
 
             return socket_path
@@ -3215,7 +3215,7 @@ class GuestSsh(Guest, CommandCollector):
         )
 
         if socket_path is not None:
-            self.debug(f"SSH master socket path will be '{socket_path}' (hash method).", level=4)
+            self.debug(f"SSH master socket path will be '{socket_path}' (hash method).", level=3)
 
             return socket_path
 
@@ -3228,7 +3228,7 @@ class GuestSsh(Guest, CommandCollector):
 
         self.debug(
             f"SSH master socket path will be '{socket_path}' (trivial method, no size limit).",
-            level=4,
+            level=3,
         )
 
         return socket_path
