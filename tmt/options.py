@@ -259,8 +259,8 @@ SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
              as executing tests directly on the test runner using the
              ``local`` provision method.
 
-             WARNING: Use with caution, only when you can fully trust
-             the ``tmt`` metadata  or if you know what you are doing.
+             Use with caution, only when you can fully trust the ``tmt``
+             metadata  or if you know what you are doing.
              """,
     ),
     option(
