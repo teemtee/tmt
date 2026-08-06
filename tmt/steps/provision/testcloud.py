@@ -462,7 +462,7 @@ def _apply_hw_tpm(
     domain.tpm_configuration = None
 
     if not hardware or not hardware.constraint:
-        logger.debug('tpm.version', "not included because of no constraints", level=4)
+        logger.debug('tpm.version', "not included because of no constraints", level=3)
 
         return
 
@@ -478,7 +478,7 @@ def _apply_hw_tpm(
 
     if not tpm_constraints:
         logger.debug(
-            'tpm.version', "not included because of no 'tpm.version' constraints", level=4
+            'tpm.version', "not included because of no 'tpm.version' constraints", level=3
         )
 
         return
@@ -497,7 +497,7 @@ def _apply_hw_tpm(
             return
 
         logger.debug(
-            'tpm.version', f"set to '{constraint.value}' because of '{constraint}'", level=4
+            'tpm.version', f"set to '{constraint.value}' because of '{constraint}'", level=3
         )
 
         if TPM_CONFIG_ALLOWS_VERSIONS:
@@ -518,7 +518,7 @@ def _get_hw_boot_method(
     """
 
     if not hardware or not hardware.constraint:
-        logger.debug('boot.method', "not included because of no constraints", level=4)
+        logger.debug('boot.method', "not included because of no constraints", level=3)
 
         return None
 
@@ -534,7 +534,7 @@ def _get_hw_boot_method(
 
     if not boot_method_constraints:
         logger.debug(
-            'boot.method', "not included because of no 'boot.method' constraints", level=4
+            'boot.method', "not included because of no 'boot.method' constraints", level=3
         )
 
         return None
@@ -553,7 +553,7 @@ def _get_hw_boot_method(
         if constraint.operator == tmt.hardware.Operator.NOTCONTAINS_EXCLUSIVE:
             boot_method = 'bios' if boot_method == 'uefi' else 'uefi'
 
-        logger.debug('boot.method', f"set to '{boot_method}' because of '{constraint}'", level=4)
+        logger.debug('boot.method', f"set to '{boot_method}' because of '{constraint}'", level=3)
 
         return boot_method
 
@@ -586,7 +586,7 @@ def _apply_hw_disk_size(
     disk_filepath_generator = _generate_disk_filepaths()
 
     if not hardware or not hardware.constraint:
-        logger.debug('disk[0].size', f"set to '{final_size}' because of no constraints", level=4)
+        logger.debug('disk[0].size', f"set to '{final_size}' because of no constraints", level=3)
 
         domain.storage_devices = [
             QCow2StorageDevice(
@@ -609,7 +609,7 @@ def _apply_hw_disk_size(
 
     if not disk_size_constraints:
         logger.debug(
-            'disk[0].size', f"set to '{final_size}' because of no 'disk.size' constraints", level=4
+            'disk[0].size', f"set to '{final_size}' because of no 'disk.size' constraints", level=3
         )
 
         domain.storage_devices = [
@@ -650,7 +650,7 @@ def _apply_hw_disk_size(
             logger.debug(
                 f'disk[{peer_index}].size',
                 f"set to '{constraint.value}' because of '{constraint}'",
-                level=4,
+                level=3,
             )
 
             final_size = constraint.value
@@ -674,7 +674,7 @@ def _apply_hw_cpu_processors(
     domain.cpu_count = DEFAULT_CPU_COUNT
 
     if not hardware or not hardware.constraint:
-        logger.debug('cpu.processors', "not included because of no constraints", level=4)
+        logger.debug('cpu.processors', "not included because of no constraints", level=3)
 
         return
 
@@ -690,7 +690,7 @@ def _apply_hw_cpu_processors(
 
     if not cpu_processors_constraints:
         logger.debug(
-            'cpu.processors', "not included because of no 'cpu.processors' constraints", level=4
+            'cpu.processors', "not included because of no 'cpu.processors' constraints", level=3
         )
 
         return
@@ -702,7 +702,7 @@ def _apply_hw_cpu_processors(
             tmt.hardware.Operator.GTE,
         ):
             logger.debug(
-                'cpu.processors', f"set to '{constraint.value}' because of '{constraint}'", level=4
+                'cpu.processors', f"set to '{constraint.value}' because of '{constraint}'", level=3
             )
 
             domain.cpu_count = constraint.value
@@ -714,14 +714,14 @@ def _apply_hw_cpu_processors(
             logger.debug(
                 'cpu.processors',
                 f"kept at '{constraint.value}' because of '{constraint}'",
-                level=4,
+                level=3,
             )
 
         elif constraint.operator is tmt.hardware.Operator.LT:
             logger.debug(
                 'cpu.processors',
                 f"set to '{constraint.value - 1}' because of '{constraint}'",
-                level=4,
+                level=3,
             )
 
             domain.cpu_count = constraint.value - 1
@@ -730,7 +730,7 @@ def _apply_hw_cpu_processors(
             logger.debug(
                 'cpu.processors',
                 f"set to '{constraint.value + 1}' because of '{constraint}'",
-                level=4,
+                level=3,
             )
 
             domain.cpu_count = constraint.value + 1
@@ -1007,7 +1007,7 @@ class GuestTestcloud(tmt.GuestSsh):
         """
 
         if not self.hardware or not self.hardware.constraint:
-            self.debug('memory', f"set to '{DEFAULT_MEMORY}' because of no constraints", level=4)
+            self.debug('memory', f"set to '{DEFAULT_MEMORY}' because of no constraints", level=3)
 
             domain.memory_size = int(DEFAULT_MEMORY.to('kB').magnitude)
 
@@ -1024,7 +1024,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         if not memory_constraints:
             self.debug(
-                'memory', f"set to '{DEFAULT_MEMORY}' because of no 'memory' constraints", level=4
+                'memory', f"set to '{DEFAULT_MEMORY}' because of no 'memory' constraints", level=3
             )
 
             domain.memory_size = int(DEFAULT_MEMORY.to('kB').magnitude)
@@ -1041,7 +1041,7 @@ class GuestTestcloud(tmt.GuestSsh):
                     f"Cannot apply hardware requirement '{constraint}', operator not supported."
                 )
 
-            self.debug('memory', f"set to '{constraint.value}' because of '{constraint}'", level=4)
+            self.debug('memory', f"set to '{constraint.value}' because of '{constraint}'", level=3)
 
             domain.memory_size = int(constraint.value.to('kB').magnitude)
 
@@ -1214,7 +1214,7 @@ class GuestTestcloud(tmt.GuestSsh):
             self.verbose('effective hardware', self.hardware.to_spec(), color='green')
 
             for line in self.hardware.format_variants():
-                self._logger.debug('effective hardware', line, level=4)
+                self._logger.debug('effective hardware', line, level=3)
 
         self._apply_hw_memory(self._domain)
         _apply_hw_cpu_processors(self.hardware, self._domain, self._logger)
@@ -1540,7 +1540,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             data.hardware.report_support(check=_report_hw_requirement_support, logger=self._logger)
 
             for line in data.hardware.format_variants():
-                self._logger.debug('hardware', line, level=4)
+                self._logger.debug('hardware', line, level=3)
 
             if data.memory is not None and data.hardware.constraint.uses_constraint(
                 'memory', self._logger

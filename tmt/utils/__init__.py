@@ -781,7 +781,7 @@ class Command:
         # Prepare the environment: create an empty one if needed.
         actual_environment = environment if environment is not None else Environment()
 
-        logger.debug('environment', actual_environment, level=4)
+        logger.debug('environment', actual_environment, level=3)
 
         # Set special executable only when shell was requested
         executable = DEFAULT_SHELL if shell else None
@@ -868,7 +868,7 @@ class Command:
             logger.debug(
                 'Command event',
                 f'{_event_timestamp()} {msg}',
-                level=4,
+                level=3,
                 topic=tmt.log.Topic.COMMAND_EVENTS,
             )
 
@@ -5198,25 +5198,25 @@ def dataclass_normalize_field(
         logger.debug(
             f'field "{key_address}" normalized to false-ish value',
             f'{container.__class__.__name__}.{keyname}',
-            level=4,
+            level=3,
             topic=tmt.log.Topic.KEY_NORMALIZATION,
         )
 
         with_getattr = getattr(container, keyname, None)
         with_dict = container.__dict__.get(keyname, None)
 
-        logger.debug('value', str(value), level=4, shift=1, topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug('value', str(value), level=3, shift=1, topic=tmt.log.Topic.KEY_NORMALIZATION)
         logger.debug(
             'current value (getattr)',
             str(with_getattr),
-            level=4,
+            level=3,
             shift=1,
             topic=tmt.log.Topic.KEY_NORMALIZATION,
         )
         logger.debug(
             'current value (__dict__)',
             str(with_dict),
-            level=4,
+            level=3,
             shift=1,
             topic=tmt.log.Topic.KEY_NORMALIZATION,
         )
@@ -5224,7 +5224,7 @@ def dataclass_normalize_field(
         if value != with_getattr or with_getattr != with_dict:
             logger.debug(
                 'known values do not match',
-                level=4,
+                level=3,
                 shift=2,
                 topic=tmt.log.Topic.KEY_NORMALIZATION,
             )
@@ -5808,7 +5808,7 @@ class NormalizeKeysMixin(_CommonBase):
         from tmt.container import key_to_option
 
         log_shift: int = 2
-        log_level: DebugLevel = 4
+        log_level: DebugLevel = 3
 
         debug_intro = functools.partial(
             logger.debug,

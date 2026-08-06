@@ -40,7 +40,7 @@ rlJournalStart
                     rlAssertNotGrep "00:02:.. errr /test/long/shell (timeout)" $rlRun_LOG
 
                     if [ "$interactive" = "" ]; then
-                        rlRun -s "tmt --log-topic=command-events run --last report -fvvvv" 2
+                        rlRun -s "tmt --log-topic=command-events run --last report -fvvv" 2
 
                         rlAssertGrep "Maximum test time '30s' exceeded." $rlRun_LOG
                         rlAssertGrep "Adjust the test 'duration' attribute" $rlRun_LOG
@@ -53,7 +53,7 @@ rlJournalStart
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ waiting for stream readers' $rlRun_LOG"
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ stdout reader done' $rlRun_LOG"
                     else
-                        rlRun -s "tmt --log-topic=command-events run --last report -fvvvv" 0
+                        rlRun -s "tmt --log-topic=command-events run --last report -fvvv" 0
 
                         rlAssertNotGrep "Maximum test time '30s' exceeded." $rlRun_LOG
                         rlAssertNotGrep "Adjust the test 'duration' attribute" $rlRun_LOG
