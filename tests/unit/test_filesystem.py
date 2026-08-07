@@ -270,10 +270,20 @@ def test_fallback(
     tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     cast(MagicMock, mock_copy_tree_cp).assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        logger=mock.ANY,
     )
     cast(MagicMock, mock_copy_tree_shutil).assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        logger=mock.ANY,
     )
 
     # Verify files were copied using the fallback approach (shutil.copytree)

@@ -670,6 +670,7 @@ class Plan(
                 src=tree_root,
                 dst=self.worktree,
                 tmpdir_creator=self.tmpdir,
+                exclude_git=True,
                 exclude_gitignore=True,
                 git_root=git_root,
                 logger=self._logger,
