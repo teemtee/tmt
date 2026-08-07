@@ -37,6 +37,9 @@ DEFAULT_ORDER = 50
 # Copy of tmt.base.core.DEFAULT_TEST_DURATION_L1
 DEFAULT_TEST_DURATION_L1 = '5m'
 
+# Maximum number of recipe files stored in a single run directory
+RECIPE_MAX = 100
+
 
 def _normalize_link(value: Optional['_RawLinks']) -> 'Links':
     from tmt.base.links import Links
@@ -595,7 +598,7 @@ class RecipeManager(Common):
             ),
             plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
         )
-        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_spec()))
+        self._save_recipe(run.run_workdir, recipe)
 
     def tests(self, recipe: Recipe, plan_name: str) -> list[TestOrigin]:
         """
@@ -612,6 +615,16 @@ class RecipeManager(Common):
                 ]
 
         raise tmt.utils.GeneralError(f"Plan '{plan_name}' not found in the recipe.")
+
+    def _save_recipe(self, workdir: Path, recipe: Recipe) -> None:
+        for index in range(1, RECIPE_MAX + 1):
+            path = workdir / 'recipe.yaml' if index == 1 else workdir / f'recipe{index}.yaml'
+            if not path.exists():
+                self.write(path, tmt.utils.to_yaml(recipe.to_spec()))
+                return
+        raise tmt.utils.GeneralError(
+            f"Too many recipe files in '{workdir}'. Cleanup the directory."
+        )
 
     @staticmethod
     def _update_tree(run: 'Run', recipe: Recipe) -> None:
