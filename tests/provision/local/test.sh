@@ -28,7 +28,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test script installation"
         # Run tmt with local provision
-        rlRun -s "tmt --feeling-safe run --id $run -vvv"
+        rlRun -s "tmt --feeling-safe=provision/local run --id $run -vvv"
         rlAssertNotGrep "No such file or directory" $rlRun_LOG
         rlAssertNotGrep "command not found" $rlRun_LOG
         rlAssertGrep "pass /test/beakerlib" $rlRun_LOG
@@ -43,7 +43,7 @@ rlJournalStart
         done
 
         # Check that warning is raised when TMT_SCRIPTS_DIR is used
-        rlRun -s "TMT_SCRIPTS_DIR=$tmp tmt --feeling-safe run --scratch --id $run -vvv"
+        rlRun -s "TMT_SCRIPTS_DIR=$tmp tmt --feeling-safe=provision/local run --scratch --id $run -vvv"
         rlAssertGrep "The 'TMT_SCRIPTS_DIR' variable is not supported" $rlRun_LOG
     rlPhaseEnd
 

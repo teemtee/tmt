@@ -21,6 +21,7 @@ from tmt.utils import (
     ShellScript,
 )
 from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.feeling_safe import UB_PROVISION_LOCAL_PLUGIN
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
@@ -276,9 +277,10 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         which you know are safe so that you don't destroy your
         workstation ;-)
 
-        From tmt version 1.38, the ``--feeling-safe`` option or
-        the ``TMT_FEELING_SAFE=1`` environment variable is
-        required in order to use the ``local`` provision plugin.
+        From tmt version 1.38, either ``--feeling-safe=provision/local``
+        option or ``TMT_FEELING_SAFE=provision/local`` environment
+        variable is required in order to use the ``local`` provision
+        plugin.
 
     Using the plugin:
 
@@ -332,7 +334,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        self.assert_feeling_safe("1.38", "The 'local' provision plugin")
+        UB_PROVISION_LOCAL_PLUGIN.assert_is_allowed(self._logger)
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")

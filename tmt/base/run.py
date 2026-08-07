@@ -47,6 +47,7 @@ from tmt.utils import (
     WorkdirArgumentType,
 )
 from tmt.utils.environment import Environment, HasEnvironment
+from tmt.utils.feeling_safe import log_feeling_safe
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -662,8 +663,8 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
         self.debug(f"tmt version: {tmt.__version__}")
         self.debug('tmt command line', Command(*sys.argv))
 
-        if self.is_feeling_safe:
-            self.warn('User is feeling safe.')
+        # Report user's "feeling safe?" mood.
+        log_feeling_safe(self._logger)
 
         self.show_runner(self._logger)
 

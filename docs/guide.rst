@@ -62,7 +62,7 @@ directly on your localhost:
 
 .. code-block:: shell
 
-    tmt --feeling-safe run --all provision --how local
+    tmt --feeling-safe=all run --all provision --how local
 
 Note that the extra ``--feeling-safe`` option is needed for the
 :ref:`/plugins/provision/local` provision plugin as it can be

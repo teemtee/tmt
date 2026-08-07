@@ -14,6 +14,7 @@ import click
 import tmt.lint
 import tmt.log
 import tmt.utils
+import tmt.utils.feeling_safe
 from tmt.container import container
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
@@ -250,18 +251,32 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
 SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
-        metavar='FEELING_SAFE',
+        multiple=True,
+        choices=tmt.utils.feeling_safe.unsafe_behavior_names(),
         envvar='TMT_FEELING_SAFE',
-        is_flag=True,
-        default=False,
         help="""
-             WARNING: with this option, tmt would be allowed to make
-             potentially dangerous actions. For example, some metadata
-             keys may cause scripts being executed on the runner.
-             Do not use this option unless you trust metadata consumed
-             by tmt, or unless you know what you are doing.
+             This options will enable potentially unsafe behavior such
+             as executing tests directly on the test runner using the
+             ``local`` provision method.
+
+             Use with caution, only when you can fully trust the ``tmt``
+             metadata  or if you know what you are doing.
              """,
     ),
+    option(
+        '--exposable-runner-devices',
+        metavar='PATTERN',
+        envvar='TMT_EXPOSABLE_RUNNER_DEVICES',
+        multiple=True,
+        help="""
+             Guests may require access to devices of the runner, and
+             only devices whose path matches any of the regular
+             expressions passed to this option would be made accessible.
+             """,
+    ),
+]
+
+PLUGIN_SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--exposable-runner-devices',
         metavar='PATTERN',
