@@ -632,6 +632,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 src=directory,
                 dst=self.test_dir,
                 tmpdir_creator=self.tmpdir,
+                exclude_git=False,
                 exclude_gitignore=True,
                 git_root=real_git_root,
                 logger=self._logger,
