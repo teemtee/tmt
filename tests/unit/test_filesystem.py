@@ -106,7 +106,7 @@ def _run_metadata_test_for_item(
 def test_copy_tree_basic(copy_tree_paths: CopyTreePathConfig, root_logger: tmt.log.Logger):
     """Test basic copy operation with default parameters."""
     source_dir, dest_dir, symlinks_supported = copy_tree_paths
-    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+    tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     # Check if all files were copied and their content is correct
     for path, content in _EXPECTED_TEST_FILES.items():
@@ -128,7 +128,7 @@ def test_copy_empty_source_directory(tmppath: Path, root_logger: tmt.log.Logger)
     empty_dst = tmppath / "empty_dst"
     empty_src.mkdir()
 
-    tmt.utils.filesystem.copy_tree(empty_src, empty_dst, root_logger)
+    tmt.utils.filesystem.copy_tree(src=empty_src, dst=empty_dst, logger=root_logger)
 
     # Verify the destination directory exists and is empty
     assert empty_dst.exists()
@@ -149,7 +149,7 @@ def test_deeply_nested_directories(tmppath: Path, root_logger: tmt.log.Logger):
         current_dir.mkdir()
         (current_dir / f"file_at_level_{level}.txt").write_text(f"{test_content} at level {level}")
 
-    tmt.utils.filesystem.copy_tree(deep_src, deep_dst, root_logger)
+    tmt.utils.filesystem.copy_tree(src=deep_src, dst=deep_dst, logger=root_logger)
 
     # Check if the deepest directory and file exist in the copied structure
     deepest_path = Path(
@@ -179,7 +179,7 @@ def test_permission_error_handling(
     """Test handling of permission errors during copy."""
     source_dir, dest_dir, _ = copy_tree_paths
     with pytest.raises(tmt.utils.GeneralError) as excinfo:
-        tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+        tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     assert (
         "permission error" in str(excinfo.value).lower()
@@ -193,7 +193,7 @@ def test_nonexistent_source_directory(tmppath: Path, root_logger: tmt.log.Logger
     destination = tmppath / "destination"
 
     with pytest.raises(tmt.utils.GeneralError) as excinfo:
-        tmt.utils.filesystem.copy_tree(nonexistent_src, destination, root_logger)
+        tmt.utils.filesystem.copy_tree(src=nonexistent_src, dst=destination, logger=root_logger)
 
     assert "not a directory or does not exist" in str(excinfo.value)
 
@@ -213,10 +213,14 @@ def test_fallback_to_shutil_copy_from_cp_failure(
     source_dir, dest_dir, _ = copy_tree_paths
     mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
 
-    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+    tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
-    mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, mock.ANY)
-    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, mock.ANY)
+    mock_copy_tree_cp.assert_called_once_with(
+        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+    )
+    mock_copy_tree_shutil.assert_called_once_with(
+        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+    )
 
     # Verify files were copied using the fallback approach (shutil.copytree)
     for file_path in _EXPECTED_TEST_FILES:
@@ -235,7 +239,7 @@ def test_metadata_cp_reflink(copy_tree_paths: CopyTreePathConfig, root_logger: t
         source_dir, "meta_dir", is_dir=True, mode=0o750, atime=timestamp, mtime=timestamp
     )
 
-    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+    tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     _run_metadata_test_for_item(dest_dir, test_file)
     _run_metadata_test_for_item(dest_dir, test_dir)
@@ -270,10 +274,14 @@ def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
         source_dir, "meta_dir_shutil", is_dir=True, mode=0o500, atime=timestamp, mtime=timestamp
     )
 
-    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+    tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
-    mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, mock.ANY)
-    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, mock.ANY)
+    mock_copy_tree_cp.assert_called_once_with(
+        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+    )
+    mock_copy_tree_shutil.assert_called_once_with(
+        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+    )
     _run_metadata_test_for_item(dest_dir, test_file)
     _run_metadata_test_for_item(dest_dir, test_dir)
 
@@ -294,7 +302,7 @@ def test_all_strategies_fail(
     mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
 
     with pytest.raises(tmt.utils.GeneralError):
-        tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+        tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     mock_copy_tree_cp.assert_called_once()
     mock_copy_tree_shutil.assert_called_once()
@@ -312,7 +320,7 @@ def test_copy_to_existing_destination(
     (dest_dir / "subdir" / "existing_in_subdir.txt").write_text("pre-existing in subdir")
     (dest_dir / "file1.txt").write_text("old file1 content")
 
-    tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+    tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     # Check that source files were copied and overwrite conflicting ones
     assert (dest_dir / "file1.txt").read_text() == _EXPECTED_TEST_FILES["file1.txt"]
