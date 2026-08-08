@@ -216,10 +216,22 @@ def test_fallback_to_shutil_copy_from_cp_failure(
     tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     mock_copy_tree_cp.assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        git_root=None,
+        logger=mock.ANY,
     )
     mock_copy_tree_shutil.assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        git_root=None,
+        logger=mock.ANY,
     )
 
     # Verify files were copied using the fallback approach (shutil.copytree)
@@ -277,10 +289,22 @@ def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
     tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     mock_copy_tree_cp.assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        git_root=None,
+        logger=mock.ANY,
     )
     mock_copy_tree_shutil.assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        git_root=None,
+        logger=mock.ANY,
     )
     _run_metadata_test_for_item(dest_dir, test_file)
     _run_metadata_test_for_item(dest_dir, test_dir)

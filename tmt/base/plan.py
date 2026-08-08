@@ -29,6 +29,7 @@ import tmt.steps.provision
 import tmt.steps.report
 import tmt.templates
 import tmt.utils
+import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.jira
 from tmt._compat.pathlib import Path
@@ -662,43 +663,25 @@ class Plan(
         # Sync metadata root to the worktree
         self.debug(f"Sync the worktree to '{self.worktree}'.", level=2)
 
-        ignore: list[Path] = [Path('.git')]
-
-        # If we're in a git repository, honor .gitignore; xref
-        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c
         git_root = tmt.utils.git.git_root(fmf_root=tree_root, logger=self._logger)
-        if git_root:
-            ignore.extend(tmt.utils.git.git_ignore(root=git_root, logger=self._logger))
 
-        self.debug(
-            "Ignoring the following paths during worktree sync",
-            tmt.utils.format_value(ignore),
-            level=4,
-        )
+        if git_root is not None:
+            tmt.utils.filesystem.copy_tree(
+                src=tree_root,
+                dst=self.worktree,
+                tmpdir_creator=self.tmpdir,
+                exclude_git=True,
+                exclude_gitignore=True,
+                git_root=git_root,
+                logger=self._logger,
+            )
 
-        with (
-            tempfile.NamedTemporaryFile(mode='w') as excludes_tempfile,
-            self.tmpdir(prefix='rsync-') as rsync_tempdir,
-        ):
-            excludes_tempfile.write('\n'.join(str(path) for path in ignore))
-
-            # Make sure ignored paths are saved before telling rsync to use them.
-            # With Python 3.12, we could use `delete_on_false=False` and call `close()`.
-            excludes_tempfile.flush()
-
-            # Note: rsync doesn't use reflinks right now, so in the future it'd be even better to
-            # use e.g. `cp` but filtering out the above.
-            self.run(
-                Command(
-                    "rsync",
-                    "-ar",
-                    '--temp-dir',
-                    rsync_tempdir,
-                    "--exclude-from",
-                    excludes_tempfile.name,
-                    f"{tree_root}/",
-                    self.worktree,
-                )
+        else:
+            tmt.utils.filesystem.copy_tree(
+                src=tree_root,
+                dst=self.worktree,
+                tmpdir_creator=self.tmpdir,
+                logger=self._logger,
             )
 
     @functools.cached_property
