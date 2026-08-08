@@ -221,6 +221,7 @@ def test_fallback_to_shutil_copy_from_cp_failure(
         tmpdir_creator=None,
         exclude_git=False,
         exclude_gitignore=False,
+        git_root=None,
         logger=mock.ANY,
     )
     mock_copy_tree_shutil.assert_called_once_with(
@@ -229,6 +230,7 @@ def test_fallback_to_shutil_copy_from_cp_failure(
         tmpdir_creator=None,
         exclude_git=False,
         exclude_gitignore=False,
+        git_root=None,
         logger=mock.ANY,
     )
 
@@ -292,6 +294,7 @@ def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
         tmpdir_creator=None,
         exclude_git=False,
         exclude_gitignore=False,
+        git_root=None,
         logger=mock.ANY,
     )
     mock_copy_tree_shutil.assert_called_once_with(
@@ -300,6 +303,7 @@ def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
         tmpdir_creator=None,
         exclude_git=False,
         exclude_gitignore=False,
+        git_root=None,
         logger=mock.ANY,
     )
     _run_metadata_test_for_item(dest_dir, test_file)
