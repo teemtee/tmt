@@ -275,6 +275,7 @@ def test_fallback(
         tmpdir_creator=None,
         exclude_git=False,
         exclude_gitignore=False,
+        git_root=None,
         logger=mock.ANY,
     )
     cast(MagicMock, mock_copy_tree_shutil).assert_called_once_with(
@@ -283,6 +284,7 @@ def test_fallback(
         tmpdir_creator=None,
         exclude_git=False,
         exclude_gitignore=False,
+        git_root=None,
         logger=mock.ANY,
     )
 
