@@ -36,8 +36,8 @@ jobs:
           exclude-path: |
             tests/**
             examples/**
-            tmt/steps/execute/scripts/*.sh.j2
-            tmt/templates/**
+            src/tmt/steps/execute/scripts/*.sh.j2
+            src/tmt/templates/**
 
       - if: ${{ always() }}
         name: Upload artifact with ShellCheck defects in SARIF format

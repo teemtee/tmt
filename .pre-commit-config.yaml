@@ -126,7 +126,7 @@ repos:
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
-        files: ^tmt/schemas/.*\.yaml
+        files: ^src/tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
@@ -139,10 +139,10 @@ repos:
             \.packit\.yaml|
             \.readthedocs\.yaml|
             \.pre-commit-config\.yaml|
-            tmt/config/themes/.+\.yaml|
-            tmt/steps/prepare/feature/.+\.yaml|
-            tmt/schemas/.+\.yaml|
-            tmt/steps/provision/mrack/.+\.yaml|
+            src/tmt/config/themes/.+\.yaml|
+            src/tmt/steps/prepare/feature/.+\.yaml|
+            src/tmt/schemas/.+\.yaml|
+            src/tmt/steps/provision/mrack/.+\.yaml|
             tests/policy/policies/.+/.+\.yaml
           )$
 
@@ -157,7 +157,7 @@ repos:
           - examples/redis/ansible/
           - tests/finish/ansible/data/
           - tests/run/worktree/data/ansible/
-          - tmt/steps/prepare/feature/
+          - src/tmt/steps/prepare/feature/
           - --profile=production
           - --exclude=examples/redis/ansible/tasks/redis.yml
           # redis.yml example requires posix module to be installed
@@ -233,8 +233,8 @@ repos:
           (?x)^(
             tests/.*|
             examples/.*|
-            tmt/steps/execute/scripts/.*\.sh\.j2|
-            tmt/templates/.*
+            src/tmt/steps/execute/scripts/.*\.sh\.j2|
+            src/tmt/templates/.*
           )$
 
   - repo: https://github.com/pycqa/flake8
