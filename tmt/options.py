@@ -277,6 +277,20 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
     ),
 ]
 
+PLUGIN_SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
+    option(
+        '--exposable-runner-devices',
+        metavar='PATTERN',
+        envvar='TMT_EXPOSABLE_RUNNER_DEVICES',
+        multiple=True,
+        help="""
+             Guests may require access to devices of the runner, and
+             only devices whose path matches any of the regular
+             expressions passed to this option would be made accessible.
+             """,
+    ),
+]
+
 SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
@@ -292,31 +306,7 @@ SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
              metadata  or if you know what you are doing.
              """,
     ),
-    option(
-        '--exposable-runner-devices',
-        metavar='PATTERN',
-        envvar='TMT_EXPOSABLE_RUNNER_DEVICES',
-        multiple=True,
-        help="""
-             Guests may require access to devices of the runner, and
-             only devices whose path matches any of the regular
-             expressions passed to this option would be made accessible.
-             """,
-    ),
-]
-
-PLUGIN_SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
-    option(
-        '--exposable-runner-devices',
-        metavar='PATTERN',
-        envvar='TMT_EXPOSABLE_RUNNER_DEVICES',
-        multiple=True,
-        help="""
-             Guests may require access to devices of the runner, and
-             only devices whose path matches any of the regular
-             expressions passed to this option would be made accessible.
-             """,
-    ),
+    *PLUGIN_SECURITY_OPTIONS,
 ]
 
 # TODO: Maybe this should be reversed.
