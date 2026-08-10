@@ -242,7 +242,7 @@ class DnfEngine(PackageManagerEngine):
         ).to_script()
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
-        return self._repoquery_script(*packages, installed_only=True)
+        return self._repoquery_script(*packages, installed_only=True, packages_only=False)
 
     def resolve_provides(
         self,
