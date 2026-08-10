@@ -204,7 +204,15 @@ def test_permission_error_handling(
 
     source_dir, dest_dir, _ = copy_tree_paths
 
+    import subprocess
+
+    print(subprocess.check_output(['ls', '-al', str(source_dir)]).decode())
+    print(subprocess.check_output(['ls', '-al', str(dest_dir)]).decode())
+
     dest_dir.chmod(0o444)
+
+    print(subprocess.check_output(['ls', '-al', str(source_dir)]).decode())
+    print(subprocess.check_output(['ls', '-al', str(dest_dir)]).decode())
 
     with pytest.raises(tmt.utils.GeneralError, match=r'(?i)Failed to copy tree'):
         tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
