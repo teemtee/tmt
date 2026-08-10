@@ -8,6 +8,7 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
+from tmt.package_managers import Package
 from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
@@ -382,6 +383,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         for phase in self.step.phases(PrepareInstall):  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
+            assert isinstance(phase, PrepareInstall)  # narrow type
             assert isinstance(phase.data, PrepareInstallData)  # narrow type
             if phase.data.name not in _tmt_install_phase_names:
                 continue
@@ -397,8 +399,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 if len(packages) == 1:
                     pkg = packages[0]
                     self.debug(f"{phase.data.name} replace", f"{request} -> {pkg.nevra}", level=2)
-                    phase.data.package.remove(tmt.base.core.DependencySimple.from_spec(request))
-                    phase.data.package.append(tmt.base.core.DependencySimple.from_spec(pkg.nevra))
+                    overrides = phase.artifact_override.setdefault(guest, {})  # pyright: ignore[reportUnknownVariableType, reportAttributeAccessIssue]
+                    overrides[Package(request)] = Package(pkg.nevra)
                 else:
                     msg = f"{request}: {fmf.utils.listed([pkg.nevra for pkg in packages])}"
                     self.debug(f"{phase.data.name} multi-match", msg, level=2)
