@@ -142,4 +142,6 @@ def copy_tree(
                 return
 
         except Exception as exc:
-            raise GeneralError(f"Failed to copy directory tree '{src}' => '{dst}'.") from exc
+            raise GeneralError(f"Failed to copy tree '{src}' => '{dst}'.") from exc
+
+    raise GeneralError(f"Failed to copy tree '{src}' => '{dst}'.")
