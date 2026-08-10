@@ -3,7 +3,8 @@ import os
 import stat
 import subprocess
 import time
-from typing import Any, Generator, Optional, cast
+from collections.abc import Generator
+from typing import Optional, cast
 from unittest import mock
 from unittest.mock import MagicMock
 
@@ -69,7 +70,9 @@ def fixture_copy_tree_paths(tmppath: Path) -> CopyTreePathConfig:
 @pytest.fixture(name="tmpdir_creator")
 def fixture_tmpdir_creator(tmppath: Path) -> tmt.utils.filesystem.TmpDirCreator:
     @contextlib.contextmanager
-    def _tmpdir_creator(prefix: Optional[str] = None, suffix: Optional[str] = None) -> Generator[Path, None, None]:
+    def _tmpdir_creator(
+        prefix: Optional[str] = None, suffix: Optional[str] = None
+    ) -> Generator[Path, None, None]:
         yield tmppath
 
     return _tmpdir_creator
@@ -159,7 +162,10 @@ def test_copy_tree_basic(
 
 @pytest.mark.parametrize('strategy', _STRATEGIES)
 def test_copy_empty_source_directory(
-    strategy: tmt.utils.filesystem.CopyStrategy, tmpdir_creator: tmt.utils.filesystem.TmpDirCreator, tmppath: Path, root_logger: tmt.log.Logger
+    strategy: tmt.utils.filesystem.CopyStrategy,
+    tmpdir_creator: tmt.utils.filesystem.TmpDirCreator,
+    tmppath: Path,
+    root_logger: tmt.log.Logger,
 ) -> None:
     """
     Test copying an empty source directory.
@@ -179,7 +185,10 @@ def test_copy_empty_source_directory(
 
 @pytest.mark.parametrize('strategy', _STRATEGIES)
 def test_deeply_nested_directories(
-    strategy: tmt.utils.filesystem.CopyStrategy, tmpdir_creator: tmt.utils.filesystem.TmpDirCreator, tmppath: Path, root_logger: tmt.log.Logger
+    strategy: tmt.utils.filesystem.CopyStrategy,
+    tmpdir_creator: tmt.utils.filesystem.TmpDirCreator,
+    tmppath: Path,
+    root_logger: tmt.log.Logger,
 ) -> None:
     """Test copying deeply nested directory structures."""
     deep_src = tmppath / "deep_src"
