@@ -145,6 +145,11 @@ def _copy_tree_rsync(
 
     if git_root is not None:
         if exclude_gitignore:
+            filters += [
+                '--include=**.gitignore',
+                '--filter=:- .gitignore',
+            ]
+
             current = src.resolve()
             root = git_root.resolve()
 
@@ -167,8 +172,6 @@ def _copy_tree_rsync(
                 '--temp-dir',
                 rsync_tempdir,
                 *filters,
-                '--include=**.gitignore',
-                '--filter=:- .gitignore',
                 f"{src}/",
                 dst,
             ).run(cwd=None, environment=Environment.from_environ(), silent=True, logger=logger)
