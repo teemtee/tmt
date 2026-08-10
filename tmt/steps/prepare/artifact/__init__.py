@@ -395,13 +395,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for request, packages in resolved.items():
                 if not packages:
                     continue
-                # If we know there is a unique package providing the
+                # If we know there is a unique package in the artifact repos, narrow down the
+                # installation by overriding the package to be installed with the specific NVR
                 if len(packages) == 1:
                     pkg = packages[0]
                     self.debug(f"{phase.data.name} replace", f"{request} -> {pkg.nevra}", level=2)
                     overrides = phase.artifact_override.setdefault(guest, {})  # pyright: ignore[reportUnknownVariableType, reportAttributeAccessIssue]
                     overrides[Package(request)] = Package(pkg.nevra)
                 else:
+                    # Otherwise let the repo priority handle it as best as it can
                     msg = f"{request}: {fmf.utils.listed([pkg.nevra for pkg in packages])}"
                     self.debug(f"{phase.data.name} multi-match", msg, level=2)
                 # TODO(typing): repo_id here is always expected to be non-None
