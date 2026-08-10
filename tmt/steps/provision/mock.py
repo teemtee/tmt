@@ -837,7 +837,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
     .. warning::
 
         Either ``--feeling-safe=provision/mock`` option or
-        ``TMT_FEELING_SAFE=provision/local`` environment variable is
+        ``TMT_FEELING_SAFE=provision/mock`` environment variable is
         required in order to use the ``mock`` provision plugin.
         While it is roughly as safe as ``container`` provisioning,
         it has access to local filesystem.
