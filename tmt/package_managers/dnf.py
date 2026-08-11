@@ -494,7 +494,7 @@ class YumEngine(DnfEngine):
                 '--disablerepo=*',
                 *[f'--enablerepo={repo_id}' for repo_id in repository.repo_ids],
                 '--queryformat',
-                r'%{repoid};%{name}-%{epoch}:%{version}-%{release}.%{arch}\n',
+                rf'%{{repoid}};{self._full_nevra_querytag}\n',
             )
         ).to_script()
 
