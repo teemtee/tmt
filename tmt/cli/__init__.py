@@ -22,7 +22,7 @@ import tmt.utils.rest
 from tmt.container import container, simple_field
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import Concatenate, ParamSpec
+    from typing import Concatenate, ParamSpec
 
     P = ParamSpec('P')
     R = TypeVar('R')

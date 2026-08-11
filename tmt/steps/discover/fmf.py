@@ -1,7 +1,7 @@
 import glob
 import re
 import shutil
-from typing import Any, Optional, TypedDict, Union, cast
+from typing import Any, Optional, Self, TypedDict, Union, cast
 
 import fmf
 
@@ -15,7 +15,6 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt._compat.typing import Self
 from tmt.base.core import _RawAdjustRule
 from tmt.container import SerializableContainer, SpecBasedContainer, container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
