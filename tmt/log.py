@@ -308,6 +308,11 @@ def normalize_verbosity_level(raw_value: Any) -> Optional[VerbosityLevel]:
 
         raise tmt.utils.GeneralError(message) from exc
 
+    # `None` is not necessarily expected, as all inputs should originate
+    # in various CLI commands that accept the correct options, but it is
+    # very hard to prove `verbose` is never `None` to type checkers. We
+    # can remove this once we narrow this e.g. by passing verbosity to
+    # `apply_verbosity_options` as a keyword parameter.
     if raw_value is None:
         return None
 
@@ -346,6 +351,11 @@ def normalize_debug_level(raw_value: Any) -> Optional[DebugLevel]:
 
         raise tmt.utils.GeneralError(message) from exc
 
+    # `None` is not necessarily expected, as all inputs should originate
+    # in various CLI commands that accept the correct options, but it is
+    # very hard to prove `debug` is never `None` to type checkers. We
+    # can remove this once we narrow this e.g. by passing debug level to
+    # `apply_verbosity_options` as a keyword parameter.
     if raw_value is None:
         return None
 

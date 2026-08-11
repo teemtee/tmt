@@ -114,7 +114,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Make sure context is applied to plan itself"
-        rlRun -s "tmt plan show - /plans/full/tmt"
+        rlRun -s "tmt plan show -vvv /plans/full/tmt"
         rlAssertGrep "enabled false" $rlRun_LOG
 
         rlRun -s "tmt -c how=full plan show -vvv /plans/full/tmt"
