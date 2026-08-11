@@ -1,7 +1,7 @@
 import os
 import pathlib
 from collections.abc import Iterator
-from typing import Optional, Union
+from typing import Union
 
 
 class Path(pathlib.PosixPath):
@@ -50,9 +50,9 @@ class Path(pathlib.PosixPath):
     def append_text(
         self,
         data: str,
-        encoding: Optional[str] = None,
-        errors: Optional[str] = None,
-        newline: Optional[str] = None,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
     ) -> int:
         """
         Open the file pointed to in text mode, append data to it, and close the file
@@ -63,8 +63,8 @@ class Path(pathlib.PosixPath):
 
     def splitlines(
         self,
-        encoding: Optional[str] = None,
-        errors: Optional[str] = None,
+        encoding: str | None = None,
+        errors: str | None = None,
         keepends: bool = False,
     ) -> Iterator[str]:
         """

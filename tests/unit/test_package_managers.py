@@ -2,7 +2,6 @@ import contextlib
 import re
 from collections.abc import Iterator
 from inspect import isclass
-from typing import Optional, Union
 
 import _pytest.logging
 import pytest
@@ -103,9 +102,7 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
     )
 
 
-def assert_output(
-    expected_output: Optional[str], stdout: Optional[str], stderr: Optional[str]
-) -> None:
+def assert_output(expected_output: str | None, stdout: str | None, stderr: str | None) -> None:
     """
     Check that the expected output is present
 
@@ -270,7 +267,7 @@ def test_discovery(
 
 
 def _parametrize_test_install() -> Iterator[
-    tuple[Container, PackageManagerClass, Package, str, Optional[str]]
+    tuple[Container, PackageManagerClass, Package, str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -388,7 +385,7 @@ def test_install(
     package_manager_class: PackageManagerClass,
     package: Package,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -404,7 +401,7 @@ def test_install(
 
 
 def _parametrize_test_refresh_metadata() -> Iterator[
-    tuple[Container, PackageManagerClass, str, Optional[str]]
+    tuple[Container, PackageManagerClass, str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -464,7 +461,7 @@ def test_refresh_metadata(
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -480,7 +477,7 @@ def test_refresh_metadata(
 
 
 def _parametrize_test_assert_config_manager() -> Iterator[
-    tuple[Container, PackageManagerClass, Union[str, Exception]]
+    tuple[Container, PackageManagerClass, str | Exception]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -544,7 +541,7 @@ def test_assert_config_manager(
     container_per_test: ContainerData,
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
-    expected_command_or_exception: Union[str, Exception],
+    expected_command_or_exception: str | Exception,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -564,7 +561,7 @@ def test_assert_config_manager(
 
 
 def _parametrize_test_enable_disable_repo() -> Iterator[
-    tuple[Container, PackageManagerClass, str, Union[str, Exception]]
+    tuple[Container, PackageManagerClass, str, str | Exception]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         for action in ('enable', 'disable'):
@@ -622,7 +619,7 @@ def test_enable_disable_repo(
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
     action: str,
-    expected_command_or_exception: Union[str, Exception],
+    expected_command_or_exception: str | Exception,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -648,7 +645,7 @@ def test_enable_disable_repo(
 
 
 def _parametrize_test_install_nonexistent() -> Iterator[
-    tuple[Container, PackageManagerClass, str, Optional[str]]
+    tuple[Container, PackageManagerClass, str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -751,7 +748,7 @@ def test_install_nonexistent(
     guest: GuestContainer,
     package_manager_class: PackageManagerClass,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -769,7 +766,7 @@ def test_install_nonexistent(
 
 
 def _parametrize_test_install_nonexistent_skip() -> Iterator[
-    tuple[Container, PackageManagerClass, str, Optional[str]]
+    tuple[Container, PackageManagerClass, str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -863,7 +860,7 @@ def test_install_nonexistent_skip(
     guest: GuestContainer,
     package_manager_class: PackageManagerClass,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -879,7 +876,7 @@ def test_install_nonexistent_skip(
 
 
 def _parametrize_test_install_dont_check_first() -> Iterator[
-    tuple[Container, PackageManagerClass, Package, str, Optional[str]]
+    tuple[Container, PackageManagerClass, Package, str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -972,7 +969,7 @@ def test_install_dont_check_first(
     package_manager_class: PackageManagerClass,
     package: Package,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -988,7 +985,7 @@ def test_install_dont_check_first(
 
 
 def _parametrize_test_install_check_first_skips_present() -> Iterator[
-    tuple[Container, PackageManagerClass, Package, Package, str, str, Optional[str]]
+    tuple[Container, PackageManagerClass, Package, Package, str, str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -1111,7 +1108,7 @@ def test_install_check_first_skips_present(
     absent_package: Package,
     expected_check_command: str,
     expected_install_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -1140,7 +1137,7 @@ def test_install_check_first_skips_present(
 
 
 def _parametrize_test_reinstall() -> Iterator[
-    tuple[Container, PackageManagerClass, Optional[str], Optional[str]]
+    tuple[Container, PackageManagerClass, str | None, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -1231,8 +1228,8 @@ def test_reinstall(
     package_manager_class: PackageManagerClass,
     package: Package,
     supported: bool,
-    expected_command: Optional[str],
-    expected_output: Optional[str],
+    expected_command: str | None,
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -1258,7 +1255,7 @@ def test_reinstall(
 
 
 def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
-    tuple[Container, PackageManagerClass, Optional[str], Optional[str], Optional[str]]
+    tuple[Container, PackageManagerClass, str | None, str | None, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if (
@@ -1312,7 +1309,7 @@ def test_reinstall_nonexistent(
     package_manager_class: PackageManagerClass,
     supported: bool,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -1336,7 +1333,7 @@ def test_reinstall_nonexistent(
 
 
 def _generate_test_check_presence() -> Iterator[
-    tuple[Container, PackageManagerClass, Installable, str, Optional[str]]
+    tuple[Container, PackageManagerClass, Installable, str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -1659,7 +1656,7 @@ def test_check_presence(
     installable: Installable,
     expected_result: bool,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -1674,7 +1671,7 @@ def test_check_presence(
 
 
 def _parametrize_test_install_filesystempath() -> Iterator[
-    tuple[Container, PackageManagerClass, FileSystemPath, Optional[str]]
+    tuple[Container, PackageManagerClass, FileSystemPath, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -1764,7 +1761,7 @@ def test_install_filesystempath(
     package_manager_class: PackageManagerClass,
     installable: FileSystemPath,
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -1780,7 +1777,7 @@ def test_install_filesystempath(
 
 
 def _parametrize_test_install_multiple() -> Iterator[
-    tuple[Container, PackageManagerClass, tuple[Package, Package], str, Optional[str]]
+    tuple[Container, PackageManagerClass, tuple[Package, Package], str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -1904,7 +1901,7 @@ def test_install_multiple(
     package_manager_class: PackageManagerClass,
     packages: tuple[Package, Package],
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -1926,7 +1923,7 @@ def _parametrize_test_install_downloaded() -> Iterator[
         tuple[Package, Package],
         tuple[str, str],
         str,
-        Optional[str],
+        str | None,
     ]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -2070,7 +2067,7 @@ def test_install_downloaded(
     packages: tuple[Package, Package],
     artifacts: tuple[str, str],
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -2111,7 +2108,7 @@ def test_install_downloaded(
 
 
 def _parametrize_test_install_debuginfo() -> Iterator[
-    tuple[Container, PackageManagerClass, tuple[Package, Package], str, Optional[str]]
+    tuple[Container, PackageManagerClass, tuple[Package, Package], str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         # Skip testing debuginfo install on coreos images
@@ -2233,7 +2230,7 @@ def test_install_debuginfo(
     package_manager_class: PackageManagerClass,
     installables: tuple[Package, Package],
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -2249,7 +2246,7 @@ def test_install_debuginfo(
 
 
 def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
-    tuple[Container, PackageManagerClass, tuple[Package, Package], str, Optional[str]]
+    tuple[Container, PackageManagerClass, tuple[Package, Package], str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -2320,7 +2317,7 @@ def test_install_debuginfo_nonexistent(
     package_manager_class: PackageManagerClass,
     installables: tuple[Package, Package],
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -2340,7 +2337,7 @@ def test_install_debuginfo_nonexistent(
 
 
 def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
-    tuple[Container, PackageManagerClass, tuple[Package, Package], str, Optional[str]]
+    tuple[Container, PackageManagerClass, tuple[Package, Package], str, str | None]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         # Skip testing debuginfo install on coreos images
@@ -2444,7 +2441,7 @@ def test_install_debuginfo_nonexistent_skip(
     package_manager_class: PackageManagerClass,
     installables: tuple[Package, Package],
     expected_command: str,
-    expected_output: Optional[str],
+    expected_output: str | None,
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:

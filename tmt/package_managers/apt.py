@@ -1,5 +1,4 @@
 import re
-from typing import Optional, Union
 
 import tmt.utils
 from tmt.package_managers import (
@@ -22,7 +21,7 @@ from tmt.utils import (
 )
 from tmt.utils.templates import render_template
 
-ReducedPackages = list[Union[Package, PackagePath]]
+ReducedPackages = list[Package | PackagePath]
 
 
 PRESENCE_TEMPLATE = """
@@ -102,8 +101,8 @@ class AptEngine(PackageManagerEngine):
 
     def _reduce_to_packages(
         self, *installables: Installable
-    ) -> tuple[list[Union[Package, PackagePath]], list[FileSystemPath]]:
-        real_packages: list[Union[Package, PackagePath]] = []
+    ) -> tuple[list[Package | PackagePath], list[FileSystemPath]]:
+        real_packages: list[Package | PackagePath] = []
         filesystem_paths: list[FileSystemPath] = []
 
         for installable in installables:
@@ -166,7 +165,7 @@ class AptEngine(PackageManagerEngine):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         options = options or Options()
         extra_options = self._extra_options(options)
@@ -203,7 +202,7 @@ class AptEngine(PackageManagerEngine):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         options = options or Options()
         extra_options = self._extra_options(options)
@@ -240,7 +239,7 @@ class AptEngine(PackageManagerEngine):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
 
@@ -292,7 +291,7 @@ class Apt(PackageManager[AptEngine]):
     def install_local(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
 
         options = options or Options()
@@ -302,7 +301,7 @@ class Apt(PackageManager[AptEngine]):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         raise tmt.utils.PrepareError(
             f'Package manager "{self.guest.facts.package_manager}" does not support '

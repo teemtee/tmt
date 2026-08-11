@@ -7,9 +7,10 @@ import importlib.metadata
 import logging
 import re
 import threading
+from collections.abc import Callable
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
+from typing import Any, TypedDict, TypeVar, Union, cast
 
 import packaging.version
 
@@ -36,7 +37,7 @@ from tmt.utils import (
 from tmt.utils.templates import render_template
 from tmt.utils.wait import Deadline, Waiting
 
-MRACK_VERSION: Optional[str] = None
+MRACK_VERSION: str | None = None
 
 mrack: Any
 providers: Any
@@ -90,7 +91,7 @@ def _get_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslatio
 class GuestInspectType(TypedDict):
     status: str
     system: str
-    address: Optional[str]
+    address: str | None
 
 
 # Mapping of HW requirement operators to their Beaker representation.
@@ -943,7 +944,7 @@ def constraint_to_beaker_filter(
 # Thread-safe lock for mrack imports and initialization
 _MRACK_IMPORT_LOCK = threading.Lock()
 _MRACK_CONTEXT_LOCK = threading.Lock()
-_MRACK_CONTEXT_CONFIG_PATH: Optional[str] = None
+_MRACK_CONTEXT_CONFIG_PATH: str | None = None
 
 
 def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
@@ -1139,7 +1140,7 @@ def async_run(func: Any) -> Any:
 @container
 class BeakerGuestData(tmt.guest.GuestSshData):
     # Guest request properties
-    whiteboard: Optional[str] = field(
+    whiteboard: str | None = field(
         default=None,
         option=('-w', '--whiteboard'),
         metavar='WHITEBOARD',
@@ -1151,7 +1152,7 @@ class BeakerGuestData(tmt.guest.GuestSshData):
         metavar='ARCH',
         help='Architecture to provision.',
     )
-    image: Optional[str] = field(
+    image: str | None = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
         metavar='COMPOSE',
@@ -1159,7 +1160,7 @@ class BeakerGuestData(tmt.guest.GuestSshData):
     )
 
     # Provided in Beaker job
-    job_id: Optional[str] = field(
+    job_id: str | None = field(
         default=None,
         internal=True,
     )
@@ -1206,7 +1207,7 @@ class BeakerGuestData(tmt.guest.GuestSshData):
         normalize=tmt.utils.normalize_string_dict,
     )
 
-    beaker_job_owner: Optional[str] = field(
+    beaker_job_owner: str | None = field(
         default=None,
         option='--beaker-job-owner',
         metavar='USERNAME',
@@ -1227,7 +1228,7 @@ class BeakerGuestData(tmt.guest.GuestSshData):
         normalize=tmt.utils.normalize_string_list,
     )
 
-    beaker_job_group: Optional[str] = field(
+    beaker_job_group: str | None = field(
         default=None,
         option='--beaker-job-group',
         metavar='GROUPNAME',
@@ -1236,7 +1237,7 @@ class BeakerGuestData(tmt.guest.GuestSshData):
              """,
     )
 
-    bootc_check_system_url: Optional[str] = field(
+    bootc_check_system_url: str | None = field(
         default="https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
         option='--bootc-check-system-url',
         metavar='URL',
@@ -1245,7 +1246,7 @@ class BeakerGuestData(tmt.guest.GuestSshData):
              """,
     )
 
-    bootc_image_url: Optional[str] = field(
+    bootc_image_url: str | None = field(
         default=None,
         option='--bootc-image-url',
         metavar='URL',
@@ -1254,7 +1255,7 @@ class BeakerGuestData(tmt.guest.GuestSshData):
              """,
     )
 
-    bootc_registry_secret: Optional[str] = field(
+    bootc_registry_secret: str | None = field(
         default=None,
         option='--bootc-registry-secret',
         metavar='SECRET',
@@ -1305,16 +1306,16 @@ class CreateJobParameters:
     name: str
     os: str
     arch: str
-    hardware: Optional[tmt.hardware.Hardware]
+    hardware: tmt.hardware.Hardware | None
     kickstart: dict[str, str]
-    whiteboard: Optional[str]
-    beaker_job_owner: Optional[str]
+    whiteboard: str | None
+    beaker_job_owner: str | None
     public_key: list[str]
-    beaker_job_group: Optional[str]
-    bootc_credentials: Optional[dict[str, Any]]
-    bootc_image_url: Optional[str]
+    beaker_job_group: str | None
+    bootc_credentials: dict[str, Any] | None
+    bootc_image_url: str | None
     bootc: bool
-    bootc_check_system_url: Optional[str]
+    bootc_check_system_url: str | None
     group: str = 'linux'
 
     def to_mrack(self) -> dict[str, Any]:
@@ -1372,7 +1373,7 @@ class BeakerAPI:
             Path.cwd() / "mrack.conf",
         ]
 
-        mrack_config: Optional[Path] = None
+        mrack_config: Path | None = None
 
         for potential_location in mrack_config_locations:
             if potential_location.exists():
@@ -1448,17 +1449,17 @@ class GuestBeaker(tmt.guest.GuestSsh):
     _data_class = BeakerGuestData
 
     # Guest request properties
-    whiteboard: Optional[str]
+    whiteboard: str | None
     arch: str
     image: str = "fedora-latest"
-    hardware: Optional[tmt.hardware.Hardware] = None
+    hardware: tmt.hardware.Hardware | None = None
     kickstart: dict[str, str]
 
-    beaker_job_owner: Optional[str] = None
-    beaker_job_group: Optional[str] = None
+    beaker_job_owner: str | None = None
+    beaker_job_group: str | None = None
 
     # Provided in Beaker response
-    job_id: Optional[str]
+    job_id: str | None
 
     # Timeouts and deadlines
     provision_timeout: int
@@ -1468,12 +1469,12 @@ class GuestBeaker(tmt.guest.GuestSsh):
 
     # Bootc-related attributes (injected by Guest.load())
     bootc: bool
-    bootc_image_url: Optional[str]
-    bootc_check_system_url: Optional[str]
-    bootc_registry_secret: Optional[str]
+    bootc_image_url: str | None
+    bootc_check_system_url: str | None
+    bootc_registry_secret: str | None
 
-    _api: Optional[BeakerAPI] = None
-    _api_timestamp: Optional[datetime.datetime] = None
+    _api: BeakerAPI | None = None
+    _api_timestamp: datetime.datetime | None = None
 
     def __init__(self, *args: Any, **kwargs: Any):
         """
@@ -1493,7 +1494,7 @@ class GuestBeaker(tmt.guest.GuestSsh):
         """
 
         def _construct_api() -> tuple[BeakerAPI, datetime.datetime]:
-            return BeakerAPI(self), datetime.datetime.now(datetime.timezone.utc)
+            return BeakerAPI(self), datetime.datetime.now(datetime.UTC)
 
         if self._api is None:
             self._api, self._api_timestamp = _construct_api()
@@ -1501,7 +1502,7 @@ class GuestBeaker(tmt.guest.GuestSsh):
         else:
             assert self._api_timestamp is not None
 
-            delta = datetime.datetime.now(datetime.timezone.utc) - self._api_timestamp
+            delta = datetime.datetime.now(datetime.UTC) - self._api_timestamp
 
             if delta.total_seconds() >= self.api_session_refresh_tick:
                 self.debug(f'Refresh Beaker API client as it is too old, {delta}.')
@@ -1706,8 +1707,8 @@ class GuestBeaker(tmt.guest.GuestSsh):
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -1808,7 +1809,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
     # data argument should be a "Optional[GuestData]" type but we would like to use
     # BeakerGuestData created here ignoring the override will make mypy calm
-    def wake(self, data: Optional[BeakerGuestData] = None) -> None:  # type: ignore[override]
+    def wake(self, data: BeakerGuestData | None = None) -> None:  # type: ignore[override]
         """
         Wake up the plugin, process data, apply options
         """
@@ -1875,7 +1876,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 f"Enable bootc with --bootc, or remove variables: {', '.join(specified_fields)}."
             )
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Provision the guest
         """

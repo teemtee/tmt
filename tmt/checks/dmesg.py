@@ -1,6 +1,6 @@
 import re
 from re import Pattern
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import tmt.guest
 import tmt.log
@@ -74,11 +74,11 @@ class DmesgCheck(Check):
     ) -> tmt.utils.CommandOutput:
         def _test_output_logger(
             key: str,
-            value: Optional[str] = None,
+            value: str | None = None,
             color: tmt.utils.themes.Style = None,
             shift: int = 2,
             level: int = 3,
-            topic: Optional[tmt.log.Topic] = None,
+            topic: tmt.log.Topic | None = None,
             stacklevel: int = 1,
         ) -> None:
             logger.verbose(
@@ -212,7 +212,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         *,
         check: 'DmesgCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
@@ -233,7 +233,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         *,
         check: 'DmesgCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):

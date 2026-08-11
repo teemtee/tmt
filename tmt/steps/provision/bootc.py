@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import click
 
@@ -52,17 +52,17 @@ EOF
 
 
 class GuestBootc(GuestTestcloud):
-    containerimage: Optional[str]
+    containerimage: str | None
     _rootless: bool
 
     def __init__(
         self,
         *,
         data: tmt.guest.GuestData,
-        name: Optional[str] = None,
-        parent: Optional[tmt.utils.Common] = None,
+        name: str | None = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
-        containerimage: Optional[str],
+        containerimage: str | None,
         rootless: bool,
     ) -> None:
         super().__init__(data=data, logger=logger, parent=parent, name=name)
@@ -95,7 +95,7 @@ class GuestBootc(GuestTestcloud):
 
 @container
 class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
-    container_file: Optional[str] = field(
+    container_file: str | None = field(
         default=None,
         option='--container-file',
         metavar='CONTAINER_FILE',
@@ -116,7 +116,7 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
              """,
     )
 
-    container_image: Optional[str] = field(
+    container_image: str | None = field(
         default=None,
         option=('--container-image'),
         metavar='CONTAINER_IMAGE',
@@ -375,7 +375,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         ).run(cwd=self.phase_workdir, stream_output=True, logger=self._logger)
         self._rootless = output.stdout == "true\n"
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Provision the bootc instance
         """
@@ -396,7 +396,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
                 "Either 'container-file' or 'container-image' must be specified."
             )
 
-        containerimage: Optional[str] = None
+        containerimage: str | None = None
 
         if not self.is_dry_run:
             # Use provided container image

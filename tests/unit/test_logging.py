@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import _pytest.capture
 import _pytest.logging
@@ -26,7 +25,7 @@ def _exercise_logger(
     capsys: _pytest.capture.CaptureFixture[str],
     logger: Logger,
     indent_by: str = '',
-    labels: Optional[list[str]] = None,
+    labels: list[str] | None = None,
     reset: bool = True,
 ) -> None:
     labels = labels or []
@@ -375,7 +374,7 @@ def test_indent(key, value, color, level, labels, labels_padding, expected):
     ),
 )
 def test_topic_filter(
-    logger_topics: set[Topic], message_topic: Optional[Topic], filter_outcome: bool
+    logger_topics: set[Topic], message_topic: Topic | None, filter_outcome: bool
 ) -> None:
     filter = TopicFilter()
 

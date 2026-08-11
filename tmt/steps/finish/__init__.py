@@ -44,7 +44,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, PluginOutcome]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> PluginOutcome:
         self.go_prolog(logger)

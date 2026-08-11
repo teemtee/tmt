@@ -2,7 +2,7 @@
 ``tmt lint`` and ``tmt * lint`` implementation
 """
 
-from typing import Any, Optional, Union
+from typing import Any
 
 import tmt.base.core
 import tmt.base.plan
@@ -23,17 +23,15 @@ from tmt.cli._root import (
 
 
 def _apply_linters(
-    lintable: Union[
-        tmt.lint.Lintable[tmt.base.core.Test],
-        tmt.lint.Lintable[tmt.base.plan.Plan],
-        tmt.lint.Lintable[tmt.base.core.Story],
-        tmt.lint.Lintable[tmt.base.core.LintableCollection],
-    ],
+    lintable: tmt.lint.Lintable[tmt.base.core.Test]
+    | tmt.lint.Lintable[tmt.base.plan.Plan]
+    | tmt.lint.Lintable[tmt.base.core.Story]
+    | tmt.lint.Lintable[tmt.base.core.LintableCollection],
     linters: list[tmt.lint.Linter],
     failed_only: bool,
     enforce_checks: list[str],
     outcomes: list[tmt.lint.LinterOutcome],
-) -> tuple[bool, Optional[list[tmt.lint.LinterRuling]]]:
+) -> tuple[bool, list[tmt.lint.LinterRuling] | None]:
     """
     Apply linters on a lintable and filter out disallowed outcomes.
     """
@@ -59,7 +57,7 @@ def _apply_linters(
 
 def _lint_class(
     context: Context,
-    klass: Union[type[tmt.base.core.Test], type[tmt.base.plan.Plan], type[tmt.base.core.Story]],
+    klass: type[tmt.base.core.Test] | type[tmt.base.plan.Plan] | type[tmt.base.core.Story],
     failed_only: bool,
     enable_checks: list[str],
     disable_checks: list[str],
@@ -104,9 +102,7 @@ def _lint_class(
 
 def _lint_collection(
     context: Context,
-    klasses: list[
-        Union[type[tmt.base.core.Test], type[tmt.base.plan.Plan], type[tmt.base.core.Story]]
-    ],
+    klasses: list[type[tmt.base.core.Test] | type[tmt.base.plan.Plan] | type[tmt.base.core.Story]],
     failed_only: bool,
     enable_checks: list[str],
     disable_checks: list[str],
@@ -154,9 +150,7 @@ def _lint_collection(
 
 def do_lint(
     context: Context,
-    klasses: list[
-        Union[type[tmt.base.core.Test], type[tmt.base.plan.Plan], type[tmt.base.core.Story]]
-    ],
+    klasses: list[type[tmt.base.core.Test] | type[tmt.base.plan.Plan] | type[tmt.base.core.Story]],
     list_checks: bool,
     failed_only: bool,
     enable_checks: list[str],

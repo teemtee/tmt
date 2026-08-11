@@ -1,8 +1,8 @@
 import functools
 import re
 import sys
-from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cast, overload
+from collections.abc import Callable, Iterator
+from typing import TYPE_CHECKING, Any, TypedDict, cast, overload
 
 from jinja2 import FileSystemLoader, select_autoescape
 
@@ -19,7 +19,7 @@ from tmt.utils import Path
 from tmt.utils.templates import default_template_environment, render_template_file
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
 
     XMLElement: TypeAlias = Any
 
@@ -42,7 +42,7 @@ def _duration_to_seconds_filter(duration: None) -> None:
     pass
 
 
-def _duration_to_seconds_filter(duration: Optional[str]) -> Optional[int]:
+def _duration_to_seconds_filter(duration: str | None) -> int | None:
     """
     Convert valid duration string in to seconds
     """
@@ -128,7 +128,7 @@ class ImplementProperties:
         return [{'name': k, 'value': v} for k, v in self._properties.items()]
 
     @properties.setter
-    def properties(self, keyval: dict[str, Optional[str]]) -> None:
+    def properties(self, keyval: dict[str, str | None]) -> None:
         self._properties = {k: v for k, v in keyval.items() if v is not None}
 
 
@@ -142,7 +142,7 @@ class ResultWrapper(ImplementProperties):
 
     def __init__(
         self,
-        wrapped: Union[tmt.Result, tmt.result.SubResult],
+        wrapped: tmt.Result | tmt.result.SubResult,
         subresults_context_class: 'type[ResultsContext]',
     ) -> None:
         super().__init__()
@@ -181,7 +181,7 @@ class ResultsContext(ImplementProperties):
     wraps all the :py:class:`tmt.Result` instances into the :py:class:`ResultWrapper`.
     """
 
-    def __init__(self, results: Union[list[tmt.Result], list[tmt.result.SubResult]]) -> None:
+    def __init__(self, results: list[tmt.Result] | list[tmt.result.SubResult]) -> None:
         """
         Decorate/wrap all the ``Result`` and ``SubResult`` instances with more attributes
         """
@@ -261,10 +261,10 @@ class ResultsContext(ImplementProperties):
 def make_junit_xml(
     phase: tmt.steps.report.ReportPlugin[Any],
     flavor: str = DEFAULT_FLAVOR_NAME,
-    template_path: Optional[Path] = None,
+    template_path: Path | None = None,
     include_output_log: bool = True,
     prettify: bool = True,
-    results_context: Optional[ResultsContext] = None,
+    results_context: ResultsContext | None = None,
     **extra_variables: Any,
 ) -> str:
     """
@@ -449,7 +449,7 @@ def make_junit_xml(
 
 @container
 class ReportJUnitData(tmt.steps.report.ReportStepData):
-    file: Optional[Path] = field(
+    file: Path | None = field(
         default=None,
         option='--file',
         metavar='PATH',
@@ -464,7 +464,7 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
         help='Name of a JUnit flavor to generate.',
     )
 
-    template_path: Optional[Path] = field(
+    template_path: Path | None = field(
         default=None,
         option='--template-path',
         metavar='TEMPLATE_PATH',
@@ -566,7 +566,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
 
         return members
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Read executed tests and write junit
         """

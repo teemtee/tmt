@@ -5,9 +5,9 @@ import os
 import select
 import shlex
 import subprocess
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from types import TracebackType
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, Self, cast
 
 import tmt
 import tmt.guest
@@ -16,7 +16,6 @@ import tmt.package_managers
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt._compat.typing import Self
 from tmt.container import container, field
 from tmt.guest import RebootMode
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
@@ -31,7 +30,7 @@ MOCK_PIPE_FILESYNC: Path = MOCK_PIPE / 'filesync'
 
 
 @functools.cache
-def mock_config(root: Optional[str], logger: tmt.log.Logger) -> dict[str, Any]:
+def mock_config(root: str | None, logger: tmt.log.Logger) -> dict[str, Any]:
     try:
         import mockbuild.config
 
@@ -46,7 +45,7 @@ def mock_config(root: Optional[str], logger: tmt.log.Logger) -> dict[str, Any]:
 
 @container
 class MockGuestData(tmt.guest.GuestData):
-    root: Optional[str] = field(
+    root: str | None = field(
         default=None,
         option=('-r', '--root'),
         metavar='ROOT',
@@ -55,7 +54,7 @@ class MockGuestData(tmt.guest.GuestData):
              The `--root` flag to be passed to the mock process.
              """,
     )
-    rootdir: Optional[Path] = field(
+    rootdir: Path | None = field(
         default=None,
         option=('--rootdir'),
         metavar='ROOTDIR',
@@ -118,9 +117,9 @@ class _ManagedEpollIo(io.FileIO):
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        exc_traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
     ) -> None:
         self.try_unregister()
         super().__exit__(exc_type, exc_value, exc_traceback)
@@ -163,11 +162,11 @@ class _DecodingStream:
 class MockShell:
     def __init__(self, parent: 'GuestMock') -> None:
         self.parent = parent
-        self.mock_shell: Optional[subprocess.Popen[str]] = None
+        self.mock_shell: subprocess.Popen[str] | None = None
 
         # `select.epoll` is not available on non-Linux platforms.
         # The `ruff` linter complains but for no good reason, so we silence it.
-        self.epoll: Optional['select.epoll'] = None  # noqa: UP037
+        self.epoll: 'select.epoll' | None = None  # noqa: UP037
 
     def __del__(self) -> None:
         self.exit_shell()
@@ -319,14 +318,14 @@ class MockShell:
         self,
         command: Command,
         *,
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
         logger: tmt.log.Logger,
-        join: Optional[bool] = None,
-        timeout: Optional[int] = None,
+        join: bool | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> Generator[tuple[str, str]]:
         """
@@ -519,8 +518,8 @@ class GuestMock(tmt.Guest):
     """
 
     _data_class = MockGuestData
-    root: Optional[str] = None
-    rootdir: Optional[Path] = None
+    root: str | None = None
+    rootdir: Path | None = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -550,10 +549,10 @@ class GuestMock(tmt.Guest):
     def _run_ansible(
         self,
         playbook: tmt.guest.AnsibleApplicable,
-        playbook_root: Optional[Path] = None,
-        extra_args: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        playbook_root: Path | None = None,
+        extra_args: str | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -579,19 +578,19 @@ class GuestMock(tmt.Guest):
 
     def execute(
         self,
-        command: Union[Command, ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: Command | ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -659,8 +658,8 @@ class GuestMock(tmt.Guest):
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         # TODO refresh shell, or is that for `reconnect`?
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
@@ -694,9 +693,9 @@ class GuestMock(tmt.Guest):
 
     def push(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[tmt.guest.TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: tmt.guest.TransferOptions | None = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -756,9 +755,9 @@ class GuestMock(tmt.Guest):
 
     def pull(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[tmt.guest.TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: tmt.guest.TransferOptions | None = None,
     ) -> None:
         """
         Pull content from the mock chroot via a pipe at `MOCK_PIPE_FILESYNC`.
@@ -865,7 +864,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
     # Guest instance
     _guest = None
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Provision the container
         """

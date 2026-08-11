@@ -1,7 +1,7 @@
 import re
 from re import Pattern
 from time import sleep
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import tmt.log
 import tmt.utils
@@ -48,7 +48,7 @@ class CoredumpCheck(Check):
 
     # Internal flag to track if we can run coredumpctl on the host
     is_available: bool = True
-    is_availability_reason: Optional[str] = None
+    is_availability_reason: str | None = None
 
     # Path to the file storing information about coredumps before test execution
     # Default is current directory, will be properly set in _save_existing_coredumps
@@ -506,7 +506,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
     """
 
     @staticmethod
-    def _get_not_available_message(reason: Optional[str] = None) -> str:
+    def _get_not_available_message(reason: str | None = None) -> str:
         """Return a message explaining why coredump is not available."""
         if reason:
             base_message = f"Coredump detection was skipped: {reason}."
@@ -531,7 +531,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
         *,
         check: "CoredumpCheck",
         invocation: "TestInvocation",
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         """Check for crashes before the test starts."""
@@ -569,7 +569,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
         *,
         check: "CoredumpCheck",
         invocation: "TestInvocation",
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         """Check for crashes after the test finishes."""

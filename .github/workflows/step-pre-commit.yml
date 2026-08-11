@@ -28,7 +28,7 @@ jobs:
         # Python 3.9 is for mypy testing the lowest python version
         # Python 3.13 is for ansible-lint hard-coding the python requirement
         python-version: |
-          3.9
+          3.12
           3.13
           3.x
     - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1

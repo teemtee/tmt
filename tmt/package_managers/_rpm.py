@@ -3,9 +3,8 @@ RPM-specific version type shared across package managers and artifact providers.
 """
 
 import re
-from typing import Any, Optional
+from typing import Any, Self
 
-from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.package_managers import Version
 
@@ -21,7 +20,7 @@ class RpmVersion(Version):
     """
 
     #: The repository section ID this package was listed from, if known.
-    repo_id: Optional[str] = None
+    repo_id: str | None = None
 
     @classmethod
     def from_rpm_meta(cls, rpm_meta: dict[str, Any]) -> Self:
@@ -72,7 +71,7 @@ class RpmVersion(Version):
         return cls(name=name, version=version, release=release, arch=arch, epoch=0)
 
     @classmethod
-    def from_nevra(cls, nevra: str, repo_id: Optional[str] = None) -> Self:
+    def from_nevra(cls, nevra: str, repo_id: str | None = None) -> Self:
         """
         Version constructed from a NEVRA string as returned by ``dnf repoquery``.
 

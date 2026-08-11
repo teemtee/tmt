@@ -7,9 +7,9 @@ import os
 import re
 import shlex
 import textwrap
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from itertools import groupby
-from typing import Any, Callable, ClassVar, Optional, Union, cast
+from typing import Any, ClassVar, cast
 
 import fmf
 import fmf.context
@@ -66,17 +66,17 @@ class Action(metaclass=ActionMeta):
     group: int
     exit_loop: bool
     hidden: bool
-    prompt_function: Optional[PromptHandler]
+    prompt_function: PromptHandler | None
 
     def __init__(
         self,
         command: str,
-        shortcut: Optional[str] = None,
+        shortcut: str | None = None,
         order: int = 0,
         group: int = 0,
         exit_loop: bool = False,
         hidden: bool = False,
-        prompt_function: Optional[PromptHandler] = None,
+        prompt_function: PromptHandler | None = None,
     ) -> None:
         self.command = command.lower()
         self.shortcut = shortcut.lower() if shortcut else None
@@ -209,7 +209,7 @@ class Try(tmt.utils.Common):
         self.tree = tree
         self.tests: list[tmt.Test] = []
         self.plans: list[Plan] = []
-        self._previous_test_dir: Optional[Path] = None
+        self._previous_test_dir: Path | None = None
         self.image_and_how = self.opt("image_and_how")
         self.cli_options = ["epel", "fips", "install"]
 
@@ -249,7 +249,7 @@ class Try(tmt.utils.Common):
         except MetadataError:
             self.tree.tree = fmf.Tree({"nothing": "here"})
 
-    def check_tests(self, directory: Optional[Path] = None) -> None:
+    def check_tests(self, directory: Path | None = None) -> None:
         """
         Check for available tests
         """
@@ -631,7 +631,7 @@ class Try(tmt.utils.Common):
         prompt: str,
         context: str,
         handler: Callable[[str], None],
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> None:
         quit_message = f"Exiting {context} mode."
         quit_action = Action.quit
@@ -671,7 +671,7 @@ class Try(tmt.utils.Common):
             if the directory does not exist
         """
 
-        def handler(dir_path: Union[str, Path]) -> None:
+        def handler(dir_path: str | Path) -> None:
             if not plan.fmf_root:
                 raise tmt.utils.DiscoverError("No metadata found in the current directory.")
 

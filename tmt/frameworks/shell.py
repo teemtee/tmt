@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 import tmt.log
 import tmt.result
@@ -55,13 +54,13 @@ class Shell(TestFramework):
         """
 
         # The worst result outcome we can find among loaded results...
-        original_outcome: Optional[ResultOutcome] = None
+        original_outcome: ResultOutcome | None = None
         # ... and the actual outcome we decided is the best representing
         # the results.
         # The original one may be left unset - malformed results file,
         # for example, provides no usable original outcome.
         actual_outcome: ResultOutcome
-        note: Optional[str] = None
+        note: str | None = None
 
         try:
             outcomes = [result.result for result in results]

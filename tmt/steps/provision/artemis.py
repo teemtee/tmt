@@ -1,5 +1,5 @@
 import functools
-from typing import Any, Optional, TypedDict, Union, cast
+from typing import Any, TypedDict, cast
 
 import requests
 
@@ -143,13 +143,13 @@ class ArtemisGuestData(tmt.guest.GuestSshData):
         metavar='ARCH',
         help='Architecture to provision.',
     )
-    image: Optional[str] = field(
+    image: str | None = field(
         default=None,
         option=('-i', '--image'),
         metavar='COMPOSE',
         help='Image (or "compose" in Artemis terminology) to provision.',
     )
-    pool: Optional[str] = field(
+    pool: str | None = field(
         default=None,
         option='--pool',
         metavar='NAME',
@@ -194,7 +194,7 @@ class ArtemisGuestData(tmt.guest.GuestSshData):
     )
 
     # Provided by Artemis response
-    guestname: Optional[str] = field(
+    guestname: str | None = field(
         default=None,
         internal=True,
     )
@@ -251,8 +251,8 @@ class ArtemisGuestData(tmt.guest.GuestSshData):
         normalize=tmt.utils.normalize_int,
     )
     # Artemis core already contains default values
-    watchdog_dispatch_delay: Optional[int] = field(
-        default=cast(Optional[int], None),
+    watchdog_dispatch_delay: int | None = field(
+        default=cast(int | None, None),
         option='--watchdog-dispatch-delay',
         metavar='SECONDS',
         help="""
@@ -261,8 +261,8 @@ class ArtemisGuestData(tmt.guest.GuestSshData):
              """,
         normalize=tmt.utils.normalize_optional_int,
     )
-    watchdog_period_delay: Optional[int] = field(
-        default=cast(Optional[int], None),
+    watchdog_period_delay: int | None = field(
+        default=cast(int | None, None),
         option='--watchdog-period-delay',
         metavar='SECONDS',
         help='How often (seconds) check that the guest "is-alive".',
@@ -274,7 +274,7 @@ class ArtemisGuestData(tmt.guest.GuestSshData):
         is_flag=True,
         help='If set, skip verifiction of SSH connection in prepare state.',
     )
-    post_install_script: Optional[str] = field(
+    post_install_script: str | None = field(
         default=None,
         option='--post-install-script',
         metavar='SCRIPT|URL',
@@ -297,8 +297,8 @@ class ArtemisProvisionError(ProvisionError):
     def __init__(
         self,
         message: str,
-        response: Optional[requests.Response] = None,
-        request_data: Optional[dict[str, Any]] = None,
+        response: requests.Response | None = None,
+        request_data: dict[str, Any] | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -343,7 +343,7 @@ GUEST_STATE_COLORS = {
 # Partial, not all fields necessary since plugin ignores most of them.
 class GuestInspectType(TypedDict):
     state: str
-    address: Optional[str]
+    address: str | None
 
 
 class ArtemisAPI:
@@ -369,7 +369,7 @@ class ArtemisAPI:
         self,
         path: str,
         method: str = 'get',
-        request_kwargs: Optional[dict[str, Any]] = None,
+        request_kwargs: dict[str, Any] | None = None,
     ) -> requests.Response:
         """
         Base helper for Artemis API queries.
@@ -404,7 +404,7 @@ class ArtemisAPI:
         self,
         path: str,
         data: dict[str, Any],
-        request_kwargs: Optional[dict[str, Any]] = None,
+        request_kwargs: dict[str, Any] | None = None,
     ) -> requests.Response:
         """
         Create - or request creation of - a resource.
@@ -423,8 +423,8 @@ class ArtemisAPI:
     def inspect(
         self,
         path: str,
-        params: Optional[dict[str, Any]] = None,
-        request_kwargs: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        request_kwargs: dict[str, Any] | None = None,
     ) -> requests.Response:
         """
         Inspect a resource.
@@ -445,7 +445,7 @@ class ArtemisAPI:
     def delete(
         self,
         path: str,
-        request_kwargs: Optional[dict[str, Any]] = None,
+        request_kwargs: dict[str, Any] | None = None,
     ) -> requests.Response:
         """
         Delete - or request removal of - a resource.
@@ -474,17 +474,17 @@ class GuestArtemis(tmt.GuestSsh):
     # Guest request properties
     arch: str
     image: str
-    pool: Optional[str]
+    pool: str | None
     priority_group: str
     keyname: str
     user_data: dict[str, str]
     kickstart: dict[str, str]
     log_type: list[str]
     skip_prepare_verify_ssh: bool
-    post_install_script: Optional[str]
+    post_install_script: str | None
 
     # Provided by Artemis response
-    guestname: Optional[str]
+    guestname: str | None
 
     # Timeouts and deadlines
     provision_timeout: int
@@ -492,8 +492,8 @@ class GuestArtemis(tmt.GuestSsh):
     api_timeout: int
     api_retries: int
     api_retry_backoff_factor: int
-    watchdog_dispatch_delay: Optional[int]
-    watchdog_period_delay: Optional[int]
+    watchdog_dispatch_delay: int | None
+    watchdog_period_delay: int | None
 
     @functools.cached_property
     def api(self) -> ArtemisAPI:
@@ -689,8 +689,8 @@ class GuestArtemis(tmt.GuestSsh):
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         waiting = waiting or tmt.guest.default_reboot_waiting()
 
@@ -807,7 +807,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
     # Guest instance
     _guest = None
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Provision the guest
         """

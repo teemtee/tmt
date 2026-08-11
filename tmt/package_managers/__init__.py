@@ -4,11 +4,10 @@ import dataclasses
 import enum
 import re
 import shlex
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
     Generic,
     Optional,
@@ -27,7 +26,8 @@ from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
+
     from tmt.guest import Guest
     from tmt.package_managers._rpm import RpmVersion
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     GuestPackageManager: TypeAlias = str
 
     #: A package origin: either an actual repository name or a :class:`SpecialPackageOrigin`.
-    PackageOrigin: TypeAlias = Union[str, 'SpecialPackageOrigin']
+    PackageOrigin: TypeAlias = str | 'SpecialPackageOrigin'
 
 
 #: Directory where DNF/YUM repository files are stored.
@@ -129,9 +129,7 @@ class Repository:
             ) from error
 
     @classmethod
-    def from_url(
-        cls, url: str, logger: tmt.log.Logger, name: Optional[str] = None
-    ) -> "Repository":
+    def from_url(cls, url: str, logger: tmt.log.Logger, name: str | None = None) -> "Repository":
         """
         Create a Repository instance by fetching content from a URL.
 
@@ -161,7 +159,7 @@ class Repository:
 
     @classmethod
     def from_file_path(
-        cls, file_path: Path, logger: tmt.log.Logger, name: Optional[str] = None
+        cls, file_path: Path, logger: tmt.log.Logger, name: str | None = None
     ) -> "Repository":
         """
         Create a Repository instance by reading content from a local file path.
@@ -334,11 +332,11 @@ class Options:
 
     #: If set, install packages under this path instead of the usual system
     #: root.
-    install_root: Optional[Path] = None
+    install_root: Path | None = None
 
     #: If set, instruct package manager to behave as if the distribution release
     #: was ``release_version``.
-    release_version: Optional[str] = None
+    release_version: str | None = None
 
     #: If set, instruct package manager to install from untrusted sources.
     allow_untrusted: bool = False
@@ -381,7 +379,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         raise NotImplementedError
 
@@ -389,7 +387,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         raise NotImplementedError
 
@@ -397,7 +395,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         raise NotImplementedError
 
@@ -437,7 +435,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def _repoquery_script(
         self,
         *package_specs: str,
-        repos: Optional[Iterable[str]] = None,
+        repos: Iterable[str] | None = None,
         packages_only: bool = True,
         installed_only: bool = False,
     ) -> ShellScript:
@@ -491,7 +489,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Optional[Iterable[str]] = None,
+        repo_ids: Iterable[str] | None = None,
     ) -> ShellScript:
         """
         Resolves each provide to the NEVRAs of packages that provide it.
@@ -594,7 +592,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
         to_install = self._check_first_filter(*installables, options=options, present=False)
@@ -616,7 +614,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
         to_reinstall = self._check_first_filter(*installables, options=options, present=True)
@@ -628,7 +626,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         return self.guest.execute(self.engine.install_debuginfo(*installables, options=options))
 
@@ -671,9 +669,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         script = self.engine.get_package_origin(result.keys())
         output = self.guest.execute(script)
         assert output.stdout is not None  # narrow type
-        repoquery_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
-            output.stdout
-        )
+        repoquery_yaml: dict[str, list[_ResolvedEntry] | None] = tmt.utils.from_yaml(output.stdout)
         for package, query_result in repoquery_yaml.items():
             if not query_result:
                 continue
@@ -687,7 +683,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Optional[Iterable[str]] = None,
+        repo_ids: Iterable[str] | None = None,
     ) -> dict[str, list['RpmVersion']]:
         """
         Map each provide to the :py:class:`RpmVersion` objects of packages that provide it.
@@ -708,9 +704,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         result: dict[str, list[RpmVersion]] = {provide: [] for provide in provides}
 
         assert output.stdout is not None  # narrow type
-        provides_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
-            output.stdout
-        )
+        provides_yaml: dict[str, list[_ResolvedEntry] | None] = tmt.utils.from_yaml(output.stdout)
 
         for provide, nevras in provides_yaml.items():
             if nevras is None:
@@ -739,7 +733,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     def install_local(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         """
         Install packages stored in a local directory

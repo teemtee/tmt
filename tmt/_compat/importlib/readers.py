@@ -1,15 +1,9 @@
 import os
 import pathlib
-import sys
 import typing
 from collections.abc import Iterator
-
-if sys.version_info >= (3, 12):
-    from importlib.resources.abc import Traversable
-    from importlib.resources.readers import MultiplexedPath as _MultiplexedPath
-else:
-    from importlib_resources.abc import Traversable
-    from importlib_resources.readers import MultiplexedPath as _MultiplexedPath
+from importlib.resources.abc import Traversable
+from importlib.resources.readers import MultiplexedPath as _MultiplexedPath
 
 from tmt._compat.pathlib import Path
 
@@ -57,15 +51,13 @@ class MultiplexedPath(_MultiplexedPath):
 
     # Override type-hints of the original definitions
     def joinpath(
-        self, *descendants: typing.Union[str, os.PathLike[str]]
+        self, *descendants: str | os.PathLike[str]
     ) -> typing.Union[Path, "MultiplexedPath"]:
         new_path = super().joinpath(*descendants)  # type: ignore[no-untyped-call]
         assert isinstance(new_path, (Path, MultiplexedPath))
         return new_path
 
-    def __truediv__(
-        self, child: typing.Union[str, os.PathLike[str]]
-    ) -> typing.Union[Path, "MultiplexedPath"]:
+    def __truediv__(self, child: str | os.PathLike[str]) -> typing.Union[Path, "MultiplexedPath"]:
         return self.joinpath(child)
 
 

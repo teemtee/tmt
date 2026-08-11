@@ -1,5 +1,5 @@
 import shutil
-from typing import Literal, Optional
+from typing import Literal
 
 import fmf.utils
 
@@ -37,10 +37,10 @@ class File(Library):
         cls,
         *,
         identifier: Dependency,
-        parent: Optional[tmt.utils.Common] = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None,
+        source_location: Path | None = None,
+        target_location: Path | None = None,
     ) -> Library:
         assert parent is not None  # narrow type
         assert isinstance(identifier, DependencyFile)  # narrow type

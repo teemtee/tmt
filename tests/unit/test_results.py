@@ -1,4 +1,3 @@
-from typing import Union
 from unittest.mock import MagicMock
 
 import pytest
@@ -39,7 +38,7 @@ class CheckPhasesDuplicateCase:
     note_contains: list[str]
 
 
-def assert_result(case: Union[CheckPhasesCase, CheckPhasesDuplicateCase], result: Result) -> None:
+def assert_result(case: CheckPhasesCase | CheckPhasesDuplicateCase, result: Result) -> None:
     interpret_checks = {
         "check1": case.check_interpret,
         "check2": CheckResultInterpret.RESPECT,

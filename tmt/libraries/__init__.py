@@ -54,10 +54,10 @@ class Library(abc.ABC):
         cls,
         *,
         identifier: Dependency,
-        parent: Optional[tmt.utils.Common] = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None,
+        source_location: Path | None = None,
+        target_location: Path | None = None,
     ) -> "Library":
         """
         Factory function to get correct library instance
@@ -144,8 +144,8 @@ def resolve_dependencies(
     original_recommend: list[Dependency],
     parent: tmt.utils.Common,
     logger: tmt.log.Logger,
-    source_location: Optional[Path] = None,
-    target_location: Optional[Path] = None,
+    source_location: Path | None = None,
+    target_location: Path | None = None,
 ) -> LibraryDependenciesType:
     """
     Resolve the ``require`` and ``recommend`` dependencies.

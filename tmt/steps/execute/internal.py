@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import tmt.base.core
 import tmt.log
@@ -284,7 +284,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     @property
     def tasks(
         self,
-    ) -> Iterator[tuple[Optional[str], list['Guest']]]:
+    ) -> Iterator[tuple[str | None, list['Guest']]]:
         # A single execute plugin is expected to process (potentially)
         # multiple discover phases. There must be a way to tell the execute
         # plugin which discover phase to focus on. Unfortunately, the
@@ -306,11 +306,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     def _test_output_logger(
         self,
         key: str,
-        value: Optional[str] = None,
+        value: str | None = None,
         color: tmt.utils.themes.Style = None,
         shift: int = 2,
         level: int = 3,
-        topic: Optional[tmt.log.Topic] = None,
+        topic: tmt.log.Topic | None = None,
     ) -> None:
         """
         Custom logger for test output with shift 2 and level 3 defaults
@@ -381,11 +381,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         def _test_output_logger(
             key: str,
-            value: Optional[str] = None,
+            value: str | None = None,
             color: tmt.utils.themes.Style = None,
             shift: int = 2,
             level: int = 3,
-            topic: Optional[tmt.log.Topic] = None,
+            topic: tmt.log.Topic | None = None,
             stacklevel: int = 1,
         ) -> None:
             logger.verbose(
@@ -403,7 +403,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         invocation.check_results = invocation.invoke_checks_before_test()
 
         # Pick the proper timeout for the test
-        deadline: Optional[tmt.utils.wait.Deadline]
+        deadline: tmt.utils.wait.Deadline | None
 
         if self.data.interactive:
             logger.warning('Test duration is not effective due to interactive mode.')
@@ -503,7 +503,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -523,7 +523,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self,
         *,
         guest: Guest,
-        extra_environment: Optional[Environment] = None,
+        extra_environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -547,8 +547,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # bigger gun. Once we get back to refactoring the plugin, this
         # would turn into a better way of transporting "plugin outcome"
         # back to the step.
-        abort_execute_exception: Optional[AbortStep] = None
-        interrupt_exception: Optional[tmt.utils.signals.Interrupted] = None
+        abort_execute_exception: AbortStep | None = None
+        interrupt_exception: tmt.utils.signals.Interrupted | None = None
 
         with UpdatableMessage(self) as progress_bar:
             while index < len(test_invocations):

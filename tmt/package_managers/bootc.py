@@ -1,7 +1,7 @@
 import dataclasses
 import uuid
 from collections.abc import Iterator
-from typing import Any, Optional
+from typing import Any
 
 import fmf.utils
 
@@ -45,15 +45,15 @@ class ImageStatus(BootcMetadataContainer):
 
 
 class BootEntry(BootcMetadataContainer):
-    image: Optional[ImageStatus] = None
+    image: ImageStatus | None = None
 
 
 class HostStatus(BootcMetadataContainer):
-    booted: Optional[BootEntry] = None
+    booted: BootEntry | None = None
 
 
 class BootcHost(BootcMetadataContainer):
-    status: Optional[HostStatus] = None
+    status: HostStatus | None = None
 
 
 class BootcEngine(PackageManagerEngine):
@@ -140,7 +140,7 @@ class BootcEngine(PackageManagerEngine):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         self.open_containerfile_directives()
 
@@ -151,7 +151,7 @@ class BootcEngine(PackageManagerEngine):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         self.open_containerfile_directives()
 
@@ -162,7 +162,7 @@ class BootcEngine(PackageManagerEngine):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         self.open_containerfile_directives()
 
@@ -225,7 +225,7 @@ class Bootc(PackageManager[BootcEngine]):
 
         return results
 
-    def build_container(self) -> Optional[CommandOutput]:
+    def build_container(self) -> CommandOutput | None:
         # Skip in dry run mode
         if self.guest.is_dry_run:
             return None
@@ -313,7 +313,7 @@ class Bootc(PackageManager[BootcEngine]):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
         to_install = self._check_first_filter(*installables, options=options, present=False)
@@ -338,7 +338,7 @@ class Bootc(PackageManager[BootcEngine]):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         self.engine.reinstall(*installables, options=options)
 
@@ -347,7 +347,7 @@ class Bootc(PackageManager[BootcEngine]):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         self.engine.install_debuginfo(*installables, options=options)
         return CommandOutput(stdout=None, stderr=None)
@@ -355,7 +355,7 @@ class Bootc(PackageManager[BootcEngine]):
     def install_local(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
 
         options = options or Options()

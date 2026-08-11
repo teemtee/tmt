@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union, cast
+from typing import Any, TypeAlias, cast
 
 # TID251: this use of `click.style()` is expected, and on purpose.
 from click import style as _style  # noqa: TID251
@@ -6,10 +6,9 @@ from click import style as _style  # noqa: TID251
 import tmt.log
 import tmt.utils
 from tmt._compat.pydantic import ValidationError
-from tmt._compat.typing import TypeAlias
 from tmt.container import MetadataContainer, metadata_field
 
-Color: TypeAlias = Union[int, tuple[int, int, int], str, None]
+Color: TypeAlias = int | tuple[int, int, int] | str | None
 
 
 class Style(MetadataContainer):
@@ -17,14 +16,14 @@ class Style(MetadataContainer):
     A collection of parameters accepted by :py:func:`click.style`.
     """
 
-    fg: Optional[Color] = None
-    bg: Optional[Color] = None
-    bold: Optional[bool] = None
-    dim: Optional[bool] = None
-    underline: Optional[bool] = None
-    italic: Optional[bool] = None
-    blink: Optional[bool] = None
-    strikethrough: Optional[bool] = None
+    fg: Color | None = None
+    bg: Color | None = None
+    bold: bool | None = None
+    dim: bool | None = None
+    underline: bool | None = None
+    italic: bool | None = None
+    blink: bool | None = None
+    strikethrough: bool | None = None
 
     def apply(self, text: str) -> str:
         """

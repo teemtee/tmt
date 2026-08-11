@@ -1,6 +1,7 @@
 import copy
 import shutil
-from typing import Any, Callable, Optional, TypeVar, cast
+from collections.abc import Callable
+from typing import Any, Self, TypeVar, cast
 
 import click
 import fmf
@@ -14,7 +15,6 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
-from tmt._compat.typing import Self
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
@@ -35,7 +35,7 @@ T = TypeVar('T', bound='TestDescription')
 
 
 class _RawDiscoverShellData(_RawStepData):
-    tests: Optional[list[dict[str, Any]]]
+    tests: list[dict[str, Any]] | None
 
 
 @container
@@ -67,8 +67,8 @@ class TestDescription(
     )
 
     # Core attributes (supported across all levels)
-    summary: Optional[str] = None
-    description: Optional[str] = None
+    summary: str | None = None
+    description: str | None = None
     enabled: bool = True
     order: int = field(
         default=tmt.steps.PHASE_ORDER_DEFAULT,
@@ -76,7 +76,7 @@ class TestDescription(
             50 if raw_value is None else int(raw_value)
         ),
     )
-    link: Optional[tmt.base.links.Links] = field(
+    link: tmt.base.links.Links | None = field(
         default=None,
         normalize=lambda key_address, raw_value, logger: tmt.base.links.Links(data=raw_value),
         # Using `to_spec()` on purpose: `Links` does not provide serialization
@@ -86,18 +86,18 @@ class TestDescription(
         serialize=lambda link: link.to_spec() if link else None,
         unserialize=lambda serialized_link: tmt.base.links.Links(data=serialized_link),
     )
-    id: Optional[str] = None
+    id: str | None = None
     tag: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list,
     )
-    tier: Optional[str] = field(
+    tier: str | None = field(
         default=None,
         normalize=lambda key_address, raw_value, logger: (
             None if raw_value is None else str(raw_value)
         ),
     )
-    adjust: Optional[list[tmt.base.core._RawAdjustRule]] = field(
+    adjust: list[tmt.base.core._RawAdjustRule] | None = field(
         default=None,
         normalize=lambda key_address, raw_value, logger: (
             []
@@ -121,8 +121,8 @@ class TestDescription(
     )
 
     # Test execution data
-    path: Optional[str] = None
-    framework: Optional[str] = None
+    path: str | None = None
+    framework: str | None = None
     manual: bool = False
     tty: bool = False
     require: list[tmt.base.core.Dependency] = field(
@@ -324,7 +324,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
     _tests: list[tmt.base.core.Test] = []
 
-    def show(self, keys: Optional[list[str]] = None) -> None:
+    def show(self, keys: list[str] | None = None) -> None:
         """
         Show config details
         """
@@ -342,7 +342,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             # Remove .git so that it's not copied to the SUT
             shutil.rmtree(self.test_dir / '.git', ignore_errors=True)
 
-    def _fetch_local_repository(self) -> Optional[Path]:
+    def _fetch_local_repository(self) -> Path | None:
         assert self.step.plan.worktree  # narrow type
 
         # Symlink tests directory to the plan work tree
@@ -377,7 +377,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                     )
         return None
 
-    def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, path: Path | None = None, logger: tmt.log.Logger | None = None) -> None:
         """
         Discover available tests
         """
@@ -464,7 +464,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         )
 
     def tests(
-        self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
+        self, *, phase_name: str | None = None, enabled: bool | None = None
     ) -> list[tmt.steps.discover.TestOrigin]:
         if phase_name is not None and phase_name != self.name:
             return []

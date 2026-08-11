@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import _pytest.monkeypatch
@@ -77,7 +77,7 @@ def fixture_mocked_queue(
             self,
             *,
             guest: tmt.guest.Guest,
-            environment: Optional[Environment] = None,
+            environment: Environment | None = None,
             logger: Logger,
         ) -> None:
             pass

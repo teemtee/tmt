@@ -1,7 +1,7 @@
 import email.utils
 import re
 import traceback
-from typing import Any, Optional
+from typing import Any
 
 import fmf.utils
 from click import echo
@@ -46,8 +46,8 @@ def import_polarion() -> None:
 
 def get_polarion_ids(
     query_result: list[Any],
-    preferred_project: Optional[str] = None,
-) -> tuple[Optional[str], Optional[str]]:
+    preferred_project: str | None = None,
+) -> tuple[str | None, str | None]:
     """
     Return case and project ids from query results
     """
@@ -77,10 +77,10 @@ def get_polarion_ids(
 
 
 def find_polarion_case_ids(
-    data: dict[str, Optional[str]],
-    preferred_project: Optional[str] = None,
-    polarion_case_id: Optional[str] = None,
-) -> tuple[Optional[str], Optional[str]]:
+    data: dict[str, str | None],
+    preferred_project: str | None = None,
+    polarion_case_id: str | None = None,
+) -> tuple[str | None, str | None]:
     """
     Find IDs for Polarion case from data dictionary
     """
@@ -124,10 +124,10 @@ def find_polarion_case_ids(
 
 
 def get_polarion_case(
-    data: dict[str, Optional[str]],
-    preferred_project: Optional[str] = None,
-    polarion_case_id: Optional[str] = None,
-) -> Optional[PolarionTestCase]:
+    data: dict[str, str | None],
+    preferred_project: str | None = None,
+    polarion_case_id: str | None = None,
+) -> PolarionTestCase | None:
     """
     Get Polarion case through couple different methods
     """
@@ -435,7 +435,7 @@ class PolarionExporter(tmt.export.ExportPlugin):
     def export_test_collection(
         cls,
         tests: list[tmt.base.core.Test],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         for test in tests:

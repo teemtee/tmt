@@ -65,13 +65,11 @@ following examples:
 import enum
 import re
 import textwrap
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from typing import (
     Any,
-    Callable,
     ClassVar,
     Generic,
-    Optional,
     TypeVar,
 )
 
@@ -143,7 +141,7 @@ class Linter:
     id: str
 
     help: str
-    description: Optional[str] = None
+    description: str | None = None
 
     def __init__(self, callback: LinterCallback) -> None:
         self.callback = callback
@@ -216,8 +214,8 @@ class Lintable(Generic[LintableT]):
     @classmethod
     def resolve_enabled_linters(
         cls,
-        enable_checks: Optional[list[str]] = None,
-        disable_checks: Optional[list[str]] = None,
+        enable_checks: list[str] | None = None,
+        disable_checks: list[str] | None = None,
     ) -> list[Linter]:
         """
         Produce a list of enabled linters from all registered ones.
@@ -256,10 +254,10 @@ class Lintable(Generic[LintableT]):
 
     def lint(
         self,
-        enable_checks: Optional[list[str]] = None,
-        disable_checks: Optional[list[str]] = None,
-        enforce_checks: Optional[list[str]] = None,
-        linters: Optional[list[Linter]] = None,
+        enable_checks: list[str] | None = None,
+        disable_checks: list[str] | None = None,
+        enforce_checks: list[str] | None = None,
+        linters: list[Linter] | None = None,
     ) -> tuple[bool, list[LinterRuling]]:
         """
         Check the instance against a battery of linters and report results.
@@ -332,7 +330,7 @@ class Lintable(Generic[LintableT]):
 
 def filter_allowed_checks(
     rulings: Iterable[LinterRuling],
-    outcomes: Optional[list[LinterOutcome]] = None,
+    outcomes: list[LinterOutcome] | None = None,
 ) -> Iterator[LinterRuling]:
     """
     Filter only rulings whose outcomes are allowed.

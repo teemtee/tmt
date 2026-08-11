@@ -1,5 +1,5 @@
 import re
-from typing import Any, Optional
+from typing import Any
 
 import tmt.log
 import tmt.utils
@@ -24,7 +24,7 @@ CRB_REPO_DISCOVERY = ShellScript(
 
 @container
 class CrbStepData(PrepareFeatureData):
-    crb: Optional[str] = field(
+    crb: str | None = field(
         default=None,
         option='--crb',
         metavar='enabled|disabled',

@@ -2,7 +2,7 @@
 ``tmt status`` implementation
 """
 
-from typing import Any, Optional
+from typing import Any
 
 import tmt.utils
 from tmt.cli import CliInvocation, Context, pass_context
@@ -42,7 +42,7 @@ from tmt.utils import Path, effective_workdir_root
 @verbosity_options
 def status(
     context: Context,
-    workdir_root: Optional[Path],
+    workdir_root: Path | None,
     abandoned: bool,
     active: bool,
     finished: bool,

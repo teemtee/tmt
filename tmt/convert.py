@@ -8,7 +8,7 @@ import re
 import shlex
 import subprocess
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Union
 from uuid import UUID
 
 import fmf.utils
@@ -222,7 +222,7 @@ def read_datafile(
     filename: str,
     datafile: str,
     types: list[str],
-    testinfo: Optional[str] = None,
+    testinfo: str | None = None,
 ) -> tuple[str, NitrateDataType]:
     """
     Read data values from supplied Makefile or metadata file.
@@ -291,7 +291,7 @@ def read_datafile(
 
     # Detect framework
     try:
-        test_path: Optional[Path] = None
+        test_path: Path | None = None
         if data["test"].split()[0] != 'make':
             script_paths = [s for s in shlex.split(data['test']) if s.endswith('.sh')]
             if script_paths:
@@ -880,8 +880,8 @@ def read_polarion(
 
 
 def read_polarion_case(
-    data: Union[NitrateDataType, list[NitrateDataType]],
-    polarion_case_id: Optional[str],
+    data: NitrateDataType | list[NitrateDataType],
+    polarion_case_id: str | None,
     link_polarion: bool,
     dry_run: bool,
 ) -> None:
@@ -891,7 +891,7 @@ def read_polarion_case(
 
     import tmt.export.polarion
 
-    file_name: Optional[str] = None
+    file_name: str | None = None
 
     # Find Polarion case
     echo(style('Polarion ', fg='blue'), nl=False)
@@ -1054,7 +1054,7 @@ def read_polarion_case(
 RelevancyType = Union[str, list[str]]
 
 
-def extract_relevancy(notes: str, field: StructuredField) -> Optional[RelevancyType]:
+def extract_relevancy(notes: str, field: StructuredField) -> RelevancyType | None:
     """
     Get relevancy from testcase, respecting sf priority
     """
@@ -1080,7 +1080,7 @@ def extract_relevancy(notes: str, field: StructuredField) -> Optional[RelevancyT
 def read_nitrate_case(
     *,
     testcase: 'TestCase',
-    makefile_data: Optional[NitrateDataType] = None,
+    makefile_data: NitrateDataType | None = None,
     general: bool = False,
     logger: tmt.log.Logger,
 ) -> NitrateDataType:

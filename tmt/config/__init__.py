@@ -58,7 +58,7 @@ class Config:
         return self.path / 'last-run'
 
     @property
-    def last_run(self) -> Optional[Path]:
+    def last_run(self) -> Path | None:
         """
         Get the last run workdir path
         """
@@ -86,7 +86,7 @@ class Config:
             raise tmt.utils.GeneralError(f"Unable to save last run '{self.path}'.") from error
 
     @functools.cached_property
-    def fmf_tree(self) -> Optional[fmf.Tree]:
+    def fmf_tree(self) -> fmf.Tree | None:
         """
         Return the configuration tree
         """
@@ -100,11 +100,11 @@ class Config:
 
     def _parse_config_subtree(
         self, path: str, model: type[MetadataContainerT]
-    ) -> Optional[MetadataContainerT]:
+    ) -> MetadataContainerT | None:
         if self.fmf_tree is None:
             return None
 
-        subtree = cast(Optional[fmf.Tree], self.fmf_tree.find(path))
+        subtree = cast(fmf.Tree | None, self.fmf_tree.find(path))
 
         if not subtree:
             self.logger.debug(f"Config path '{path}' not found in '{self.path}'.")
@@ -120,7 +120,7 @@ class Config:
             ) from error
 
     @functools.cached_property
-    def link(self) -> Optional[LinkConfig]:
+    def link(self) -> LinkConfig | None:
         """
         Return the link configuration, if present.
         """
@@ -137,7 +137,7 @@ class Config:
         return theme_config.get_active_theme(logger=self.logger)
 
     @property
-    def hardware(self) -> Optional[HardwareConfig]:
+    def hardware(self) -> HardwareConfig | None:
         """
         Return the hardware configuration, if present.
         """

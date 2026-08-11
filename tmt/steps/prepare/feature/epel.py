@@ -1,5 +1,5 @@
 import re
-from typing import Any, Optional
+from typing import Any
 
 import tmt.log
 import tmt.utils
@@ -20,7 +20,7 @@ SUPPORTED_DISTRO_PATTERNS = tuple(
 
 @container
 class EpelStepData(PrepareFeatureData):
-    epel: Optional[str] = field(
+    epel: str | None = field(
         default=None,
         option='--epel',
         metavar='enabled|disabled',

@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Any, Optional, Union
+from typing import Any
 from unittest.mock import MagicMock, Mock
 
 import _pytest.logging
@@ -38,8 +38,8 @@ class MockGuest(Guest):
     def reboot(
         self,
         hard: bool = False,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         raise RuntimeError("Mocked but not used")
 
@@ -48,34 +48,34 @@ class MockGuest(Guest):
 
     def pull(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
     ) -> None:
         raise RuntimeError("Mocked but not used")
 
     def push(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
         superuser: bool = False,
     ) -> None:
         raise RuntimeError("Mocked but not used")
 
     def execute(
         self,
-        command: Union[Command, ShellScript],
-        cwd: Optional[Path] = None,
-        env: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: Command | ShellScript,
+        cwd: Path | None = None,
+        env: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[LoggingFunction] = None,
+        log: LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
         **kwargs: Any,
     ) -> CommandOutput:
         raise RuntimeError("Mocked but not used")
@@ -83,10 +83,10 @@ class MockGuest(Guest):
     def _run_ansible(
         self,
         playbook: AnsibleApplicable,
-        playbook_root: Optional[Path] = None,
-        extra_args: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[LoggingFunction] = None,
+        playbook_root: Path | None = None,
+        extra_args: str | None = None,
+        friendly_command: str | None = None,
+        log: LoggingFunction | None = None,
         silent: bool = False,
     ) -> CommandOutput:
         raise RuntimeError("Mocked but not used")

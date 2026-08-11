@@ -1,7 +1,6 @@
 import re
 import typing
 from collections.abc import Callable, Iterable
-from typing import Optional
 
 import fmf.utils
 from docutils import nodes
@@ -98,7 +97,7 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
         for source in self.story.node.sources:
             self.env.note_dependency(source)
 
-    def _has_story_attr(self, attr: str, story: Optional[Story] = None) -> bool:
+    def _has_story_attr(self, attr: str, story: Story | None = None) -> bool:
         story = story or self.story
         value = getattr(story, attr)
         if not value:
@@ -121,7 +120,7 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
         section: str,
         *,
         source_suffix: str = "",
-        content: typing.Optional[str] = None,
+        content: str | None = None,
         transform_line: Callable[[str], str] = lambda x: x,
         new_line: bool = True,
     ) -> None:
@@ -250,7 +249,7 @@ class StoryIndex(Index):
     domain: "TmtDomain"
 
     def generate(
-        self, docnames: Optional[Iterable[str]] = None
+        self, docnames: Iterable[str] | None = None
     ) -> tuple[list[tuple[str, list[IndexEntry]]], bool]:
         content = {}
         # TODO: What to actually use for key-value in the index?

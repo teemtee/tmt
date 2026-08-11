@@ -32,7 +32,7 @@ _CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry('test.
 
 
 def _register_hints(
-    plugin_id: str, plugin_class: CheckPluginClass, hints: Optional[dict[str, str]] = None
+    plugin_id: str, plugin_class: CheckPluginClass, hints: dict[str, str] | None = None
 ) -> None:
     for hint_id, hint in (hints or {}).items():
         tmt.utils.hints.register_hint(f'test-checks/{plugin_id}/{hint_id}', hint)
@@ -164,7 +164,7 @@ class Check(
         *,
         event: CheckEvent,
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list['CheckResult']:
         """
@@ -269,7 +269,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         *,
         check: CheckT,
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list['CheckResult']:
         return []
@@ -280,7 +280,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         *,
         check: CheckT,
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list['CheckResult']:
         return []

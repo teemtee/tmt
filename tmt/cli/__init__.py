@@ -5,8 +5,8 @@ Basic classes and code for tmt command line interface
 import collections
 import enum
 import functools
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
 import fmf.utils
@@ -22,7 +22,7 @@ import tmt.utils.rest
 from tmt.container import container, simple_field
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import Concatenate, ParamSpec
+    from typing import Concatenate, ParamSpec
 
     P = ParamSpec('P')
     R = TypeVar('R')
@@ -78,15 +78,15 @@ class ContextObject:
     tree: tmt.Tree
     config: tmt.config.Config
     steps: set[str] = simple_field(default_factory=set[str])
-    clean: Optional[tmt.Clean] = None
-    clean_logger: Optional[tmt.log.Logger] = None
+    clean: tmt.Clean | None = None
+    clean_logger: tmt.log.Logger | None = None
     clean_partials: collections.defaultdict[str, list[tmt.base.core.CleanCallback]] = simple_field(
         default_factory=lambda: cast(
             collections.defaultdict[str, list[tmt.base.core.CleanCallback]],
             collections.defaultdict(list),
         )
     )
-    run: Optional[tmt.Run] = None
+    run: tmt.Run | None = None
 
 
 class Context(click.Context):
@@ -108,7 +108,7 @@ class Context(click.Context):
     # object, and every time we touch it, it should absolutely be not-None.
     obj: ContextObject
 
-    max_content_width: Optional[int]
+    max_content_width: int | None
 
 
 def pass_context(fn: 'Callable[Concatenate[Context, P], R]') -> 'Callable[P, R]':
@@ -140,7 +140,7 @@ class CliInvocation:
     representing various tmt subcommands and groups.
     """
 
-    context: Optional[Context]
+    context: Context | None
     options: dict[str, Any]
 
     @classmethod
@@ -196,7 +196,7 @@ class CustomGroup(click.Group):
         self,
         context: Context,
         cmd_name: str,
-    ) -> Optional[click.Command]:
+    ) -> click.Command | None:
         """
         Allow command shortening
         """

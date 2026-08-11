@@ -16,7 +16,7 @@ Sync a Jira sprint with GitHub sprint items.
 import os
 import re
 import sys
-from typing import IO, Any, Optional, cast
+from typing import IO, Any, cast
 
 import click
 import jinja2
@@ -58,8 +58,8 @@ class SyncItem:
         key: str,
         decision: str,
         summary: str,
-        url: Optional[str] = None,
-        duplicates: Optional[list[str]] = None,
+        url: str | None = None,
+        duplicates: list[str] | None = None,
     ) -> None:
         self.key = key
         self.decision = decision
@@ -139,7 +139,7 @@ def load_github_items(source: IO[str]) -> list[Item]:
     return [Item(**item) for item in cast(list[dict[str, Any]], data)]
 
 
-def get_upstream_url(jira: JIRA, issue: Issue) -> Optional[str]:
+def get_upstream_url(jira: JIRA, issue: Issue) -> str | None:
     """
     Get the "Upstream issue" remote link URL for a Jira issue.
 

@@ -11,18 +11,19 @@ import re
 import shutil
 import textwrap
 import typing
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import suppress
 from re import Pattern
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
     Generic,
     Literal,
     Optional,
+    Self,
     TypedDict,
+    TypeGuard,
     TypeVar,
     Union,
     cast,
@@ -44,7 +45,6 @@ import tmt.result
 import tmt.steps.context
 import tmt.utils
 import tmt.utils.rest
-from tmt._compat.typing import Self, TypeGuard
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
@@ -369,11 +369,11 @@ PluginClass = type['BasePlugin']  # type: ignore[type-arg]
 
 
 class _RawStepData(TypedDict, total=False):
-    how: Optional[str]
-    name: Optional[str]
+    how: str | None
+    name: str | None
 
-    summary: Optional[str]
-    order: Optional[int]
+    summary: str | None
+    order: int | None
 
 
 StepDataT = TypeVar('StepDataT', bound='StepData')
@@ -422,7 +422,7 @@ class StepData(
         metavar='RULE',
         help='If specified, phase is run only if any rule matches plan context.',
     )
-    summary: Optional[str] = field(
+    summary: str | None = field(
         default=None, help='Concise summary describing purpose of the phase.'
     )
 
@@ -484,7 +484,7 @@ class StepData(
 
 
 class RawWhereableStepData(TypedDict, total=False):
-    where: Union[str, list[str]]
+    where: str | list[str]
 
 
 @container
@@ -681,8 +681,8 @@ class Step(
         self,
         *,
         plan: 'Plan',
-        raw_data: Optional[list[_RawStepData]] = None,
-        name: Optional[str] = None,
+        raw_data: list[_RawStepData] | None = None,
+        name: str | None = None,
         workdir: tmt.utils.WorkdirArgumentType = None,
         logger: tmt.log.Logger,
     ) -> None:
@@ -696,7 +696,7 @@ class Step(
 
         # Initialize data
         self.plan: Plan = plan
-        self._status: Optional[str] = None
+        self._status: str | None = None
         self._phases: list[Phase] = []
 
         # Normalize raw data to be a list of step configuration data, one item per
@@ -838,7 +838,7 @@ class Step(
     def _export(
         self,
         *,
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         include_internal: bool = False,
     ) -> tmt.export._RawExportedInstance:
         # TODO: one day, this should recurse down into each materialized plugin,
@@ -874,7 +874,7 @@ class Step(
             del self._data
 
     @property
-    def enabled(self) -> Optional[bool]:
+    def enabled(self) -> bool | None:
         """
         True if the step is enabled
         """
@@ -945,7 +945,7 @@ class Step(
         )
         return usage
 
-    def status(self, status: Optional[str] = None) -> Optional[str]:
+    def status(self, status: str | None = None) -> str | None:
         """
         Get and set current step status
 
@@ -1257,7 +1257,7 @@ class Step(
             for i, raw_datum in enumerate(raw_data):
                 debug3(f'raw step datum #{i}', str(raw_datum))
 
-        how: Optional[str]
+        how: str | None
 
         _log_raw_data('before', raw_data)
 
@@ -1309,7 +1309,7 @@ class Step(
                 debug3('already applied')
                 continue
 
-            how = cast(Optional[str], invocation.options.get('how'))
+            how = cast(str | None, invocation.options.get('how'))
 
             if how is None:
                 debug3('how-less phase (postponed)')
@@ -1398,7 +1398,7 @@ class Step(
             # preferred image name without specifying the provision
             # method, thus the 'how' key can be unset and we respect the
             # provision method specified in the plan.
-            how = cast(Optional[str], invocation.options.get('how'))
+            how = cast(str | None, invocation.options.get('how'))
 
             for j, raw_datum in enumerate(raw_data):
                 debug2(f'raw step datum #{j}', str(raw_datum))
@@ -1486,7 +1486,7 @@ class Step(
         pass
 
     def phases(
-        self, classes: Optional[Union[type[PhaseT], tuple[type[PhaseT], ...]]] = None
+        self, classes: type[PhaseT] | tuple[type[PhaseT], ...] | None = None
     ) -> list[PhaseT]:
         """
         Iterate over phases by their order
@@ -1497,7 +1497,7 @@ class Step(
         """
 
         if classes is None:
-            _classes: tuple[type[Union[Phase, PhaseT]], ...] = (Phase,)
+            _classes: tuple[type[Phase | PhaseT], ...] = (Phase,)
 
         elif not isinstance(classes, tuple):
             _classes = (classes,)
@@ -1676,9 +1676,9 @@ class Method:
         self,
         name: str,
         class_: PluginClass,
-        doc: Optional[str] = None,
+        doc: str | None = None,
         order: int = PHASE_ORDER_DEFAULT,
-        installation_hint: Optional[str] = None,
+        installation_hint: str | None = None,
     ) -> None:
         """
         Store method data
@@ -1739,9 +1739,9 @@ class Method:
 
 def provides_method(
     name: str,
-    doc: Optional[str] = None,
+    doc: str | None = None,
     order: int = PHASE_ORDER_DEFAULT,
-    installation_hint: Optional[str] = None,
+    installation_hint: str | None = None,
 ) -> Callable[[PluginClass], PluginClass]:
     """
     A plugin class decorator to register plugin's method with tmt steps.
@@ -1948,7 +1948,7 @@ class BasePlugin(
     def base_command(
         cls,
         usage: str,
-        method_class: Optional[type[click.Command]] = None,
+        method_class: type[click.Command] | None = None,
     ) -> click.Command:
         """
         Create base :py:mod:`click` command for plugins of the step.
@@ -2002,7 +2002,7 @@ class BasePlugin(
         return click.command(cls=method_class, help=usage, name=step_name)(base_command)
 
     @classmethod
-    def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
+    def options(cls, how: str | None = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """
         Prepare command line options for given method
         """
@@ -2113,8 +2113,8 @@ class BasePlugin(
     def delegate(
         cls,
         step: Step,
-        data: Optional[StepDataT] = None,
-        raw_data: Optional[_RawStepData] = None,
+        data: StepDataT | None = None,
+        raw_data: _RawStepData | None = None,
     ) -> 'BasePlugin[StepDataT, PluginReturnValueT]':
         """
         Return plugin instance implementing the data['how'] method
@@ -2194,7 +2194,7 @@ class BasePlugin(
             f"Unsupported {step.name} method '{how}' in the '{step.plan.name}' plan."
         )
 
-    def default(self, option: str, default: Optional[Any] = None) -> Any:
+    def default(self, option: str, default: Any | None = None) -> Any:
         """
         Return default data for given option
         """
@@ -2206,7 +2206,7 @@ class BasePlugin(
 
         return value
 
-    def get(self, option: str, default: Optional[Any] = None) -> Any:
+    def get(self, option: str, default: Any | None = None) -> Any:
         """
         Get option from plugin data, user/system config or defaults
         """
@@ -2248,7 +2248,7 @@ class BasePlugin(
 
         return self.default(option, default)
 
-    def show(self, keys: Optional[list[str]] = None) -> None:
+    def show(self, keys: list[str] | None = None) -> None:
         """
         Show plugin details for given or all available keys
         """
@@ -2456,7 +2456,7 @@ class GuestlessPlugin(BasePlugin[StepDataT, PluginReturnValueT]):
     """
 
     @abc.abstractmethod
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> PluginReturnValueT:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> PluginReturnValueT:
         """
         Perform actions shared among plugins when beginning their tasks
         """
@@ -2476,7 +2476,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         path: Path,
         label: str,
         timer: Stopwatch,
-        command: Optional[Union[Command, ShellScript]] = None,
+        command: Command | ShellScript | None = None,
         output: CommandOutput,
         exc: None = None,
     ) -> None:
@@ -2489,7 +2489,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         path: Path,
         label: str,
         timer: Stopwatch,
-        command: Optional[Union[Command, ShellScript]] = None,
+        command: Command | ShellScript | None = None,
         output: None = None,
         exc: Exception,
     ) -> None:
@@ -2501,9 +2501,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         path: Path,
         label: str,
         timer: Stopwatch,
-        command: Optional[Union[Command, ShellScript]] = None,
-        output: Optional[CommandOutput] = None,
-        exc: Optional[Exception] = None,
+        command: Command | ShellScript | None = None,
+        output: CommandOutput | None = None,
+        exc: Exception | None = None,
     ) -> None:
         """
         Create a report for a given command outcome.
@@ -2572,7 +2572,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         path: Path,
         label: str,
         timer: Stopwatch,
-        body: Optional[Iterable[str]] = None,
+        body: Iterable[str] | None = None,
     ) -> None:
         """
         Format and write an arbitrary body of text into a report file.
@@ -2662,7 +2662,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         label: str,
         timer: Stopwatch,
         guest: 'Guest',
-        command: Optional[Union[Command, ShellScript]] = None,
+        command: Command | ShellScript | None = None,
         output: CommandOutput,
         outcome: PluginOutcome,
     ) -> PluginOutcome:
@@ -2717,7 +2717,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         label: str,
         timer: Stopwatch,
         guest: 'Guest',
-        command: Optional[Union[Command, ShellScript]] = None,
+        command: Command | ShellScript | None = None,
         exception: Exception,
         outcome: PluginOutcome,
     ) -> PluginOutcome:
@@ -2856,8 +2856,8 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         *,
         label: str,
         timer: Stopwatch,
-        exception: Optional[Exception] = None,
-        note: Optional[str] = None,
+        exception: Exception | None = None,
+        note: str | None = None,
         guest: 'Guest',
         outcome: PluginOutcome,
     ) -> PluginOutcome:
@@ -2914,7 +2914,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> PluginReturnValueT:
         """
@@ -2930,7 +2930,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
     """
 
     # Dictionary containing list of requested phases for each enabled step
-    _phases: Optional[dict[str, list[int]]] = None
+    _phases: dict[str, list[int]] | None = None
 
     @classmethod
     def phases(cls, step: Step) -> list[int]:
@@ -2970,7 +2970,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
 
         # Use the end of the last enabled step if no --step given
         if not options:
-            login_during: Optional[Step] = None
+            login_during: Step | None = None
             # The last run may have failed before all enabled steps were
             # completed, select the last step done
             if step.plan is None:
@@ -3036,8 +3036,8 @@ class Reboot(Action):
     @classmethod
     def command(
         cls,
-        method_class: Optional[Method] = None,
-        usage: Optional[str] = None,
+        method_class: Method | None = None,
+        usage: str | None = None,
     ) -> click.Command:
         """
         Create the reboot command
@@ -3173,8 +3173,8 @@ class Login(Action):
     @classmethod
     def command(
         cls,
-        method_class: Optional[Method] = None,
-        usage: Optional[str] = None,
+        method_class: Method | None = None,
+        usage: str | None = None,
     ) -> click.Command:
         """
         Create the login command
@@ -3281,7 +3281,7 @@ class Login(Action):
         # Avoid circular imports
         from tmt.result import ResultOutcome
 
-        expected_results: Optional[list[ResultOutcome]] = [
+        expected_results: list[ResultOutcome] | None = [
             ResultOutcome.from_spec(raw_expected_result)
             for raw_expected_result in self.opt('when', [])
         ]
@@ -3300,8 +3300,8 @@ class Login(Action):
 
     def _login(
         self,
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
     ) -> None:
         """
         Run the interactive command
@@ -3368,8 +3368,8 @@ class Login(Action):
     def after_test(
         self,
         results: list['tmt.result.Result'],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
     ) -> None:
         """
         Check and login after test execution
@@ -3386,8 +3386,8 @@ class GuestTopology(SerializableContainer):
     """
 
     name: str
-    role: Optional[str]
-    hostname: Optional[str]
+    role: str | None
+    hostname: str | None
 
     def __init__(self, guest: 'Guest') -> None:
         self.name = guest.name
@@ -3401,7 +3401,7 @@ class Topology(SerializableContainer):
     Describes the topology of provisioned tmt guests
     """
 
-    guest: Optional[GuestTopology]
+    guest: GuestTopology | None
 
     guest_names: list[str]
     guests: dict[str, GuestTopology]
@@ -3444,7 +3444,7 @@ class Topology(SerializableContainer):
 
         return data
 
-    def save_yaml(self, dirpath: Path, filename: Optional[Path] = None) -> Path:
+    def save_yaml(self, dirpath: Path, filename: Path | None = None) -> Path:
         """
         Save the topology in a YAML file.
 
@@ -3470,7 +3470,7 @@ class Topology(SerializableContainer):
 
         return filepath
 
-    def save_bash(self, dirpath: Path, filename: Optional[Path] = None) -> Path:
+    def save_bash(self, dirpath: Path, filename: Path | None = None) -> Path:
         """
         Save the topology in a Bash-sourceable file.
 
@@ -3486,9 +3486,7 @@ class Topology(SerializableContainer):
 
         lines: list[str] = []
 
-        def _emit_guest(
-            guest: GuestTopology, variable: str, key: Optional[str] = None
-        ) -> list[str]:
+        def _emit_guest(guest: GuestTopology, variable: str, key: str | None = None) -> list[str]:
             return [
                 f'{variable}[{key or ""}name]="{guest.name}"',
                 f'{variable}[{key or ""}role]="{guest.role or ""}"',
@@ -3516,7 +3514,7 @@ class Topology(SerializableContainer):
         self,
         *,
         dirpath: Path,
-        filename_base: Optional[Path] = None,
+        filename_base: Path | None = None,
     ) -> list[Path]:
         """
         Save the topology in files.
@@ -3541,7 +3539,7 @@ class Topology(SerializableContainer):
         *,
         dirpath: Path,
         guest: 'Guest',
-        filename_base: Optional[Path] = None,
+        filename_base: Path | None = None,
         logger: tmt.log.Logger,
     ) -> Environment:
         """
@@ -3679,11 +3677,9 @@ class PullTask(tmt.queue.MultiGuestTask[None]):
     Task performing a workdir pull from a guest
     """
 
-    source: Optional[Path]
+    source: Path | None
 
-    def __init__(
-        self, guests: list['Guest'], source: Optional[Path], logger: tmt.log.Logger
-    ) -> None:
+    def __init__(self, guests: list['Guest'], source: Path | None, logger: tmt.log.Logger) -> None:
         super().__init__(guests, logger)
 
         self.source = source

@@ -22,7 +22,7 @@ repos:
     hooks:
       - id: mypy
         language: python # Required for Renovate additional_dependencies
-        language_version: "3.9"
+        language_version: "3.12"
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
         # Apparently, there is no easy way to avoid some level of duplication of
         # information when the package is *not* installed, which is the case of tmt
@@ -30,8 +30,6 @@ repos:
         #
         # For now, we simply copy & paste from pyproject.toml :(
         additional_dependencies:
-          - "importlib-metadata>=3.6.0; python_version < '3.10'"
-          - "importlib-resources; python_version < '3.12'"
           - "click>=8.0.3"
           - "docutils>=0.16"
           - "fmf>=1.7.0"
@@ -57,9 +55,6 @@ repos:
           # which is the version a developer encounters given the requirements are not
           # frozen.
           - "types-Markdown"
-          # prevent conflict between types-requests and urllib3
-          - "types-requests<2.33.0.20260519; python_version < '3.10'"
-          - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
           - "types-urllib3"
@@ -75,7 +70,7 @@ repos:
     hooks:
       - id: pyright
         language: python # Required for Renovate additional_dependencies
-        language_version: "3.9"
+        language_version: "3.12"
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
         # Apparently, there is no easy way to avoid some level of duplication of
         # information when the package is *not* installed, which is the case of tmt
@@ -83,8 +78,6 @@ repos:
         #
         # For now, we simply copy & paste from pyproject.toml :(
         additional_dependencies:
-          - "importlib-metadata>=3.6.0; python_version < '3.10'"
-          - "importlib-resources; python_version < '3.12'"
           - "click>=8.0.3"
           - "docutils>=0.16"
           - "fmf>=1.7.0"
@@ -110,9 +103,6 @@ repos:
           # which is the version a developer encounters given the requirements are not
           # frozen.
           - "types-Markdown"
-          # prevent conflict between types-requests and urllib3
-          - "types-requests<2.33.0.20260519; python_version < '3.10'"
-          - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
           - "types-urllib3"

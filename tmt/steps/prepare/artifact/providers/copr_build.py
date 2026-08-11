@@ -26,7 +26,7 @@ from tmt.utils import ShellScript
 if TYPE_CHECKING:
     from munch import Munch
 
-copr: Optional[types.ModuleType] = None
+copr: types.ModuleType | None = None
 
 # To silence mypy
 Client: Any
@@ -222,7 +222,7 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         guest: Guest,
         source_path: tmt.utils.Path,
         shared_repo_dir: tmt.utils.Path,
-        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
+        exclude_patterns: list[tmt.utils.Pattern[str]] | None = None,
     ) -> None:
         guest.execute(
             ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")

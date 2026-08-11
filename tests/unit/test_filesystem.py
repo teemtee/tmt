@@ -1,7 +1,6 @@
 import os
 import stat
 import time
-from typing import Optional
 from unittest import mock
 
 import pytest
@@ -92,9 +91,7 @@ def _setup_metadata_test_item(
     return item_path
 
 
-def _run_metadata_test_for_item(
-    dest_dir: Path, src_item: Path, delta_seconds: Optional[int] = None
-):
+def _run_metadata_test_for_item(dest_dir: Path, src_item: Path, delta_seconds: int | None = None):
     """Helper to run metadata assertions for a given item."""
     dest_item = dest_dir / src_item.name
     _assert_permissions_copied(src_item, dest_item)

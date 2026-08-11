@@ -50,10 +50,10 @@ class GitInfo:
     remote: str
 
     #: Default branch of the remote.
-    default_branch: Optional[str]
+    default_branch: str | None
 
     #: Public url of the remote.
-    url: Optional[str]
+    url: str | None
 
     @classmethod
     @functools.cache
@@ -290,7 +290,7 @@ def clonable_git_url(url: str) -> str:
     return inject_auth_git_url(url)
 
 
-def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
+def web_git_url(url: str, ref: str, path: Path | None = None) -> str:
     """
     Convert a public git url into a clickable web url format
 
@@ -321,7 +321,7 @@ def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
     return url
 
 
-def git_hash(*, directory: Path, logger: tmt.log.Logger) -> Optional[str]:
+def git_hash(*, directory: Path, logger: tmt.log.Logger) -> str | None:
     """
     Return short hash of current HEAD in the git repo in directory.
 
@@ -344,7 +344,7 @@ def git_hash(*, directory: Path, logger: tmt.log.Logger) -> Optional[str]:
     return result.stdout.strip()
 
 
-def git_root(*, fmf_root: Path, logger: tmt.log.Logger) -> Optional[Path]:
+def git_root(*, fmf_root: Path, logger: tmt.log.Logger) -> Path | None:
     """
     Find a path to the root of git repository containing an fmf root.
 
@@ -414,7 +414,7 @@ def default_branch(
     repository: Path,
     remote: str = 'origin',
     logger: tmt.log.Logger,
-) -> Optional[str]:
+) -> str | None:
     """
     Detect default branch from given local git repository
     """
@@ -562,7 +562,7 @@ class DistGitHandler:
     lookaside_server: str
     remote_substring: Pattern[str]
 
-    def url_and_name(self, cwd: Optional[Path] = None) -> list[tuple[str, str]]:
+    def url_and_name(self, cwd: Path | None = None) -> list[tuple[str, str]]:
         """
         Return list of urls and basenames of the used source
 
@@ -665,8 +665,8 @@ class LocalDistGit(DistGitHandler):
 
 
 def get_distgit_handler(
-    remotes: Optional[list[str]] = None,
-    usage_name: Optional[str] = None,
+    remotes: list[str] | None = None,
+    usage_name: str | None = None,
 ) -> DistGitHandler:
     """
     Return the right DistGitHandler
@@ -697,7 +697,7 @@ def distgit_download(
     *,
     distgit_dir: Path,
     target_dir: Path,
-    handler_name: Optional[str] = None,
+    handler_name: str | None = None,
     caller: Optional['Common'] = None,
     logger: tmt.log.Logger,
 ) -> None:
@@ -737,10 +737,10 @@ def git_clone(
     destination: Path,
     shallow: bool = False,
     can_change: bool = True,
-    environment: Optional[Environment] = None,
-    attempts: Optional[int] = None,
-    interval: Optional[int] = None,
-    timeout: Optional[int] = None,
+    environment: Environment | None = None,
+    attempts: int | None = None,
+    interval: int | None = None,
+    timeout: int | None = None,
     logger: tmt.log.Logger,
 ) -> CommandOutput:
     """
@@ -770,7 +770,7 @@ def git_clone(
         destination: Path,
         environment: Environment,
         shallow: bool = False,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> CommandOutput:
         """
         Clone the repo, handle history depth

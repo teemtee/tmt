@@ -31,7 +31,7 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.report')
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Perform actions shared among plugins when beginning their tasks
         """
@@ -103,7 +103,7 @@ class Report(tmt.steps.Step):
             # but pre-commit's mypy sees `Phase` - which should not be the right answer
             # since `classes` is clearly not `None`. Adding `cast()` to overcome this
             # because I can't find the actual error :/
-            phase = cast(Union[Action, ReportPlugin[ReportStepData]], phase)
+            phase = cast(Action | ReportPlugin[ReportStepData], phase)
             if phase.enabled_by_when:
                 phase.go()
 

@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import fmf.utils
 
@@ -32,7 +32,7 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],
     )
 
-    url: Optional[str] = field(
+    url: str | None = field(
         default=None,
         option='--url',
         metavar='REPOSITORY',
@@ -43,7 +43,7 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
             """,
     )
 
-    ref: Optional[str] = field(
+    ref: str | None = field(
         default=None,
         option='--ref',
         metavar='REVISION',
@@ -121,7 +121,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """
@@ -240,7 +240,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         def _invoke_script(
             command: ShellScript,
             environment: Environment,
-        ) -> Optional[tmt.utils.CommandOutput]:
+        ) -> tmt.utils.CommandOutput | None:
             guest.push(source=self.phase_workdir)
 
             return guest.execute(

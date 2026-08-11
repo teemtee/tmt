@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 # TID251: this use of `click.style()` is expected, and on purpose.
 from click import style as _style  # noqa: TID251
@@ -20,9 +20,9 @@ def style(
     s: str,
     *,
     style: Style = None,
-    fg: Optional[str] = None,
-    bold: Optional[bool] = None,
-    underline: Optional[bool] = None,
+    fg: str | None = None,
+    bold: bool | None = None,
+    underline: bool | None = None,
 ) -> str:
     """
     Apply a style to a string.

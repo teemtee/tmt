@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Iterator
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import tmt.log
 import tmt.steps
@@ -352,7 +352,7 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
             display_guest=display_guest,
         ).print_results(results)
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Discover available tests
         """

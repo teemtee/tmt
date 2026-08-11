@@ -1,5 +1,4 @@
 import re
-from typing import Optional, Union
 
 import tmt.utils
 from tmt.package_managers import (
@@ -21,7 +20,7 @@ from tmt.utils import (
     ShellScript,
 )
 
-ReducedPackages = list[Union[Package, PackagePath]]
+ReducedPackages = list[Package | PackagePath]
 
 PACKAGE_PATH: dict[FileSystemPath, str] = {
     FileSystemPath('/usr/bin/awk'): 'gawk',
@@ -111,7 +110,7 @@ class ApkEngine(PackageManagerEngine):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         options = options or Options()
 
@@ -131,7 +130,7 @@ class ApkEngine(PackageManagerEngine):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         options = options or Options()
 
@@ -149,7 +148,7 @@ class ApkEngine(PackageManagerEngine):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
 
@@ -197,7 +196,7 @@ class Apk(PackageManager[ApkEngine]):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         raise tmt.utils.PrepareError(
             f'Package manager "{self.guest.facts.package_manager}" does not support '
@@ -207,7 +206,7 @@ class Apk(PackageManager[ApkEngine]):
     def install_local(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
         options.allow_untrusted = True

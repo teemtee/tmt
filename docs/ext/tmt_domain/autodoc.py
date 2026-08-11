@@ -17,7 +17,7 @@ import copy
 import itertools
 import typing
 from contextlib import contextmanager
-from typing import Optional, overload
+from typing import overload
 
 from docutils.statemachine import StringList
 from sphinx.util.docutils import SphinxDirective, switch_source_input
@@ -131,8 +131,8 @@ class Content(StringList):
         name: str,
         *directive_args: str,
         source: str,
-        offset_count: Optional[itertools.count] = None,
-        **directive_kwargs: Optional[str],
+        offset_count: itertools.count | None = None,
+        **directive_kwargs: str | None,
     ) -> "Generator[Self]":
         """
         Add the directive header and start appending its content.
@@ -203,7 +203,7 @@ class Content(StringList):
         self,
         *,
         source: str,
-        offset_count: Optional[itertools.count] = None,
+        offset_count: itertools.count | None = None,
     ) -> "Generator[Self]":
         """
         Start a new list context.
@@ -327,7 +327,7 @@ class AutodocDirectiveBase(SphinxDirective, abc.ABC):
         self,
         name: str,
         *directive_args: str,
-        **directive_kwargs: Optional[str],
+        **directive_kwargs: str | None,
     ) -> "Generator[Content]":
         """
         Wrapper around :py:meth:`Content.directive`.

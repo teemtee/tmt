@@ -1,6 +1,5 @@
 import os
 import re
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -48,7 +47,7 @@ from tmt.utils import Path
     ],
 )
 def test_socket_path_trivial(
-    socket_dir: Path, limit_size: bool, expected: Optional[Path], root_logger: tmt.log.Logger
+    socket_dir: Path, limit_size: bool, expected: Path | None, root_logger: tmt.log.Logger
 ) -> None:
     actual = _socket_path_trivial(
         socket_dir=socket_dir, guest_id='dummy-id', limit_size=limit_size, logger=root_logger
@@ -90,7 +89,7 @@ def test_socket_path_trivial(
 def test_socket_path_hash(
     socket_dir: Path,
     limit_size: bool,
-    expected: Optional[str],
+    expected: str | None,
     monkeypatch,
     root_logger: tmt.log.Logger,
 ) -> None:

@@ -34,9 +34,9 @@ from tmt.utils.environment import Environment, EnvVarValue
 
 def normalize_ref(
     key_address: str,
-    value: Optional[Any],
+    value: Any | None,
     logger: tmt.log.Logger,
-) -> Optional[str]:
+) -> str | None:
     if value is None:
         return None
 
@@ -61,8 +61,8 @@ class TestOrigin:
 
 @container
 class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
-    url: Optional[str] = field(
-        default=cast(Optional[str], None),
+    url: str | None = field(
+        default=cast(str | None, None),
         option=('-u', '--url'),
         metavar='URL',
         help="""
@@ -81,8 +81,8 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         choices=("git", "archive"),
     )
 
-    ref: Optional[str] = field(
-        default=cast(Optional[str], None),
+    ref: str | None = field(
+        default=cast(str | None, None),
         option=('-r', '--ref'),
         metavar='REVISION',
         help="""
@@ -111,7 +111,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     )
 
     # TODO: use enum!
-    dist_git_type: Optional[str] = field(
+    dist_git_type: str | None = field(
         default=None,
         option='--dist-git-type',
         choices=tmt.utils.git.get_distgit_handler_names,
@@ -194,7 +194,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     def source_dir(self) -> Path:
         return self.phase_workdir / 'source'
 
-    def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, path: Path | None = None, logger: tmt.log.Logger | None = None) -> None:
         """
         Perform actions shared among plugins when beginning their tasks
         """
@@ -203,7 +203,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
     @abc.abstractmethod
     def tests(
-        self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
+        self, *, phase_name: str | None = None, enabled: bool | None = None
     ) -> list['TestOrigin']:
         """
         Return discovered tests.
@@ -236,7 +236,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         self,
         distgit_dir: Path,
         target_dir: Path,
-        handler_name: Optional[str] = None,
+        handler_name: str | None = None,
     ) -> None:
         """
         Download sources to the target_dir
@@ -257,7 +257,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         Log details about the imported plan
         """
 
-        parent = cast(Optional[Discover], self.parent)
+        parent = cast(Discover | None, self.parent)
         if (
             parent
             and parent.plan._original_plan
@@ -275,7 +275,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         Discover tests after dist-git applied patches
         """
 
-    def _fetch_remote_source(self, url: str) -> Optional[Path]:
+    def _fetch_remote_source(self, url: str) -> Path | None:
         """
         Fetch a remote git repository or archive from the given url to test_dir.
 
@@ -307,7 +307,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             )
         return None
 
-    def _fetch_local_repository(self) -> Optional[Path]:
+    def _fetch_local_repository(self) -> Path | None:
         """
         Fetch local repository.
 
@@ -484,7 +484,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             def _report_unresolved_dependencies(
                 dependencies: dict[str, dict[str, set[str]]],
                 dependency_class_name: str,
-                label: Optional[str] = None,
+                label: str | None = None,
             ) -> None:
                 display_label = label or f"{dependency_class_name} dependency"
                 for dependency_name, tests in sorted(
@@ -548,7 +548,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             test.name = f"{prefix}{test.name}"
             test.path = Path(f"/{self.safe_name}{test.path}")
 
-    def discover_from_recipe(self, logger: Optional[tmt.log.Logger] = None) -> None:
+    def discover_from_recipe(self, logger: tmt.log.Logger | None = None) -> None:
         """
         Discover tests directly from the recipe.
         """
@@ -615,7 +615,7 @@ class Discover(tmt.steps.Step):
         # Test will be (re)discovered in other phases/steps
         self.extract_tests_later: bool = False
 
-    def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
+    def _workdir_cleanup(self, path: Path | None = None) -> None:
         from tmt.libraries.beakerlib import BeakerLib, BeakerLibFromUrl
 
         super()._workdir_cleanup(path)
@@ -662,7 +662,7 @@ class Discover(tmt.steps.Step):
         return tests
 
     def discover_tests(
-        self, phase: DiscoverPlugin[DiscoverStepData], logger: Optional[tmt.log.Logger] = None
+        self, phase: DiscoverPlugin[DiscoverStepData], logger: tmt.log.Logger | None = None
     ) -> None:
         """
         Discover tests using the given phase.
@@ -1000,7 +1000,7 @@ class Discover(tmt.steps.Step):
         self.save()
 
     def tests(
-        self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
+        self, *, phase_name: str | None = None, enabled: bool | None = None
     ) -> list['TestOrigin']:
         """
         Return discovered tests.

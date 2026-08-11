@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import uuid4
 
 import fmf
@@ -32,7 +32,7 @@ def generate_uuid() -> str:
     return str(uuid4())
 
 
-def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
+def get_id(node: fmf.Tree, leaf_only: bool = True) -> str | None:
     """
     Get identifier if defined, optionally ensure leaf node
 
@@ -47,10 +47,10 @@ def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
     if leaf_only and not is_key_origin(node, ID_KEY):
         raise IdLeafError(f"Key '{ID_KEY}' not defined in leaf '{node.name}'.")
     # FIXME: cast() - typeless "dispatcher" method
-    return cast(Optional[str], node.get(ID_KEY))
+    return cast(str | None, node.get(ID_KEY))
 
 
-def add_uuid_if_not_defined(node: fmf.Tree, dry: bool, logger: Logger) -> Optional[str]:
+def add_uuid_if_not_defined(node: fmf.Tree, dry: bool, logger: Logger) -> str | None:
     """
     Add UUID into node and return it unless already defined
     """

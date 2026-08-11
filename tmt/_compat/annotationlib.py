@@ -5,7 +5,7 @@ if sys.version_info >= (3, 14):
 else:
     import enum
     from collections.abc import Mapping
-    from typing import Any, Optional
+    from typing import Any
 
     class Format(enum.IntEnum):
         VALUE = 1
@@ -16,8 +16,8 @@ else:
     def get_annotations(
         obj: Any,
         *,
-        globals: Optional[dict[str, object]] = None,  # noqa: A002
-        locals: Optional[Mapping[str, object]] = None,  # noqa: A002
+        globals: dict[str, object] | None = None,  # noqa: A002
+        locals: Mapping[str, object] | None = None,  # noqa: A002
         eval_str: bool = False,
         format: Format = Format.VALUE,
     ) -> dict[str, str]:

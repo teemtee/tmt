@@ -1,5 +1,3 @@
-from typing import Optional
-
 import fmf.utils
 
 import tmt.steps
@@ -74,7 +72,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         self,
         *,
         guest: Guest,
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: Logger,
     ) -> tmt.steps.PluginOutcome:
         """Perform package source verification."""

@@ -6,14 +6,13 @@ import importlib
 import os
 import pkgutil
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from importlib.metadata import entry_points
 from types import ModuleType
-from typing import Any, Callable, Generic, Optional, TypeVar, cast
+from typing import Any, Concatenate, Generic, Optional, ParamSpec, TypeVar, cast
 
 import tmt
 import tmt.utils
-from tmt._compat.importlib.metadata import entry_points
-from tmt._compat.typing import Concatenate, ParamSpec
 from tmt.log import Logger
 from tmt.utils import GeneralError, Path
 
@@ -252,8 +251,8 @@ def _import_or_raise(
     *,
     module: str,
     exc_class: type[BaseException],
-    exc_message: Optional[str] = None,
-    hint_id: Optional[str] = None,
+    exc_message: str | None = None,
+    hint_id: str | None = None,
     logger: Logger,
 ) -> ModuleT:  # type: ignore[type-var,misc]
     """
@@ -287,7 +286,7 @@ def _import_or_raise(
 def import_module(
     *,
     module: str,
-    path: Optional[Path] = None,
+    path: Path | None = None,
     logger: Logger,
 ) -> ModuleT:  # type: ignore[type-var,misc]
     """
@@ -428,7 +427,7 @@ class PluginRegistry(Generic[RegisterableT]):
 
         logger.debug(f"Registered plugin '{plugin}' with id '{plugin_id}'.")
 
-    def get_plugin(self, plugin_id: str) -> Optional[RegisterableT]:
+    def get_plugin(self, plugin_id: str) -> RegisterableT | None:
         """
         Find a plugin by its id.
 
@@ -453,7 +452,7 @@ class PluginRegistry(Generic[RegisterableT]):
         return bool(self._plugins)
 
     def create_decorator(
-        self, on_register: Optional[Callable[Concatenate[str, RegisterableT, P], None]] = None
+        self, on_register: Callable[Concatenate[str, RegisterableT, P], None] | None = None
     ) -> Callable[Concatenate[str, P], Callable[[RegisterableT], RegisterableT]]:
         """
         Create a decorator that, applied to classes, registers them as plugins.
@@ -508,7 +507,7 @@ class ModuleImporter(Generic[ModuleT]):
         self._exc_class = exc_class
         self._hint_id = hint_id
 
-        self._module: Optional[ModuleT] = None
+        self._module: ModuleT | None = None
 
     def __call__(self, logger: Logger) -> ModuleT:
         if self._module is None:

@@ -1,6 +1,5 @@
 import dataclasses
 import re
-from typing import Optional
 
 from tmt.package_managers import (
     FileSystemPath,
@@ -86,7 +85,7 @@ class RpmOstreeEngine(PackageManagerEngine):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         options = options or Options()
 
@@ -106,14 +105,14 @@ class RpmOstreeEngine(PackageManagerEngine):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         raise GeneralError("rpm-ostree does not support reinstall operation.")
 
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         raise GeneralError("rpm-ostree does not support debuginfo packages.")
 
@@ -189,14 +188,14 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         raise GeneralError("rpm-ostree does not support reinstall operation.")
 
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         self.warn("Installation of debuginfo packages not supported yet.")
         return CommandOutput(stdout=None, stderr=None)
@@ -216,7 +215,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
 
@@ -241,7 +240,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
     def install_local(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
 
         options = options or Options()

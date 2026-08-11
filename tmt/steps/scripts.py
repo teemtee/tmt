@@ -1,6 +1,7 @@
 import os
+from collections.abc import Callable
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
 import tmt.log
 import tmt.utils
@@ -56,7 +57,7 @@ class Script:
     """
 
     source_filename: str
-    destination_path: Optional[Path]
+    destination_path: Path | None
     aliases: list[str]
     related_variables: list[str]
     enabled: Callable[['tmt.guest.Guest'], bool]
@@ -98,7 +99,7 @@ class ScriptTemplate(Script):
 
     context: dict[str, str]
 
-    _rendered_script_path: Optional[Path] = None
+    _rendered_script_path: Path | None = None
 
     def __enter__(self) -> Path:
         with NamedTemporaryFile(mode='w', delete=False) as rendered_script:

@@ -13,7 +13,7 @@ This split is similar to the python sphinx domain workflow.
 import abc
 import typing
 from functools import cached_property
-from typing import Generic, Optional
+from typing import Generic
 
 from docutils.parsers.rst import directives
 from sphinx import addnodes
@@ -150,10 +150,10 @@ class TmtXRefRole(XRefRole):
         self,
         fix_parens: bool = False,
         lowercase: bool = False,
-        nodeclass: Optional[type["Element"]] = None,
-        innernodeclass: Optional[type["TextElement"]] = None,
+        nodeclass: type["Element"] | None = None,
+        innernodeclass: type["TextElement"] | None = None,
         warn_dangling: bool = False,
-        use_obj_name: Optional[bool] = None,
+        use_obj_name: bool | None = None,
     ) -> None:
         if use_obj_name is not None:
             self.use_obj_name = use_obj_name

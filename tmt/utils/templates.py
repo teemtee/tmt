@@ -8,12 +8,11 @@ custom filters.
 import re
 import shlex
 import textwrap
+from collections.abc import Callable
 from re import Match
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
     cast,
 )
 
@@ -50,7 +49,7 @@ def _template_filter_basename(  # type: ignore[reportUnusedFunction,unused-ignor
 
 def _template_filter_match(  # type: ignore[reportUnusedFunction,unused-ignore]
     s: str, pattern: str
-) -> Optional[Match[str]]:
+) -> Match[str] | None:
     """
     Return `re.Match`__ if the string matches a given pattern.
 
@@ -77,7 +76,7 @@ def _template_filter_match(  # type: ignore[reportUnusedFunction,unused-ignore]
 
 def _template_filter_search(  # type: ignore[reportUnusedFunction,unused-ignore]
     s: str, pattern: str
-) -> Optional[Match[str]]:
+) -> Match[str] | None:
     """
     Return `re.Match`__ if the string matches a given pattern.
 
@@ -252,9 +251,9 @@ def _template_filter_dedent(s: str) -> str:  # type: ignore[reportUnusedFunction
 
 def _template_filter_listed(  # type: ignore[reportUnusedFunction,unused-ignore]
     items: list[Any],
-    singular: Optional[str] = None,
-    plural: Optional[str] = None,
-    max: Optional[int] = None,
+    singular: str | None = None,
+    plural: str | None = None,
+    max: int | None = None,
     quote: str = "",
     join: str = "and",
 ) -> str:
@@ -333,9 +332,9 @@ def _template_filter_shell_quote(  # type: ignore[reportUnusedFunction,unused-ig
 
 def _template_filter_style(  # type: ignore[reportUnusedFunction,unused-ignore]
     s: str,
-    fg: Optional[str] = None,
-    bold: Optional[bool] = None,
-    underline: Optional[bool] = None,
+    fg: str | None = None,
+    bold: bool | None = None,
+    underline: bool | None = None,
 ) -> str:
     """
     Evaluate terminal-style colorization tags supported by Click.
@@ -481,8 +480,8 @@ def default_template_environment(sandboxed: bool = True) -> jinja2.Environment:
 
 def render_template(
     template: str,
-    template_filepath: Optional[Path] = None,
-    environment: Optional[jinja2.Environment] = None,
+    template_filepath: Path | None = None,
+    environment: jinja2.Environment | None = None,
     sandboxed: bool = True,
     **variables: Any,
 ) -> str:
@@ -531,7 +530,7 @@ def render_template(
 
 def render_template_file(
     template_filepath: Path,
-    environment: Optional[jinja2.Environment] = None,
+    environment: jinja2.Environment | None = None,
     sandboxed: bool = True,
     **variables: Any,
 ) -> str:
@@ -559,7 +558,7 @@ def render_template_file(
 def render_template_file_into_file(
     input_filepath: Path,
     output_filepath: Path,
-    environment: Optional[jinja2.Environment] = None,
+    environment: jinja2.Environment | None = None,
     sandboxed: bool = True,
     **variables: Any,
 ) -> None:

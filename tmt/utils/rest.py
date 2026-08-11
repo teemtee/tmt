@@ -10,7 +10,7 @@ import re
 import sys
 import textwrap
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import docutils.frontend
 import docutils.nodes
@@ -85,10 +85,10 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     node, filling "rendered paragraphs" list with rendered strings.
     """
 
-    def log_visit(self, node: Union[docutils.nodes.Node, docutils.nodes.Body]) -> None:
+    def log_visit(self, node: docutils.nodes.Node | docutils.nodes.Body) -> None:
         self.logger.debug('visit ', str(node), level=4, topic=tmt.log.Topic.HELP_RENDERING)
 
-    def log_departure(self, node: Union[docutils.nodes.Node, docutils.nodes.Body]) -> None:
+    def log_departure(self, node: docutils.nodes.Node | docutils.nodes.Body) -> None:
         self.logger.debug('depart', str(node), level=4, topic=tmt.log.Topic.HELP_RENDERING)
 
     def __init__(self, document: docutils.nodes.document, logger: Logger) -> None:
@@ -108,7 +108,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         #: Used by rendering of nested blocks, e.g. paragraphs positioned
         #: as list items.
         self._indent: int = 0
-        self._text_prefix: Optional[str] = None
+        self._text_prefix: str | None = None
 
         self._theme = Config(logger).theme
         self._style_stack: list[Style] = [self._theme.restructuredtext_text]
@@ -406,8 +406,8 @@ def role_ref(
     text: str,
     lineno: int,
     inliner: docutils.parsers.rst.states.Inliner,
-    options: Optional[Mapping[str, Any]] = None,
-    content: Optional[Sequence[str]] = None,
+    options: Mapping[str, Any] | None = None,
+    content: Sequence[str] | None = None,
 ) -> tuple[Sequence[docutils.nodes.reference], Sequence[docutils.nodes.reference]]:
     """
     A handler for ``:ref:`` role.

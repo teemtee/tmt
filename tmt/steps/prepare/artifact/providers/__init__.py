@@ -8,12 +8,11 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, TypeAlias
 
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt._compat.typing import TypeAlias
 from tmt.container import container, simple_field
 from tmt.guest import DownloadError, Guest
 from tmt.package_managers import Repository, Version
@@ -164,7 +163,7 @@ class ArtifactProvider(ABC):
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
+        exclude_patterns: list[Pattern[str]] | None = None,
     ) -> list[tmt.utils.Path]:
         """
         Fetch all artifacts to the specified destination.
@@ -292,7 +291,7 @@ class ArtifactProvider(ABC):
         guest: Guest,
         source_path: Path,
         shared_repo_dir: Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
+        exclude_patterns: list[Pattern[str]] | None = None,
     ) -> None:
         """
         Contribute artifacts to the shared repository.
@@ -336,7 +335,7 @@ _PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider]] = PluginRegistry(
 def _register_hints(
     plugin_id: str,
     plugin_class: type[ArtifactProvider],
-    hints: Optional[dict[str, str]] = None,
+    hints: dict[str, str] | None = None,
 ) -> None:
     for hint_id, hint in (hints or {}).items():
         tmt.utils.hints.register_hint(f'artifact-provider/{plugin_id}/{hint_id}', hint)

@@ -1,7 +1,7 @@
 import glob
 import re
 import shutil
-from typing import Any, Optional, TypedDict, Union, cast
+from typing import Any, Self, TypedDict, Union, cast
 
 import fmf
 
@@ -15,7 +15,6 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt._compat.typing import Self
 from tmt.base.core import _RawAdjustRule
 from tmt.container import SerializableContainer, SpecBasedContainer, container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
@@ -34,17 +33,17 @@ class TestsWithAdjusts(
 ):
     name: str
 
-    adjust_rule: Optional[_RawAdjustRule] = None
+    adjust_rule: _RawAdjustRule | None = None
 
     @classmethod
-    def from_spec(cls, spec: Union[str, _RawTestsWithAdjusts]) -> Self:
+    def from_spec(cls, spec: str | _RawTestsWithAdjusts) -> Self:
         if isinstance(spec, str):
             return cls(name=spec)
         spec_copy = spec.copy()
         name = spec_copy.pop("name")
         return cls(name=name, adjust_rule=cast(_RawAdjustRule, spec_copy))
 
-    def to_spec(self) -> Union[str, _RawTestsWithAdjusts]:
+    def to_spec(self) -> str | _RawTestsWithAdjusts:
         if self.adjust_rule:
             return _RawTestsWithAdjusts(
                 name=self.name,
@@ -52,7 +51,7 @@ class TestsWithAdjusts(
             )
         return self.name
 
-    def to_minimal_spec(self) -> Union[str, _RawTestsWithAdjusts]:
+    def to_minimal_spec(self) -> str | _RawTestsWithAdjusts:
         return self.to_spec()
 
 
@@ -61,7 +60,7 @@ def normalize_tests_with_adjusts(
     value: Any,
     logger: tmt.log.Logger,
 ) -> list[TestsWithAdjusts]:
-    def normalize_raw_item(raw_item: Any, index: Optional[int] = None) -> TestsWithAdjusts:
+    def normalize_raw_item(raw_item: Any, index: int | None = None) -> TestsWithAdjusts:
         if isinstance(raw_item, TestsWithAdjusts):
             return raw_item
         if isinstance(raw_item, str):
@@ -99,8 +98,8 @@ def normalize_tests_with_adjusts(
 
 @container
 class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
-    path: Optional[str] = field(
-        default=cast(Optional[str], None),
+    path: str | None = field(
+        default=cast(str | None, None),
         option=('-p', '--path'),
         metavar='ROOT',
         help="""
@@ -198,8 +197,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             """,
     )
 
-    modified_url: Optional[str] = field(
-        default=cast(Optional[str], None),
+    modified_url: str | None = field(
+        default=cast(str | None, None),
         option='--modified-url',
         metavar='REPOSITORY',
         help="""
@@ -209,8 +208,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             """,
     )
 
-    modified_ref: Optional[str] = field(
-        default=cast(Optional[str], None),
+    modified_ref: str | None = field(
+        default=cast(str | None, None),
         option='--modified-ref',
         metavar='REVISION',
         help="""
@@ -252,8 +251,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             will not be processed.
             """,
     )
-    dist_git_extract: Optional[str] = field(
-        default=cast(Optional[str], None),
+    dist_git_extract: str | None = field(
+        default=cast(str | None, None),
         option='--dist-git-extract',
         help="""
              What to copy from extracted sources, globbing is supported. Defaults to the top fmf
@@ -297,15 +296,15 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     )
 
     # Upgrade plan path so the plan is not pruned
-    upgrade_path: Optional[str] = field(default=None, internal=True)
+    upgrade_path: str | None = field(default=None, internal=True)
 
     # Legacy fields
-    repository: Optional[str] = field(
+    repository: str | None = field(
         default=None,
         option='--repository',
         deprecated=tmt.options.Deprecated(since="1.66", hint="use 'url' instead"),
     )
-    revision: Optional[str] = field(
+    revision: str | None = field(
         default=None,
         option='--revision',
         deprecated=tmt.options.Deprecated(since="1.66", hint="use 'ref' instead"),
@@ -591,14 +590,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             return True
         return super().is_in_standalone_mode
 
-    def _fetch_remote_source(self, url: str) -> Optional[Path]:
+    def _fetch_remote_source(self, url: str) -> Path | None:
         super()._fetch_remote_source(url)
         return Path(self.data.path) if self.data.path else None
 
-    def _fetch_local_repository(self) -> Optional[Path]:
+    def _fetch_local_repository(self) -> Path | None:
         path = Path(self.data.path) if self.data.path else None
         if path is not None:
-            fmf_root: Optional[Path] = path
+            fmf_root: Path | None = path
         else:
             fmf_root = self.step.plan.fmf_root
 
@@ -630,7 +629,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
         return path
 
-    def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, path: Path | None = None, logger: tmt.log.Logger | None = None) -> None:
         """
         Discover available tests
         """
@@ -696,7 +695,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.step.plan.discover.extract_tests_later = True
         self.info("Tests will be discovered after dist-git patching in prepare.")
 
-    def do_the_discovery(self, path: Optional[Path] = None) -> list['tmt.base.core.Test']:
+    def do_the_discovery(self, path: Path | None = None) -> list['tmt.base.core.Test']:
         """
         Discover the tests
         """
@@ -969,7 +968,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.step.summary()
 
     def tests(
-        self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
+        self, *, phase_name: str | None = None, enabled: bool | None = None
     ) -> list[tmt.steps.discover.TestOrigin]:
         """
         Return all discovered tests

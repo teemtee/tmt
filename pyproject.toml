@@ -9,7 +9,7 @@ description = "Test Management Tool"
 readme = "README.rst"
 license = "MIT"
 license-file = "LICENSE"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Petr Splichal", email = "psplicha@redhat.com" },
     ]
@@ -23,19 +23,15 @@ keywords = [
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Utilities",
     "Topic :: Software Development :: Testing",
     "Operating System :: POSIX :: Linux",
     ]
 dependencies = [
-    # Minimal versions based on c9s rpms
-    "importlib-metadata>=3.6.0; python_version < '3.10'",  # Backporting selectable entry_points
-    "importlib-resources; python_version < '3.12'",  # MultiplexedPath is broken on earlier versions
     "click>=8.0.3",
     "docutils>=0.16",
     "fmf>=1.7.0",
@@ -147,9 +143,6 @@ dependencies = [
     # which is the version a developer encounters given the requirements are not
     # frozen.
     "types-Markdown",
-    # prevent conflict between types-requests and urllib3
-    "types-requests<2.31.0.7; python_version < '3.10'",
-    "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
     "types-urllib3",
@@ -229,7 +222,7 @@ show_error_codes = true
 # annotations across module boundaries.
 follow_imports = "normal"
 
-python_version = "3.9"
+python_version = "3.12"
 files = [
     "tmt/",
     "tests/core/about/",
@@ -285,7 +278,7 @@ ignore = [
     "tmt/utils/structured_field.py",
 ]
 
-pythonVersion = "3.9"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
 
 # Be vewy, vewy stwict, we'we hunting wabbits^Wbugs.
@@ -301,7 +294,7 @@ reportUnnecessaryCast = false  # Unnecessary "cast" call; type is already...
 [tool.ruff]
 line-length = 99
 src = ["tmt", "tests"]
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.format]
 quote-style = "preserve"  # TODO: Convert to a specific quote style
@@ -442,15 +435,7 @@ convention = "pep257"
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"typing.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
-"typing_extensions.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
-"typing.Self".msg = "Use tmt._compat.typing.Self instead."
-"typing.Concatenate".msg = "Use tmt._compat.typing.Concatenate instead."
-"typing.ParamSpec".msg = "Use tmt._compat.typing.ParamSpec instead."
-"typing.TypeGuard".msg = "Use tmt._compat.typing.TypeGuard instead."
 "typing.TypeIs".msg = "Not present in centos-stream-10"
-"typing_extensions.Self".msg = "Use tmt._compat.typing.Self instead."
-"typing.override".msg = "Use tmt._compat.typing.override instead."
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 "pydantic".msg = "Use tmt._compat.pydantic instead."
@@ -462,9 +447,7 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "dataclasses.field".msg = "Use tmt.container.field instead."
 "click.style".msg = "Use tmt.log.style instead."
 "annotationlib".msg = "Use tmt._compat.annotationlib instead"
-"importlib.metadata.entry_points".msg = "Use tmt._compat.importlib.metadata.entry_points instead."
-"importlib.readers".msg = "Use tmt._compat.importlib.readers instead."
-"importlib.resources".msg = "Use tmt._compat.importlib.resources instead."
+"importlib.readers.MultiplexedPath".msg = "Use tmt._compat.importlib.readers.MultiplexedPath instead."
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["tmt.config.models.BaseConfig"]

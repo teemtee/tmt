@@ -5,7 +5,7 @@ This module provides classes and utilities for managing Ansible inventory genera
 and configuration within tmt test plans.
 """
 
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import TypedDict
 
@@ -21,14 +21,14 @@ if TYPE_CHECKING:
 class _RawGuestAnsible(TypedDict, total=False):
     """Raw input data for GuestAnsible.from_spec()"""
 
-    group: Optional[str]
-    vars: Optional[dict[str, Any]]
+    group: str | None
+    vars: dict[str, Any] | None
 
 
 class _RawPlanAnsibleInventory(TypedDict, total=False):
     """Raw input data for PlanAnsibleInventory.from_spec()"""
 
-    layout: Optional[str]
+    layout: str | None
 
 
 def normalize_plan_ansible(
@@ -75,7 +75,7 @@ class GuestAnsible(SerializableContainer):
     Ansible configuration for individual guests.
     """
 
-    group: Optional[str] = field(
+    group: str | None = field(
         default=None,
         help='Assigns the guest to a specific Ansible group.',
     )
@@ -88,7 +88,7 @@ class GuestAnsible(SerializableContainer):
     )
 
     @classmethod
-    def from_spec(cls, spec: Optional[_RawGuestAnsible]) -> 'GuestAnsible':
+    def from_spec(cls, spec: _RawGuestAnsible | None) -> 'GuestAnsible':
         """
         Convert a YAML mapping into GuestAnsible object.
         """
@@ -117,13 +117,13 @@ class PlanAnsibleInventory(SerializableContainer):
     Ansible inventory configuration for the plan.
     """
 
-    layout: Optional[str] = field(
+    layout: str | None = field(
         default=None,
         help='Path to a YAML file defining the inventory group hierarchy and layout.',
     )
 
     @classmethod
-    def from_spec(cls, spec: Optional[_RawPlanAnsibleInventory]) -> 'PlanAnsibleInventory':
+    def from_spec(cls, spec: _RawPlanAnsibleInventory | None) -> 'PlanAnsibleInventory':
         """
         Convert a YAML mapping into PlanAnsibleInventory object.
         """
@@ -150,7 +150,7 @@ class PlanAnsible(SerializableContainer):
     Root level general Ansible configuration
     """
 
-    inventory: Optional[PlanAnsibleInventory] = field(
+    inventory: PlanAnsibleInventory | None = field(
         default=None,
         help='Inventory configuration for the plan.',
         serialize=lambda inventory: inventory.to_serialized() if inventory else None,
@@ -173,7 +173,7 @@ class PlanAnsible(SerializableContainer):
             return spec
 
         if isinstance(spec, dict):
-            inventory_spec = cast(Optional[_RawPlanAnsibleInventory], spec.get('inventory'))
+            inventory_spec = cast(_RawPlanAnsibleInventory | None, spec.get('inventory'))
             if inventory_spec is not None:
                 spec = cast(dict[str, Any], spec.copy())
                 spec['inventory'] = PlanAnsibleInventory.from_spec(inventory_spec)
@@ -204,7 +204,7 @@ class AnsibleInventory:
     """
 
     @classmethod
-    def _load_layout(cls, layout_path: Optional[Path] = None) -> dict[str, Any]:
+    def _load_layout(cls, layout_path: Path | None = None) -> dict[str, Any]:
         """
         Load inventory layout from file or use default, ensuring required Ansible structure.
 
@@ -258,7 +258,7 @@ class AnsibleInventory:
         inventory['all']['hosts'][guest.name] = guest.ansible_host_vars
 
     @classmethod
-    def _find_group(cls, current: dict[str, Any], target: str) -> Optional[dict[str, Any]]:
+    def _find_group(cls, current: dict[str, Any], target: str) -> dict[str, Any] | None:
         """
         Find a group at any level in the hierarchy.
 
@@ -299,7 +299,7 @@ class AnsibleInventory:
         target_group['hosts'][guest.name] = {}
 
     @classmethod
-    def generate(cls, guests: list['Guest'], layout_path: Optional[Path] = None) -> dict[str, Any]:
+    def generate(cls, guests: list['Guest'], layout_path: Path | None = None) -> dict[str, Any]:
         """
         Generate Ansible inventory from guests and layout.
 

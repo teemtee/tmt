@@ -59,8 +59,8 @@ FOLLOW_LINES = 10
 
 @container
 class RunData(SerializableContainer):
-    root: Optional[str]
-    plans: Optional[list[str]]
+    root: str | None
+    plans: list[str] | None
     # TODO: this needs resolution - _context_object.steps is List[Step],
     # but stores as a List[str] in run.yaml...
     steps: list[str]
@@ -81,25 +81,25 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
     Test run, a container of plans
     """
 
-    tree: Optional[Tree]
+    tree: Tree | None
 
     #: Run policies to apply to tests, plans and stories.
     policies: list[tmt.policy.Policy]
 
-    data: Optional[RunData] = None
+    data: RunData | None = None
 
     WARNINGS_FILE_NAME: ClassVar[str] = "warnings.yaml"
 
     def __init__(
         self,
         *,
-        id_: Optional[Path] = None,
-        tree: Optional[Tree] = None,
+        id_: Path | None = None,
+        tree: Tree | None = None,
         cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
-        parent: Optional[tmt.utils.Common] = None,
-        workdir_root: Optional[Path] = None,
-        policies: Optional[list[tmt.policy.Policy]] = None,
-        recipe_path: Optional[Path] = None,
+        parent: tmt.utils.Common | None = None,
+        workdir_root: Path | None = None,
+        policies: list[tmt.policy.Policy] | None = None,
+        recipe_path: Path | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -129,8 +129,8 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
             cli_invocation=cli_invocation, logger=logger, parent=parent, workdir_root=workdir_root
         )
         self._workdir_path: WorkdirArgumentType = id_ or True
-        self._tree: Optional[Tree] = tree
-        self._plans: Optional[list[Plan]] = None
+        self._tree: Tree | None = tree
+        self._plans: list[Plan] | None = None
         self.remove = self.opt('remove')
         self.unique_id = str(time.time()).split('.')[0]
 
@@ -264,7 +264,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
         self.tree = tmt.Tree(logger=self._logger, tree=fmf.Tree(default_plan))
         self.debug("No metadata found, using the default plan.")
 
-    def _save_tree(self, tree: Optional[Tree]) -> None:
+    def _save_tree(self, tree: Tree | None) -> None:
         """
         Save metadata tree, handle the default plan
         """
@@ -284,7 +284,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
                 # plan (needed during the discover step) and the whole
                 # tree (which is stored to 'run.yaml' during save()).
                 default_plan_node = cast(
-                    Optional[fmf.Tree], default_plan_tree.find(tmt.templates.DEFAULT_PLAN_NAME)
+                    fmf.Tree | None, default_plan_tree.find(tmt.templates.DEFAULT_PLAN_NAME)
                 )
                 if default_plan_node is None:
                     raise GeneralError(

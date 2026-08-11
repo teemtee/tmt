@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import tmt.container
 import tmt.steps
@@ -100,12 +100,10 @@ class Instruction(MetadataContainer):
 
         _, _, _, _, field_metadata = tmt.container.container_field(obj, key)
 
-        normalize_callback: Optional[tmt.container.NormalizeCallback[Any]] = (
+        normalize_callback: tmt.container.NormalizeCallback[Any] | None = (
             field_metadata.normalize_callback
         )
-        export_callback: Optional[tmt.container.FieldExporter[Any]] = (
-            field_metadata.export_callback
-        )
+        export_callback: tmt.container.FieldExporter[Any] | None = field_metadata.export_callback
 
         if normalize_callback is None:
             logger.debug(f"key '{key}' lacks normalizer")
@@ -287,7 +285,7 @@ class Policy(MetadataContainer):
     # story_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     @classmethod
-    def load_by_filepath(cls, *, path: Path, root: Optional[Path] = None) -> 'Policy':
+    def load_by_filepath(cls, *, path: Path, root: Path | None = None) -> 'Policy':
         """
         Load a policy from a given file.
 

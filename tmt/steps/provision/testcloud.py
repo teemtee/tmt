@@ -10,7 +10,7 @@ import threading
 import types
 from collections.abc import Iterator
 from string import Template
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import click
 import requests
@@ -42,8 +42,8 @@ if TYPE_CHECKING:
     from tmt.hardware.constraints import Size
 
 
-libvirt: Optional[types.ModuleType] = None
-testcloud: Optional[types.ModuleType] = None
+libvirt: types.ModuleType | None = None
+testcloud: types.ModuleType | None = None
 
 # To silence mypy
 DomainConfiguration: Any
@@ -383,11 +383,11 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         help="List locally available images.",
     )
 
-    image_url: Optional[str] = field(
+    image_url: str | None = field(
         default=None,
         internal=True,
     )
-    instance_name: Optional[str] = field(
+    instance_name: str | None = field(
         default=None,
         internal=True,
     )
@@ -435,7 +435,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
     def show(
         self,
         *,
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         verbose: int = 0,
         logger: tmt.log.Logger,
     ) -> None:
@@ -451,7 +451,7 @@ class ProvisionTestcloudData(TestcloudGuestData, tmt.steps.provision.ProvisionSt
 
 
 def _apply_hw_tpm(
-    hardware: Optional[tmt.hardware.Hardware],
+    hardware: tmt.hardware.Hardware | None,
     domain: 'DomainConfiguration',
     logger: tmt.log.Logger,
 ) -> None:
@@ -508,9 +508,9 @@ def _apply_hw_tpm(
 
 
 def _get_hw_boot_method(
-    hardware: Optional[tmt.hardware.Hardware],
+    hardware: tmt.hardware.Hardware | None,
     logger: tmt.log.Logger,
-) -> Optional[str]:
+) -> str | None:
     """
     Get the ``boot.method`` constraint value from hardware requirements.
 
@@ -561,7 +561,7 @@ def _get_hw_boot_method(
 
 
 def _apply_hw_disk_size(
-    hardware: Optional[tmt.hardware.Hardware],
+    hardware: tmt.hardware.Hardware | None,
     domain: 'DomainConfiguration',
     logger: tmt.log.Logger,
 ) -> None:
@@ -663,7 +663,7 @@ def _apply_hw_disk_size(
 
 
 def _apply_hw_cpu_processors(
-    hardware: Optional[tmt.hardware.Hardware],
+    hardware: tmt.hardware.Hardware | None,
     domain: 'DomainConfiguration',
     logger: tmt.log.Logger,
 ) -> None:
@@ -758,8 +758,8 @@ class GuestTestcloud(tmt.GuestSsh):
     _data_class = TestcloudGuestData
 
     image: str
-    image_url: Optional[str]
-    instance_name: Optional[str]
+    image_url: str | None
+    instance_name: str | None
     memory: Optional['Size']
     disk: Optional['Size']
     connection: str
@@ -861,7 +861,7 @@ class GuestTestcloud(tmt.GuestSsh):
             return f'file://{name}'
 
         name = name.lower().strip()
-        url: Optional[str] = None
+        url: str | None = None
         assert testcloud is not None
 
         with GuestTestcloud._testcloud_lock:
@@ -912,7 +912,7 @@ class GuestTestcloud(tmt.GuestSsh):
             connection=f"qemu:///{self.connection}",
         )
 
-    def prepare_ssh_key(self, key_type: Optional[str] = None) -> str:
+    def prepare_ssh_key(self, key_type: str | None = None) -> str:
         """
         Prepare ssh key for authentication
         """
@@ -1050,7 +1050,7 @@ class GuestTestcloud(tmt.GuestSsh):
         domain: 'DomainConfiguration',
         kvm: bool,
         legacy_os: bool,
-        boot_method: Optional[str] = None,
+        boot_method: str | None = None,
     ) -> None:
         uefi = boot_method == 'uefi'
 
@@ -1351,8 +1351,8 @@ class GuestTestcloud(tmt.GuestSsh):
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
@@ -1503,7 +1503,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     # Guest instance
     _guest = None
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Provision the testcloud instance
         """
@@ -1619,7 +1619,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 @container
 class ConsoleLog(tmt.guest.GuestLog):
     #: Temporary directory for storing the console log content.
-    exchange_directory: Optional[Path] = None
+    exchange_directory: Path | None = None
 
     def setup(self, *, logger: tmt.log.Logger) -> None:
         # Prepare the exchange directory for testcloud/tmt console log transport.

@@ -28,7 +28,7 @@ import functools
 import re
 import textwrap
 from collections.abc import Iterator
-from typing import Literal, Optional, cast, overload
+from typing import Literal, cast, overload
 
 import tmt.container
 import tmt.log
@@ -65,7 +65,7 @@ class Hint:
         return self.summary
 
     def __init__(
-        self, hint_id: str, text: str, cli_output_patterns: Optional[list[str]] = None
+        self, hint_id: str, text: str, cli_output_patterns: list[str] | None = None
     ) -> None:
         """
         Initialize hint id, text and search patterns
@@ -97,7 +97,7 @@ class Hint:
 
         logger.info('hint', self.render(logger), color='blue')
 
-    def search_cli_patterns(self, *outputs: Optional[str]) -> bool:
+    def search_cli_patterns(self, *outputs: str | None) -> bool:
         """
         Check provided command line outputs for known error patterns
         """
@@ -248,7 +248,7 @@ def get_hints(*ids: str, ignore_missing: bool = False) -> list[Hint]:
 
 
 @overload
-def get_hint(hint_id: str, ignore_missing: Literal[True]) -> Optional[Hint]:
+def get_hint(hint_id: str, ignore_missing: Literal[True]) -> Hint | None:
     pass
 
 
@@ -257,7 +257,7 @@ def get_hint(hint_id: str, ignore_missing: Literal[False]) -> Hint:
     pass
 
 
-def get_hint(hint_id: str, ignore_missing: bool = False) -> Optional[Hint]:
+def get_hint(hint_id: str, ignore_missing: bool = False) -> Hint | None:
     """
     Return hint for the provided identifier
 
