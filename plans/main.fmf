@@ -40,3 +40,31 @@ adjust:
         how: install
         directory: tmp/RPMS/noarch
     when: how == full
+  - prepare+:
+      - how: install
+        package:
+          - uv
+          - libvirt-devel
+          - krb5-devel
+          - libpq-devel
+          - redhat-rpm-config
+          - gcc
+          - python3-devel
+      - how: shell
+        order: 70
+        summary: Prepare a venv with development files of tmt
+        script: |
+          export SETUPTOOLS_SCM_PRETEND_VERSION=0.0.1.dev0
+          if [[ "$@{tmt-dev}" == "pip" ]]; then
+            python3 -m venv /tmp/venv
+            source /tmp/venv/bin/activate
+            pip install -e .[all]
+          elif [[ "$@{tmt-dev}" == "uv" ]]; then
+            uv venv /tmp/venv
+            uv sync -p /tmp/venv/bin/python3 --extra all
+          else
+            echo "Unsupported tmt-dev method $@{tmt-dev}"
+            exit 2
+          fi
+          echo "source /tmp/venv/bin/activate" >> $TMT_PLAN_SOURCE_SCRIPT
+    when: tmt-dev is defined
