@@ -41,15 +41,17 @@ from typing import (
     NoReturn,
     Optional,
     Protocol,
+    Self,
     TextIO,
+    TypeAlias,
     Union,
     cast,
+    override,
 )
 
 from ruamel.yaml import YAML
 
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import Self, TypeAlias, override
 from tmt._compat.warnings import deprecated
 from tmt.container import SpecBasedContainer, container, simple_field
 
