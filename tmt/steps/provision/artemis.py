@@ -711,7 +711,6 @@ class GuestArtemis(tmt.GuestSsh):
                 mode,
                 trigger_reboot,
                 waiting,
-                post_trigger_action=self._cleanup_ssh_master_process,
             )
 
         return super().reboot(

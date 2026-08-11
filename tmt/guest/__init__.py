@@ -289,6 +289,15 @@ SSH_MASTER_START_TIMEOUT: int = configure_constant(
     DEFAULT_SSH_MASTER_START_TIMEOUT, 'TMT_SSH_MASTER_START_TIMEOUT'
 )
 
+
+def default_ssh_master_start_waiting() -> Waiting:
+    """
+    Create default waiting context for the ``ssh`` master start.
+    """
+
+    return Waiting(deadline=Deadline.from_seconds(SSH_MASTER_START_TIMEOUT))
+
+
 #: Default username to use in SSH connections.
 DEFAULT_USER = 'root'
 
@@ -2600,6 +2609,7 @@ class Guest(
         action: Callable[[], Any],
         wait: Waiting,
         post_trigger_action: Optional[Callable[[], Any]] = None,
+        post_wait: Optional[Callable[[], None]] = None,
     ) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
@@ -2622,6 +2632,10 @@ class Guest(
         :param post_trigger_action: a callable which will be invoked
             after successfully triggering the requested reboot, i.e.
             after ``action`` completes.
+        :param post_wait: a callable which will be invoked after waiting
+            for the guest to become responsiv completes. The outcome of
+            the wait is not important, ``post_wait`` will be called on
+            both success and failed waits.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
@@ -2657,15 +2671,23 @@ class Guest(
 
         # Wait until we get new boot mark, connection will drop and will be
         # unreachable for some time
+        ret: bool = False
+
         try:
             wait.wait(lambda: boot_mark.check(self, current_boot_mark), self._logger)
 
         except tmt.utils.wait.WaitingTimedOutError:
             self.debug("Connection to guest failed after reboot.")
-            return False
 
-        self.debug("Connection to guest succeeded after reboot.")
-        return True
+        else:
+            self.debug("Connection to guest succeeded after reboot.")
+
+            ret = True
+
+        if post_wait is not None:
+            post_wait()
+
+        return ret
 
     @overload
     def reboot(
@@ -3051,6 +3073,10 @@ class GuestSsh(Guest, CommandCollector):
     _ssh_master_process_lock: threading.Lock
     _ssh_master_process: Optional['subprocess.Popen[bytes]'] = None
 
+    #: If set, SSH multiplexing will be considered disabled no matter
+    #: other conditions. Useful for temporarily disabling the multiplexing.
+    _ssh_multiplexing_disabled: bool = False
+
     def __init__(
         self,
         *,
@@ -3187,6 +3213,9 @@ class GuestSsh(Guest, CommandCollector):
             return False
 
         if not self._is_ssh_master_socket_path_acceptable:
+            return False
+
+        if self._ssh_multiplexing_disabled is True:
             return False
 
         return True
@@ -3443,10 +3472,10 @@ class GuestSsh(Guest, CommandCollector):
                     raise WaitingIncompleteError from exc
 
             try:
-                Waiting(
-                    deadline=Deadline.from_seconds(SSH_MASTER_START_TIMEOUT),
-                    tick=10,
-                ).wait(_wait_for_ssh_master, self._logger)
+                # TODO: it would be nice to propagate someone's `wait`
+                # down here - here we have no idea how long we can wait
+                # for the socket to pop up.
+                default_ssh_master_start_waiting().wait(_wait_for_ssh_master, self._logger)
 
             except tmt.utils.wait.WaitingTimedOutError as exc:
                 raise ProvisionError('SSH master process failed to start.') from exc
@@ -3456,8 +3485,6 @@ class GuestSsh(Guest, CommandCollector):
         """
         A base SSH command shared by all SSH processes
         """
-
-        self._assert_ssh_master_process()
 
         return self._base_ssh_command
 
@@ -3682,6 +3709,8 @@ class GuestSsh(Guest, CommandCollector):
         if self.primary_address is None:
             raise tmt.utils.GeneralError('The guest is not available.')
 
+        self._assert_ssh_master_process()
+
         ssh_command: tmt.utils.Command = self._ssh_command
 
         # Run in interactive mode if requested
@@ -3816,6 +3845,7 @@ class GuestSsh(Guest, CommandCollector):
             raise tmt.utils.GeneralError('The guest is not available.')
 
         self._assert_rsync()
+        self._assert_ssh_master_process()
 
         # Prepare options and the push command
         options = options or DEFAULT_PUSH_OPTIONS
@@ -3885,6 +3915,7 @@ class GuestSsh(Guest, CommandCollector):
             raise tmt.utils.GeneralError('The guest is not available.')
 
         self._assert_rsync()
+        self._assert_ssh_master_process()
 
         # Prepare options and the pull command
         options = options or DEFAULT_PULL_OPTIONS
@@ -3947,6 +3978,30 @@ class GuestSsh(Guest, CommandCollector):
 
         self.suspend()
 
+    def perform_reboot(
+        self,
+        mode: RebootMode,
+        action: Callable[[], Any],
+        wait: Waiting,
+        post_trigger_action: Optional[Callable[[], None]] = None,
+        post_wait: Optional[Callable[[], None]] = None,
+    ) -> bool:
+        def _default_post_trigger_action() -> None:
+            self._cleanup_ssh_master_process()
+
+            self._ssh_multiplexing_disabled = True
+
+        def _default_post_wait() -> None:
+            self._ssh_multiplexing_disabled = False
+
+        return super().perform_reboot(
+            mode,
+            action,
+            wait,
+            post_trigger_action=post_trigger_action or _default_post_trigger_action,
+            post_wait=post_wait or _default_post_wait,
+        )
+
     @overload
     def reboot(
         self,
@@ -3991,12 +4046,7 @@ class GuestSsh(Guest, CommandCollector):
 
         self.debug(f"{mode.name.capitalize()} reboot using command '{command}'.")
 
-        return self.perform_reboot(
-            mode,
-            lambda: self.execute(command),
-            waiting,
-            post_trigger_action=self._cleanup_ssh_master_process,
-        )
+        return self.perform_reboot(mode, lambda: self.execute(command), waiting)
 
     def remove(self) -> None:
         """
