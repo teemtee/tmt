@@ -3174,8 +3174,6 @@ requires-dist = [
     { name = "fmf", specifier = ">=1.7.0" },
     { name = "html2text", marker = "extra == 'all'", specifier = ">=2020.1.16" },
     { name = "html2text", marker = "extra == 'test-convert'", specifier = ">=2020.1.16" },
-    { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=3.6.0" },
-    { name = "importlib-resources", marker = "python_full_version < '3.12'" },
     { name = "jinja2", specifier = ">=2.11.3" },
     { name = "jira", marker = "extra == 'all'", specifier = ">=3.5.0,<4" },
     { name = "jira", marker = "extra == 'link-jira'", specifier = ">=3.5.0,<4" },
@@ -3235,8 +3233,7 @@ dev = [
     { name = "types-jsonschema" },
     { name = "types-lxml" },
     { name = "types-markdown" },
-    { name = "types-requests", marker = "python_full_version < '3.10'", specifier = "<2.33.0.20260907" },
-    { name = "types-requests", marker = "python_full_version >= '3.10'" },
+    { name = "types-requests" },
     { name = "types-setuptools" },
     { name = "types-urllib3" },
 ]
@@ -3261,8 +3258,7 @@ type-check = [
     { name = "types-jsonschema" },
     { name = "types-lxml" },
     { name = "types-markdown" },
-    { name = "types-requests", marker = "python_full_version < '3.10'", specifier = "<2.33.0.20260907" },
-    { name = "types-requests", marker = "python_full_version >= '3.10'" },
+    { name = "types-requests" },
     { name = "types-setuptools" },
     { name = "types-urllib3" },
 ]
