@@ -1,7 +1,7 @@
 import re
 from collections import OrderedDict
 from collections.abc import Iterator
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import fmf.utils
 
@@ -166,7 +166,7 @@ class StructuredField:
     #  StructuredField Special
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def __init__(self, text: Optional[str] = None, version: int = 1, multi: bool = False) -> None:
+    def __init__(self, text: str | None = None, version: int = 1, multi: bool = False) -> None:
         """
         Initialize the structured field
         """
@@ -367,7 +367,7 @@ class StructuredField:
         for section in self:
             yield section, self._sections[section]
 
-    def version(self, version: Optional[int] = None) -> int:
+    def version(self, version: int | None = None) -> int:
         """
         Get or set the StructuredField version
         """
@@ -379,7 +379,7 @@ class StructuredField:
                 raise StructuredFieldError(f"Bad StructuredField version: {version}")
         return self._version
 
-    def load(self, text: str, version: Optional[int] = None) -> None:
+    def load(self, text: str, version: int | None = None) -> None:
         """
         Load the StructuredField from a string
         """
@@ -412,7 +412,7 @@ class StructuredField:
             return self._save_version_zero()
         return self._save()
 
-    def header(self, content: Optional[str] = None) -> str:
+    def header(self, content: str | None = None) -> str:
         """
         Get or set the header content
         """
@@ -421,7 +421,7 @@ class StructuredField:
             self._header = content
         return self._header
 
-    def footer(self, content: Optional[str] = None) -> str:
+    def footer(self, content: str | None = None) -> str:
         """
         Get or set the footer content
         """
@@ -437,7 +437,7 @@ class StructuredField:
 
         return self._order
 
-    def get(self, section: str, item: Optional[str] = None) -> SFSectionValueType:
+    def get(self, section: str, item: str | None = None) -> SFSectionValueType:
         """
         Return content of given section or section item
         """
@@ -457,7 +457,7 @@ class StructuredField:
                 f"Unable to read '{pure_ascii(item)!r}' from section '{pure_ascii(section)!r}'"
             ) from error
 
-    def set(self, section: str, content: Any, item: Optional[str] = None) -> None:
+    def set(self, section: str, content: Any, item: str | None = None) -> None:
         """
         Update content of given section or section item
         """
@@ -488,7 +488,7 @@ class StructuredField:
         if section not in self._order:
             self._order.append(section)
 
-    def remove(self, section: str, item: Optional[str] = None) -> None:
+    def remove(self, section: str, item: str | None = None) -> None:
         """
         Remove given section or section item
         """

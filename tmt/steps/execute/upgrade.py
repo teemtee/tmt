@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 import fmf.utils
 
@@ -35,14 +35,14 @@ PROPAGATE_TO_DISCOVER_KEYS = ['url', 'ref', 'filter', 'test', 'exclude', 'upgrad
 
 @container
 class ExecuteUpgradeData(ExecuteInternalData):
-    url: Optional[str] = field(
-        default=cast(Optional[str], None),
+    url: str | None = field(
+        default=cast(str | None, None),
         option=('-u', '--url'),
         metavar='REPOSITORY',
         help='URL of the git repository with upgrade tasks.',
     )
-    upgrade_path: Optional[str] = field(
-        default=cast(Optional[str], None),
+    upgrade_path: str | None = field(
+        default=cast(str | None, None),
         option=('-p', '--upgrade-path'),
         metavar='PLAN_NAME',
         help='Upgrade path corresponding to a plan name in the repository with upgrade tasks.',
@@ -61,8 +61,8 @@ class ExecuteUpgradeData(ExecuteInternalData):
     )
 
     # "Inherit" from tmt.steps.discover.fmf.DiscoverFmfStepData
-    ref: Optional[str] = field(
-        default=cast(Optional[str], None),
+    ref: str | None = field(
+        default=cast(str | None, None),
         option=('-r', '--ref'),
         metavar='REVISION',
         help='Branch, tag or commit specifying the git revision.',
@@ -236,10 +236,10 @@ class ExecuteUpgrade(ExecuteInternal):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self._discover_upgrade: Optional[DiscoverFmf] = None
+        self._discover_upgrade: DiscoverFmf | None = None
 
     @property
-    def discover(self) -> Union[Discover, DiscoverFmf]:
+    def discover(self) -> Discover | DiscoverFmf:
         """
         Return discover step or discover plugin instance
 
@@ -255,7 +255,7 @@ class ExecuteUpgrade(ExecuteInternal):
     @property
     def tasks(
         self,
-    ) -> Iterator[tuple[Optional[str], list[tmt.guest.Guest]]]:
+    ) -> Iterator[tuple[str | None, list[tmt.guest.Guest]]]:
         # upgrade plugin is expected to execute multiple
         # discover phases on old, perform the upgrade, then execute
         # those same discover phases again on new. All of this should occur
@@ -282,7 +282,7 @@ class ExecuteUpgrade(ExecuteInternal):
         self,
         *,
         guest: tmt.guest.Guest,
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """

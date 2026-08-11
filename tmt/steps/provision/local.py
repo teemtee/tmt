@@ -1,7 +1,7 @@
 import os
 import shlex
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import tmt
 import tmt.guest
@@ -36,7 +36,7 @@ class GuestLocal(tmt.Guest):
     """
 
     localhost = True
-    parent: Optional[tmt.steps.Step]
+    parent: tmt.steps.Step | None
 
     @property
     def scripts_path(self) -> Path:
@@ -64,9 +64,7 @@ class GuestLocal(tmt.Guest):
     # `local` plugin has its own implementation as it needs to populate
     # the environment with the tmt process environment, since the guest
     # is the same as the runner.
-    def _prepare_command_environment(
-        self, environment: Optional[Environment] = None
-    ) -> Environment:
+    def _prepare_command_environment(self, environment: Environment | None = None) -> Environment:
         if environment is None:
             environment = Environment.from_environ()
 
@@ -90,10 +88,10 @@ class GuestLocal(tmt.Guest):
     def _run_ansible(
         self,
         playbook: tmt.guest.AnsibleApplicable,
-        playbook_root: Optional[Path] = None,
-        extra_args: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        playbook_root: Path | None = None,
+        extra_args: str | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -147,19 +145,19 @@ class GuestLocal(tmt.Guest):
 
     def execute(
         self,
-        command: Union[Command, ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: Command | ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -224,8 +222,8 @@ class GuestLocal(tmt.Guest):
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         # No localhost reboot allowed!
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
@@ -234,9 +232,9 @@ class GuestLocal(tmt.Guest):
 
     def push(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -245,9 +243,9 @@ class GuestLocal(tmt.Guest):
 
     def pull(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
     ) -> None:
         """
         Nothing to be done to pull workdir
@@ -319,7 +317,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     # Guest instance
     _guest = None
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Provision the container
         """

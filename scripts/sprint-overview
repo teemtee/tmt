@@ -19,7 +19,7 @@ import re
 import sys
 from collections import defaultdict
 from collections.abc import Iterator
-from typing import Any, Optional
+from typing import Any
 
 import click
 import jinja2
@@ -121,7 +121,7 @@ def load_items(filepath: str) -> list[Item]:
 
 def github_api_get(
     path: str,
-    params: Optional[dict[str, str]] = None,
+    params: dict[str, str] | None = None,
 ) -> Iterator[list[dict[str, Any]]]:
     """
     Make a GET request to the GitHub REST API, following pagination.
@@ -375,8 +375,8 @@ def display_comparison(sprint_name: str, base: list[Item], current: list[Item]) 
 def main(
     sprint: str,
     output_yaml: bool,
-    base_path: Optional[str] = None,
-    current_path: Optional[str] = None,
+    base_path: str | None = None,
+    current_path: str | None = None,
 ) -> None:
     """
     List all issues and pull requests in a GitHub Project sprint with story points.

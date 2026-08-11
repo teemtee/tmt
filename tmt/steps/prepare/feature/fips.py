@@ -1,5 +1,5 @@
 import re
-from typing import Any, Optional
+from typing import Any
 
 import tmt.log
 import tmt.utils
@@ -15,7 +15,7 @@ SUPPORTED_DISTRO_PATTERNS = tuple(
 
 @container
 class FipsStepData(PrepareFeatureData):
-    fips: Optional[str] = field(
+    fips: str | None = field(
         default=None,
         option='--fips',
         metavar='enabled',

@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Self, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, Union, cast
 
 import fmf.utils
 from click import echo
@@ -126,7 +126,7 @@ class Link(SpecBasedContainer[Any, _RawLinkRelation]):
 
     relation: _RawLinkRelationName
     target: Union[str, 'FmfId']
-    note: Optional[str] = None
+    note: str | None = None
 
     @classmethod
     def from_spec(cls, spec: _RawLink) -> 'Link':
@@ -165,7 +165,7 @@ class Link(SpecBasedContainer[Any, _RawLinkRelation]):
         # From now on, `spec` is a mapping, and may contain the optional
         # `note` key. Extract the key for later.
         # FIXME: cast() - typeless "dispatcher" method
-        note = cast(Optional[str], spec.get('note', None))
+        note = cast(str | None, spec.get('note', None))
 
         # Count how many relations are stored in spec.
         relations = [
@@ -268,7 +268,7 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
 
     _links: list[Link]
 
-    def __init__(self, *, data: Optional[_RawLinks] = None):
+    def __init__(self, *, data: _RawLinks | None = None):
         """
         Create a collection from raw link data
         """
@@ -292,7 +292,7 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
         self._links = [Link.from_spec(spec) for spec in specs]
 
     @classmethod
-    def from_spec(cls, spec: Union[_RawLink, list[_RawLink]]) -> Self:
+    def from_spec(cls, spec: _RawLink | list[_RawLink]) -> Self:
         return cls(data=spec)
 
     def to_spec(self) -> list[_RawLinkRelation]:
@@ -312,7 +312,7 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
 
         return [link.to_spec() for link in self._links]
 
-    def get(self, relation: Optional[_RawLinkRelationName] = None) -> list[Link]:
+    def get(self, relation: _RawLinkRelationName | None = None) -> list[Link]:
         """
         Get links with given relation, all by default
         """
@@ -330,7 +330,7 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
                 )
             )
 
-    def has_link(self, needle: Optional[LinkNeedle] = None) -> bool:
+    def has_link(self, needle: LinkNeedle | None = None) -> bool:
         """
         Check whether this set of links contains a matching link.
 

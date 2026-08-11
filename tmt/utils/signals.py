@@ -32,8 +32,9 @@ import itertools
 import signal
 import textwrap
 import threading
+from collections.abc import Callable
 from types import FrameType
-from typing import Any, Callable, NoReturn, Optional, ParamSpec, Self
+from typing import Any, NoReturn, ParamSpec, Self
 
 import tmt.log
 import tmt.utils
@@ -169,7 +170,7 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
     raise KeyboardInterrupt
 
 
-def _interrupt_handler(signum: int, frame: Optional[FrameType]) -> None:
+def _interrupt_handler(signum: int, frame: FrameType | None) -> None:
     """
     A signal handler for signals that interrupt tmt, ``SIGINT`` and ``SIGTERM``.
 

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import tmt.log
 import tmt.utils
 from tmt.checks import CheckPlugin, provides_check
@@ -41,7 +39,7 @@ class GuestFailures(CheckPlugin[GuestCheck]):
         *,
         check: 'GuestCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if any(isinstance(exc, tmt.utils.RebootTimeoutError) for exc in invocation.exceptions):

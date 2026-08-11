@@ -1,4 +1,5 @@
-from typing import Any, Callable, Optional, Union, cast
+from collections.abc import Callable
+from typing import Any, cast
 
 import tmt.guest
 import tmt.log
@@ -19,14 +20,14 @@ class ConnectGuestData(tmt.guest.GuestSshData):
     )
 
     # Override parent class with our defaults
-    guest: Optional[str] = field(
+    guest: str | None = field(
         default=None,
         option=('-g', '--guest'),
         metavar='HOSTNAME|IP',
         help='A preexisting machine to connect to.',
     )
 
-    soft_reboot: Optional[ShellScript] = field(
+    soft_reboot: ShellScript | None = field(
         default=None,
         option='--soft-reboot',
         metavar='COMMAND',
@@ -38,7 +39,7 @@ class ConnectGuestData(tmt.guest.GuestSshData):
         serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
         unserialize=lambda serialized: None if serialized is None else ShellScript(serialized),
     )
-    systemd_soft_reboot: Optional[ShellScript] = field(
+    systemd_soft_reboot: ShellScript | None = field(
         default=None,
         option='--systemd-soft-reboot',
         metavar='COMMAND',
@@ -50,7 +51,7 @@ class ConnectGuestData(tmt.guest.GuestSshData):
         serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
         unserialize=lambda serialized: None if serialized is None else ShellScript(serialized),
     )
-    hard_reboot: Optional[ShellScript] = field(
+    hard_reboot: ShellScript | None = field(
         default=None,
         option='--hard-reboot',
         help="""
@@ -130,15 +131,15 @@ class ProvisionConnectData(ConnectGuestData, tmt.steps.provision.ProvisionStepDa
 class GuestConnect(tmt.guest.GuestSsh):
     _data_class = ConnectGuestData
 
-    soft_reboot: Optional[ShellScript]
-    systemd_soft_reboot: Optional[ShellScript]
-    hard_reboot: Optional[ShellScript]
+    soft_reboot: ShellScript | None
+    systemd_soft_reboot: ShellScript | None
+    hard_reboot: ShellScript | None
 
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -308,7 +309,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
     # Guest instance
     _guest = None
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Prepare the connection
         """

@@ -40,10 +40,10 @@ if TYPE_CHECKING:
 @container
 class ProvisionStepData(tmt.steps.StepData):
     # guest role in the multihost scenario
-    role: Optional[str] = None
+    role: str | None = None
 
-    ansible: Optional[tmt.ansible.GuestAnsible] = field(
-        default=cast(Optional[tmt.ansible.GuestAnsible], None),
+    ansible: tmt.ansible.GuestAnsible | None = field(
+        default=cast(tmt.ansible.GuestAnsible | None, None),
         normalize=tmt.ansible.normalize_guest_ansible,
         serialize=lambda ansible: ansible.to_serialized() if ansible else None,
         unserialize=lambda serialized: (
@@ -51,8 +51,8 @@ class ProvisionStepData(tmt.steps.StepData):
         ),
     )
 
-    hardware: Optional[tmt.hardware.Hardware] = field(
-        default=cast(Optional[tmt.hardware.Hardware], None),
+    hardware: tmt.hardware.Hardware | None = field(
+        default=cast(tmt.hardware.Hardware | None, None),
         normalize=tmt.guest.normalize_hardware,
         serialize=lambda hardware: hardware.to_spec() if hardware else None,
         unserialize=lambda serialized: (
@@ -99,7 +99,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.provision')
 
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
-    _guest: Optional[tmt.guest.Guest] = None
+    _guest: tmt.guest.Guest | None = None
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
@@ -109,7 +109,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
         return {*super()._preserved_workdir_members, "logs"}
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Perform actions shared among plugins when beginning their tasks
         """
@@ -117,7 +117,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         self.go_prolog(logger or self._logger)
 
     # TODO: this might be needed until https://github.com/teemtee/tmt/issues/1696 is resolved
-    def opt(self, option: str, default: Optional[Any] = None) -> Any:
+    def opt(self, option: str, default: Any | None = None) -> Any:
         """
         Get an option from the command line options
         """
@@ -145,7 +145,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         if not self.guest.facts.is_superuser and not self.guest.facts.can_sudo:
             self.info("User does not have sudo access, we assume everything is pre-setup.")
 
-    def wake(self, data: Optional[tmt.guest.GuestData] = None) -> None:
+    def wake(self, data: tmt.guest.GuestData | None = None) -> None:
         """
         Wake up the plugin
 
@@ -166,7 +166,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
     # TODO: getter. Like in Java. Do we need it?
     @property
-    def guest(self) -> Optional[tmt.guest.Guest]:
+    def guest(self) -> tmt.guest.Guest | None:
         """
         Return the provisioned guest.
         """
@@ -190,7 +190,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         return self._guest_class.essential_requires()
 
     @classmethod
-    def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
+    def options(cls, how: str | None = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """
         Return list of options.
         """
@@ -205,7 +205,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
         return True
 
-    def show(self, keys: Optional[list[str]] = None) -> None:
+    def show(self, keys: list[str] | None = None) -> None:
         keys = keys or list(set(self.data.keys()))
 
         show_hardware = 'hardware' in keys
@@ -220,7 +220,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         super().show(keys=keys)
 
         if show_hardware:
-            hardware: Optional[tmt.hardware.Hardware] = self.data.hardware
+            hardware: tmt.hardware.Hardware | None = self.data.hardware
 
             if hardware:
                 echo(tmt.utils.format('hardware', tmt.utils.to_yaml(hardware.to_spec())))
@@ -240,7 +240,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
 
     #: When ``ProvisionTask`` instance is received from the queue, ``phase``
     #: points to the phase that has been provisioned by the task.
-    phase: Optional[ProvisionPlugin[ProvisionStepData]] = None
+    phase: ProvisionPlugin[ProvisionStepData] | None = None
 
     def __init__(
         self, phases: list[ProvisionPlugin[ProvisionStepData]], logger: tmt.log.Logger
@@ -396,7 +396,7 @@ class Provision(tmt.steps.Step):
     def is_multihost(self) -> bool:
         return len(self.data) > 1
 
-    def get_guests_info(self) -> list[tuple[str, Optional[str]]]:
+    def get_guests_info(self) -> list[tuple[str, str | None]]:
         """
         Get a list containing the names and roles of guests that should be enabled.
         """
@@ -599,8 +599,8 @@ class Provision(tmt.steps.Step):
         ]
         all_phases.sort(key=lambda x: x.order)
 
-        all_outcomes: list[Union[ActionTask, ProvisionTask]] = []
-        failed_outcomes: list[Union[ActionTask, ProvisionTask]] = []
+        all_outcomes: list[ActionTask | ProvisionTask] = []
+        failed_outcomes: list[ActionTask | ProvisionTask] = []
 
         # Wrapping the code with try/except catching KeyboardInterrupt
         # exceptions that signals tmt has been interrupted. We need to

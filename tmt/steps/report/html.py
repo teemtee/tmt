@@ -1,5 +1,4 @@
 import webbrowser
-from typing import Optional
 
 from jinja2 import select_autoescape
 
@@ -19,7 +18,7 @@ DEFAULT_FILENAME = 'index.html'
 
 @container
 class ReportHtmlData(tmt.steps.report.ReportStepData):
-    file: Optional[Path] = field(
+    file: Path | None = field(
         default=None,
         option='--file',
         metavar='PATH',
@@ -88,7 +87,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
         return {DEFAULT_FILENAME}
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Process results
         """

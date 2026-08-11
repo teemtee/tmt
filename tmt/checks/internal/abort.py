@@ -1,5 +1,3 @@
-from typing import Optional
-
 import tmt.log
 from tmt.checks import CheckPlugin, provides_check
 from tmt.checks.internal import InternalCheck
@@ -41,7 +39,7 @@ class Abort(CheckPlugin[AbortCheck]):
         *,
         check: 'AbortCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if (

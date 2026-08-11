@@ -32,14 +32,14 @@ def _combine(default: TemplatesType, custom: TemplatesType) -> TemplatesType:
     return result
 
 
-def _get_template_file_paths(path: Union[Path, MultiplexedPath]) -> dict[str, Path]:
+def _get_template_file_paths(path: Path | MultiplexedPath) -> dict[str, Path]:
     """
     Get a dictionary of template names and their file paths.
     :param path: Path to the directory to search for templates.
     """
 
     templates: dict[str, Path] = {}
-    file: Union[Path, MultiplexedPath]
+    file: Path | MultiplexedPath
     for file in path.iterdir():  # pyright: ignore[reportAssignmentType, reportUnknownVariableType]
         if not file.is_file():
             continue
@@ -50,7 +50,7 @@ def _get_template_file_paths(path: Union[Path, MultiplexedPath]) -> dict[str, Pa
     return templates
 
 
-def _get_templates(root_dir: Union[Path, MultiplexedPath]) -> TemplatesType:
+def _get_templates(root_dir: Path | MultiplexedPath) -> TemplatesType:
     """
     Get all templates in given root directory.
     :param root_dir: Path to the directory to search for templates.
@@ -81,7 +81,7 @@ class TemplateManager:
     It provides methods for rendering templates during story, plan or test creation.
     """
 
-    def __init__(self, custom_template_path: Optional[Path] = None):
+    def __init__(self, custom_template_path: Path | None = None):
         self.custom_template_path = custom_template_path or DEFAULT_CUSTOM_TEMPLATES_PATH
         self._init_custom_templates_folder()
         self._environment = tmt.utils.templates.default_template_environment()

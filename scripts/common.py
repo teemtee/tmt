@@ -3,7 +3,6 @@ Common data structures shared between sprint scripts.
 """
 
 import dataclasses
-from typing import Optional
 
 
 @dataclasses.dataclass
@@ -16,7 +15,7 @@ class Item:
     type: str
     repo: str
     status: str
-    size: Optional[int]
+    size: int | None
     url: str
     title: str
 

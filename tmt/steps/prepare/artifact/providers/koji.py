@@ -24,7 +24,7 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.utils import ShellScript
 
-koji: Optional[types.ModuleType] = None
+koji: types.ModuleType | None = None
 
 # To silence mypy
 ClientSession: Any
@@ -90,7 +90,7 @@ class KojiArtifactProvider(ArtifactProvider):
         self._session = self._initialize_session()
 
     @cached_property
-    def build_info(self) -> Optional[dict[str, Any]]:
+    def build_info(self) -> dict[str, Any] | None:
         """
         Fetch and return the build metadata for the resolved build ID.
 
@@ -104,7 +104,7 @@ class KojiArtifactProvider(ArtifactProvider):
 
     @cached_property
     @abstractmethod
-    def build_id(self) -> Optional[int]:
+    def build_id(self) -> int | None:
         """
         Resolve and return the build ID.
 
@@ -117,7 +117,7 @@ class KojiArtifactProvider(ArtifactProvider):
         raise NotImplementedError
 
     def _initialize_session(
-        self, api_url: Optional[str] = None, top_url: Optional[str] = None
+        self, api_url: str | None = None, top_url: str | None = None
     ) -> 'ClientSession':
         """
         A koji session initialized via the koji.ClientSession function.
@@ -152,7 +152,7 @@ class KojiArtifactProvider(ArtifactProvider):
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
-    def _make_build_provider(self, build_cls: type[BuildT], prefix: str) -> Optional[BuildT]:
+    def _make_build_provider(self, build_cls: type[BuildT], prefix: str) -> BuildT | None:
         """Create a build provider instance if build_id is available."""
         if self.build_id is None:
             return None
@@ -183,7 +183,7 @@ class KojiArtifactProvider(ArtifactProvider):
         guest: Guest,
         source_path: tmt.utils.Path,
         shared_repo_dir: tmt.utils.Path,
-        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
+        exclude_patterns: list[tmt.utils.Pattern[str]] | None = None,
     ) -> None:
         guest.execute(
             ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
@@ -217,7 +217,7 @@ class KojiArtifactProvider(ArtifactProvider):
 @provides_artifact_provider("koji.task")
 class KojiTask(KojiArtifactProvider):
     @cached_property
-    def build_id(self) -> Optional[int]:
+    def build_id(self) -> int | None:
         task_id = int(self.id)
         if builds := self._call_api("listBuilds", taskID=task_id):
             if len(builds) > 1:
@@ -310,7 +310,7 @@ class KojiBuild(KojiArtifactProvider):
 @provides_artifact_provider("koji.nvr")
 class KojiNvr(KojiArtifactProvider):
     @cached_property
-    def build_info(self) -> Optional[dict[str, Any]]:
+    def build_info(self) -> dict[str, Any] | None:
         """
         Fetch and return the build metadata for the nvr.
 

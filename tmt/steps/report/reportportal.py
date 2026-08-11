@@ -1,8 +1,10 @@
 import datetime
 import os
 import re
+from collections.abc import Callable
+from datetime import UTC
 from re import Pattern
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import requests
 import urllib3.exceptions
@@ -64,7 +66,7 @@ def _flag_env_to_default(option: str, default: bool) -> bool:
 
 
 @overload
-def _str_env_to_default(option: str, default: None) -> Optional[str]:
+def _str_env_to_default(option: str, default: None) -> str | None:
     pass
 
 
@@ -73,7 +75,7 @@ def _str_env_to_default(option: str, default: str) -> str:
     pass
 
 
-def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
+def _str_env_to_default(option: str, default: str | None) -> str | None:
     env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
     if env_var not in os.environ or os.getenv(env_var) is None:
         return default
@@ -152,7 +154,7 @@ _LOG_FILTERS = [
 ]
 
 
-def _filter_log(log: str, settings: Optional[LogFilterSettings] = None) -> str:
+def _filter_log(log: str, settings: LogFilterSettings | None = None) -> str:
     settings = settings or LogFilterSettings()
     for log_filter in _LOG_FILTERS:
         log = log_filter(log, settings=settings)
@@ -161,28 +163,28 @@ def _filter_log(log: str, settings: Optional[LogFilterSettings] = None) -> str:
 
 @container
 class ReportReportPortalData(tmt.steps.report.ReportStepData):
-    url: Optional[str] = field(
+    url: str | None = field(
         option="--url",
         metavar="URL",
         default=_str_env_to_default('url', None),
         help="The URL of the ReportPortal instance where the data should be sent to.",
     )
 
-    token: Optional[str] = field(
+    token: str | None = field(
         option="--token",
         metavar="TOKEN",
         default=_str_env_to_default('token', None),
         help="The token to use for upload to the ReportPortal instance (from the user profile).",
     )
 
-    project: Optional[str] = field(
+    project: str | None = field(
         option="--project",
         metavar="PROJECT_NAME",
         default=_str_env_to_default('project', None),
         help="Name of the project into which the results should be uploaded.",
     )
 
-    launch: Optional[str] = field(
+    launch: str | None = field(
         option="--launch",
         metavar="LAUNCH_NAME",
         default=_str_env_to_default('launch', None),
@@ -192,7 +194,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
            """,
     )
 
-    launch_description: Optional[str] = field(
+    launch_description: str | None = field(
         option="--launch-description",
         metavar="DESCRIPTION",
         default=_str_env_to_default('launch_description', None),
@@ -221,7 +223,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    upload_to_launch: Optional[str] = field(
+    upload_to_launch: str | None = field(
         option="--upload-to-launch",
         metavar="LAUNCH_ID",
         default=_str_env_to_default('upload_to_launch', None),
@@ -232,7 +234,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
            """,
     )
 
-    upload_to_suite: Optional[str] = field(
+    upload_to_suite: str | None = field(
         option="--upload-to-suite",
         metavar="SUITE_ID",
         default=_str_env_to_default('upload_to_suite', None),
@@ -253,7 +255,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    defect_type: Optional[str] = field(
+    defect_type: str | None = field(
         option="--defect-type",
         metavar="DEFECT_NAME",
         default=_str_env_to_default('defect_type', None),
@@ -312,7 +314,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help="Override the default reportportal API version (v1).",
     )
 
-    artifacts_url: Optional[str] = field(
+    artifacts_url: str | None = field(
         metavar="ARTIFACTS_URL",
         option="--artifacts-url",
         default=_str_env_to_default('artifacts_url', os.getenv('TMT_REPORT_ARTIFACTS_URL')),
@@ -335,7 +337,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help="Enable/disable uploading of tmt subresults into the ReportPortal.",
     )
 
-    link_template: Optional[str] = field(
+    link_template: str | None = field(
         metavar="TEMPLATE",
         option="--link-template",
         default=_str_env_to_default('link_template', None),
@@ -378,10 +380,10 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    launch_url: Optional[str] = None
-    launch_uuid: Optional[str] = None
-    suite_uuid: Optional[str] = None
-    test_uuids: dict[int, dict[Optional[str], str]] = field(default_factory=dict)
+    launch_url: str | None = None
+    launch_uuid: str | None = None
+    suite_uuid: str | None = None
+    test_uuids: dict[int, dict[str | None, str]] = field(default_factory=dict)
 
     def to_spec(self) -> _RawStepData:
         spec = super().to_spec()
@@ -577,7 +579,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     @property
     def datetime(self) -> str:
         # Use the same format of timestramp as tmt does
-        return format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+        return format_timestamp(datetime.datetime.now(UTC))
 
     @property
     def headers(self) -> dict[str, str]:
@@ -614,9 +616,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     def construct_item_attributes(
         self,
-        attributes: Optional[list[dict[str, str]]] = None,
-        result: Optional[Result] = None,
-        test: Optional[Test] = None,
+        attributes: list[dict[str, str]] | None = None,
+        result: Result | None = None,
+        test: Test | None = None,
     ) -> list[dict[str, str]]:
         attributes = attributes.copy() if attributes else []
 
@@ -641,9 +643,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 attributes += [{'key': 'contact', 'value': contact} for contact in test.contact]
         return attributes
 
-    def get_defect_type_locator(
-        self, session: requests.Session, defect_type: Optional[str]
-    ) -> str:
+    def get_defect_type_locator(self, session: requests.Session, defect_type: str | None) -> str:
         if not defect_type:
             return "ti001"
 
@@ -723,7 +723,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     def upload_result_logs(
         self,
-        result: Union[tmt.result.Result, tmt.result.SubResult],
+        result: tmt.result.Result | tmt.result.SubResult,
         session: requests.Session,
         item_uuid: str,
         launch_uuid: str,
@@ -1135,7 +1135,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.info("url", launch_url, "magenta")
             self.data.launch_url = launch_url
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Report test results to the endpoint
 

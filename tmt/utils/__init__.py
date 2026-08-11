@@ -28,7 +28,7 @@ import unicodedata
 import urllib.parse
 import warnings
 from collections import Counter
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from math import ceil
 from re import Pattern
 from threading import RLock, Thread
@@ -37,7 +37,6 @@ from typing import (
     IO,
     TYPE_CHECKING,
     Any,
-    Callable,
     Final,
     Generic,
     Literal,
@@ -97,7 +96,7 @@ def sanitize_string(text: str) -> str:
         return text.encode("utf-8", errors="ignore").decode("utf-8")
 
 
-def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
+def configure_optional_constant(default: int | None, envvar: str) -> int | None:
     """
     Deduce the actual value of a global constant which may be left unset.
 
@@ -236,14 +235,14 @@ class ProcessExitCodes(enum.IntEnum):
     SIGTERM = 143
 
     @classmethod
-    def is_pidfile(cls, exit_code: Optional[int]) -> bool:
+    def is_pidfile(cls, exit_code: int | None) -> bool:
         return exit_code in (
             ProcessExitCodes.TEST_PIDFILE_LOCK_FAILED,
             ProcessExitCodes.TEST_PIDFILE_UNLOCK_FAILED,
         )
 
     @classmethod
-    def format(cls, exit_code: int) -> Optional[str]:
+    def format(cls, exit_code: int) -> str | None:
         """
         Format a given exit code for nicer logging
         """
@@ -293,8 +292,8 @@ DEFAULT_RETRIABLE_HTTP_CODES: tuple[int, ...] = (
 )
 
 # Defaults for GIT attempts and interval
-DEFAULT_GIT_CLONE_TIMEOUT: Optional[int] = None
-GIT_CLONE_TIMEOUT: Optional[int] = configure_optional_constant(
+DEFAULT_GIT_CLONE_TIMEOUT: int | None = None
+GIT_CLONE_TIMEOUT: int | None = configure_optional_constant(
     DEFAULT_GIT_CLONE_TIMEOUT, 'TMT_GIT_CLONE_TIMEOUT'
 )
 
@@ -313,7 +312,7 @@ P = ParamSpec('P')
 WriteMode = Literal['w', 'a']
 
 
-def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
+def effective_workdir_root(workdir_root_option: Path | None = None) -> Path:
     """
     Find out what the actual workdir root is.
 
@@ -339,7 +338,7 @@ class FmfContext(dict[str, list[str]]):
     and https://fmf.readthedocs.io/en/latest/context.html.
     """
 
-    def __init__(self, data: Optional[dict[str, list[str]]] = None) -> None:
+    def __init__(self, data: dict[str, list[str]] | None = None) -> None:
         super().__init__(data or {})
 
     @classmethod
@@ -365,7 +364,7 @@ class FmfContext(dict[str, list[str]]):
 
     @classmethod
     def _normalize_fmf(
-        cls, spec: dict[str, Union[str, list[str]]], logger: tmt.log.Logger
+        cls, spec: dict[str, str | list[str]], logger: tmt.log.Logger
     ) -> 'FmfContext':
         """
         Normalize fmf context specification from fmf node.
@@ -466,9 +465,9 @@ class StreamLogger(Thread):
         self,
         log_header: str,
         *,
-        stream: Optional[IO[bytes]] = None,
-        logger: Optional[tmt.log.LoggingFunction] = None,
-        click_context: Optional[click.Context] = None,
+        stream: IO[bytes] | None = None,
+        logger: tmt.log.LoggingFunction | None = None,
+        click_context: click.Context | None = None,
         stream_output: bool = True,
     ) -> None:
         super().__init__(daemon=True)
@@ -496,7 +495,7 @@ class StreamLogger(Thread):
                 self.logger(self.log_header, line.rstrip('\n'), 'yellow', level=3)
             self.output.append(line)
 
-    def get_output(self) -> Optional[str]:
+    def get_output(self) -> str | None:
         return "".join(self.output)
 
 
@@ -516,7 +515,7 @@ class UnusedStreamLogger(StreamLogger):
     def run(self) -> None:
         pass
 
-    def get_output(self) -> Optional[str]:
+    def get_output(self) -> str | None:
         return None
 
 
@@ -550,8 +549,8 @@ OnProcessEndCallback = Callable[
 
 @container(frozen=True)
 class CommandOutput:
-    stdout: Optional[str]
-    stderr: Optional[str]
+    stdout: str | None
+    stderr: str | None
 
 
 class ShellScript:
@@ -693,19 +692,19 @@ class Command:
     def run(
         self,
         *,
-        cwd: Optional[Path],
+        cwd: Path | None,
         shell: bool = False,
         environment: Optional['Environment'] = None,
         dry: bool = False,
         join: bool = False,
         interactive: bool = False,
-        timeout: Optional[int] = None,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
+        timeout: int | None = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
         # Logging
-        message: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        message: str | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
         stream_output: bool = True,
         caller: Optional['Common'] = None,
@@ -892,8 +891,8 @@ class Command:
         else:
             log_event('waiting for process completed')
 
-        stdout: Optional[str]
-        stderr: Optional[str]
+        stdout: str | None
+        stderr: str | None
 
         if interactive:
             log_event('stream readers not active')
@@ -1009,7 +1008,7 @@ class HasRunWorkdir(abc.ABC):
         return path
 
     @contextlib.contextmanager
-    def tmpdir(self, prefix: Optional[str] = None, suffix: Optional[str] = None) -> Iterator[Path]:
+    def tmpdir(self, prefix: str | None = None, suffix: str | None = None) -> Iterator[Path]:
         """
         Path to a new, unique temporary directory.
 
@@ -1189,7 +1188,7 @@ class _CommonMeta(abc.ABCMeta):
         # of the assignment below. That's incomplete, and leads to mypy warning
         # about assignments of `CliInvocation` instances to this attribute.
         # Repeating the annotation silences mypy, giving it better picture.
-        cls.cli_invocation: Optional[tmt.cli.CliInvocation] = None
+        cls.cli_invocation: tmt.cli.CliInvocation | None = None
 
 
 class Common(_CommonBase, metaclass=_CommonMeta):
@@ -1205,7 +1204,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     # When set to true, _opt will be ignored (default will be returned)
     ignore_class_options: bool = False
     _workdir: WorkdirType = None
-    _clone_dirpath: Optional[Path] = None
+    _clone_dirpath: Path | None = None
 
     # TODO: must be declared outside of __init__(), because it must exist before
     # __init__() gets called to allow logging helpers work correctly when used
@@ -1232,10 +1231,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def __init__(
         self,
         *,
-        parent: Optional[CommonDerivedType] = None,
-        name: Optional[str] = None,
+        parent: CommonDerivedType | None = None,
+        name: str | None = None,
         workdir: WorkdirArgumentType = None,
-        workdir_root: Optional[Path] = None,
+        workdir_root: Path | None = None,
         relative_indent: int = 1,
         cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
         logger: tmt.log.Logger,
@@ -1339,7 +1338,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def store_cli_invocation(
         cls,
         context: Optional['tmt.cli.Context'],
-        options: Optional[dict[str, Any]] = None,
+        options: dict[str, Any] | None = None,
     ) -> 'tmt.cli.CliInvocation':
         """
         Record a CLI invocation and options it carries for later use.
@@ -1493,7 +1492,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         return cls.cli_invocation.options.get(option, default)
 
-    def opt(self, option: str, default: Optional[Any] = None) -> Any:
+    def opt(self, option: str, default: Any | None = None) -> Any:
         """
         Get an option from the command line options
 
@@ -1667,7 +1666,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def _indent(
         self,
         key: str,
-        value: Optional[str] = None,
+        value: str | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> str:
@@ -1698,10 +1697,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def info(
         self,
         key: str,
-        value: Optional[LoggableValue] = None,
+        value: LoggableValue | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        topic: Optional[tmt.log.Topic] = None,
+        topic: tmt.log.Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         """
@@ -1720,11 +1719,11 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def verbose(
         self,
         key: str,
-        value: Optional[LoggableValue] = None,
+        value: LoggableValue | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
-        topic: Optional[tmt.log.Topic] = None,
+        topic: tmt.log.Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         """
@@ -1746,11 +1745,11 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def debug(
         self,
         key: str,
-        value: Optional[LoggableValue] = None,
+        value: LoggableValue | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
-        topic: Optional[tmt.log.Topic] = None,
+        topic: tmt.log.Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         """
@@ -1786,11 +1785,11 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def _command_verbose_logger(
         self,
         key: str,
-        value: Optional[str] = None,
+        value: str | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 1,
         level: int = 3,
-        topic: Optional[tmt.log.Topic] = None,
+        topic: tmt.log.Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         """
@@ -1813,19 +1812,19 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def run(
         self,
         command: Command,
-        friendly_command: Optional[str] = None,
+        friendly_command: str | None = None,
         silent: bool = False,
-        message: Optional[str] = None,
-        cwd: Optional[Path] = None,
+        message: str | None = None,
+        cwd: Path | None = None,
         ignore_dry: bool = False,
         shell: bool = False,
         environment: Optional['Environment'] = None,
         interactive: bool = False,
         join: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
-        timeout: Optional[int] = None,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
+        log: tmt.log.LoggingFunction | None = None,
+        timeout: int | None = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
     ) -> CommandOutput:
         """
         Run command, give message, handle errors
@@ -1892,7 +1891,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         data: str,
         mode: WriteMode = 'w',
         debug_level: int = 2,
-        permissions: Optional[int] = None,
+        permissions: int | None = None,
     ) -> None:
         """
         Write into a file in the workdir of this object.
@@ -2024,7 +2023,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         _BOOTSTRAP_LOGGER.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
 
-    def _workdir_name(self) -> Optional[Path]:
+    def _workdir_name(self) -> Path | None:
         """
         Construct work directory name from parent workdir
         """
@@ -2047,7 +2046,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         elif workdir is not None:
             self._workdir_init(workdir)
 
-    def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
+    def _workdir_cleanup(self, path: Path | None = None) -> None:
         """
         Clean up the work directory
         """
@@ -2059,7 +2058,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self._workdir = None
 
     @property
-    def workdir(self) -> Optional[Path]:
+    def workdir(self) -> Path | None:
         """
         Get the workdir, create if does not exist
         """
@@ -2126,7 +2125,7 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
     def store_cli_invocation(
         cls,
         context: Optional['tmt.cli.Context'],
-        options: Optional[dict[str, Any]] = None,
+        options: dict[str, Any] | None = None,
     ) -> 'tmt.cli.CliInvocation':
         """
         Save a CLI context and options it carries for later use.
@@ -2175,7 +2174,7 @@ class GeneralError(Exception):
     def __init__(
         self,
         message: str,
-        causes: Optional[list[Exception]] = None,
+        causes: list[Exception] | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -2218,9 +2217,9 @@ class RunError(GeneralError):
         message: str,
         command: Command,
         returncode: int,
-        stdout: Optional[str] = None,
-        stderr: Optional[str] = None,
-        caller: Optional[Common] = None,
+        stdout: str | None = None,
+        stderr: str | None = None,
+        caller: Common | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -2267,7 +2266,7 @@ class SpecificationError(MetadataError):
     def __init__(
         self,
         message: str,
-        validation_errors: Optional[list[tuple[jsonschema.ValidationError, str]]] = None,
+        validation_errors: list[tuple[jsonschema.ValidationError, str]] | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -2463,8 +2462,8 @@ def render_run_exception_streams(
 @overload
 def render_command_report(
     *,
-    label: Optional[str] = None,
-    command: Optional[Union[ShellScript, Command]] = None,
+    label: str | None = None,
+    command: ShellScript | Command | None = None,
     output: CommandOutput,
     exc: None = None,
 ) -> Iterator[str]:
@@ -2474,8 +2473,8 @@ def render_command_report(
 @overload
 def render_command_report(
     *,
-    label: Optional[str] = None,
-    command: Optional[Union[ShellScript, Command]] = None,
+    label: str | None = None,
+    command: ShellScript | Command | None = None,
     output: None = None,
     exc: Exception,
 ) -> Iterator[str]:
@@ -2484,10 +2483,10 @@ def render_command_report(
 
 def render_command_report(
     *,
-    label: Optional[str] = None,
-    command: Optional[Union[ShellScript, Command]] = None,
-    output: Optional[CommandOutput] = None,
-    exc: Optional[Exception] = None,
+    label: str | None = None,
+    command: ShellScript | Command | None = None,
+    output: CommandOutput | None = None,
+    exc: Exception | None = None,
 ) -> Iterator[str]:
     """
     Format a command output for a report file.
@@ -2567,7 +2566,7 @@ def render_command_report(
 
 
 def render_report(
-    *, label: str, timer: 'Stopwatch', report: Optional[Iterable[str]] = None
+    *, label: str, timer: 'Stopwatch', report: Iterable[str] | None = None
 ) -> Iterator[str]:
     """
     Format an arbitrary body of text for a report file.
@@ -2823,7 +2822,7 @@ def render_exception_as_notes(exception: BaseException) -> list[str]:
 
 def show_exception(
     exception: BaseException,
-    traceback_verbosity: Optional[TracebackVerbosity] = None,
+    traceback_verbosity: TracebackVerbosity | None = None,
     include_logfiles: bool = True,
 ) -> None:
     """
@@ -2885,7 +2884,7 @@ def uniq(values: list[T]) -> list[T]:
     return list(set(values))
 
 
-def duplicates(values: Iterable[Optional[T]]) -> Iterator[T]:
+def duplicates(values: Iterable[T | None]) -> Iterator[T]:
     """
     Iterate over all duplicate values in ``values``
     """
@@ -3020,7 +3019,7 @@ _JSON_REPRESENTERS: dict[Any, Callable[[Any], Any]] = {
 def _yaml(
     *,
     yaml_type: YamlTypType = "safe",
-    width: Optional[int] = None,
+    width: int | None = None,
     start: bool = False,
 ) -> YAML:
     """
@@ -3148,7 +3147,7 @@ def to_yaml(
     data: Any,
     *,
     yaml_type: YamlTypType = "safe",
-    width: Optional[int] = None,
+    width: int | None = None,
     sort: bool = False,
     start: bool = False,
 ) -> str:
@@ -3335,7 +3334,7 @@ _SUPPORTED_STATE_FORMATS: dict[str, StateFormat] = {
 }
 
 
-def get_state_format(format: Optional[str] = None) -> StateFormat:
+def get_state_format(format: str | None = None) -> StateFormat:
     """
     Get a state format by the given name.
 
@@ -3361,7 +3360,7 @@ DEFAULT_STATE_FORMAT: Final[StateFormat] = get_state_format(
 )
 
 
-def from_state(state: str, format_name: Optional[str] = None) -> Any:
+def from_state(state: str, format_name: str | None = None) -> Any:
     """
     Turn stored state into Python data structure.
 
@@ -3383,7 +3382,7 @@ def from_state(state: str, format_name: Optional[str] = None) -> Any:
     return state_format.from_state(state)
 
 
-def to_state(data: Any, format_name: Optional[str] = None) -> str:
+def to_state(data: Any, format_name: str | None = None) -> str:
     """
     Turn Python data structure into a stored state.
 
@@ -3405,7 +3404,7 @@ def to_state(data: Any, format_name: Optional[str] = None) -> str:
     return state_format.to_state(data)
 
 
-def read_state(filepath: Path, format_name: Optional[str] = None) -> Any:
+def read_state(filepath: Path, format_name: str | None = None) -> Any:
     """
     Read a stored state from the given file.
 
@@ -3427,7 +3426,7 @@ def read_state(filepath: Path, format_name: Optional[str] = None) -> Any:
     return state_format.from_state(Path(f'{filepath}{state_format.suffix}').read_text())
 
 
-def write_state(filepath: Path, data: Any, format_name: Optional[str] = None) -> None:
+def write_state(filepath: Path, data: Any, format_name: str | None = None) -> None:
     """
     Write a state into the given file.
 
@@ -3471,7 +3470,7 @@ def markdown_to_html(filename: Path) -> str:
         raise ConvertError(f"Unable to open '{filename}'.") from error
 
 
-def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -> int:
+def duration_to_seconds(duration: str, injected_default: str | None = None) -> int:
     """
     Convert extended sleep time format into seconds
 
@@ -3537,7 +3536,7 @@ def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -
 @overload
 def verdict(
     decision: bool,
-    comment: Optional[str] = None,
+    comment: str | None = None,
     good: str = 'pass',
     bad: str = 'fail',
     problem: str = 'warn',
@@ -3549,7 +3548,7 @@ def verdict(
 @overload
 def verdict(
     decision: None,
-    comment: Optional[str] = None,
+    comment: str | None = None,
     good: str = 'pass',
     bad: str = 'fail',
     problem: str = 'warn',
@@ -3559,13 +3558,13 @@ def verdict(
 
 
 def verdict(
-    decision: Optional[bool],
-    comment: Optional[str] = None,
+    decision: bool | None,
+    comment: str | None = None,
     good: str = 'pass',
     bad: str = 'fail',
     problem: str = 'warn',
     **kwargs: Any,
-) -> Optional[bool]:
+) -> bool | None:
     """
     Print verdict in green, red or yellow based on the decision
 
@@ -3627,7 +3626,7 @@ _FORMAT_VALUE_DICT_ENTRY_INDENT = ' ' * INDENT
 _FORMAT_VALUE_LIST_ENTRY_INDENT = '  - '
 
 
-def assert_window_size(window_size: Optional[int]) -> None:
+def assert_window_size(window_size: int | None) -> None:
     """
     Raise an exception if window size is zero or a negative integer.
 
@@ -3644,7 +3643,7 @@ def assert_window_size(window_size: Optional[int]) -> None:
 
 def _format_bool(
     value: bool,
-    window_size: Optional[int],
+    window_size: int | None,
     key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
@@ -3660,7 +3659,7 @@ def _format_bool(
 
 def _format_list(
     value: list[Any],
-    window_size: Optional[int],
+    window_size: int | None,
     key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
@@ -3729,7 +3728,7 @@ def _format_list(
 
 def _format_str(
     value: str,
-    window_size: Optional[int],
+    window_size: int | None,
     key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
@@ -3779,7 +3778,7 @@ def _format_str(
 
 def _format_dict(
     value: dict[Any, Any],
-    window_size: Optional[int],
+    window_size: int | None,
     key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
@@ -3908,7 +3907,7 @@ def _format_dict(
 
 #: A type describing a per-type formatting helper.
 ValueFormatter = Callable[
-    [Any, Optional[int], 'tmt.utils.themes.Style', ListFormat, FormatWrap], Iterator[str]
+    [Any, int | None, 'tmt.utils.themes.Style', ListFormat, FormatWrap], Iterator[str]
 ]
 
 
@@ -3924,7 +3923,7 @@ _VALUE_FORMATTERS: list[tuple[Any, ValueFormatter]] = [
 
 def _format_value(
     value: Any,
-    window_size: Optional[int] = None,
+    window_size: int | None = None,
     key_color: 'tmt.utils.themes.Style' = None,
     list_format: ListFormat = ListFormat.LISTED,
     wrap: FormatWrap = 'auto',
@@ -3963,7 +3962,7 @@ def _format_value(
 
 def format_value(
     value: Any,
-    window_size: Optional[int] = None,
+    window_size: int | None = None,
     key_color: 'tmt.utils.themes.Style' = None,
     list_format: ListFormat = ListFormat.LISTED,
     wrap: FormatWrap = 'auto',
@@ -4028,7 +4027,7 @@ def format_value(
 
 def format(
     key: str,
-    value: Union[None, float, bool, str, list[Any], dict[Any, Any]] = None,
+    value: None | float | bool | str | list[Any] | dict[Any, Any] = None,
     indent: int = 24,
     window_size: int = OUTPUT_WIDTH,
     wrap: FormatWrap = 'auto',
@@ -4165,7 +4164,7 @@ def create_directory(
     # Streamline the logging a bit: wrap the creating with a function returning
     # a message & optional exception. Later we will send the message to debug
     # log, and maybe also to console.
-    def _create_directory() -> tuple[str, Optional[Exception]]:
+    def _create_directory() -> tuple[str, Exception | None]:
         if path.is_dir():
             return (f"{name.capitalize()} '{path}' already exists.", None)
 
@@ -4231,7 +4230,7 @@ def create_file(
     # Streamline the logging a bit: wrap the creating with a function returning
     # a message & optional exception. Later we will send the message to debug
     # log, and maybe also to console.
-    def _create_file() -> tuple[str, Optional[Exception]]:
+    def _create_file() -> tuple[str, Exception | None]:
         # When overwriting an existing path, we need to provide different message.
         # Let's save the action taken for logging.
         action: str = 'created'
@@ -4398,7 +4397,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
         return answer
 
     def increment(self, *args: Any, **kwargs: Any) -> urllib3.util.retry.Retry:
-        error = cast(Optional[Exception], kwargs.get('error'))
+        error = cast(Exception | None, kwargs.get('error'))
 
         # Detect a subset of exception we do not want to follow with a retry.
         # SIM102: Use a single `if` statement instead of nested `if` statements. Keeping for
@@ -4425,7 +4424,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
 
         # Handle GitHub-specific responses
         # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#exceeding-the-rate-limit
-        response = cast(Optional[urllib3.response.HTTPResponse], kwargs.get('response'))
+        response = cast(urllib3.response.HTTPResponse | None, kwargs.get('response'))
         if response is None or 'X-GitHub-Request-Id' not in response.headers:
             return super().increment(*args, **kwargs)
 
@@ -4519,9 +4518,9 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         retries: int = RETRY_SESSION_RETRIES,
         backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
         backoff_max: float = RETRY_SESSION_BACKOFF_MAX,
-        allowed_methods: Optional[tuple[str, ...]] = None,
+        allowed_methods: tuple[str, ...] | None = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         logger: tmt.log.Logger,
     ) -> requests.Session:
         # `method_whitelist`` has been renamed to `allowed_methods` since
@@ -4568,9 +4567,9 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         retries: int = RETRY_SESSION_RETRIES,
         backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
         backoff_max: float = RETRY_SESSION_BACKOFF_MAX,
-        allowed_methods: Optional[tuple[str, ...]] = None,
+        allowed_methods: tuple[str, ...] | None = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         self.retries = retries
@@ -4652,7 +4651,7 @@ def generate_runs(path: Path, id_: tuple[str, ...], all_: bool = False) -> Itera
         yield abs_child_path
 
 
-def load_run(run: 'tmt.base.run.Run') -> tuple[bool, Optional[Exception]]:
+def load_run(run: 'tmt.base.run.Run') -> tuple[bool, Exception | None]:
     """
     Load a run and its steps from the workdir
     """
@@ -4720,7 +4719,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         if not sys.stdout.isatty():
             self.enabled = False
 
-        self._previous_line: Optional[str] = None
+        self._previous_line: str | None = None
 
     def __enter__(self) -> 'Self':
         return self
@@ -4786,7 +4785,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         self._update_message_area(value, color=color)
 
 
-def find_fmf_root(path: Path, ignore_paths: Optional[list[Path]] = None) -> list[Path]:
+def find_fmf_root(path: Path, ignore_paths: list[Path] | None = None) -> list[Path]:
     """
     Search through path and return all fmf roots that exist there
 
@@ -5065,7 +5064,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
 
 def preformat_jsonschema_validation_errors(
     raw_errors: list[jsonschema.ValidationError],
-    prefix: Optional[str] = None,
+    prefix: str | None = None,
 ) -> list[tuple[jsonschema.ValidationError, str]]:
     """
     A helper to preformat JSON schema validation errors.
@@ -5266,7 +5265,7 @@ def normalize_optional_int(
     key_address: str,
     value: Any,
     logger: tmt.log.Logger,
-) -> Optional[int]:
+) -> int | None:
     """
     Normalize an integer that may be unset as well.
 
@@ -5444,7 +5443,7 @@ def normalize_path(
     key_address: str,
     value: Any,
     logger: tmt.log.Logger,
-) -> Optional[Path]:
+) -> Path | None:
     """
     Normalize content of the test `path` key
     """
@@ -5463,7 +5462,7 @@ def normalize_path(
 
 def normalize_path_list(
     key_address: str,
-    value: Union[None, str, list[str]],
+    value: None | str | list[str],
     logger: tmt.log.Logger,
 ) -> list[Path]:
     """
@@ -5500,7 +5499,7 @@ def normalize_path_list(
 
 def normalize_shell_script_list(
     key_address: str,
-    value: Union[None, str, list[str]],
+    value: None | str | list[str],
     logger: tmt.log.Logger,
 ) -> list[ShellScript]:
     """
@@ -5537,9 +5536,9 @@ def normalize_shell_script_list(
 
 def normalize_shell_script(
     key_address: str,
-    value: Union[None, str],
+    value: None | str,
     logger: tmt.log.Logger,
-) -> Optional[ShellScript]:
+) -> ShellScript | None:
     """
     Normalize a single shell script input that may be unset.
 
@@ -5934,7 +5933,7 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
         super().__init__(node=node, logger=logger, **kwargs)
 
 
-def locate_key_origin(node: fmf.Tree, key: str) -> Optional[fmf.Tree]:
+def locate_key_origin(node: fmf.Tree, key: str) -> fmf.Tree | None:
     """
     Find an fmf node where the given key is defined.
 
@@ -5975,8 +5974,8 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
 # TODO: Move this in a dedicated module
 @functools.cache
 def _get_resource_files_search_path(
-    package: Union[str, ModuleType], logger: tmt.log.Logger
-) -> Union[Path, MultiplexedPath]:
+    package: str | ModuleType, logger: tmt.log.Logger
+) -> Path | MultiplexedPath:
     """
     Helper (cached) function for :py:func:`resource_files`.
 
@@ -6008,8 +6007,8 @@ def _get_resource_files_search_path(
 
 @overload
 def resource_files(
-    path: Union[str, Path],
-    package: Union[str, ModuleType] = "tmt",
+    path: str | Path,
+    package: str | ModuleType = "tmt",
     *,
     logger: tmt.log.Logger,
     assert_file: Literal[True],
@@ -6018,21 +6017,21 @@ def resource_files(
 
 @overload
 def resource_files(
-    path: Union[str, Path],
-    package: Union[str, ModuleType] = "tmt",
+    path: str | Path,
+    package: str | ModuleType = "tmt",
     *,
     logger: tmt.log.Logger,
     assert_file: Literal[False] = False,
-) -> Union[Path, MultiplexedPath]: ...
+) -> Path | MultiplexedPath: ...
 
 
 def resource_files(
-    path: Union[str, Path],
-    package: Union[str, ModuleType] = "tmt",
+    path: str | Path,
+    package: str | ModuleType = "tmt",
     *,
     logger: tmt.log.Logger,
     assert_file: bool = False,
-) -> Union[Path, MultiplexedPath]:
+) -> Path | MultiplexedPath:
     """
     Helper function to get path of package file or directory.
 
@@ -6067,7 +6066,7 @@ def resource_files(
 
 def safe_call(
     fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
-) -> tuple[Optional[T], Optional[Exception]]:
+) -> tuple[T | None, Exception | None]:
     """
     Run a function and capture possible exceptions raised during the call.
 
@@ -6093,12 +6092,12 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
         pass
 
     def __enter__(self) -> Self:
-        self.start_time = datetime.datetime.now(datetime.timezone.utc)
+        self.start_time = datetime.datetime.now(datetime.UTC)
 
         return self
 
     def __exit__(self, *args: object) -> None:
-        self.end_time = datetime.datetime.now(datetime.timezone.utc)
+        self.end_time = datetime.datetime.now(datetime.UTC)
 
     @property
     def duration(self) -> datetime.timedelta:
@@ -6119,7 +6118,7 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     @classmethod
     def measure(
         cls, fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
-    ) -> tuple[Optional[T], Optional[Exception], 'Stopwatch']:
+    ) -> tuple[T | None, Exception | None, 'Stopwatch']:
         """
         Run a function while the stopwatch is running.
 

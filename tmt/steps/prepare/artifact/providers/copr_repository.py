@@ -4,7 +4,7 @@ Copr Repository Artifact Provider
 
 import re
 from re import Pattern
-from typing import Optional, Self
+from typing import Self
 
 import tmt.utils
 from tmt.container import container
@@ -65,7 +65,7 @@ class CoprRepositoryProvider(ArtifactProvider):
               - copr.repository:@teemtee/stable
     """
 
-    repository: Optional[Repository] = None
+    repository: Repository | None = None
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
@@ -100,7 +100,7 @@ class CoprRepositoryProvider(ArtifactProvider):
         self,
         guest: Guest,
         download_path: Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
+        exclude_patterns: list[Pattern[str]] | None = None,
     ) -> list[Path]:
         """
         Enable the Copr repository on the guest and retrieve the resulting

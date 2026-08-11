@@ -9,8 +9,6 @@ from functools import cache
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
-    Union,
     cast,
 )
 
@@ -35,8 +33,8 @@ Test case has been migrated to git. Any changes made here might be overwritten.
 See: https://tmt.readthedocs.io/en/latest/questions.html#nitrate-migration
 """.lstrip()
 
-gssapi: Optional[types.ModuleType] = None
-nitrate: Optional[types.ModuleType] = None
+gssapi: types.ModuleType | None = None
+nitrate: types.ModuleType | None = None
 
 # FIXME: Any - https://github.com/teemtee/tmt/issues/1602
 
@@ -48,7 +46,7 @@ NitrateTestCase = Any
 DEFAULT_PRODUCT: Any = None
 
 SectionsReturnType = tuple[str, str, str, str]
-HeadingsType = list[list[Union[int, str]]]
+HeadingsType = list[list[int | str]]
 SectionsHeadingsType = dict[re.Pattern[str], HeadingsType]
 SectionsMappingType = dict[re.Pattern[str], str]
 
@@ -298,7 +296,7 @@ def enabled_for_environment(test: 'tmt.base.core.Test', tcms_notes: str) -> bool
         return True
 
 
-def return_markdown_file() -> Optional[Path]:
+def return_markdown_file() -> Path | None:
     """
     Return path to the markdown file
     """
@@ -730,7 +728,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 class NitrateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_test_collection(
-        cls, tests: list[tmt.base.core.Test], keys: Optional[list[str]] = None, **kwargs: Any
+        cls, tests: list[tmt.base.core.Test], keys: list[str] | None = None, **kwargs: Any
     ) -> str:
         for test in tests:
             export_to_nitrate(test)

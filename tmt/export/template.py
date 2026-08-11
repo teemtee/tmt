@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import tmt.base.core
 import tmt.base.plan
@@ -18,9 +18,9 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def render_template(
         cls,
         *,
-        template_filepath: Optional[Path] = None,
+        template_filepath: Path | None = None,
         default_template_filename: str,
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **variables: Any,
     ) -> str:
         template_filepath = template_filepath or tmt.utils.resource_files(
@@ -39,8 +39,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_fmfid_collection(
         cls,
         fmf_ids: list[tmt.base.core.FmfId],
-        keys: Optional[list[str]] = None,
-        template: Optional[Path] = None,
+        keys: list[str] | None = None,
+        template: Path | None = None,
         **kwargs: Any,
     ) -> str:
         return '\n\n'.join(
@@ -59,8 +59,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_test_collection(
         cls,
         tests: list[tmt.base.core.Test],
-        keys: Optional[list[str]] = None,
-        template: Optional[Path] = None,
+        keys: list[str] | None = None,
+        template: Path | None = None,
         **kwargs: Any,
     ) -> str:
         return '\n\n'.join(
@@ -79,8 +79,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_plan_collection(
         cls,
         plans: list[tmt.base.plan.Plan],
-        keys: Optional[list[str]] = None,
-        template: Optional[Path] = None,
+        keys: list[str] | None = None,
+        template: Path | None = None,
         **kwargs: Any,
     ) -> str:
         return '\n\n'.join(
@@ -99,8 +99,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_story_collection(
         cls,
         stories: list[tmt.base.core.Story],
-        keys: Optional[list[str]] = None,
-        template: Optional[Path] = None,
+        keys: list[str] | None = None,
+        template: Path | None = None,
         include_title: bool = True,
         **kwargs: Any,
     ) -> str:

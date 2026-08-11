@@ -2,7 +2,7 @@ import copy
 import re
 import shlex
 from collections.abc import Iterable, Sequence
-from typing import ClassVar, Optional, cast
+from typing import ClassVar, cast
 
 from tmt._compat.pathlib import Path
 from tmt.package_managers import (
@@ -34,7 +34,7 @@ class DnfEngine(PackageManagerEngine):
     def _repoquery_script(
         self,
         *package_specs: str,
-        repos: Optional[Iterable[str]] = None,
+        repos: Iterable[str] | None = None,
         packages_only: bool = True,
         installed_only: bool = False,
     ) -> ShellScript:
@@ -75,7 +75,7 @@ class DnfEngine(PackageManagerEngine):
 
         return (command, options)
 
-    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
+    def _extra_dnf_options(self, options: Options, command: Command | None = None) -> Command:
         """
         Collect additional options for ``yum``/``dnf`` based on given options
         """
@@ -122,7 +122,7 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def _construct_install_script(
-        self, *installables: Installable, options: Optional[Options] = None
+        self, *installables: Installable, options: Options | None = None
     ) -> ShellScript:
         options = options or Options()
 
@@ -135,7 +135,7 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def _construct_reinstall_script(
-        self, *installables: Installable, options: Optional[Options] = None
+        self, *installables: Installable, options: Options | None = None
     ) -> ShellScript:
         options = options or Options()
 
@@ -148,7 +148,7 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def _construct_install_debuginfo_script(
-        self, *installables: Installable, options: Optional[Options] = None
+        self, *installables: Installable, options: Options | None = None
     ) -> ShellScript:
         options = options or Options()
 
@@ -174,21 +174,21 @@ class DnfEngine(PackageManagerEngine):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         return self._construct_install_script(*installables, options=options)
 
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         return self._construct_reinstall_script(*installables, options=options)
 
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         options = options or Options()
 
@@ -247,7 +247,7 @@ class DnfEngine(PackageManagerEngine):
     def resolve_provides(
         self,
         provides: Sequence[str],
-        repo_ids: Optional[Iterable[str]] = None,
+        repo_ids: Iterable[str] | None = None,
     ) -> ShellScript:
         assert provides, "provides must not be empty"
         return self._repoquery_script(
@@ -358,7 +358,7 @@ class Dnf(PackageManager[DnfEngine]):
     def install_local(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
         options.check_first = False
@@ -371,7 +371,7 @@ class Dnf(PackageManager[DnfEngine]):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         output = super().install_debuginfo(*installables, options=options)
 
@@ -389,7 +389,7 @@ class Dnf5Engine(DnfEngine):
     skip_missing_debuginfo_option = skip_missing_packages_option
     _full_nevra_querytag = "%{full_nevra}"
 
-    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
+    def _extra_dnf_options(self, options: Options, command: Command | None = None) -> Command:
         """
         Collect additional options for ``dnf5`` based on given options.
         """
@@ -420,7 +420,7 @@ class YumEngine(DnfEngine):
     _base_command = Command('yum')
     _full_nevra_querytag = "%{nevra}"
 
-    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
+    def _extra_dnf_options(self, options: Options, command: Command | None = None) -> Command:
         if options.allow_erasing:
             raise PrepareError("Package manager 'yum' does not support '--allowerasing'.")
         if options.allow_downgrade:
@@ -438,7 +438,7 @@ class YumEngine(DnfEngine):
     def _repoquery_script(
         self,
         *package_specs: str,
-        repos: Optional[Iterable[str]] = None,
+        repos: Iterable[str] | None = None,
         packages_only: bool = True,
         installed_only: bool = False,
     ) -> ShellScript:
@@ -530,9 +530,7 @@ class YumEngine(DnfEngine):
     # decorator, it might be messing with the class inheritance as seen by pyright,
     # but mypy sees no issue, pytest sees no issue, everything works. Silencing
     # for now.
-    def install(
-        self, *installables: Installable, options: Optional[Options] = None
-    ) -> ShellScript:
+    def install(self, *installables: Installable, options: Options | None = None) -> ShellScript:
         options = options or Options()
 
         script = cast(  # type: ignore[redundant-cast]
@@ -556,9 +554,7 @@ class YumEngine(DnfEngine):
 
         return script
 
-    def reinstall(
-        self, *installables: Installable, options: Optional[Options] = None
-    ) -> ShellScript:
+    def reinstall(self, *installables: Installable, options: Options | None = None) -> ShellScript:
         options = options or Options()
 
         script = cast(  # type: ignore[redundant-cast]

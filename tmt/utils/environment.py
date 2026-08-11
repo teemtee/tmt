@@ -7,9 +7,7 @@ from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
     Self,
-    Union,
     cast,
 )
 
@@ -75,7 +73,7 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
 
-    def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
+    def __init__(self, data: dict[EnvVarName, EnvVarValue] | None = None) -> None:
         super().__init__(data or {})
 
     @classmethod
@@ -157,7 +155,7 @@ class Environment(dict[str, EnvVarValue]):
     @classmethod
     def from_sequence(
         cls,
-        raw_variables: Union[str, Sequence[str]],
+        raw_variables: str | Sequence[str],
         logger: tmt.log.Logger,
     ) -> 'Environment':
         """
@@ -227,7 +225,7 @@ class Environment(dict[str, EnvVarValue]):
         cls,
         *,
         filename: str,
-        root: Optional[Path] = None,
+        root: Path | None = None,
         logger: tmt.log.Logger,
     ) -> 'Environment':
         """
@@ -254,7 +252,7 @@ class Environment(dict[str, EnvVarValue]):
 
         root = root or Path.cwd()
         filename = filename.strip()
-        environment_filepath: Optional[Path] = None
+        environment_filepath: Path | None = None
 
         # Fetch a remote file
         if filename.startswith("http"):
@@ -316,7 +314,7 @@ class Environment(dict[str, EnvVarValue]):
         cls,
         *,
         filenames: Iterable[str],
-        root: Optional[Path] = None,
+        root: Path | None = None,
         logger: tmt.log.Logger,
     ) -> 'Environment':
         """
@@ -358,7 +356,7 @@ class Environment(dict[str, EnvVarValue]):
         *,
         raw_cli_environment_files: Sequence[str],
         raw_cli_environment: Sequence[str],
-        file_root: Optional[Path] = None,
+        file_root: Path | None = None,
         logger: tmt.log.Logger,
     ) -> Self:
         """
@@ -406,7 +404,7 @@ class Environment(dict[str, EnvVarValue]):
         *,
         raw_fmf_environment_files: Sequence[str],
         raw_fmf_environment: Mapping[str, Any],
-        file_root: Optional[Path] = None,
+        file_root: Path | None = None,
         logger: tmt.log.Logger,
     ) -> Self:
         """
@@ -447,7 +445,7 @@ class Environment(dict[str, EnvVarValue]):
         )
 
     @classmethod
-    def from_dict(cls, data: Optional[Mapping[str, Any]] = None) -> 'Environment':
+    def from_dict(cls, data: Mapping[str, Any] | None = None) -> 'Environment':
         """
         Create environment variables from a dictionary
         """
@@ -476,7 +474,7 @@ class Environment(dict[str, EnvVarValue]):
         )
 
     @classmethod
-    def from_fmf_spec(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
+    def from_fmf_spec(cls, data: dict[str, Any] | None = None) -> 'Environment':
         """
         Create environment from an fmf specification
         """
@@ -537,7 +535,7 @@ class Environment(dict[str, EnvVarValue]):
         return Environment(self)
 
     def update(  # type: ignore[override]
-        self, *others: Union[dict[str, EnvVarValue], HasEnvironment]
+        self, *others: dict[str, EnvVarValue] | HasEnvironment
     ) -> None:
         for other in others:
             if isinstance(other, dict):

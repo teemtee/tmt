@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast
 
 import fmf
 
@@ -55,16 +56,16 @@ def _normalize_require(
 class _RawRecipeTest(TypedDict, total=False):
     name: str
     discover_phase: str
-    summary: Optional[str]
-    description: Optional[str]
+    summary: str | None
+    description: str | None
     author: list[str]
     contact: list[str]
     enabled: bool
     order: int
-    id: Optional[str]
+    id: str | None
     tag: list[str]
-    tier: Optional[str]
-    adjust: Optional[list['_RawAdjustRule']]
+    tier: str | None
+    adjust: list['_RawAdjustRule'] | None
     component: list[str]
     framework: str
     manual: bool
@@ -76,8 +77,8 @@ class _RawRecipeTest(TypedDict, total=False):
     restart_with_reboot: bool
     serial_number: int
     link: Optional['_RawLinks']
-    test: Optional[str]
-    path: Optional[str]
+    test: str | None
+    path: str | None
     require: list['_RawDependency']
     recommend: list['_RawDependency']
     environment: dict[str, str]
@@ -92,16 +93,16 @@ class _RawRecipeStep(TypedDict, total=False):
 
 class _RawRecipePlan(TypedDict, total=False):
     name: str
-    summary: Optional[str]
-    description: Optional[str]
+    summary: str | None
+    description: str | None
     author: list[str]
     contact: list[str]
     enabled: bool
     order: int
-    id: Optional[str]
+    id: str | None
     tag: list[str]
-    tier: Optional[str]
-    adjust: Optional[list['_RawAdjustRule']]
+    tier: str | None
+    adjust: list['_RawAdjustRule'] | None
     link: Optional['_RawLinks']
     environment: dict[str, str]
     context: dict[str, Any]
@@ -115,7 +116,7 @@ class _RawRecipePlan(TypedDict, total=False):
 
 
 class _RawRecipeRun(TypedDict, total=False):
-    root: Optional[str]
+    root: str | None
     remove: bool
     environment: dict[str, str]
     context: dict[str, Any]
@@ -132,18 +133,18 @@ class _RecipeTest(
 ):
     name: str = field()
     discover_phase: str = field()
-    test: Optional[ShellScript] = field(default=None, normalize=tmt.utils.normalize_shell_script)
-    path: Optional[Path] = field(default=None, normalize=tmt.utils.normalize_path)
-    summary: Optional[str] = field(default=None)
-    description: Optional[str] = field(default=None)
+    test: ShellScript | None = field(default=None, normalize=tmt.utils.normalize_shell_script)
+    path: Path | None = field(default=None, normalize=tmt.utils.normalize_path)
+    summary: str | None = field(default=None)
+    description: str | None = field(default=None)
     author: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
     contact: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
     enabled: bool = field(default=True)
     order: int = field(default=DEFAULT_ORDER)
-    id: Optional[str] = field(default=None)
+    id: str | None = field(default=None)
     tag: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
-    tier: Optional[str] = field(default=None)
-    adjust: Optional[list['_RawAdjustRule']] = field(default=None)
+    tier: str | None = field(default=None)
+    adjust: list['_RawAdjustRule'] | None = field(default=None)
     component: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
     framework: str = field(default='shell')
     manual: bool = field(default=False)
@@ -338,7 +339,7 @@ class _RecipeDiscoverStep(_RecipeStep):
 
 @container
 class _RecipeExecuteStep(_RecipeStep):
-    results_path: Optional[Path]
+    results_path: Path | None
 
     def to_spec(self) -> _RawRecipeStep:
         spec = _RawRecipeStep(
@@ -353,7 +354,7 @@ class _RecipeExecuteStep(_RecipeStep):
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
     def from_spec(cls, spec: _RawRecipeStep, logger: Logger) -> '_RecipeExecuteStep':  # type: ignore[override]
-        results_path = cast(Optional[str], spec.get('results-path', None))
+        results_path = cast(str | None, spec.get('results-path', None))
         return _RecipeExecuteStep(
             enabled=bool(spec.get('enabled', False)),
             phases=spec.get('phases', []),
@@ -395,16 +396,16 @@ class _RecipeExecuteStep(_RecipeStep):
 @container
 class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], SerializableContainer):
     name: str
-    summary: Optional[str]
-    description: Optional[str]
+    summary: str | None
+    description: str | None
     author: list[str]
     contact: list[str]
     enabled: bool
     order: int
-    id: Optional[str]
+    id: str | None
     tag: list[str]
-    tier: Optional[str]
-    adjust: Optional[list['_RawAdjustRule']]
+    tier: str | None
+    adjust: list['_RawAdjustRule'] | None
     link: Optional['Links']
     environment: Environment
     context: FmfContext
@@ -525,7 +526,7 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
 
 @container
 class _RecipeRun(SpecBasedContainer[_RawRecipeRun, _RawRecipeRun], SerializableContainer):
-    root: Optional[str]
+    root: str | None
     remove: bool
     environment: Environment
     context: FmfContext

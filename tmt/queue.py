@@ -2,9 +2,9 @@ import abc
 import copy
 import functools
 import threading
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, ParamSpec, TypeVar
 
 from tmt.log import Logger
 from tmt.utils import GeneralError
@@ -42,19 +42,19 @@ class Task(abc.ABC, Generic[TaskResultT]):
     #: :tmt:story:`/spec/test/order` key, the lower the number, the
     #: earlier the task runs. Tasks with ``order`` left unset will be
     #: invoked last, in no guaranteed order.
-    order: Optional[int] = None
+    order: int | None = None
 
     #: Result returned by the task when executed.
-    result: Optional[TaskResultT] = None
+    result: TaskResultT | None = None
 
     #: If set, an exception was raised by the running task, and said
     #: exception is saved in this field.
-    exc: Optional[Exception] = None
+    exc: Exception | None = None
 
     #: If set, the task raised :py:class:`SystemExit` exception, and
     #: wants to terminate the run completely. Original exception is
     #: assigned to this field.
-    requested_exit: Optional[SystemExit] = None
+    requested_exit: SystemExit | None = None
 
     def __init__(self, logger: Logger) -> None:
         self.logger = logger
@@ -159,7 +159,7 @@ class Task(abc.ABC, Generic[TaskResultT]):
         extract_logger: Callable[['Self', T], Logger],
         inject_logger: Callable[['Self', T, Logger], None],
         submit: Callable[['Self', T, Logger, ThreadPoolExecutor], Future[TaskResultT]],
-        on_complete: Optional[Callable[['Self', T], 'Self']] = None,
+        on_complete: Callable[['Self', T], 'Self'] | None = None,
         logger: Logger,
     ) -> Iterator['Self']:
         """
@@ -440,7 +440,7 @@ class Queue(list[TaskT]):
     # task queue number dynamically. Adding task number to each task
     # would require re-defining it whenever the queue get reordered.
     @property
-    def _head_task_number(self) -> Optional[int]:
+    def _head_task_number(self) -> int | None:
         """
         Task number of the task currently at the beginning of the queue.
 
@@ -458,7 +458,7 @@ class Queue(list[TaskT]):
         return self._invoked_tasks + 1
 
     @property
-    def _tail_task_number(self) -> Optional[int]:
+    def _tail_task_number(self) -> int | None:
         """
         Task number of the last task in the queue.
 

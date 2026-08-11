@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from tmt.package_managers import (
     Installable,
     Options,
@@ -29,7 +25,7 @@ class MockEngine(PackageManagerEngine):
         self,
         installword: str,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         options = options or Options()
         extra_options = Command()
@@ -63,21 +59,21 @@ class MockEngine(PackageManagerEngine):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         return self._prepare_mock_install_script('install', *installables, options=options)
 
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         return self._prepare_mock_install_script('reinstall', *installables, options=options)
 
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> ShellScript:
         return self._prepare_mock_install_script(
             'debuginfo-install', *installables, options=options
@@ -124,7 +120,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
     def install(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
         to_install = self._check_first_filter(*installables, options=options, present=False)
@@ -135,7 +131,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
     def reinstall(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         options = options or Options()
         to_reinstall = self._check_first_filter(*installables, options=options, present=True)
@@ -148,7 +144,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
     def install_debuginfo(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
         return self.guest.run(
             self.engine.install_debuginfo(*installables, options=options).to_shell_command()
@@ -160,7 +156,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
     def install_local(
         self,
         *installables: Installable,
-        options: Optional[Options] = None,
+        options: Options | None = None,
     ) -> CommandOutput:
 
         assert isinstance(self.guest, GuestMock)

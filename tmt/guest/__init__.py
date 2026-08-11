@@ -14,12 +14,11 @@ import signal as _signal
 import string
 import subprocess
 import threading
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from shlex import quote
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Literal,
     NewType,
     Optional,
@@ -273,7 +272,7 @@ def _socket_path_trivial(
     guest_id: str,
     limit_size: Literal[True] = True,
     logger: tmt.log.Logger,
-) -> Optional[Path]:
+) -> Path | None:
     pass
 
 
@@ -294,7 +293,7 @@ def _socket_path_trivial(
     guest_id: str,
     limit_size: bool = True,
     logger: tmt.log.Logger,
-) -> Optional[Path]:
+) -> Path | None:
     """
     Generate SSH socket path using guest IDs
     """
@@ -315,7 +314,7 @@ def _socket_path_hash(
     guest_id: str,
     limit_size: bool = True,
     logger: tmt.log.Logger,
-) -> Optional[Path]:
+) -> Path | None:
     """
     Generate SSH socket path using a hash of guest IDs.
 
@@ -379,7 +378,7 @@ class TransferOptions:
     """Options for transferring files to/from the guest."""
 
     #: Apply permissions to the destination files
-    chmod: Optional[int] = None
+    chmod: int | None = None
 
     #: Enable compression during transfer
     compress: bool = False
@@ -478,7 +477,7 @@ def essential_ansible_requires() -> list['tmt.base.core.Dependency']:
     return [DependencySimple('/usr/bin/python3')]
 
 
-def format_guest_full_name(name: str, role: Optional[str]) -> str:
+def format_guest_full_name(name: str, role: str | None) -> str:
     """
     Render guest's full name, i.e. name and its role
     """
@@ -521,7 +520,7 @@ class RebootModeNotSupportedError(ProvisionError):
 
     def __init__(
         self,
-        message: Optional[str] = None,
+        message: str | None = None,
         guest: Optional['Guest'] = None,
         mode: RebootMode = RebootMode.SOFT,
         *args: Any,
@@ -558,7 +557,7 @@ class BootMark(abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    def check(cls, guest: 'Guest', current: Optional[str]) -> None:
+    def check(cls, guest: 'Guest', current: str | None) -> None:
         """
         Read the new boot mark, and compare it with the current one.
 
@@ -646,9 +645,9 @@ class GuestFacts(SerializableContainer):
     #: Set to ``True`` by the first call to :py:meth:`sync`.
     in_sync: bool = False
 
-    arch: Optional[str] = None
-    distro: Optional[str] = None
-    kernel_release: Optional[str] = None
+    arch: str | None = None
+    distro: str | None = None
+    kernel_release: str | None = None
     package_manager: Optional['tmt.package_managers.GuestPackageManager'] = field(
         # cast: since the default is None, mypy cannot infere the full type,
         # and reports `package_manager` parameter to be `object`.
@@ -660,20 +659,20 @@ class GuestFacts(SerializableContainer):
         default=cast(Optional['tmt.package_managers.GuestPackageManager'], None)
     )
 
-    has_selinux: Optional[bool] = None
-    has_systemd: Optional[bool] = None
-    has_rsync: Optional[bool] = None
-    is_superuser: Optional[bool] = None
-    can_sudo: Optional[bool] = None
-    sudo_prefix: Optional[str] = None
-    is_ostree: Optional[bool] = None
-    is_image_mode: Optional[bool] = None
-    distro_id: Optional[str] = None
-    distro_major_version: Optional[int] = None
-    is_toolbox: Optional[bool] = None
-    toolbox_container_name: Optional[str] = None
-    is_container: Optional[bool] = None
-    systemd_soft_reboot: Optional[bool] = None
+    has_selinux: bool | None = None
+    has_systemd: bool | None = None
+    has_rsync: bool | None = None
+    is_superuser: bool | None = None
+    can_sudo: bool | None = None
+    sudo_prefix: str | None = None
+    is_ostree: bool | None = None
+    is_image_mode: bool | None = None
+    distro_id: str | None = None
+    distro_major_version: int | None = None
+    is_toolbox: bool | None = None
+    toolbox_container_name: str | None = None
+    is_container: bool | None = None
+    systemd_soft_reboot: bool | None = None
 
     #: Various Linux capabilities and whether they are permitted to
     #: commands executed on this guest.
@@ -699,7 +698,7 @@ class GuestFacts(SerializableContainer):
 
         return self.capabilities.get(cap, False)
 
-    def _execute(self, guest: 'Guest', command: Command) -> Optional[tmt.utils.CommandOutput]:
+    def _execute(self, guest: 'Guest', command: Command) -> tmt.utils.CommandOutput | None:
         """
         Run a command on the given guest, ignoring :py:class:`tmt.utils.RunError`.
 
@@ -776,7 +775,7 @@ class GuestFacts(SerializableContainer):
 
         return dict(_iter_pairs())
 
-    def _probe(self, guest: 'Guest', probes: list[tuple[Command, T]]) -> Optional[T]:
+    def _probe(self, guest: 'Guest', probes: list[tuple[Command, T]]) -> T | None:
         """
         Find a first successful command.
 
@@ -793,7 +792,7 @@ class GuestFacts(SerializableContainer):
 
         return None
 
-    def _query(self, guest: 'Guest', probes: list[tuple[Command, str]]) -> Optional[str]:
+    def _query(self, guest: 'Guest', probes: list[tuple[Command, str]]) -> str | None:
         """
         Find a first successful command, and extract info from its output.
 
@@ -821,10 +820,10 @@ class GuestFacts(SerializableContainer):
 
         return None
 
-    def _query_arch(self, guest: 'Guest') -> Optional[str]:
+    def _query_arch(self, guest: 'Guest') -> str | None:
         return self._query(guest, [(Command('uname', '-m'), r'(.+)')])
 
-    def _query_distro(self, guest: 'Guest') -> Optional[str]:
+    def _query_distro(self, guest: 'Guest') -> str | None:
         # Try some low-hanging fruits first. We already might have the answer,
         # provided by some standardized locations.
         if 'PRETTY_NAME' in self.os_release_content:
@@ -842,10 +841,10 @@ class GuestFacts(SerializableContainer):
             ],
         )
 
-    def _query_distro_id(self, guest: 'Guest') -> Optional[str]:
+    def _query_distro_id(self, guest: 'Guest') -> str | None:
         return self.os_release_content.get('ID')
 
-    def _query_distro_major_version(self, guest: 'Guest') -> Optional[int]:
+    def _query_distro_major_version(self, guest: 'Guest') -> int | None:
         version_id = self.os_release_content.get('VERSION_ID')
         if version_id:
             try:
@@ -854,7 +853,7 @@ class GuestFacts(SerializableContainer):
                 return None
         return None
 
-    def _query_kernel_release(self, guest: 'Guest') -> Optional[str]:
+    def _query_kernel_release(self, guest: 'Guest') -> str | None:
         return self._query(guest, [(Command('uname', '-r'), r'(.+)')])
 
     def _discover_package_manager(
@@ -909,7 +908,7 @@ class GuestFacts(SerializableContainer):
             debug_label='bootc builder',
         )
 
-    def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
+    def _query_has_selinux(self, guest: 'Guest') -> bool | None:
         """
         Detect whether guest has SELinux and it is enabled.
 
@@ -923,7 +922,7 @@ class GuestFacts(SerializableContainer):
         except tmt.utils.RunError:
             return False
 
-    def _query_has_systemd(self, guest: 'Guest') -> Optional[bool]:
+    def _query_has_systemd(self, guest: 'Guest') -> bool | None:
         """
         Detect whether guest uses systemd.
         For detection we check if systemctl exists and is executable.
@@ -934,7 +933,7 @@ class GuestFacts(SerializableContainer):
         except tmt.utils.RunError:
             return False
 
-    def _query_systemd_soft_reboot(self, guest: 'Guest') -> Optional[bool]:
+    def _query_systemd_soft_reboot(self, guest: 'Guest') -> bool | None:
         output = self._execute(
             guest,
             (
@@ -945,7 +944,7 @@ class GuestFacts(SerializableContainer):
 
         return output is not None and output.stdout is not None
 
-    def _query_has_rsync(self, guest: 'Guest') -> Optional[bool]:
+    def _query_has_rsync(self, guest: 'Guest') -> bool | None:
         """
         Detect whether ``rsync`` is available.
         """
@@ -958,7 +957,7 @@ class GuestFacts(SerializableContainer):
         except tmt.utils.RunError:
             return False
 
-    def _query_is_superuser(self, guest: 'Guest') -> Optional[bool]:
+    def _query_is_superuser(self, guest: 'Guest') -> bool | None:
         output = self._execute(guest, Command('whoami'))
 
         if output is None or output.stdout is None:
@@ -966,7 +965,7 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'root'
 
-    def _query_can_sudo(self, guest: 'Guest') -> Optional[bool]:
+    def _query_can_sudo(self, guest: 'Guest') -> bool | None:
         try:
             guest.execute(Command("sudo", "-n", "true"), silent=True)
         except tmt.utils.RunError:
@@ -985,7 +984,7 @@ class GuestFacts(SerializableContainer):
             return "sudo"
         return ""
 
-    def _query_is_ostree(self, guest: 'Guest') -> Optional[bool]:
+    def _query_is_ostree(self, guest: 'Guest') -> bool | None:
         # https://github.com/vrothberg/chkconfig/commit/538dc7edf0da387169d83599fe0774ea080b4a37#diff-562b9b19cb1cd12a7343ce5c739745ebc8f363a195276ca58e926f22927238a5R1334
         output = self._execute(
             guest,
@@ -1001,7 +1000,7 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'yes'
 
-    def _query_is_image_mode(self, guest: 'Guest') -> Optional[bool]:
+    def _query_is_image_mode(self, guest: 'Guest') -> bool | None:
         """
         Detect whether guest is an image mode based system.
 
@@ -1026,7 +1025,7 @@ class GuestFacts(SerializableContainer):
 
         return False
 
-    def _query_is_toolbox(self, guest: 'Guest') -> Optional[bool]:
+    def _query_is_toolbox(self, guest: 'Guest') -> bool | None:
         # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
         output = self._execute(
             guest,
@@ -1038,7 +1037,7 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'yes'
 
-    def _query_toolbox_container_name(self, guest: 'Guest') -> Optional[str]:
+    def _query_toolbox_container_name(self, guest: 'Guest') -> str | None:
         output = self._execute(
             guest,
             ShellScript('[ -e /run/.containerenv ] && echo yes || echo no').to_shell_command(),
@@ -1061,7 +1060,7 @@ class GuestFacts(SerializableContainer):
 
         return None
 
-    def _query_is_container(self, guest: 'Guest') -> Optional[bool]:
+    def _query_is_container(self, guest: 'Guest') -> bool | None:
         """
         Detect whether guest is a container (running systemd)
 
@@ -1183,9 +1182,9 @@ GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
 
 def normalize_hardware(
     key_address: str,
-    raw_hardware: Union[None, tmt.hardware.constraints.Spec, tmt.hardware.Hardware],
+    raw_hardware: None | tmt.hardware.constraints.Spec | tmt.hardware.Hardware,
     logger: tmt.log.Logger,
-) -> Optional[tmt.hardware.Hardware]:
+) -> tmt.hardware.Hardware | None:
     """
     Normalize a ``hardware`` key value.
 
@@ -1318,12 +1317,12 @@ class GuestData(
     _OPTIONLESS_FIELDS: tuple[str, ...] = ('primary_address', 'topology_address', 'facts')
 
     #: Primary hostname or IP address for tmt/guest communication.
-    primary_address: Optional[str] = None
+    primary_address: str | None = None
 
     #: Guest topology hostname or IP address for guest/guest communication.
-    topology_address: Optional[str] = None
+    topology_address: str | None = None
 
-    role: Optional[str] = field(
+    role: str | None = field(
         default=None,
         option='--role',
         metavar='NAME',
@@ -1365,8 +1364,8 @@ class GuestData(
         metavar='KEY=VALUE',
     )
 
-    hardware: Optional[tmt.hardware.Hardware] = field(
-        default=cast(Optional[tmt.hardware.Hardware], None),
+    hardware: tmt.hardware.Hardware | None = field(
+        default=cast(tmt.hardware.Hardware | None, None),
         option='--hardware',
         help="""
              Hardware requirements the provisioned guest must satisfy.
@@ -1380,7 +1379,7 @@ class GuestData(
         ),
     )
 
-    ansible: Optional[GuestAnsible] = field(
+    ansible: GuestAnsible | None = field(
         default=None,
         normalize=normalize_guest_ansible,
         serialize=lambda ansible: ansible.to_serialized() if ansible else None,
@@ -1476,7 +1475,7 @@ class GuestData(
     def show(
         self,
         *,
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         verbose: int = 0,
         logger: tmt.log.Logger,
     ) -> None:
@@ -1675,11 +1674,11 @@ class CommandCollector(abc.ABC):
     @abc.abstractmethod
     def collect_command(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        command: tmt.utils.Command | tmt.utils.ShellScript,
         *,
-        sourced_files: Optional[list[Path]] = None,
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
+        sourced_files: list[Path] | None = None,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
     ) -> None:
         """
         Collect a command for later batch execution.
@@ -1753,21 +1752,21 @@ class Guest(
 
         return cls._data_class
 
-    role: Optional[str]
+    role: str | None
 
     #: Primary hostname or IP address for tmt/guest communication.
-    primary_address: Optional[str] = None
+    primary_address: str | None = None
 
     #: Guest topology hostname or IP address for guest/guest communication.
-    topology_address: Optional[str] = None
+    topology_address: str | None = None
 
     become: bool
 
-    hardware: Optional[tmt.hardware.Hardware]
+    hardware: tmt.hardware.Hardware | None
 
     environment: Environment
 
-    ansible: Optional[GuestAnsible]
+    ansible: GuestAnsible | None
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
@@ -1786,8 +1785,8 @@ class Guest(
         self,
         *,
         data: GuestData,
-        name: Optional[str] = None,
-        parent: Optional[tmt.utils.Common] = None,
+        name: str | None = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -1900,7 +1899,7 @@ class Guest(
         )
 
     @functools.cached_property
-    def plan_environment_path(self) -> Optional[Path]:
+    def plan_environment_path(self) -> Path | None:
         """
         A path to the :ref:`plan environment file <step-variables>` file.
         """
@@ -1935,7 +1934,7 @@ class Guest(
         return Environment()
 
     @classmethod
-    def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
+    def options(cls, how: str | None = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """
         Prepare command line options related to guests
         """
@@ -2094,7 +2093,7 @@ class Guest(
         return facts
 
     @facts.setter
-    def facts(self, facts: Union[GuestFacts, dict[str, Any]]) -> None:
+    def facts(self, facts: GuestFacts | dict[str, Any]) -> None:
         if isinstance(facts, GuestFacts):
             self.__dict__['facts'] = facts
 
@@ -2160,7 +2159,7 @@ class Guest(
         return ['-' + (self.debug_level - 2) * 'v']
 
     @staticmethod
-    def _ansible_extra_args(extra_args: Optional[str]) -> tmt.utils.RawCommand:
+    def _ansible_extra_args(extra_args: str | None) -> tmt.utils.RawCommand:
         """
         Prepare extra arguments for ``ansible-playbook`` command.
 
@@ -2175,7 +2174,7 @@ class Guest(
             return []
         return cast(tmt.utils.RawCommand, shlex.split(str(extra_args)))
 
-    def _ansible_summary(self, output: Optional[str]) -> None:
+    def _ansible_summary(self, output: str | None) -> None:
         """
         Check the output for ansible result summary numbers
         """
@@ -2190,7 +2189,7 @@ class Guest(
                 self.verbose(key, tasks, 'green')
 
     def _sanitize_ansible_playbook_path(
-        self, playbook: AnsibleApplicable, playbook_root: Optional[Path]
+        self, playbook: AnsibleApplicable, playbook_root: Path | None
     ) -> AnsibleApplicable:
         """
         Prepare full ansible playbook path.
@@ -2240,9 +2239,7 @@ class Guest(
     # TODO: the existence of this method is very questionable, it may
     # go away while works on https://github.com/teemtee/tmt/pull/4364
     # continue.
-    def _prepare_command_environment(
-        self, environment: Optional[Environment] = None
-    ) -> Environment:
+    def _prepare_command_environment(self, environment: Environment | None = None) -> Environment:
         """
         Prepare meaningful environment for a command.
 
@@ -2278,7 +2275,7 @@ class Guest(
     # go away while works on https://github.com/teemtee/tmt/pull/4364
     # continue.
     def _prepare_ansible_command_environment(
-        self, environment: Optional[Environment] = None
+        self, environment: Environment | None = None
     ) -> Environment:
         """
         Prepare environment for an ``ansible-playbook`` command.
@@ -2305,12 +2302,12 @@ class Guest(
     def _run_guest_command(
         self,
         command: Command,
-        friendly_command: Optional[str] = None,
+        friendly_command: str | None = None,
         silent: bool = False,
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
         interactive: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2356,10 +2353,10 @@ class Guest(
     def _run_ansible(
         self,
         playbook: AnsibleApplicable,
-        playbook_root: Optional[Path] = None,
-        extra_args: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        playbook_root: Path | None = None,
+        extra_args: str | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2386,10 +2383,10 @@ class Guest(
     def run_ansible_playbook(
         self,
         playbook: AnsibleApplicable,
-        playbook_root: Optional[Path] = None,
-        extra_args: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        playbook_root: Path | None = None,
+        extra_args: str | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2437,19 +2434,19 @@ class Guest(
     @overload
     def execute(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: tmt.utils.Command | tmt.utils.ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: Literal[True] = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -2457,39 +2454,39 @@ class Guest(
     @overload
     def execute(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: tmt.utils.Command | tmt.utils.ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: Literal[False] = False,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
-    ) -> Optional[tmt.utils.CommandOutput]:
+    ) -> tmt.utils.CommandOutput | None:
         pass
 
     @abc.abstractmethod
     def execute(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: tmt.utils.Command | tmt.utils.ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2511,9 +2508,9 @@ class Guest(
     @abc.abstractmethod
     def push(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -2525,9 +2522,9 @@ class Guest(
     @abc.abstractmethod
     def pull(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
     ) -> None:
         """
         Pull files from the guest
@@ -2638,7 +2635,7 @@ class Guest(
         self,
         mode: HardRebootModes = RebootMode.HARD,
         command: None = None,
-        waiting: Optional[Waiting] = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         pass
 
@@ -2646,8 +2643,8 @@ class Guest(
     def reboot(
         self,
         mode: SoftRebootModes = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         pass
 
@@ -2655,8 +2652,8 @@ class Guest(
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -2673,7 +2670,7 @@ class Guest(
 
     def reconnect(
         self,
-        wait: Optional[Waiting] = None,
+        wait: Waiting | None = None,
     ) -> bool:
         """
         Ensure the connection to the guest is working
@@ -2724,7 +2721,7 @@ class Guest(
 
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
-    def assert_reachable(self, wait: Optional[Waiting] = None) -> None:
+    def assert_reachable(self, wait: Waiting | None = None) -> None:
         """
         Assert that the guest is reachable and responding.
         """
@@ -2766,7 +2763,7 @@ class Guest(
 
         return dirpath
 
-    def collect_log(self, log: GuestLog, hint: Optional[str] = None) -> None:
+    def collect_log(self, log: GuestLog, hint: str | None = None) -> None:
         """
         Register a guest log for (later) collection.
 
@@ -2831,9 +2828,9 @@ class Guest(
 
     def _construct_mkdtemp_command(
         self,
-        prefix: Optional[str] = None,
-        template: Optional[str] = None,
-        parent: Optional[Path] = None,
+        prefix: str | None = None,
+        template: str | None = None,
+        parent: Path | None = None,
     ) -> Command:
         template = template or 'tmp.XXXXXXXXXX'
 
@@ -2856,9 +2853,9 @@ class Guest(
         # may need it, fix it for all distros, and uncomment the
         # parameter.
         # suffix: Optional[str] = None,
-        prefix: Optional[str] = None,
-        template: Optional[str] = None,
-        parent: Optional[Path] = None,
+        prefix: str | None = None,
+        template: str | None = None,
+        parent: Path | None = None,
     ) -> Iterator[Path]:
         """
         Create a temporary directory.
@@ -2918,7 +2915,7 @@ class GuestSshData(GuestData):
     reached over SSH.
     """
 
-    port: Optional[int] = field(
+    port: int | None = field(
         default=None,
         option=('-P', '--port'),
         metavar='PORT',
@@ -2949,7 +2946,7 @@ class GuestSshData(GuestData):
              """,
         normalize=tmt.utils.normalize_path_list,
     )
-    password: Optional[str] = field(
+    password: str | None = field(
         default=None,
         option=('-p', '--password'),
         metavar='PASSWORD',
@@ -3007,10 +3004,10 @@ class GuestSsh(Guest, CommandCollector):
 
     _data_class: type[GuestData] = GuestSshData
 
-    port: Optional[int]
-    user: Optional[str]
+    port: int | None
+    user: str | None
     key: list[Path]
-    password: Optional[str]
+    password: str | None
     ssh_option: list[str]
 
     # Master ssh connection process and socket path
@@ -3021,8 +3018,8 @@ class GuestSsh(Guest, CommandCollector):
         self,
         *,
         data: GuestData,
-        name: Optional[str] = None,
-        parent: Optional[tmt.utils.Common] = None,
+        name: str | None = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         self._ssh_master_process_lock = threading.Lock()
@@ -3031,11 +3028,11 @@ class GuestSsh(Guest, CommandCollector):
 
     def collect_command(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        command: tmt.utils.Command | tmt.utils.ShellScript,
         *,
-        sourced_files: Optional[list[Path]] = None,
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
+        sourced_files: list[Path] | None = None,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
     ) -> None:
         """
         Collect a command for image mode container build.
@@ -3310,7 +3307,7 @@ class GuestSsh(Guest, CommandCollector):
         )
 
     def _cleanup_ssh_master_process(
-        self, signal: _signal.Signals = _signal.SIGTERM, logger: Optional[tmt.log.Logger] = None
+        self, signal: _signal.Signals = _signal.SIGTERM, logger: tmt.log.Logger | None = None
     ) -> None:
         logger = logger or self._logger
 
@@ -3384,10 +3381,10 @@ class GuestSsh(Guest, CommandCollector):
     def _run_ansible(
         self,
         playbook: AnsibleApplicable,
-        playbook_root: Optional[Path] = None,
-        extra_args: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        playbook_root: Path | None = None,
+        extra_args: str | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -3492,19 +3489,19 @@ class GuestSsh(Guest, CommandCollector):
     @overload
     def execute(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: tmt.utils.Command | tmt.utils.ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: Literal[True] = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -3512,40 +3509,40 @@ class GuestSsh(Guest, CommandCollector):
     @overload
     def execute(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: tmt.utils.Command | tmt.utils.ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: Literal[False] = False,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
-    ) -> Optional[tmt.utils.CommandOutput]:
+    ) -> tmt.utils.CommandOutput | None:
         pass
 
     def execute(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: tmt.utils.Command | tmt.utils.ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
-    ) -> Optional[tmt.utils.CommandOutput]:
+    ) -> tmt.utils.CommandOutput | None:
         """
         Execute a command on the guest.
 
@@ -3685,9 +3682,9 @@ class GuestSsh(Guest, CommandCollector):
 
     def push(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -3758,9 +3755,9 @@ class GuestSsh(Guest, CommandCollector):
 
     def pull(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
     ) -> None:
         """
         Pull files from the guest.
@@ -3852,7 +3849,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         mode: HardRebootModes = RebootMode.HARD,
         command: None = None,
-        waiting: Optional[Waiting] = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         pass
 
@@ -3860,16 +3857,16 @@ class GuestSsh(Guest, CommandCollector):
     def reboot(
         self,
         mode: SoftRebootModes = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         pass
 
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         if mode == RebootMode.SYSTEMD_SOFT:
             default_reboot_command = tmt.steps.DEFAULT_SYSTEMD_SOFT_REBOOT_COMMAND

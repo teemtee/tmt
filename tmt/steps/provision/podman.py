@@ -1,6 +1,6 @@
 import os
 from shlex import quote
-from typing import Any, ClassVar, Optional, Union, cast
+from typing import Any, ClassVar, cast
 
 import tmt
 import tmt.guest
@@ -68,18 +68,18 @@ class PodmanGuestData(tmt.guest.GuestData):
         help='Force pulling a fresh container image.',
     )
 
-    container: Optional[str] = field(
+    container: str | None = field(
         default=None,
         option=('-c', '--container'),
         metavar='NAME',
         help='Name or id of an existing container to be used.',
     )
-    network: Optional[str] = field(
+    network: str | None = field(
         default=None,
         internal=True,
     )
 
-    network_prefix: Optional[str] = field(
+    network_prefix: str | None = field(
         default=None,
         option='--network-prefix',
         metavar='PREFIX',
@@ -148,15 +148,15 @@ class GuestContainer(tmt.Guest):
     _data_class = PodmanGuestData
     NETWORK_NAME_FORMAT: ClassVar[str] = "{prefix}tmt-{run_name}-{plan_name}-network"
 
-    image: Optional[str]
-    container: Optional[str]
+    image: str | None
+    container: str | None
     user: str
     force_pull: bool
     parent: tmt.steps.Step
     pull_attempts: int
     pull_interval: int
     stop_time: int
-    network_prefix: Optional[str]
+    network_prefix: str | None
     expose_device: list[str]
     logger: tmt.log.Logger
 
@@ -361,8 +361,8 @@ class GuestContainer(tmt.Guest):
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
-        command: Optional[Union[Command, ShellScript]] = None,
-        waiting: Optional[Waiting] = None,
+        command: Command | ShellScript | None = None,
+        waiting: Waiting | None = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -410,10 +410,10 @@ class GuestContainer(tmt.Guest):
     def _run_ansible(
         self,
         playbook: tmt.guest.AnsibleApplicable,
-        playbook_root: Optional[Path] = None,
-        extra_args: Optional[str] = None,
-        friendly_command: Optional[str] = None,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        playbook_root: Path | None = None,
+        extra_args: str | None = None,
+        friendly_command: str | None = None,
+        log: tmt.log.LoggingFunction | None = None,
         silent: bool = False,
     ) -> tmt.utils.CommandOutput:
         """
@@ -505,19 +505,19 @@ class GuestContainer(tmt.Guest):
 
     def execute(
         self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        cwd: Optional[Path] = None,
-        environment: Optional[Environment] = None,
-        friendly_command: Optional[str] = None,
+        command: tmt.utils.Command | tmt.utils.ShellScript,
+        cwd: Path | None = None,
+        environment: Environment | None = None,
+        friendly_command: str | None = None,
         test_session: bool = False,
         immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
-        log: Optional[tmt.log.LoggingFunction] = None,
+        log: tmt.log.LoggingFunction | None = None,
         interactive: bool = False,
-        on_process_start: Optional[OnProcessStartCallback] = None,
-        on_process_end: Optional[OnProcessEndCallback] = None,
-        sourced_files: Optional[list[Path]] = None,
+        on_process_start: OnProcessStartCallback | None = None,
+        on_process_end: OnProcessEndCallback | None = None,
+        sourced_files: list[Path] | None = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -585,9 +585,9 @@ class GuestContainer(tmt.Guest):
 
     def push(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -618,7 +618,7 @@ class GuestContainer(tmt.Guest):
         # to the container. If running in toolbox, make sure to copy from the toolbox
         # container instead of localhost.
         if source and destination:
-            container_name: Optional[str] = None
+            container_name: str | None = None
             if self.parent.plan.my_run.runner.facts.is_toolbox:
                 container_name = self.parent.plan.my_run.runner.facts.toolbox_container_name
             self.podman(
@@ -633,9 +633,9 @@ class GuestContainer(tmt.Guest):
 
     def pull(
         self,
-        source: Optional[Path] = None,
-        destination: Optional[Path] = None,
-        options: Optional[TransferOptions] = None,
+        source: Path | None = None,
+        destination: Path | None = None,
+        options: TransferOptions | None = None,
     ) -> None:
         """
         Nothing to be done to pull workdir
@@ -789,7 +789,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
                 "'TMT_EXPOSABLE_RUNNER_DEVICES' environment variable."
             )
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Provision the container
         """

@@ -55,7 +55,7 @@ class BeakerLib(Library):
 
     #: Target folder into which the library repo is cloned
     dest: Path
-    path: Optional[Path]
+    path: Path | None
 
     #: List of required packages
     require: list[Dependency] = simple_field(default_factory=list)  # pyright: ignore[reportUnknownVariableType]
@@ -66,7 +66,7 @@ class BeakerLib(Library):
 
     #: Source directory where used for files required by the library dependencies
     source_directory: Path = simple_field(init=False)
-    default_branch: Optional[str] = None
+    default_branch: str | None = None
 
     #: Cache of already fetched libraries. The keys are the absolute paths of
     #: the local library path that is ultimately used
@@ -87,10 +87,10 @@ class BeakerLib(Library):
         cls,
         *,
         identifier: Dependency,
-        parent: Optional[tmt.utils.Common] = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None,
+        source_location: Path | None = None,
+        target_location: Path | None = None,
     ) -> Library:
         assert parent is not None  # narrow type
 
@@ -264,7 +264,7 @@ class BeakerLib(Library):
         self.tree = fmf.Tree(tree_path)
 
         # Get the library node, check require and recommend
-        library_node = cast(Optional[fmf.Tree], self.tree.find(self.name))
+        library_node = cast(fmf.Tree | None, self.tree.find(self.name))
         if not library_node:
             # Fallback to install during the prepare step if in rpm format
             if self.format == 'rpm':
@@ -297,9 +297,9 @@ class BeakerLibFromUrl(BeakerLib):
     #: Full git repository url
     url: str = ""
     #: Git revision (branch, tag or commit)
-    ref: Optional[str] = None
+    ref: str | None = None
     #: Path under the git repository pointing to the fmf root
-    path: Optional[Path] = None
+    path: Path | None = None
 
     #: Cache of git cloned repos. The keys are the absolute paths of the git
     #: clones already processed, and the values are the libraries that did the
@@ -312,10 +312,10 @@ class BeakerLibFromUrl(BeakerLib):
         cls,
         *,
         identifier: Dependency,
-        parent: Optional[tmt.utils.Common] = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None,
+        source_location: Path | None = None,
+        target_location: Path | None = None,
     ) -> Library:
         assert parent is not None  # narrow type
         assert isinstance(identifier, DependencyFmfId)  # narrow type
@@ -490,10 +490,10 @@ class BeakerLibFromPath(BeakerLib):
         cls,
         *,
         identifier: Dependency,
-        parent: Optional[tmt.utils.Common] = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None,
+        source_location: Path | None = None,
+        target_location: Path | None = None,
     ) -> "BeakerLib":
         assert parent is not None  # narrow type
         assert isinstance(identifier, DependencyFmfId)  # narrow type

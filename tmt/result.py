@@ -1,5 +1,6 @@
 import enum
-from typing import TYPE_CHECKING, Any, Callable, Optional, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import fmf.utils
 
@@ -122,7 +123,7 @@ RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
 
 
 #: A type of collection IDs tracked for a single result.
-ResultIds = dict[str, Optional[str]]
+ResultIds = dict[str, str | None]
 
 #: Raw result as written in a YAML file. A dictionary, but for now
 #: the actual keys are not important.
@@ -136,8 +137,8 @@ class ResultGuestData(SerializableContainer):
     """
 
     name: str = f'{tmt.utils.DEFAULT_NAME}-0'
-    role: Optional[str] = None
-    primary_address: Optional[str] = None
+    role: str | None = None
+    primary_address: str | None = None
 
     @classmethod
     def from_guest(cls, *, guest: 'tmt.guest.Guest') -> 'ResultGuestData':
@@ -206,9 +207,9 @@ class BaseResult(SerializableContainer):
         unserialize=lambda value: [Path(log) for log in value],
     )
 
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    duration: Optional[str] = None
+    start_time: str | None = None
+    end_time: str | None = None
+    duration: str | None = None
 
     def __post_init__(self) -> None:
         self.original_result = self.result
@@ -325,7 +326,7 @@ class Result(BaseResult):
     """
 
     serial_number: int = 0
-    web_link: Optional[str] = None
+    web_link: str | None = None
     fmf_id: Optional['tmt.base.core.FmfId'] = field(
         default=cast(Optional['tmt.base.core.FmfId'], None),
         serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
@@ -358,8 +359,8 @@ class Result(BaseResult):
             CheckResult.from_serialized(check) for check in serialized
         ],
     )
-    data_path: Optional[Path] = field(
-        default=cast(Optional[Path], None),
+    data_path: Path | None = field(
+        default=cast(Path | None, None),
         serialize=lambda path: None if path is None else str(path),
         unserialize=lambda value: None if value is None else Path(value),
     )
@@ -370,10 +371,10 @@ class Result(BaseResult):
         *,
         invocation: 'tmt.steps.execute.TestInvocation',
         result: ResultOutcome,
-        note: Optional[list[str]] = None,
-        ids: Optional[ResultIds] = None,
-        log: Optional[list[Path]] = None,
-        subresult: Optional[list[SubResult]] = None,
+        note: list[str] | None = None,
+        ids: ResultIds | None = None,
+        log: list[Path] | None = None,
+        subresult: list[SubResult] | None = None,
     ) -> 'Result':
         """
         Create a result from a test invocation.

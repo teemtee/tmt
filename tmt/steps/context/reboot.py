@@ -21,7 +21,7 @@ class RebootData(MetadataContainer):
     Data structure representing reboot request details.
     """
 
-    command: Optional[str] = None
+    command: str | None = None
     timeout: int = tmt.guest.REBOOT_TIMEOUT
     systemd_soft_reboot: bool = False
 
@@ -132,7 +132,7 @@ class RebootContext(HasEnvironment):
             # Extract custom hints from the file, and reset it.
             reboot_data = RebootData.from_json(self.request_path.read_text())
 
-            reboot_command: Optional[ShellScript] = None
+            reboot_command: ShellScript | None = None
             reboot_mode: SoftRebootModes = RebootMode.SOFT
 
             if reboot_data.systemd_soft_reboot:

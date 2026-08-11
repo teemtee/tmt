@@ -3,11 +3,10 @@ import enum
 import itertools
 import operator
 import re
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
     NamedTuple,
     Optional,
@@ -180,9 +179,9 @@ class ConstraintNameComponents(NamedTuple):
     #: ``disk`` of ``disk[1].size``
     name: str
     #: ``1`` of ``disk[1].size``
-    peer_index: Optional[int]
+    peer_index: int | None
     #: ``size`` of ``disk[1].size``
-    child_name: Optional[str]
+    child_name: str | None
 
 
 @container
@@ -192,9 +191,9 @@ class ConstraintComponents:
     """
 
     name: str
-    peer_index: Optional[int]
-    child_name: Optional[str]
-    operator: Optional[str]
+    peer_index: int | None
+    child_name: str | None
+    operator: str | None
     value: str
 
     @classmethod
@@ -317,9 +316,7 @@ class ParseError(tmt.utils.MetadataError):
     Raised when HW requirement parsing fails
     """
 
-    def __init__(
-        self, constraint_name: str, raw_value: str, message: Optional[str] = None
-    ) -> None:
+    def __init__(self, constraint_name: str, raw_value: str, message: str | None = None) -> None:
         """
         Raise when HW requirement parsing fails.
 
@@ -372,9 +369,7 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def variants(
-        self, members: Optional[list['Constraint']] = None
-    ) -> Iterator[list['Constraint']]:
+    def variants(self, members: list['Constraint'] | None = None) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -415,7 +410,7 @@ class CompoundConstraint(BaseConstraint):
     """
 
     def __init__(
-        self, reducer: ReducerType = any, constraints: Optional[list[BaseConstraint]] = None
+        self, reducer: ReducerType = any, constraints: list[BaseConstraint] | None = None
     ) -> None:
         """
         Construct a compound constraint, constraint imposed to more than one dimension.
@@ -457,9 +452,7 @@ class CompoundConstraint(BaseConstraint):
         )
 
     @abc.abstractmethod
-    def variants(
-        self, members: Optional[list['Constraint']] = None
-    ) -> Iterator[list['Constraint']]:
+    def variants(self, members: list['Constraint'] | None = None) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -503,7 +496,7 @@ class Constraint(BaseConstraint, abc.ABC):
     raw_value: str
 
     # If set, it is a raw unit specified by the constraint.
-    default_unit: Optional[str] = None
+    default_unit: str | None = None
 
     # If set, it is a "bigger" constraint, to which this constraint logically
     # belongs as one of its aspects.
@@ -515,10 +508,10 @@ class Constraint(BaseConstraint, abc.ABC):
         name: str,
         raw_value: str,
         as_quantity: bool = True,
-        as_cast: Optional[Callable[[str], ConstraintValue]] = None,
+        as_cast: Callable[[str], ConstraintValue] | None = None,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[tuple[Operator, ...]] = None,
-        default_unit: Optional[Any] = "bytes",
+        allowed_operators: tuple[Operator, ...] | None = None,
+        default_unit: Any | None = "bytes",
     ) -> Self:
         """
         Parse raw constraint specification into our internal representation.
@@ -598,7 +591,7 @@ class Constraint(BaseConstraint, abc.ABC):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[tuple[Operator, ...]] = None,
+        allowed_operators: tuple[Operator, ...] | None = None,
     ) -> Self:
         raise NotImplementedError
 
@@ -667,9 +660,7 @@ class Constraint(BaseConstraint, abc.ABC):
 
         return self.expand_name().name == constraint_name
 
-    def variants(
-        self, members: Optional[list['Constraint']] = None
-    ) -> Iterator[list['Constraint']]:
+    def variants(self, members: list['Constraint'] | None = None) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -698,8 +689,8 @@ class SizeConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[tuple[Operator, ...]] = None,
-        default_unit: Optional[Any] = 'bytes',
+        allowed_operators: tuple[Operator, ...] | None = None,
+        default_unit: Any | None = 'bytes',
     ) -> Self:
         allowed_operators = allowed_operators or (
             Operator.EQ,
@@ -747,7 +738,7 @@ class FlagConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[tuple[Operator, ...]] = None,
+        allowed_operators: tuple[Operator, ...] | None = None,
     ) -> Self:
         allowed_operators = allowed_operators or (Operator.EQ, Operator.NEQ)
 
@@ -774,7 +765,7 @@ class IntegerConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[tuple[Operator, ...]] = None,
+        allowed_operators: tuple[Operator, ...] | None = None,
     ) -> Self:
         allowed_operators = allowed_operators or (
             Operator.EQ,
@@ -822,8 +813,8 @@ class NumberConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[tuple[Operator, ...]] = None,
-        default_unit: Optional[Any] = None,
+        allowed_operators: tuple[Operator, ...] | None = None,
+        default_unit: Any | None = None,
     ) -> Self:
         def _cast_number(raw_value: Any) -> float:
             if isinstance(raw_value, float):
@@ -859,7 +850,7 @@ class TextConstraint(Constraint):
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint'] = None,
-        allowed_operators: Optional[tuple[Operator, ...]] = None,
+        allowed_operators: tuple[Operator, ...] | None = None,
     ) -> Self:
         allowed_operators = allowed_operators or (
             Operator.EQ,
@@ -919,7 +910,7 @@ class And(CompoundConstraint):
     Represents constraints that are grouped in ``and`` fashion
     """
 
-    def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
+    def __init__(self, constraints: list[BaseConstraint] | None = None) -> None:
         """
         Hold constraints that are grouped in ``and`` fashion.
 
@@ -928,9 +919,7 @@ class And(CompoundConstraint):
 
         super().__init__(all, constraints=constraints)
 
-    def variants(
-        self, members: Optional[list['Constraint']] = None
-    ) -> Iterator[list['Constraint']]:
+    def variants(self, members: list['Constraint'] | None = None) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -973,7 +962,7 @@ class Or(CompoundConstraint):
     Represents constraints that are grouped in ``or`` fashion
     """
 
-    def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
+    def __init__(self, constraints: list[BaseConstraint] | None = None) -> None:
         """
         Hold constraints that are grouped in ``or`` fashion.
 
@@ -982,9 +971,7 @@ class Or(CompoundConstraint):
 
         super().__init__(any, constraints=constraints)
 
-    def variants(
-        self, members: Optional[list['Constraint']] = None
-    ) -> Iterator[list['Constraint']]:
+    def variants(self, members: list['Constraint'] | None = None) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 

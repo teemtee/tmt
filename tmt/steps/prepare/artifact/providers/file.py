@@ -3,7 +3,7 @@ import urllib.parse
 from collections.abc import Sequence
 from functools import cached_property
 from shlex import quote
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import tmt.utils
 from tmt.container import container, simple_field
@@ -132,7 +132,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
         guest: Guest,
         source_path: tmt.utils.Path,
         shared_repo_dir: tmt.utils.Path,
-        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
+        exclude_patterns: list[tmt.utils.Pattern[str]] | None = None,
     ) -> None:
         guest.execute(
             ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")

@@ -2,7 +2,7 @@ import itertools
 import re
 import shutil
 from collections.abc import Iterator
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import fmf.utils
 
@@ -187,7 +187,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         Process package names and directories
         """
 
-        self.packages: list[Union[Package, FileSystemPath]] = []
+        self.packages: list[Package | FileSystemPath] = []
         self.local_packages: list[PackagePath] = []
         self.remote_packages: list[PackageUrl] = []
         self.debuginfo_packages: list[Package] = []
@@ -411,7 +411,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """

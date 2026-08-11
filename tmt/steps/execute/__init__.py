@@ -137,28 +137,28 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     #:    of the environment. Therefore this instance to hold the
     #:    environment, and the :py:attr:`environment` property to
     #:    include the up-to-date values.
-    _environment: Optional[Environment] = None
+    _environment: Environment | None = None
 
     #: Process running the test. What binary it is depends on the guest
     #: implementation and the test, it may be, for example, a shell process,
     #: SSH process, or a ``podman`` process.
-    process: Optional[subprocess.Popen[bytes]] = None
+    process: subprocess.Popen[bytes] | None = None
     process_lock: threading.Lock = simple_field(default_factory=threading.Lock)
 
     #: If set, there is a callback registered through
     #: :py:func:`tmt.utils.signals.add_callback` which would be called when
     #: tmt gets terminated.
-    on_interrupt_callback_token: Optional[int] = None
+    on_interrupt_callback_token: int | None = None
 
     results: list[Result] = simple_field(default_factory=list)
     check_results: list[CheckResult] = simple_field(default_factory=list)
 
     check_data: dict[str, Any] = simple_field(default_factory=dict)
 
-    return_code: Optional[int] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    real_duration: Optional[str] = None
+    return_code: int | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    real_duration: str | None = None
 
     #: List of exceptions encountered by the invocation.
     exceptions: list[Exception] = simple_field(default_factory=list)
@@ -464,7 +464,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         cwd: Path,
         log: tmt.log.LoggingFunction,
         interactive: bool,
-        deadline: Optional[tmt.utils.wait.Deadline],
+        deadline: tmt.utils.wait.Deadline | None,
     ) -> tmt.utils.CommandOutput:
         """
         Start the command which represents the test in this invocation.
@@ -522,7 +522,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 if self.on_interrupt_callback_token is not None:
                     tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
 
-        def _invoke(timeout: Optional[int] = None) -> CommandOutput:
+        def _invoke(timeout: int | None = None) -> CommandOutput:
             """
             Actually invoke the test, and handle its immediate outcome.
             """
@@ -589,7 +589,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     def terminate_process(
         self,
         signal: _signal.Signals = _signal.SIGTERM,
-        logger: Optional[tmt.log.Logger] = None,
+        logger: tmt.log.Logger | None = None,
     ) -> None:
         """
         Terminate the invocation process.
@@ -676,10 +676,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     # Internal executor is the default implementation
     how = 'tmt'
 
-    _login_after_test: Optional[tmt.steps.Login] = None
+    _login_after_test: tmt.steps.Login | None = None
 
     #: If set, plugin should run tests only from this discover phase.
-    discover_phase: Optional[str] = None
+    discover_phase: str | None = None
 
     def __init__(
         self,
@@ -698,7 +698,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         self.go_prolog(logger)
@@ -825,7 +825,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         self,
         invocation: TestInvocation,
         results: list['tmt.result.RawResult'],
-        default_log: Optional[Path] = None,
+        default_log: Path | None = None,
     ) -> list['tmt.result.Result']:
         """
         Treat results as partial results belonging to a test.
@@ -1038,7 +1038,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     @abc.abstractmethod
     def tasks(
         self,
-    ) -> Iterator[tuple[Optional[str], list['Guest']]]:
+    ) -> Iterator[tuple[str | None, list['Guest']]]:
         """
         Iterate over tasks to be enqueued for execution.
 
@@ -1289,7 +1289,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
                     phase_copy.discover_phase = discover_phase_name
                     self._queue.enqueue_plugin(phase=phase_copy, guests=guests)
 
-        failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []
+        failed_tasks: list[ActionTask | PluginTask[ExecuteStepData, None]] = []
 
         for outcome in self._queue.run():
             if outcome.exc:
@@ -1339,7 +1339,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
 
     def results_for_tests(
         self, tests: list['tmt.steps.discover.TestOrigin']
-    ) -> list[tuple[Optional[Result], Optional['tmt.steps.discover.TestOrigin']]]:
+    ) -> list[tuple[Result | None, Optional['tmt.steps.discover.TestOrigin']]]:
         """
         Collect results and corresponding tests.
 

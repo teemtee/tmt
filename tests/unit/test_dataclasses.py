@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -27,7 +27,7 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
 
     @container
     class DummyContainer(SerializableContainer):
-        foo: Optional[int] = field(
+        foo: int | None = field(
             default=1,
             normalize=_normalize_foo,
         )

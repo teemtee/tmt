@@ -1,6 +1,6 @@
 import re
 from re import Pattern
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import tmt.log
 import tmt.utils
@@ -68,11 +68,11 @@ class JournalCheck(Check):
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
     )
     dmesg: bool = field(default=False, help='Check only kernel messages.')
-    unit: Optional[str] = field(default=None, help='Check logs for a specific systemd unit.')
-    identifier: Optional[str] = field(
+    unit: str | None = field(default=None, help='Check logs for a specific systemd unit.')
+    identifier: str | None = field(
         default=None, help='Check logs for a specific syslog identifier.'
     )
-    priority: Optional[str] = field(
+    priority: str | None = field(
         default=None, help='Filter by priority (e.g. ``err``, ``warning``).'
     )
 
@@ -302,7 +302,7 @@ class Journal(CheckPlugin[JournalCheck]):
         *,
         check: 'JournalCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_systemd:
@@ -324,7 +324,7 @@ class Journal(CheckPlugin[JournalCheck]):
         *,
         check: 'JournalCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_systemd:

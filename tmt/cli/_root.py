@@ -10,7 +10,7 @@ Main top-level command implementations.
 """
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import click
 import fmf
@@ -75,7 +75,7 @@ recipe_options = create_options_decorator(tmt.options.RECIPE_OPTIONS)
 def _load_policies(
     policy_names: Sequence[str],
     policy_paths: Sequence[Path],
-    policy_root: Optional[Path],
+    policy_root: Path | None,
 ) -> list[tmt.policy.Policy]:
     """
     A helper for loading policies.
@@ -356,12 +356,12 @@ def main(
 @recipe_options
 def run(
     context: Context,
-    id_: Optional[str],
-    workdir_root: Optional[Path],
+    id_: str | None,
+    workdir_root: Path | None,
     policy_files: Sequence[Path],
     policy_names: Sequence[str],
-    policy_root: Optional[Path],
-    recipe: Optional[Path],
+    policy_root: Path | None,
+    recipe: Path | None,
     **kwargs: Any,
 ) -> None:
     """
@@ -607,7 +607,7 @@ def tests_create(
     context: Context,
     names: list[str],
     template: str,
-    script: Optional[str],
+    script: str | None,
     force: bool,
     **kwargs: Any,
 ) -> None:
@@ -968,10 +968,10 @@ def tests_export(
     how: str,
     nitrate: bool,
     bugzilla: bool,
-    template: Optional[str],
+    template: str | None,
     policy_files: Sequence[Path],
     policy_names: Sequence[str],
-    policy_root: Optional[Path],
+    policy_root: Path | None,
     **kwargs: Any,
 ) -> None:
     """
@@ -1231,10 +1231,10 @@ def plans_export(
     context: Context,
     how: str,
     format: str,
-    template: Optional[str],
+    template: str | None,
     policy_files: Sequence[Path],
     policy_names: Sequence[str],
-    policy_root: Optional[Path],
+    policy_root: Path | None,
     **kwargs: Any,
 ) -> None:
     """
@@ -1575,7 +1575,7 @@ def stories_export(
     unverified: bool,
     undocumented: bool,
     uncovered: bool,
-    template: Optional[str],
+    template: str | None,
     **kwargs: Any,
 ) -> None:
     """
@@ -1701,9 +1701,9 @@ def clean(
     context: Context,
     last: bool,
     id_: tuple[str, ...],
-    keep: Optional[int],
+    keep: int | None,
     skip: list[str],
-    workdir_root: Optional[Path],
+    workdir_root: Path | None,
     **kwargs: Any,
 ) -> None:
     """
@@ -1813,10 +1813,10 @@ def perform_clean(
 @dry_options
 def clean_runs(
     context: Context,
-    workdir_root: Optional[Path],
+    workdir_root: Path | None,
     last: bool,
     id_: tuple[str, ...],
-    keep: Optional[int],
+    keep: int | None,
     **kwargs: Any,
 ) -> None:
     """
@@ -1885,10 +1885,10 @@ def clean_runs(
 @dry_options
 def clean_guests(
     context: Context,
-    workdir_root: Optional[Path],
+    workdir_root: Path | None,
     last: bool,
     id_: tuple[str, ...],
-    keep: Optional[int],
+    keep: int | None,
     **kwargs: Any,
 ) -> None:
     """
@@ -1924,7 +1924,7 @@ def clean_guests(
 @workdir_root_options
 @verbosity_options
 @dry_options
-def clean_images(context: Context, /, workdir_root: Optional[Path], **kwargs: Any) -> None:
+def clean_images(context: Context, /, workdir_root: Path | None, **kwargs: Any) -> None:
     """
     Remove images of supported provision methods.
 

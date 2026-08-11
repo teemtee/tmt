@@ -31,10 +31,10 @@ import itertools
 import logging
 import os
 import sys
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Optional,
     Protocol,
     Self,
@@ -220,10 +220,10 @@ def render_labels(labels: list[str]) -> str:
 
 def indent(
     key: str,
-    value: Optional[LoggableValue] = None,
+    value: LoggableValue | None = None,
     color: 'tmt.utils.themes.Style' = None,
     level: int = 0,
-    labels: Optional[list[str]] = None,
+    labels: list[str] | None = None,
     labels_padding: int = 0,
 ) -> str:
     """
@@ -287,7 +287,7 @@ class LogRecordDetails:
     """
 
     key: str
-    value: Optional[LoggableValue] = None
+    value: LoggableValue | None = None
 
     color: 'tmt.utils.themes.Style' = None
     shift: int = 0
@@ -296,23 +296,23 @@ class LogRecordDetails:
     logger_labels_padding: int = 0
 
     logger_verbosity_level: int = 0
-    message_verbosity_level: Optional[int] = None
+    message_verbosity_level: int | None = None
 
     logger_debug_level: int = 0
-    message_debug_level: Optional[int] = None
+    message_debug_level: int | None = None
 
     logger_quiet: bool = False
     ignore_quietness: bool = False
 
     logger_topics: set[Topic] = simple_field(default_factory=set[Topic])
-    message_topic: Optional[Topic] = None
+    message_topic: Topic | None = None
 
     #: The source related to the log message. This is different from the stacktrace
     #: which is automatically handled. This is meant to track sources such as those
     #: from fmf file
-    source: Optional[str] = None
+    source: str | None = None
     #: The reason for triggering the log.
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class RunWarningsHandler(logging.FileHandler):
@@ -373,8 +373,8 @@ class RunWarningEntry(SpecBasedContainer[_RawRunWarningEntry, _RawRunWarningEntr
     msg: str
     logger: str
     trace: str
-    source: Optional[str]
-    reason: Optional[str]
+    source: str | None
+    reason: str | None
 
     @classmethod
     def from_spec(cls, spec: _RawRunWarningEntry) -> Self:
@@ -398,7 +398,7 @@ class RunWarningsFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         # TODO: make this in a better yaml with a schema
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
         if not details:
             # Not a tmt owned warning
             warning_msg = super().format(record)
@@ -429,7 +429,7 @@ class VerbosityLevelFilter(logging.Filter):
         if record.levelno != logging.INFO:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return True
@@ -445,7 +445,7 @@ class DebugLevelFilter(logging.Filter):
         if record.levelno != logging.DEBUG:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return True
@@ -461,7 +461,7 @@ class QuietnessFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO, logging.WARNING):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return False
@@ -480,7 +480,7 @@ class TopicFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return False
@@ -506,11 +506,11 @@ class LoggingFunction(Protocol):
     def __call__(
         self,
         key: str,
-        value: Optional[str] = None,
+        value: str | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
-        topic: Optional[Topic] = None,
+        topic: Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         pass
@@ -519,9 +519,9 @@ class LoggingFunction(Protocol):
 class Print(Protocol):
     def __call__(
         self,
-        text: Optional[str] = None,
+        text: str | None = None,
         color: 'tmt.utils.themes.Style' = None,
-        file: Optional[TextIO] = None,
+        file: TextIO | None = None,
         nl: bool = True,
     ) -> None:
         pass
@@ -539,12 +539,12 @@ class Logger:
         self,
         actual_logger: logging.Logger,
         base_shift: int = 0,
-        labels: Optional[list[str]] = None,
+        labels: list[str] | None = None,
         labels_padding: int = 0,
         verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
         debug_level: int = DEFAULT_DEBUG_LEVEL,
         quiet: bool = False,
-        topics: Optional[set[Topic]] = None,
+        topics: set[Topic] | None = None,
         apply_colors_output: bool = True,
         apply_colors_logging: bool = True,
     ) -> None:
@@ -669,7 +669,7 @@ class Logger:
 
     def descend(
         self,
-        logger_name: Optional[str] = None,
+        logger_name: str | None = None,
         extra_shift: int = 1,
     ) -> 'Logger':
         """
@@ -765,7 +765,7 @@ class Logger:
 
         actual_kwargs.update(kwargs)
 
-        verbosity_level = cast(Optional[int], actual_kwargs.get('verbose', None))
+        verbosity_level = cast(int | None, actual_kwargs.get('verbose', None))
         if verbosity_level is None or verbosity_level == 0:
             pass
 
@@ -778,7 +778,7 @@ class Logger:
             self.debug_level = debug_level_from_global_envvar
 
         else:
-            debug_level_from_option = cast(Optional[int], actual_kwargs.get('debug', None))
+            debug_level_from_option = cast(int | None, actual_kwargs.get('debug', None))
 
             if debug_level_from_option is None or debug_level_from_option == 0:
                 pass
@@ -810,7 +810,7 @@ class Logger:
     @classmethod
     def create(
         cls,
-        actual_logger: Optional[logging.Logger] = None,
+        actual_logger: logging.Logger | None = None,
         apply_colors_output: bool = True,
         apply_colors_logging: bool = True,
         **verbosity_options: Any,
@@ -907,9 +907,9 @@ class Logger:
 
     def print(
         self,
-        text: Optional[str] = None,
+        text: str | None = None,
         color: 'tmt.utils.themes.Style' = None,
-        file: Optional[TextIO] = None,
+        file: TextIO | None = None,
         nl: bool = True,
     ) -> None:
         text = text or ''
@@ -921,10 +921,10 @@ class Logger:
     def info(
         self,
         key: str,
-        value: Optional[LoggableValue] = None,
+        value: LoggableValue | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        topic: Optional[Topic] = None,
+        topic: Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         self._log(
@@ -936,11 +936,11 @@ class Logger:
     def verbose(
         self,
         key: str,
-        value: Optional[LoggableValue] = None,
+        value: LoggableValue | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
-        topic: Optional[Topic] = None,
+        topic: Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         self._log(
@@ -959,11 +959,11 @@ class Logger:
     def debug(
         self,
         key: str,
-        value: Optional[LoggableValue] = None,
+        value: LoggableValue | None = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
-        topic: Optional[Topic] = None,
+        topic: Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         self._log(
@@ -984,8 +984,8 @@ class Logger:
         message: str,
         shift: int = 0,
         stacklevel: int = 1,
-        source: Optional[str] = None,
-        reason: Optional[str] = None,
+        source: str | None = None,
+        reason: str | None = None,
     ) -> None:
         self._log(
             logging.WARNING,

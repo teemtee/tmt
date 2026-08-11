@@ -11,12 +11,11 @@ import functools
 import os
 import re
 import shutil
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from re import Pattern
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
     Literal,
     Optional,
@@ -155,10 +154,10 @@ SCHEMA_REQUIRED_PROPERTY_PATTERN = re.compile(
 # Used for a brief moment, to annotate raw fmf data before they are converted
 # into FmfId instances.
 class _RawFmfId(TypedDict, total=False):
-    url: Optional[str]
-    ref: Optional[str]
-    path: Optional[str]
-    name: Optional[str]
+    url: str | None
+    ref: str | None
+    path: str | None
+    name: str | None
 
 
 # An internal fmf id representation.
@@ -174,14 +173,14 @@ class FmfId(
 
     # Save context of the ID for later - there are places where it matters,
     # e.g. to not display `ref` under some conditions.
-    fmf_root: Optional[Path] = None
-    git_root: Optional[Path] = None
-    default_branch: Optional[str] = None
+    fmf_root: Path | None = None
+    git_root: Path | None = None
+    default_branch: str | None = None
 
-    url: Optional[str] = None
-    ref: Optional[str] = None
-    path: Optional[Path] = None
-    name: Optional[str] = None
+    url: str | None = None
+    ref: str | None = None
+    path: Path | None = None
+    name: str | None = None
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -250,10 +249,10 @@ class FmfId(
         fmf_id = FmfId()
 
         for key in ('url', 'ref', 'name'):
-            setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
+            setattr(fmf_id, key, cast(str | None, raw.get(key, None)))
 
         for key in ('path',):
-            raw_path = cast(Optional[str], raw.get(key, None))
+            raw_path = cast(str | None, raw.get(key, None))
             setattr(fmf_id, key, Path(raw_path) if raw_path is not None else None)
 
         return fmf_id
@@ -295,7 +294,7 @@ class FmfId(
 
     # cast: expected, we do want to return more specific type than the one returned by the
     # existing serialization.
-    def _export(self, *, keys: Optional[list[str]] = None) -> tmt.export._RawExportedInstance:
+    def _export(self, *, keys: list[str] | None = None) -> tmt.export._RawExportedInstance:
         spec = self.to_minimal_spec()
 
         spec = self._drop_nonexportable(spec)
@@ -344,9 +343,9 @@ class FmfId(
 _RawAdjustRule = TypedDict(
     '_RawAdjustRule',
     {
-        'when': Optional[str],
-        'continue': Optional[bool],
-        'because': Optional[str],
+        'when': str | None,
+        'continue': bool | None,
+        'because': str | None,
     },
 )
 
@@ -360,7 +359,7 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
     a callback closure with the given logger.
     """
 
-    def callback(node: fmf.Tree, rule: _RawAdjustRule, applied: Optional[bool]) -> None:
+    def callback(node: fmf.Tree, rule: _RawAdjustRule, applied: bool | None) -> None:
         if applied is None:
             logger.verbose(
                 f"Adjust rule skipped on '{node.name}'",
@@ -416,9 +415,9 @@ class DependencySimple(str):
 
 
 class _RawDependencyFmfId(_RawFmfId):
-    destination: Optional[str]
-    nick: Optional[str]
-    type: Optional[str]
+    destination: str | None
+    nick: str | None
+    type: str | None
 
 
 @container
@@ -436,8 +435,8 @@ class DependencyFmfId(
 
     VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'destination', 'nick', 'type']
 
-    destination: Optional[Path] = None
-    nick: Optional[str] = None
+    destination: Path | None = None
+    nick: str | None = None
     # fmf id dependency is a beakerlib dependency, as of now, there is no other
     # allowed `type` value.
     type: str = 'library'
@@ -508,15 +507,15 @@ class DependencyFmfId(
             setattr(fmf_id, key, None if raw_value is None else str(raw_value))
 
         for key in ('path', 'destination'):
-            raw_path = cast(Optional[str], raw.get(key, None))
+            raw_path = cast(str | None, raw.get(key, None))
             setattr(fmf_id, key, Path(raw_path) if raw_path is not None else None)
 
         return fmf_id
 
 
 class _RawDependencyFile(TypedDict):
-    type: Optional[str]
-    pattern: Optional[list[str]]
+    type: str | None
+    pattern: list[str] | None
 
 
 @container
@@ -589,7 +588,7 @@ class DependencyFile(
         """
         return True, ''
 
-    def _export(self, *, keys: Optional[list[str]] = None) -> tmt.export._RawExportedInstance:
+    def _export(self, *, keys: list[str] | None = None) -> tmt.export._RawExportedInstance:
         return cast(tmt.export._RawExportedInstance, self.to_dict())
 
 
@@ -599,7 +598,7 @@ _RawDependency = Union[_RawDependencyItem, list[_RawDependencyItem]]
 Dependency = Union[DependencySimple, DependencyFmfId, DependencyFile]
 
 
-def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependency:
+def dependency_factory(raw_dependency: _RawDependencyItem | None) -> Dependency:
     """
     Select the correct require class
     """
@@ -615,7 +614,7 @@ def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependen
 
 
 def normalize_require(
-    key_address: str, raw_require: Optional[_RawDependency], logger: tmt.log.Logger
+    key_address: str, raw_require: _RawDependency | None, logger: tmt.log.Logger
 ) -> list[Dependency]:
     """
     Normalize content of ``require`` key.
@@ -690,8 +689,8 @@ class Core(
     """
 
     # Core attributes (supported across all levels)
-    summary: Optional[str] = None
-    description: Optional[str] = None
+    summary: str | None = None
+    description: str | None = None
     author: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list,
@@ -712,18 +711,18 @@ class Core(
         normalize=_normalize_link,
         exporter=lambda value: value.to_spec() if value is not None else [],
     )
-    id: Optional[str] = None
+    id: str | None = None
     tag: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list,
     )
-    tier: Optional[str] = field(
+    tier: str | None = field(
         default=None,
         normalize=lambda key_address, raw_value, logger: (
             None if raw_value is None else str(raw_value)
         ),
     )
-    adjust: Optional[list[_RawAdjustRule]] = field(
+    adjust: list[_RawAdjustRule] | None = field(
         default_factory=list,
         normalize=lambda key_address, raw_value, logger: (
             []
@@ -753,9 +752,9 @@ class Core(
         *,
         node: fmf.Tree,
         tree: Optional['Tree'] = None,
-        parent: Optional[tmt.utils.Common] = None,
+        parent: tmt.utils.Common | None = None,
         logger: tmt.log.Logger,
-        name: Optional[str] = None,
+        name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -830,7 +829,7 @@ class Core(
 
     # TODO: cached_property candidates
     @property
-    def fmf_root(self) -> Optional[Path]:
+    def fmf_root(self) -> Path | None:
         # Check if fmf root is defined
         if self.node.root is not None:
             return Path(self.node.root)
@@ -841,7 +840,7 @@ class Core(
         return self.fmf_root or Path.cwd()
 
     @property
-    def git_root(self) -> Optional[Path]:
+    def git_root(self) -> Path | None:
         return tmt.utils.git.git_root(fmf_root=self.anchor_path, logger=self._logger)
 
     # Caching properties does not play nicely with mypy and annotations,
@@ -866,7 +865,7 @@ class Core(
     def fmf_sources(self) -> list[Path]:
         return [Path(source) for source in self.node.sources]
 
-    def web_link(self) -> Optional[str]:
+    def web_link(self) -> str | None:
         """
         Return a clickable web link to the fmf metadata location
         """
@@ -888,7 +887,7 @@ class Core(
 
     @classmethod
     def store_cli_invocation(
-        cls, context: Optional['tmt.cli.Context'], options: Optional[dict[str, Any]] = None
+        cls, context: Optional['tmt.cli.Context'], options: dict[str, Any] | None = None
     ) -> 'tmt.cli.CliInvocation':
         """
         Save provided command line context for future use
@@ -929,7 +928,7 @@ class Core(
             echo(tmt.utils.format('summary', self.summary))
 
     def _export(
-        self, *, keys: Optional[list[str]] = None, include_internal: bool = False
+        self, *, keys: list[str] | None = None, include_internal: bool = False
     ) -> tmt.export._RawExportedInstance:
         if keys is None:
             keys = self._keys()
@@ -1174,12 +1173,12 @@ class Test(
     # Test execution data
     # TODO: mandatory schema validation would remove the need for Optional...
     # `test` is mandatory, must exist, so how to initialize if it's missing :(
-    test: Optional[ShellScript] = field(
+    test: ShellScript | None = field(
         default=None,
         normalize=normalize_shell_script,
         exporter=lambda value: str(value) if isinstance(value, ShellScript) else None,
     )
-    path: Optional[Path] = field(
+    path: Path | None = field(
         default=None,
         normalize=tmt.utils.normalize_path,
         exporter=lambda value: str(value) if isinstance(value, Path) else None,
@@ -1382,9 +1381,9 @@ class Test(
         names: list[str],
         template: str,
         path: Path,
-        script: Optional[str] = None,
+        script: str | None = None,
         force: bool = False,
-        dry: Optional[bool] = None,
+        dry: bool | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -1913,9 +1912,9 @@ class Story(
     )
     # TODO: `story` is mandatory, but it's defined after attributes with default
     # values. Try to find a way how to drop the need for a dummy default.
-    story: Optional[str] = None
-    title: Optional[str] = None
-    priority: Optional[StoryPriority] = field(
+    story: str | None = None
+    title: str | None = None
+    priority: StoryPriority | None = field(
         default=cast(Optional['StoryPriority'], None),
         normalize=lambda key_address, raw_value, logger: (
             None if raw_value is None else StoryPriority(raw_value)
@@ -2046,7 +2045,7 @@ class Story(
         template: str,
         path: Path,
         force: bool = False,
-        dry: Optional[bool] = None,
+        dry: bool | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -2197,10 +2196,10 @@ class Tree(tmt.utils.Common):
     def __init__(
         self,
         *,
-        path: Optional[Path] = None,
-        tree: Optional[fmf.Tree] = None,
-        fmf_context: Optional[FmfContext] = None,
-        additional_rules: Optional[list[_RawAdjustRule]] = None,
+        path: Path | None = None,
+        tree: fmf.Tree | None = None,
+        fmf_context: FmfContext | None = None,
+        additional_rules: list[_RawAdjustRule] | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -2219,10 +2218,10 @@ class Tree(tmt.utils.Common):
     def grow(
         cls,
         *,
-        path: Optional[Path] = None,
-        tree: Optional[fmf.Tree] = None,
-        fmf_context: Optional[FmfContext] = None,
-        logger: Optional[tmt.log.Logger] = None,
+        path: Path | None = None,
+        tree: fmf.Tree | None = None,
+        fmf_context: FmfContext | None = None,
+        logger: tmt.log.Logger | None = None,
     ) -> 'Tree':
         """
         Initialize tmt tree from directory path or given fmf tree.
@@ -2384,7 +2383,7 @@ class Tree(tmt.utils.Common):
         self._tree = new_tree
 
     @property
-    def root(self) -> Optional[Path]:
+    def root(self) -> Path | None:
         """
         Metadata root
         """
@@ -2395,15 +2394,15 @@ class Tree(tmt.utils.Common):
 
     def tests(
         self,
-        logger: Optional[tmt.log.Logger] = None,
-        keys: Optional[list[str]] = None,
-        names: Optional[list[str]] = None,
-        filters: Optional[list[str]] = None,
-        conditions: Optional[list[str]] = None,
+        logger: tmt.log.Logger | None = None,
+        keys: list[str] | None = None,
+        names: list[str] | None = None,
+        filters: list[str] | None = None,
+        conditions: list[str] | None = None,
         unique: bool = True,
-        links: Optional[list['LinkNeedle']] = None,
-        includes: Optional[list[str]] = None,
-        excludes: Optional[list[str]] = None,
+        links: list['LinkNeedle'] | None = None,
+        includes: list[str] | None = None,
+        excludes: list[str] | None = None,
         apply_command_line: bool = True,
         sort: bool = True,
     ) -> list[Test]:
@@ -2508,14 +2507,14 @@ class Tree(tmt.utils.Common):
 
     def plans(
         self,
-        logger: Optional[tmt.log.Logger] = None,
-        keys: Optional[list[str]] = None,
-        names: Optional[list[str]] = None,
-        filters: Optional[list[str]] = None,
-        conditions: Optional[list[str]] = None,
+        logger: tmt.log.Logger | None = None,
+        keys: list[str] | None = None,
+        names: list[str] | None = None,
+        filters: list[str] | None = None,
+        conditions: list[str] | None = None,
         run: Optional['Run'] = None,
-        links: Optional[list['LinkNeedle']] = None,
-        excludes: Optional[list[str]] = None,
+        links: list['LinkNeedle'] | None = None,
+        excludes: list[str] | None = None,
         apply_command_line: bool = True,
         resolve_enabled_only: bool = False,
     ) -> list["Plan"]:
@@ -2639,15 +2638,15 @@ class Tree(tmt.utils.Common):
 
     def stories(
         self,
-        logger: Optional[tmt.log.Logger] = None,
-        keys: Optional[list[str]] = None,
-        names: Optional[list[str]] = None,
-        filters: Optional[list[str]] = None,
-        conditions: Optional[list[str]] = None,
+        logger: tmt.log.Logger | None = None,
+        keys: list[str] | None = None,
+        names: list[str] | None = None,
+        filters: list[str] | None = None,
+        conditions: list[str] | None = None,
         whole: bool = False,
-        links: Optional[list['LinkNeedle']] = None,
-        excludes: Optional[list[str]] = None,
-        apply_command_line: Optional[bool] = True,
+        links: list['LinkNeedle'] | None = None,
+        excludes: list[str] | None = None,
+        apply_command_line: bool | None = True,
     ) -> list[Story]:
         """
         Search available stories
@@ -2714,7 +2713,7 @@ class Tree(tmt.utils.Common):
         dry = Tree._opt('dry')
 
         # Check for existing tree
-        tree: Optional[Tree] = None
+        tree: Tree | None = None
 
         try:
             tree = Tree(logger=logger, path=path)
@@ -2837,7 +2836,7 @@ class Status(tmt.utils.Common):
     @staticmethod
     def get_overall_plan_status(
         plan: "Plan",
-    ) -> Union[Literal["done", "todo"], tmt.steps.StepName]:
+    ) -> Literal["done", "todo"] | tmt.steps.StepName:
         """
         Examines the plan status (find the last done step)
         """
@@ -3011,10 +3010,10 @@ class Clean(tmt.utils.Common):
     def __init__(
         self,
         *,
-        parent: Optional[tmt.utils.Common] = None,
-        name: Optional[str] = None,
+        parent: tmt.utils.Common | None = None,
+        name: str | None = None,
         workdir: tmt.utils.WorkdirArgumentType = None,
-        workdir_root: Optional[Path] = None,
+        workdir_root: Path | None = None,
         cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
         logger: tmt.log.Logger,
     ) -> None:
@@ -3056,7 +3055,7 @@ class Clean(tmt.utils.Common):
         """
         how = plan.provision.data[0].how
         # FIXME: cast() - typeless "dispatcher" method
-        target_how = cast(Optional[str], self.opt('how'))
+        target_how = cast(str | None, self.opt('how'))
         if target_how:
             return how == target_how
         # No target provision method, always matches
@@ -3104,7 +3103,7 @@ class Clean(tmt.utils.Common):
                         self.cli_invocation.options['quiet'] = quiet
         return successful
 
-    def guests(self, run_ids: tuple[str, ...], keep: Optional[int]) -> bool:
+    def guests(self, run_ids: tuple[str, ...], keep: int | None) -> bool:
         """
         Clean guests of runs
         """
@@ -3167,7 +3166,7 @@ class Clean(tmt.utils.Common):
                 return False, tmt.hardware.UNITS('0 bytes')
         return True, size
 
-    def runs(self, id_: tuple[str, ...], keep: Optional[int]) -> bool:
+    def runs(self, id_: tuple[str, ...], keep: int | None) -> bool:
         """
         Clean workdirs of runs
         """
@@ -3210,10 +3209,10 @@ class Clean(tmt.utils.Common):
 def resolve_dynamic_ref(
     *,
     workdir: Path,
-    ref: Optional[str],
+    ref: str | None,
     plan: Optional["Plan"] = None,
     logger: tmt.log.Logger,
-) -> Optional[str]:
+) -> str | None:
     """
     Get the final value for the dynamic reference
 

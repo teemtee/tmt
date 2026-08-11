@@ -9,7 +9,7 @@ import time
 import unittest
 import unittest.mock
 from datetime import timedelta
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import MagicMock
 
 import fmf
@@ -1570,7 +1570,7 @@ _test_format_value_big_list = list(range(1, 20))
         'fmf context',
     ),
 )
-def test_format_value(value: Any, window_size: Optional[int], expected: str) -> None:
+def test_format_value(value: Any, window_size: int | None, expected: str) -> None:
     expected = textwrap.dedent(expected).strip('\n')
     actual = tmt.utils.format_value(value, window_size=window_size)
 

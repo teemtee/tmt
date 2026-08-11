@@ -74,7 +74,7 @@ The outer wrapper handles the following 3 execution modes:
 
 import functools
 import os
-from typing import Any, Optional
+from typing import Any
 
 import jinja2
 
@@ -262,8 +262,8 @@ class PidFileContext(HasEnvironment):
         path: Path,
         inner_filename_template: str,
         outer_filename_template: str,
-        before_message_template: Optional[str] = None,
-        after_message_template: Optional[str] = None,
+        before_message_template: str | None = None,
+        after_message_template: str | None = None,
         **variables: Any,
     ) -> tuple[Path, Path]:
         inner_wrapper_filepath = self._create_wrapper(

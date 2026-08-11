@@ -113,7 +113,7 @@ def insert_to_prepare_step(
 
 @container
 class DistGitData(tmt.steps.prepare.PrepareStepData):
-    source_dir: Optional[Path] = field(
+    source_dir: Path | None = field(
         default=None,
         option='--source-dir',
         normalize=tmt.utils.normalize_path,
@@ -185,7 +185,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils

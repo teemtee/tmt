@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import tmt.log
 from tmt.container import container, field
@@ -13,7 +13,7 @@ PLAYBOOK_NAME = 'apply'
 
 @container
 class ProfileStepData(PrepareFeatureData):
-    profile: Optional[str] = field(
+    profile: str | None = field(
         default=None,
         option='--profile',
         metavar='NAME',

@@ -214,7 +214,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         self,
         *,
         guest: Guest,
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: Logger,
     ) -> PluginOutcome:
         from tmt.steps.prepare.artifact.providers.repository import create_repository
@@ -396,7 +396,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         self.debug(f"Verifying {fmf.utils.listed(sorted(pkgs_to_verify), 'package')}.")
 
         # Look for an existing verify phase for this where= group.
-        existing_verify: Optional[PrepareVerifyInstallation] = next(  # pyright: ignore[reportUnknownVariableType]
+        existing_verify: PrepareVerifyInstallation | None = next(  # pyright: ignore[reportUnknownVariableType]
             (
                 phase
                 for phase in self.step.phases(PrepareVerifyInstallation)  # pyright: ignore[reportUnknownArgumentType,reportUnknownVariableType]

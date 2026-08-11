@@ -1,5 +1,3 @@
-from typing import Optional
-
 import tmt.log
 from tmt.container import container
 from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
@@ -19,7 +17,7 @@ class RestraintContext(HasEnvironment):
     #: Used for logging.
     logger: tmt.log.Logger
 
-    taskname: Optional[str] = None
+    taskname: str | None = None
 
     @property
     def environment(self) -> Environment:

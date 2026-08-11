@@ -1,5 +1,3 @@
-from typing import Optional
-
 import tmt.log
 import tmt.utils.signals
 from tmt.checks import CheckPlugin, provides_check
@@ -41,7 +39,7 @@ class Interrupt(CheckPlugin[InterruptCheck]):
         *,
         check: 'InterruptCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if invocation.return_code in (ProcessExitCodes.SIGINT, ProcessExitCodes.SIGTERM) or any(

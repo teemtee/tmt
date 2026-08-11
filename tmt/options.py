@@ -6,8 +6,8 @@ import contextlib
 import pathlib
 import re
 import textwrap
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any
 
 import click
 
@@ -24,7 +24,7 @@ try:
 except ImportError:
     from typing import TypeVar
 
-    FC = TypeVar('FC', bound=Union[Callable[..., Any], click.Command])  # type: ignore[misc]
+    FC = TypeVar('FC', bound=Callable[..., Any] | click.Command)  # type: ignore[misc]
 
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ class Deprecated:
     """
 
     since: str
-    hint: Optional[str] = None
+    hint: str | None = None
 
     @property
     def rendered(self) -> str:
@@ -57,9 +57,9 @@ class Path(click.ParamType):
     def convert(  # noqa: RET503
         self,
         value: Any,
-        param: Optional[click.Parameter],
-        ctx: Optional[click.Context],
-    ) -> Optional[tmt.utils.Path]:
+        param: click.Parameter | None,
+        ctx: click.Context | None,
+    ) -> tmt.utils.Path | None:
         """
         Convert the value to the correct type. This is not called if
         the value is ``None`` (the missing value).
@@ -132,18 +132,18 @@ def option(
     is_flag: bool = False,
     multiple: bool = False,
     count: bool = False,
-    type: Optional[Union[click.Choice, Any]] = None,  # noqa: A002  `type` is shadowing a Python builtin
-    help: Optional[str] = None,
+    type: click.Choice | Any | None = None,  # noqa: A002  `type` is shadowing a Python builtin
+    help: str | None = None,
     required: bool = False,
-    default: Optional[Any] = None,
-    nargs: Optional[int] = None,
-    metavar: Optional[str] = None,
-    prompt: Optional[str] = None,
-    envvar: Optional[str] = None,
+    default: Any | None = None,
+    nargs: int | None = None,
+    metavar: str | None = None,
+    prompt: str | None = None,
+    envvar: str | None = None,
     hidden: bool = False,
     # Following parameters are our additions.
-    choices: Optional[Sequence[str]] = None,
-    deprecated: Optional[Deprecated] = None,
+    choices: Sequence[str] | None = None,
+    deprecated: Deprecated | None = None,
 ) -> ClickOptionDecoratorType:
     """
     Attaches an option to the command.
@@ -632,7 +632,7 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
         return any(subcommand.startswith(arg) for subcommand in subcommands)
 
     class MethodCommand(click.Command):
-        _method: Optional[click.Command] = None
+        _method: click.Command | None = None
 
         def _check_method(self, context: 'tmt.cli.Context', args: list[str]) -> None:
             """
@@ -651,13 +651,13 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
             how = None
             subcommands = tmt.steps.STEPS + tmt.steps.ACTIONS + ['tests', 'plans']
 
-            def _find_option_by_arg(arg: str) -> Optional[click.Parameter]:
+            def _find_option_by_arg(arg: str) -> click.Parameter | None:
                 for option in self.params:
                     if arg in option.opts or arg in option.secondary_opts:
                         return option
                 return None
 
-            def _find_how(args: list[str]) -> Optional[str]:
+            def _find_how(args: list[str]) -> str | None:
                 while args:
                     arg = args.pop(0)
 

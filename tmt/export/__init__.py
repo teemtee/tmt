@@ -10,10 +10,10 @@ import re
 import traceback
 import types
 import xmlrpc.client
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
     Generic,
     Optional,
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 TEMPLATES_RESOURCE = 'export/templates'
 
-bugzilla: Optional[types.ModuleType] = None
+bugzilla: types.ModuleType | None = None
 
 # Until Bugzilla gets its own annotations and recognizable imports...
 BugzillaInstance = Any
@@ -69,7 +69,7 @@ _RawExported = Union[_RawExportedInstance, _RawExportedCollection]
 
 # Protocols describing export methods.
 class Exporter(Protocol):
-    def __call__(self, collection: list[ExportableT], keys: Optional[list[str]] = None) -> str:
+    def __call__(self, collection: list[ExportableT], keys: list[str] | None = None) -> str:
         pass
 
 
@@ -144,7 +144,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase, abc.ABC):  # noqa:
         return cast(Exporter, getattr(exporter_class, f'export_{cls.__name__.lower()}_collection'))
 
     @abc.abstractmethod
-    def _export(self, *, keys: Optional[list[str]] = None) -> _RawExportedInstance:
+    def _export(self, *, keys: list[str] | None = None) -> _RawExportedInstance:
         """
         Export instance as "raw" dictionary.
 
@@ -154,7 +154,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase, abc.ABC):  # noqa:
 
         raise NotImplementedError
 
-    def export(self, *, format: str, keys: Optional[list[str]] = None, **kwargs: Any) -> str:
+    def export(self, *, format: str, keys: list[str] | None = None, **kwargs: Any) -> str:
         """
         Export this instance in a given format
         """
@@ -176,7 +176,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase, abc.ABC):  # noqa:
         *,
         collection: list[Self],
         format: str,
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         """
@@ -213,7 +213,7 @@ class ExportPlugin(abc.ABC):
     def export_test_collection(
         cls,
         tests: list['tmt.base.core.Test'],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         """
@@ -227,7 +227,7 @@ class ExportPlugin(abc.ABC):
     def export_plan_collection(
         cls,
         plans: list['tmt.base.plan.Plan'],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         """
@@ -241,7 +241,7 @@ class ExportPlugin(abc.ABC):
     def export_story_collection(
         cls,
         stories: list['tmt.base.core.Story'],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         """
@@ -288,7 +288,7 @@ class TrivialExporter(ExportPlugin):
     def export_fmfid_collection(
         cls,
         fmf_ids: list['tmt.base.core.FmfId'],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         # Special case: fmf id export shall not display `ref` if it is equal
@@ -309,7 +309,7 @@ class TrivialExporter(ExportPlugin):
     def export_test_collection(
         cls,
         tests: list['tmt.base.core.Test'],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         return cls._export([test._export(keys=keys) for test in tests])
@@ -318,7 +318,7 @@ class TrivialExporter(ExportPlugin):
     def export_plan_collection(
         cls,
         plans: list['tmt.base.plan.Plan'],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         return cls._export([plan._export(keys=keys) for plan in plans])
@@ -327,7 +327,7 @@ class TrivialExporter(ExportPlugin):
     def export_story_collection(
         cls,
         stories: list['tmt.base.core.Story'],
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         return cls._export([story._export(keys=keys) for story in stories])
@@ -455,7 +455,7 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
 
     import tmt.base.core
 
-    def get_heading_section(heading: str) -> Optional[str]:
+    def get_heading_section(heading: str) -> str | None:
         """Determine the section type for a heading."""
         for section, patterns in tmt.base.core.SECTIONS_HEADINGS.items():
             for pattern in patterns:
@@ -471,7 +471,7 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     ]
     warnings = []
     file_section = MarkdownFileSection()
-    current_test: Optional[TestSection] = None
+    current_test: TestSection | None = None
 
     for level, heading in headings:
         section_type = get_heading_section(heading)

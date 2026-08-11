@@ -2,8 +2,8 @@ import abc
 import dataclasses
 import inspect
 import re
-from collections.abc import Iterator
-from typing import Any, Callable, Optional, cast
+from collections.abc import Callable, Iterator
+from typing import Any, Optional, cast
 
 import tmt.base.core
 import tmt.container
@@ -187,7 +187,7 @@ class FeatureBase(tmt.utils.Common):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
+    def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Path | None:
         filepath = tmt.utils.resource_files(FEATURE_PLAYEBOOK_RESOURCE, logger=logger) / filename
         if filepath.exists() and filepath.is_file():
             assert isinstance(filepath, Path)  # Narrow type
@@ -349,7 +349,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """
@@ -365,7 +365,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
             plugin_class = find_plugin(plugin_id)
 
-            value = cast(Optional[str], getattr(self.data, plugin_class.FEATURE_NAME, None))
+            value = cast(str | None, getattr(self.data, plugin_class.FEATURE_NAME, None))
             if value is None:
                 continue
 

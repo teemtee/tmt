@@ -1,6 +1,6 @@
 import functools
-from collections.abc import Iterator
-from typing import Any, Callable, Generic, Optional, Protocol, TypeVar, Union, cast
+from collections.abc import Callable, Iterator
+from typing import Any, Generic, Protocol, TypeVar, cast
 
 import tmt.log
 from tmt.container import SpecBasedContainer, container, simple_field
@@ -28,7 +28,7 @@ ConstraintT = TypeVar('ConstraintT', bound=Constraint, covariant=True)  # noqa: 
 
 #: Type of a requirement parser.
 class RequirementParser(Protocol, Generic[BaseConstraintT]):
-    def __call__(self, spec: Spec, peer_index: Optional[int] = None) -> BaseConstraintT:
+    def __call__(self, spec: Spec, peer_index: int | None = None) -> BaseConstraintT:
         raise NotImplementedError
 
 
@@ -96,7 +96,7 @@ class SingleLevelParser(_TrivialParser[ConstraintT]):
     For constraints like ``memory`` or ``hostname``.
     """
 
-    def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
+    def parse(self, spec: Spec, peer_index: int | None = None) -> ConstraintT:
         return self.constraint_class_factory.constraint_class.from_specification(
             self.requirement,
             str(spec[self.requirement]),
@@ -120,7 +120,7 @@ class DoubleLevelParser(_TrivialParser[ConstraintT]):
     def child_constraint_name(self) -> str:
         return self.requirement.split('.', 1)[1]
 
-    def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
+    def parse(self, spec: Spec, peer_index: int | None = None) -> ConstraintT:
         return self.constraint_class_factory.constraint_class.from_specification(
             self.requirement,
             str(spec[self.child_constraint_name]),
@@ -136,7 +136,7 @@ class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
     For constraints like ``disk[].size`` or ``network[].type``.
     """
 
-    def parse(self, spec: Spec, peer_index: Optional[int] = None) -> ConstraintT:
+    def parse(self, spec: Spec, peer_index: int | None = None) -> ConstraintT:
         if peer_index is None:
             raise GeneralError('Cannot parse indexed constraint without peer constraint.')
 
@@ -166,8 +166,8 @@ def generate_device_parsers(
     device_prefix: str = 'device',
     include_driver: bool = True,
     include_device: bool = True,
-    parser_class: Union[type[DLP[Any]], type[IDLP[Any]]] = DLP,
-) -> Iterator[Union[DLP[Constraint], IDLP[Constraint]]]:
+    parser_class: type[DLP[Any]] | type[IDLP[Any]] = DLP,
+) -> Iterator[DLP[Constraint] | IDLP[Constraint]]:
     yield parser_class(f'{device_prefix}.vendor', INTEGER_CONSTRAINT_FACTORY)
     yield parser_class(f'{device_prefix}.vendor-name', TEXT_CONSTRAINT_FACTORY)
 
@@ -205,7 +205,7 @@ def custom_parser(fn: RequirementParser[BaseConstraint]) -> RequirementParser[Ba
     # *know* it will have a name, as we use functions and methods only,
     # but in general, not all callables have `__name__`, and linter
     # cannot tell.
-    fn_name: Optional[str] = getattr(fn, '__name__')  # noqa: B009
+    fn_name: str | None = getattr(fn, '__name__')  # noqa: B009
 
     assert isinstance(fn_name, str)  # narrow type
 
@@ -217,7 +217,7 @@ def custom_parser(fn: RequirementParser[BaseConstraint]) -> RequirementParser[Ba
     )
 
     @functools.wraps(fn)
-    def _parse(spec: Spec, peer_index: Optional[int] = None) -> BaseConstraint:
+    def _parse(spec: Spec, peer_index: int | None = None) -> BaseConstraint:
         return _flatten(fn(spec, peer_index=peer_index))
 
     return _parse
@@ -241,7 +241,7 @@ TPM_VERSION_ALLOWED_OPERATORS = (
 #:    needed for tmt to work correctly, but it makes testing easier as
 #:    the YAML representation of parsed hardware requirements have predictable
 #:    order of keys.
-_REQUIREMENT_PARSERS: list[Union[CustomParser[Any], SLP[Any], DLP[Any], IDLP[Any]]] = [
+_REQUIREMENT_PARSERS: list[CustomParser[Any] | SLP[Any] | DLP[Any] | IDLP[Any]] = [
     # arch
     SLP('arch', TEXT_CONSTRAINT_FACTORY),
     # beaker
@@ -315,7 +315,7 @@ _REQUIREMENT_PARSERS: list[Union[CustomParser[Any], SLP[Any], DLP[Any], IDLP[Any
 
 
 @custom_parser
-def parse_boot_method(spec: Spec, peer_index: Optional[int] = None) -> TextConstraint:
+def parse_boot_method(spec: Spec, peer_index: int | None = None) -> TextConstraint:
     constraint = TEXT_CONSTRAINT_FACTORY.constraint_class.from_specification(
         'boot.method', spec['method'], allowed_operators=(Operator.EQ, Operator.NEQ)
     )
@@ -330,7 +330,7 @@ def parse_boot_method(spec: Spec, peer_index: Optional[int] = None) -> TextConst
 
 
 @custom_parser
-def parse_compatible_distro(spec: Spec, peer_index: Optional[int] = None) -> And:
+def parse_compatible_distro(spec: Spec, peer_index: int | None = None) -> And:
     group = And()
 
     for distro in cast(list[str], (spec['distro'] or [])):
@@ -346,7 +346,7 @@ def parse_compatible_distro(spec: Spec, peer_index: Optional[int] = None) -> And
 
 
 @custom_parser
-def parse_cpu_flag(spec: Spec, peer_index: Optional[int] = None) -> And:
+def parse_cpu_flag(spec: Spec, peer_index: int | None = None) -> And:
     group = And()
 
     for flag_spec in spec['flag']:
@@ -391,7 +391,7 @@ def _parse_requirements(spec: Spec) -> BaseConstraint:
     # * otherwise, a single-level requirement is expected, like ``memory``
     #   or ``hostname``.
 
-    def _parse_one(requirement: str, spec: Spec, peer_index: Optional[int] = None) -> None:
+    def _parse_one(requirement: str, spec: Spec, peer_index: int | None = None) -> None:
         for parser in _REQUIREMENT_PARSERS:
             if parser.requirement != requirement:
                 continue
@@ -478,7 +478,7 @@ def parse_hw_requirements(spec: Spec) -> BaseConstraint:
 
 @container
 class Hardware(SpecBasedContainer[Spec, Spec]):
-    constraint: Optional[BaseConstraint]
+    constraint: BaseConstraint | None
     spec: Spec
 
     @classmethod
@@ -510,8 +510,8 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
     def report_support(
         self,
         *,
-        names: Optional[list[str]] = None,
-        check: Optional[Callable[['Constraint'], bool]] = None,
+        names: list[str] | None = None,
+        check: Callable[['Constraint'], bool] | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """

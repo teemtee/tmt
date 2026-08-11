@@ -3,7 +3,7 @@ import re
 import threading
 import time
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import tmt.guest
 import tmt.log
@@ -58,7 +58,7 @@ def report_progress(
     log: Path,
     check_name: str,
     report: Iterable[str],
-    command_output: Optional[str] = None,
+    command_output: str | None = None,
 ) -> None:
     """
     Add new report into a report file.
@@ -70,7 +70,7 @@ def report_progress(
         ``report`` lines are written into it.
     """
 
-    timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+    timestamp = format_timestamp(datetime.datetime.now(datetime.UTC))
 
     with open(log, mode='a') as f:
         f.write(f'# {check_name} reported at {timestamp}\n')
@@ -97,7 +97,7 @@ class GuestContext:
     ssh_ping_failures: int = 0
 
     #: If set, contains a daemonized thread running the watchdog checks.
-    thread: Optional[threading.Thread] = None
+    thread: threading.Thread | None = None
 
     #: As long as this field is set to ``True``, the watchdog will run its
     #: internal loop and run relevant checks. It is unset when terminating
@@ -444,7 +444,7 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
         *,
         check: WatchdogCheck,
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         # Setup a logger
@@ -503,7 +503,7 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
         *,
         check: WatchdogCheck,
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         watchdog_logger = logger.clone()

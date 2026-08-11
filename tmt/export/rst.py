@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import tmt.base.core
 import tmt.export
@@ -12,8 +12,8 @@ class RestructuredExporter(tmt.export.ExportPlugin):
     def export_story(
         cls,
         story: tmt.base.core.Story,
-        keys: Optional[list[str]] = None,
-        template: Optional[Path] = None,
+        keys: list[str] | None = None,
+        template: Path | None = None,
         include_title: bool = True,
     ) -> str:
         return tmt.export.template.TemplateExporter.render_template(
@@ -28,8 +28,8 @@ class RestructuredExporter(tmt.export.ExportPlugin):
     def export_story_collection(
         cls,
         stories: list[tmt.base.core.Story],
-        keys: Optional[list[str]] = None,
-        template: Optional[Path] = None,
+        keys: list[str] | None = None,
+        template: Path | None = None,
         include_title: bool = True,
         **kwargs: Any,
     ) -> str:

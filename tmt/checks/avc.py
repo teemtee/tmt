@@ -3,7 +3,7 @@ import re
 import textwrap
 import time
 from re import Pattern
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import jinja2
 
@@ -139,11 +139,11 @@ def _run_script(
 
     def _output_logger(
         key: str,
-        value: Optional[str] = None,
+        value: str | None = None,
         color: tmt.utils.themes.Style = None,
         shift: int = 2,
         level: int = 3,
-        topic: Optional[tmt.log.Topic] = None,
+        topic: tmt.log.Topic | None = None,
         stacklevel: int = 1,
     ) -> None:
         logger.verbose(
@@ -494,7 +494,7 @@ class AvcDenials(CheckPlugin[AvcCheck]):
         *,
         check: 'AvcCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if invocation.guest.facts.has_selinux:
@@ -508,7 +508,7 @@ class AvcDenials(CheckPlugin[AvcCheck]):
         *,
         check: 'AvcCheck',
         invocation: 'TestInvocation',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_selinux:

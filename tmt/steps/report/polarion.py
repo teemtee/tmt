@@ -1,6 +1,5 @@
 import datetime
 import os
-from typing import Optional
 
 from requests import post
 
@@ -18,7 +17,7 @@ DEFAULT_FILENAME = 'xunit.xml'
 
 @container
 class ReportPolarionData(tmt.steps.report.ReportStepData):
-    file: Optional[Path] = field(
+    file: Path | None = field(
         default=None,
         option='--file',
         metavar='FILE',
@@ -37,7 +36,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
             """,
     )
 
-    project_id: Optional[str] = field(
+    project_id: str | None = field(
         default=None,
         option='--project-id',
         metavar='ID',
@@ -49,7 +48,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    title: Optional[str] = field(
+    title: str | None = field(
         default=None,
         option='--title',
         metavar='TITLE',
@@ -59,7 +58,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    description: Optional[str] = field(
+    description: str | None = field(
         default=None,
         option='--description',
         metavar='DESCRIPTION',
@@ -69,7 +68,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    template: Optional[str] = field(
+    template: str | None = field(
         default=None,
         option='--template',
         metavar='TEMPLATE',
@@ -90,7 +89,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
             """,
     )
 
-    planned_in: Optional[str] = field(
+    planned_in: str | None = field(
         default=None,
         option='--planned-in',
         metavar='PLANNEDIN',
@@ -100,7 +99,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    assignee: Optional[str] = field(
+    assignee: str | None = field(
         default=None,
         option='--assignee',
         metavar='ASSIGNEE',
@@ -110,7 +109,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    pool_team: Optional[str] = field(
+    pool_team: str | None = field(
         default=None,
         option='--pool-team',
         metavar='POOLTEAM',
@@ -120,7 +119,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    arch: Optional[str] = field(
+    arch: str | None = field(
         default=None,
         option='--arch',
         metavar='ARCH',
@@ -130,7 +129,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    platform: Optional[str] = field(
+    platform: str | None = field(
         default=None,
         option='--platform',
         metavar='PLATFORM',
@@ -140,7 +139,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    build: Optional[str] = field(
+    build: str | None = field(
         default=None,
         option='--build',
         metavar='BUILD',
@@ -150,7 +149,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    sample_image: Optional[str] = field(
+    sample_image: str | None = field(
         default=None,
         option='--sample-image',
         metavar='SAMPLEIMAGE',
@@ -160,7 +159,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    logs: Optional[str] = field(
+    logs: str | None = field(
         default=None,
         option='--logs',
         metavar='LOGLOCATION',
@@ -171,7 +170,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    compose_id: Optional[str] = field(
+    compose_id: str | None = field(
         default=None,
         option='--compose-id',
         metavar='COMPOSEID',
@@ -181,7 +180,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    test_cycle: Optional[str] = field(
+    test_cycle: str | None = field(
         default=None,
         option='--test-cycle',
         metavar='TESTCYCLE',
@@ -291,7 +290,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         return members
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(self, *, logger: tmt.log.Logger | None = None) -> None:
         """
         Go through executed tests and report into Polarion
         """
@@ -314,7 +313,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 + '_'
                 +
                 # Polarion server running with UTC timezone
-                datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S"),
+                datetime.datetime.now(tz=datetime.UTC).strftime("%Y%m%d%H%M%S"),
             )
 
         title = title.replace('-', '_')
@@ -355,7 +354,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             'sample_image',
         ]
 
-        testsuites_properties: dict[str, Optional[str]] = {}
+        testsuites_properties: dict[str, str | None] = {}
 
         for tr_field in other_testrun_fields:
             param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))

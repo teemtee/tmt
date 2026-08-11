@@ -6,7 +6,7 @@ import shutil
 import tempfile
 from collections.abc import Iterable, Iterator, Sequence
 from re import Pattern
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 import fmf
 import fmf.context
@@ -69,10 +69,10 @@ PLAN_SOURCE_SCRIPT_NAME: str = "plan-source-script.sh"
 
 
 class _RemotePlanReference(_RawFmfId):
-    importing: Optional[str]
-    scope: Optional[str]
-    inherit_context: Optional[bool]
-    inherit_environment: Optional[bool]
+    importing: str | None
+    scope: str | None
+    inherit_context: bool | None
+    inherit_environment: bool | None
     adjust_plans: list[Any]
 
 
@@ -202,7 +202,7 @@ class RemotePlanReference(  # pyright: ignore[reportGeneralTypeIssues]
             setattr(reference, key, None if raw_value is None else str(raw_value))
 
         for key in ('path',):
-            raw_path = cast(Optional[str], raw.get(key, None))
+            raw_path = cast(str | None, raw.get(key, None))
             setattr(reference, key, Path(raw_path) if raw_path is not None else None)
 
         reference.importing = RemotePlanReferenceImporting.from_spec(
@@ -244,10 +244,10 @@ class Plan(
     )
 
     # Optional Login instance attached to the plan for easy login in tmt try
-    login: Optional[tmt.steps.Login] = None
+    login: tmt.steps.Login | None = None
 
     # Optional Ansible configuration for the plan
-    ansible: Optional[tmt.ansible.PlanAnsible] = field(
+    ansible: tmt.ansible.PlanAnsible | None = field(
         default=None,
         normalize=tmt.ansible.normalize_plan_ansible,
         exporter=lambda value: value.to_spec() if value else None,
@@ -257,7 +257,7 @@ class Plan(
     # between the original plan with the fmf id and the imported or
     # derived plans with the content.
     _original_plan: Optional['Plan'] = field(default=None, internal=True)
-    _original_plan_fmf_id: Optional[FmfId] = field(default=None, internal=True)
+    _original_plan_fmf_id: FmfId | None = field(default=None, internal=True)
 
     _imported_plan_references: list[RemotePlanReference] = field(  # pyright: ignore[reportUnknownVariableType]
         default_factory=list, internal=True
@@ -265,7 +265,7 @@ class Plan(
     _imported_plans: list['Plan'] = field(default_factory=list, internal=True)  # pyright: ignore[reportUnknownVariableType]
 
     _derived_plans: list['Plan'] = field(default_factory=list, internal=True)  # pyright: ignore[reportUnknownVariableType]
-    derived_id: Optional[int] = field(default=None, internal=True)
+    derived_id: int | None = field(default=None, internal=True)
 
     #: Used by steps to mark invocations that have been already applied to
     #: this plan's phases. Needed to avoid the second evaluation in
@@ -286,12 +286,12 @@ class Plan(
         self,
         *,
         node: fmf.Tree,
-        tree: Optional[Tree] = None,
-        run: Optional[Run] = None,
+        tree: Tree | None = None,
+        run: Run | None = None,
         skip_validation: bool = False,
         raise_on_validation_error: bool = False,
-        inherited_fmf_context: Optional[FmfContext] = None,
-        inherited_environment: Optional[Environment] = None,
+        inherited_fmf_context: FmfContext | None = None,
+        inherited_environment: Environment | None = None,
         logger: tmt.log.Logger,
         **kwargs: Any,
     ) -> None:
@@ -326,7 +326,7 @@ class Plan(
 
         # Save the run, prepare worktree and plan data directory
         self.my_run = run
-        self.worktree: Optional[Path] = None
+        self.worktree: Path | None = None
         if self.my_run:  # noqa: SIM102
             # Skip to initialize the work tree if the corresponding option is
             # true. Note that 'tmt clean' consumes the option because it
@@ -428,7 +428,7 @@ class Plan(
     # signature to leave the door open for more sophisticated methods that
     # might depend on the actual test properties. Our simple "increment by 1"
     # method does not need it.
-    _test_serial_number_generator: Optional[Iterator[int]] = None
+    _test_serial_number_generator: Iterator[int] | None = None
 
     def draw_test_serial_number(self, test: Test) -> int:
         if self._test_serial_number_generator is None:
@@ -794,7 +794,7 @@ class Plan(
         template: str,
         path: Path,
         force: bool = False,
-        dry: Optional[bool] = None,
+        dry: bool | None = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -853,7 +853,7 @@ class Plan(
                 tmt.utils.jira.link(tmt_objects=plans, links=links, logger=logger)
 
     def _iter_steps(
-        self, enabled_only: bool = True, skip: Optional[list[str]] = None
+        self, enabled_only: bool = True, skip: list[str] | None = None
     ) -> Iterator[tuple[tmt.steps.StepName, tmt.steps.Step]]:
         """
         Iterate over steps.
@@ -872,7 +872,7 @@ class Plan(
                 yield (name, step)
 
     def steps(
-        self, enabled_only: bool = True, skip: Optional[list[str]] = None
+        self, enabled_only: bool = True, skip: list[str] | None = None
     ) -> Iterator[tmt.steps.Step]:
         """
         Iterate over steps.
@@ -885,7 +885,7 @@ class Plan(
             yield step
 
     def step_names(
-        self, enabled_only: bool = True, skip: Optional[list[str]] = None
+        self, enabled_only: bool = True, skip: list[str] | None = None
     ) -> Iterator[tmt.steps.StepName]:
         """
         Iterate over step names.
@@ -1124,7 +1124,7 @@ class Plan(
         guest_roles: list[str] = []
 
         for i, phase in enumerate(self._step_phase_nodes('provision')):
-            guest_name = cast(Optional[str], phase.get('name'))
+            guest_name = cast(str | None, phase.get('name'))
 
             if not guest_name:
                 guest_name = f'{tmt.utils.DEFAULT_NAME}-{i}'
@@ -1195,7 +1195,7 @@ class Plan(
         P008: environment files are not empty
         """
 
-        env_files: list[Union[str, Path]] = self.node.get("environment-file") or []  # pyright: ignore[reportUnknownVariableType, reportAssignmentType]
+        env_files: list[str | Path] = self.node.get("environment-file") or []  # pyright: ignore[reportUnknownVariableType, reportAssignmentType]
 
         if not env_files:
             yield LinterOutcome.SKIP, 'no environment files found'
@@ -1339,7 +1339,7 @@ class Plan(
                         self.cleanup.go()
 
     def _export(
-        self, *, keys: Optional[list[str]] = None, include_internal: bool = False
+        self, *, keys: list[str] | None = None, include_internal: bool = False
     ) -> tmt.export._RawExportedInstance:
         data = super()._export(keys=keys, include_internal=include_internal)
 
@@ -1731,7 +1731,7 @@ class Plan(
         return False
 
     # TODO: Make the str type-hint more narrow
-    def add_phase(self, step: Union[str, tmt.steps.Step], phase: tmt.steps.Phase) -> None:
+    def add_phase(self, step: str | tmt.steps.Step, phase: tmt.steps.Phase) -> None:
         """
         Add a phase dynamically to the current plan.
 

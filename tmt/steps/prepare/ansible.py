@@ -1,5 +1,4 @@
 import tempfile
-from typing import Optional, Union
 
 import requests
 
@@ -27,7 +26,7 @@ from tmt.utils.environment import Environment
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
-    playbook: Union[str, list[str]]
+    playbook: str | list[str]
     playbooks: list[str]
 
 
@@ -48,7 +47,7 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         normalize=tmt.utils.normalize_string_list,
     )
 
-    extra_args: Optional[str] = field(
+    extra_args: str | None = field(
         default=None,
         option='--extra-args',
         metavar='ANSIBLE-PLAYBOOK-OPTIONS',
@@ -178,7 +177,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         self,
         *,
         guest: 'Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> tmt.steps.PluginOutcome:
         """

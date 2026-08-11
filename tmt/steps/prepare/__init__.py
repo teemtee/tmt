@@ -53,7 +53,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, PluginOutcome]):
         self,
         *,
         guest: 'tmt.guest.Guest',
-        environment: Optional[Environment] = None,
+        environment: Environment | None = None,
         logger: tmt.log.Logger,
     ) -> PluginOutcome:
         """

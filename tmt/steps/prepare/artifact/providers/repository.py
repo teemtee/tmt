@@ -3,7 +3,6 @@ Artifact provider for discovering RPMs from repository files.
 """
 
 from re import Pattern
-from typing import Optional
 from urllib.parse import urlparse
 
 import tmt.log
@@ -65,7 +64,7 @@ class RepositoryFileProvider(ArtifactProvider):
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
+        exclude_patterns: list[Pattern[str]] | None = None,
     ) -> list[tmt.utils.Path]:
         # Fetches and initializes the repository from the URL.
         # Repository provider does not download individual artifacts. Instead, it fetches
@@ -116,7 +115,7 @@ def create_repository(
     guest: Guest,
     logger: tmt.log.Logger,
     priority: int,
-    repo_name: Optional[str] = None,
+    repo_name: str | None = None,
 ) -> Repository:
     """
     Create a local RPM repository from a directory on the guest.

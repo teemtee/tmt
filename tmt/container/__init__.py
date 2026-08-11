@@ -7,11 +7,10 @@ import dataclasses
 import functools
 import inspect
 import textwrap
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
     Optional,
     Self,
@@ -107,7 +106,7 @@ class FieldMetadata(Generic[T]):
     internal: bool = False
 
     #: Help text documenting the field.
-    help: Optional[str] = None
+    help: str | None = None
 
     #: Specific values that should be shown in the documentation as
     #: interesting examples of the field usage.
@@ -116,14 +115,14 @@ class FieldMetadata(Generic[T]):
     #: If field accepts a value, this string would represent it in documentation.
     #: This stores the metavar provided when field was created - it may be unset.
     #: py:attr:`metavar` provides the actual metavar to be used.
-    _metavar: Optional[str] = None
+    _metavar: str | None = None
 
     #: The default value for the field.
-    default: Optional[T] = None
+    default: T | None = None
 
     #: A zero-argument callable that will be called when a default value is
     #: needed for the field.
-    default_factory: Optional[Callable[[], T]] = None
+    default_factory: Callable[[], T] | None = None
 
     #: Marks the fields as a flag.
     is_flag: bool = False
@@ -137,10 +136,10 @@ class FieldMetadata(Generic[T]):
 
     #: Either a list of allowed values the field can take, or a zero-argument
     #: callable that would return such a list.
-    _choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None
+    _choices: None | Sequence[str] | Callable[[], Sequence[str]] = None
 
     #: Environment variable providing value for the field.
-    envvar: Optional[str] = None
+    envvar: str | None = None
 
     #: Mark the option as deprecated. Instance of :py:class:`Deprecated`
     #: describes the version in which the field was deprecated plus an optional
@@ -149,7 +148,7 @@ class FieldMetadata(Generic[T]):
     deprecated: Optional['tmt.options.Deprecated'] = None
 
     #: One or more command-line option names.
-    cli_option: Optional[FieldCLIOption] = None
+    cli_option: FieldCLIOption | None = None
 
     #: A normalization callback to call when loading the value from key source
     #: (performed by :py:class:`NormalizeKeysMixin`).
@@ -172,7 +171,7 @@ class FieldMetadata(Generic[T]):
     _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
 
     @functools.cached_property
-    def choices(self) -> Optional[Sequence[str]]:
+    def choices(self) -> Sequence[str] | None:
         """
         A list of allowed values the field can take
         """
@@ -186,7 +185,7 @@ class FieldMetadata(Generic[T]):
         return None
 
     @functools.cached_property
-    def metavar(self) -> Optional[str]:
+    def metavar(self) -> str | None:
         """
         Placeholder for field's value in documentation and help
         """
@@ -208,7 +207,7 @@ class FieldMetadata(Generic[T]):
         return self.default_factory is not None or self.default is not dataclasses.MISSING
 
     @property
-    def materialized_default(self) -> Optional[T]:
+    def materialized_default(self) -> T | None:
         """
         Returns the actual default value of the field
         """
@@ -711,15 +710,15 @@ def field(
     *,
     default: bool,
     # Options
-    option: Optional[FieldCLIOption] = None,
+    option: FieldCLIOption | None = None,
     is_flag: bool = True,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    choices: None | Sequence[str] | Callable[[], Sequence[str]] = None,
     multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
+    metavar: str | None = None,
+    envvar: str | None = None,
     deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
+    help: str | None = None,
+    help_example_values: list[str] | None = None,
     show_default: bool = False,
     internal: bool = False,
     # Input data normalization - not needed, the field is a boolean
@@ -739,24 +738,24 @@ def field(
     *,
     default: T,
     # Options
-    option: Optional[FieldCLIOption] = None,
+    option: FieldCLIOption | None = None,
     is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    choices: None | Sequence[str] | Callable[[], Sequence[str]] = None,
     multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
+    metavar: str | None = None,
+    envvar: str | None = None,
     deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
+    help: str | None = None,
+    help_example_values: list[str] | None = None,
     show_default: bool = False,
     internal: bool = False,
     # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
+    normalize: NormalizeCallback[T] | None = None,
     # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
+    serialize: SerializeCallback[T] | None = None,
+    unserialize: UnserializeCallback[T] | None = None,
     # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
+    exporter: FieldExporter[T] | None = None,
 ) -> T:
     pass
 
@@ -766,24 +765,24 @@ def field(
     *,
     default_factory: Callable[[], T],
     # Options
-    option: Optional[FieldCLIOption] = None,
+    option: FieldCLIOption | None = None,
     is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    choices: None | Sequence[str] | Callable[[], Sequence[str]] = None,
     multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
+    metavar: str | None = None,
+    envvar: str | None = None,
     deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
+    help: str | None = None,
+    help_example_values: list[str] | None = None,
     show_default: bool = False,
     internal: bool = False,
     # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
+    normalize: NormalizeCallback[T] | None = None,
     # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
+    serialize: SerializeCallback[T] | None = None,
+    unserialize: UnserializeCallback[T] | None = None,
     # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
+    exporter: FieldExporter[T] | None = None,
 ) -> T:
     pass
 
@@ -792,24 +791,24 @@ def field(
 def field(
     *,
     # Options
-    option: Optional[FieldCLIOption] = None,
+    option: FieldCLIOption | None = None,
     is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    choices: None | Sequence[str] | Callable[[], Sequence[str]] = None,
     multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
+    metavar: str | None = None,
+    envvar: str | None = None,
     deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
+    help: str | None = None,
+    help_example_values: list[str] | None = None,
     show_default: bool = False,
     internal: bool = False,
     # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
+    normalize: NormalizeCallback[T] | None = None,
     # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
+    serialize: SerializeCallback[T] | None = None,
+    unserialize: UnserializeCallback[T] | None = None,
     # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
+    exporter: FieldExporter[T] | None = None,
 ) -> T:
     pass
 
@@ -819,24 +818,24 @@ def field(
     default: Any = dataclasses.MISSING,
     default_factory: Any = None,
     # Options
-    option: Optional[FieldCLIOption] = None,
+    option: FieldCLIOption | None = None,
     is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    choices: None | Sequence[str] | Callable[[], Sequence[str]] = None,
     multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
+    metavar: str | None = None,
+    envvar: str | None = None,
     deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
+    help: str | None = None,
+    help_example_values: list[str] | None = None,
     show_default: bool = False,
     internal: bool = False,
     # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
+    normalize: NormalizeCallback[T] | None = None,
     # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
+    serialize: SerializeCallback[T] | None = None,
+    unserialize: UnserializeCallback[T] | None = None,
     # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
+    exporter: FieldExporter[T] | None = None,
 ) -> Any:
     """
     Define a :py:class:`DataContainer` field.
