@@ -1,0 +1,6 @@
+[test-bar-local]
+name=Local repository built from a locally-built 'bar' RPM
+baseurl=file:///var/tmp/tmt-test-bar-local-repo
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1
