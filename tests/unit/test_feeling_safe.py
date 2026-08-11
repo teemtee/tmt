@@ -114,6 +114,9 @@ def test_is_allowed(
     expected: bool,
     monkeypatch: _pytest.monkeypatch.MonkeyPatch,
 ) -> None:
+    # Make sure to not pollute the allowed UB list with test-only instances.
+    monkeypatch.setattr(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIORS', set())
+
     allow_unsafe_behavior(*allowed_behaviors)
 
     assert is_allowed(*requested_behaviors) is expected

@@ -133,20 +133,19 @@ UB_PROVISION_LOCAL_PLUGIN = UnsafeBehavior(
 ALLOWED_BEHAVIORS: set[UnsafeBehavior] = set()
 
 
-def unsafe_behavior_names() -> list[str]:
+def unsafe_behavior_names(include_aliases: bool = True) -> list[str]:
     # Could be simpler, but this way we can get the list of names nicely
     # sorted, with the wildcards at the end.
-    return [
-        *sorted(
-            behavior.name
-            for behavior in UnsafeBehavior.KNOWN_UB
-            if behavior not in (_ALL_, _NONE_)
-        ),
-        _ALL_.name,
-        *_ALL_.alias,
-        _NONE_.name,
-        *_NONE_.alias,
-    ]
+
+    names: list[str] = []
+
+    for behavior in UnsafeBehavior.KNOWN_UB:
+        if behavior in (_ALL_, _NONE_):
+            continue
+
+        names += [behavior.name, *behavior.alias]
+
+    return [*sorted(names), _ALL_.name, *_ALL_.alias, _NONE_.name, *_NONE_.alias]
 
 
 def _known_ub_map() -> dict[str, UnsafeBehavior]:
@@ -225,5 +224,5 @@ def log_feeling_safe(logger: 'Logger') -> None:
     else:
         logger.warning(
             'User is feeling safe:'
-            f' {listed(behavior.label for behavior in ALLOWED_BEHAVIORS)} allowed.'
+            f' {listed(unsafe_behavior_names(include_aliases=False))} allowed.'
         )
