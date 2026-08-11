@@ -32,9 +32,6 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     ]
 dependencies = [
-    # Minimal versions based on c9s rpms
-    "importlib-metadata>=3.6.0; python_version < '3.10'",  # Backporting selectable entry_points
-    "importlib-resources; python_version < '3.12'",  # MultiplexedPath is broken on earlier versions
     "click>=8.0.3",
     "docutils>=0.16",
     "fmf>=1.7.0",
@@ -146,9 +143,6 @@ dependencies = [
     # which is the version a developer encounters given the requirements are not
     # frozen.
     "types-Markdown",
-    # prevent conflict between types-requests and urllib3
-    "types-requests<2.31.0.7; python_version < '3.10'",
-    "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
     "types-urllib3",
