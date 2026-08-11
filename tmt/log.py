@@ -286,9 +286,7 @@ def indent(
     )
 
 
-# RET503: explicit return is not needed, last expression is a call of a
-# `NoReturn` function.
-def normalize_verbosity_level(raw_value: Any) -> Optional[VerbosityLevel]:  # noqa: RET503
+def normalize_verbosity_level(raw_value: Any) -> Optional[VerbosityLevel]:
     def _raise(exc: Optional[Exception] = None) -> NoReturn:
         import tmt.utils
 
@@ -323,12 +321,10 @@ def normalize_verbosity_level(raw_value: Any) -> Optional[VerbosityLevel]:  # no
     if isinstance(raw_value, int) and raw_value in VERBOSITY_LEVELS:
         return cast(VerbosityLevel, raw_value)
 
-    _raise()
+    return _raise()
 
 
-# RET503: explicit return is not needed, last expression is a call of a
-# `NoReturn` function.
-def normalize_debug_level(raw_value: Any) -> Optional[DebugLevel]:  # noqa: RET503
+def normalize_debug_level(raw_value: Any) -> Optional[DebugLevel]:
     def _raise(exc: Optional[Exception] = None) -> NoReturn:
         import tmt.utils
 
@@ -363,7 +359,7 @@ def normalize_debug_level(raw_value: Any) -> Optional[DebugLevel]:  # noqa: RET5
     if isinstance(raw_value, int) and raw_value in DEBUG_LEVELS:
         return cast(DebugLevel, raw_value)
 
-    _raise()
+    return _raise()
 
 
 @container
