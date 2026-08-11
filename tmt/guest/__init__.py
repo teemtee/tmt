@@ -2633,7 +2633,7 @@ class Guest(
             after successfully triggering the requested reboot, i.e.
             after ``action`` completes.
         :param post_wait: a callable which will be invoked after waiting
-            for the guest to become responsiv completes. The outcome of
+            for the guest to become responsive completes. The outcome of
             the wait is not important, ``post_wait`` will be called on
             both success and failed waits.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
@@ -3992,20 +3992,30 @@ class GuestSsh(Guest, CommandCollector):
         # master after the reboot, and disable multiplexing for the
         # duration of post-reboot checks. The first post-`perform_reboot`
         # command will spawn new master process.
-        def _default_post_trigger_action() -> None:
+        def _post_trigger_action() -> None:
+            # Run caller-provided callback first...
+            if post_trigger_action is not None:
+                post_trigger_action()
+
+            # ... and then the cleanup.
             self._cleanup_ssh_master_process()
 
             self._ssh_multiplexing_disabled = True
 
-        def _default_post_wait() -> None:
+        def _post_wait() -> None:
+            # In the opposite order: re-enable the multiplexing...
             self._ssh_multiplexing_disabled = False
+
+            # ... then run caller-provided callback.
+            if post_wait is not None:
+                post_wait()
 
         return super().perform_reboot(
             mode,
             action,
             wait,
-            post_trigger_action=post_trigger_action or _default_post_trigger_action,
-            post_wait=post_wait or _default_post_wait,
+            post_trigger_action=_post_trigger_action,
+            post_wait=_post_wait,
         )
 
     @overload
