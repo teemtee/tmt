@@ -3449,7 +3449,7 @@ class GuestSsh(Guest, CommandCollector):
                 ).wait(_wait_for_ssh_master, self._logger)
 
             except tmt.utils.wait.WaitingTimedOutError as exc:
-                raise ProvisionError('SSH master process failed to start.).') from exc
+                raise ProvisionError('SSH master process failed to start.') from exc
 
     @property
     def _ssh_command(self) -> Command:
