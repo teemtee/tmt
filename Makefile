@@ -52,7 +52,7 @@ _DEPS_DEVELOP_FEDORA := \
     jq \
     podman \
     buildah \
-    /usr/bin/python3.9 \
+    /usr/bin/python3.12 \
     pre-commit
 
 # Note: interestingly, `hatch` is not shipped by Ubuntu, but `hatch` plugins are.
@@ -74,7 +74,7 @@ _DEPS_DEVELOP_UBUNTU := \
     jq \
     podman \
     buildah \
-    python3.9 \
+    python3.12 \
     pre-commit
 
 _OS_ID   := $(shell sh -c '. /etc/os-release 2>/dev/null && echo $$ID')

@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Utilities",
     "Topic :: Software Development :: Testing",
     "Operating System :: POSIX :: Linux",
@@ -230,7 +231,7 @@ show_error_codes = true
 # annotations across module boundaries.
 follow_imports = "normal"
 
-python_version = "3.9"
+python_version = "3.12"
 files = [
     "tmt/",
     "tests/core/about/",
@@ -286,7 +287,7 @@ ignore = [
     "tmt/utils/structured_field.py",
 ]
 
-pythonVersion = "3.9"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
 
 # Be vewy, vewy stwict, we'we hunting wabbits^Wbugs.
@@ -335,7 +336,7 @@ invalid-legacy-type-variable = "ignore"
 [tool.ruff]
 line-length = 99
 src = ["tmt", "tests"]
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.format]
 quote-style = "preserve"  # TODO: Convert to a specific quote style
