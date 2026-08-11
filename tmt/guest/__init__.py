@@ -3986,6 +3986,12 @@ class GuestSsh(Guest, CommandCollector):
         post_trigger_action: Optional[Callable[[], None]] = None,
         post_wait: Optional[Callable[[], None]] = None,
     ) -> bool:
+        # Disable multiplexing right after the reboot - master process
+        # may fail to connect, well, expectedly, and tmt would wait for
+        # the socket that would never pop up. Therefore, shutdown the
+        # master after the reboot, and disable multiplexing for the
+        # duration of post-reboot checks. The first post-`perform_reboot`
+        # command will spawn new master process.
         def _default_post_trigger_action() -> None:
             self._cleanup_ssh_master_process()
 
