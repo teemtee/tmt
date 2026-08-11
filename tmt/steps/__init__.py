@@ -22,7 +22,9 @@ from typing import (
     Generic,
     Literal,
     Optional,
+    Self,
     TypedDict,
+    TypeGuard,
     TypeVar,
     Union,
     cast,
@@ -44,7 +46,6 @@ import tmt.result
 import tmt.steps.context
 import tmt.utils
 import tmt.utils.rest
-from tmt._compat.typing import Self, TypeGuard
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,

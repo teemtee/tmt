@@ -19,7 +19,7 @@ from tmt.utils import Path
 from tmt.utils.templates import default_template_environment, render_template_file
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
 
     XMLElement: TypeAlias = Any
 

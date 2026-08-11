@@ -29,7 +29,8 @@ from tmt.utils import (
 )
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
+
     from tmt.hardware.constraints import Size
 
 JSON: 'TypeAlias' = Any

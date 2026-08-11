@@ -435,15 +435,7 @@ convention = "pep257"
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"typing.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
-"typing_extensions.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
-"typing.Self".msg = "Use tmt._compat.typing.Self instead."
-"typing.Concatenate".msg = "Use tmt._compat.typing.Concatenate instead."
-"typing.ParamSpec".msg = "Use tmt._compat.typing.ParamSpec instead."
-"typing.TypeGuard".msg = "Use tmt._compat.typing.TypeGuard instead."
 "typing.TypeIs".msg = "Not present in centos-stream-10"
-"typing_extensions.Self".msg = "Use tmt._compat.typing.Self instead."
-"typing.override".msg = "Use tmt._compat.typing.override instead."
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 "pydantic".msg = "Use tmt._compat.pydantic instead."
@@ -455,9 +447,7 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "dataclasses.field".msg = "Use tmt.container.field instead."
 "click.style".msg = "Use tmt.log.style instead."
 "annotationlib".msg = "Use tmt._compat.annotationlib instead"
-"importlib.metadata.entry_points".msg = "Use tmt._compat.importlib.metadata.entry_points instead."
-"importlib.readers".msg = "Use tmt._compat.importlib.readers instead."
-"importlib.resources".msg = "Use tmt._compat.importlib.resources instead."
+"importlib.readers.MultiplexedPath".msg = "Use tmt._compat.importlib.readers.MultiplexedPath instead."
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["tmt.config.models.BaseConfig"]

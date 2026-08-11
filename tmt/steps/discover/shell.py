@@ -1,6 +1,6 @@
 import copy
 import shutil
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, Self, TypeVar, cast
 
 import click
 import fmf
@@ -14,7 +14,6 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
-from tmt._compat.typing import Self
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,

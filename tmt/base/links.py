@@ -1,11 +1,10 @@
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Self, Union, cast
 
 import fmf.utils
 from click import echo
 
 import tmt.utils
-from tmt._compat.typing import Self
 from tmt.container import SpecBasedContainer, container
 
 if TYPE_CHECKING:

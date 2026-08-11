@@ -27,7 +27,8 @@ from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
+
     from tmt.guest import Guest
     from tmt.package_managers._rpm import RpmVersion
 

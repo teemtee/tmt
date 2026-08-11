@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
+    Self,
     Union,
     cast,
 )
@@ -16,10 +17,10 @@ import requests
 
 import tmt.log
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import Self
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
+
     from tmt.utils import FmfContext, ShellScript
 
 

@@ -33,11 +33,10 @@ import signal
 import textwrap
 import threading
 from types import FrameType
-from typing import Any, Callable, NoReturn, Optional
+from typing import Any, Callable, NoReturn, Optional, ParamSpec, Self
 
 import tmt.log
 import tmt.utils
-from tmt._compat.typing import ParamSpec, Self
 
 P = ParamSpec('P')
 

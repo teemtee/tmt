@@ -8,12 +8,11 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, TypeAlias
 
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt._compat.typing import TypeAlias
 from tmt.container import container, simple_field
 from tmt.guest import DownloadError, Guest
 from tmt.package_managers import Repository, Version

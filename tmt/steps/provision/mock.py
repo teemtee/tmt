@@ -7,7 +7,7 @@ import shlex
 import subprocess
 from collections.abc import Generator
 from types import TracebackType
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, Callable, Optional, Self, Union, cast
 
 import tmt
 import tmt.guest
@@ -16,7 +16,6 @@ import tmt.package_managers
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt._compat.typing import Self
 from tmt.container import container, field
 from tmt.guest import RebootMode
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript

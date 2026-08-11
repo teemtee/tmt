@@ -42,6 +42,8 @@ from typing import (
     Generic,
     Literal,
     Optional,
+    ParamSpec,
+    Self,
     TextIO,
     TypeVar,
     Union,
@@ -72,7 +74,6 @@ from tmt._compat import importlib
 from tmt._compat.annotationlib import Format, get_annotations
 from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
 from tmt.log import LoggableValue
 from tmt.utils.environment import Environment

@@ -4,10 +4,9 @@ Copr Repository Artifact Provider
 
 import re
 from re import Pattern
-from typing import Optional
+from typing import Optional, Self
 
 import tmt.utils
-from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.guest import Guest
 from tmt.package_managers import YUM_REPOS_DIR
