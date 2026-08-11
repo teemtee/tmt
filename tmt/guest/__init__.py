@@ -15,6 +15,7 @@ import string
 import subprocess
 import threading
 from collections.abc import Iterable, Iterator, Sequence
+from re import Pattern
 from shlex import quote
 from typing import (
     TYPE_CHECKING,
@@ -65,13 +66,14 @@ from tmt.utils import (
     OnProcessStartCallback,
     Path,
     ProvisionError,
+    RunError,
     ShellScript,
     configure_constant,
     effective_workdir_root,
 )
 from tmt.utils.environment import Environment, EnvVarValue
 from tmt.utils.hints import get_hint
-from tmt.utils.wait import Deadline, Waiting
+from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError
 
 if TYPE_CHECKING:
     import tmt.base.core
@@ -173,6 +175,21 @@ AnsibleCollectionPlaybook = NewType('AnsibleCollectionPlaybook', str)
 AnsibleApplicable = Union[AnsibleCollectionPlaybook, AnsiblePlaybook]
 
 
+#: A pattern matching environment variables that carry ``ssh`` options.
+SSH_OPTIONS_ENVVAR_PATTERN: Pattern[str] = re.compile(
+    r"""
+    TMT_SSH_        # common prefix of all tmt *and* ssh envvars
+    # ignore the following envvars: they do look familiar, but are in
+    # fact not related to ssh options
+    (?!
+        MASTER_START_TIMEOUT
+    )
+    ([a-zA-Z_]+)    # match all other letter/underscore mix
+    """,
+    re.VERBOSE,
+)
+
+
 def configure_ssh_options() -> tmt.utils.RawCommand:
     """
     Extract custom SSH options from environment variables
@@ -181,7 +198,7 @@ def configure_ssh_options() -> tmt.utils.RawCommand:
     options: tmt.utils.RawCommand = []
 
     for name, value in os.environ.items():
-        match = re.match(r'TMT_SSH_([a-zA-Z_]+)', name)
+        match = SSH_OPTIONS_ENVVAR_PATTERN.match(name)
 
         if not match:
             continue
@@ -260,6 +277,17 @@ SSH_MASTER_SOCKET_MIN_HASH_LENGTH = 4
 #: :py:func:`_socket_path_hash` when looking for a free SSH socket
 #: filename.
 SSH_MASTER_SOCKET_MAX_HASH_LENGTH = 64
+
+#: How many seconds to wait for the ``ssh`` master process to start up.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_SSH_MASTER_START_TIMEOUT: int = 1 * 60
+
+#: How many seconds to wait for the ``ssh`` master process to start up.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_SSH_MASTER_START_TIMEOUT``.
+SSH_MASTER_START_TIMEOUT: int = configure_constant(
+    DEFAULT_SSH_MASTER_START_TIMEOUT, 'TMT_SSH_MASTER_START_TIMEOUT'
+)
 
 #: Default username to use in SSH connections.
 DEFAULT_USER = 'root'
@@ -3375,6 +3403,14 @@ class GuestSsh(Guest, CommandCollector):
 
                 self._ssh_master_process = None
 
+                self.debug(f"Remove SSH master socket '{self._ssh_master_socket_path}'.", level=3)
+
+                try:
+                    self._ssh_master_socket_path.unlink(missing_ok=True)
+
+                except OSError as error:
+                    self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
+
             if self._ssh_master_process is None:
                 self._logger.debug(
                     'SSH master process is not running and will be spawned.',
@@ -3382,6 +3418,38 @@ class GuestSsh(Guest, CommandCollector):
                 )
 
                 self._ssh_master_process = self._spawn_ssh_master_process()
+
+            self._logger.debug(
+                'Checking whether the the SSH master process is up and running.',
+                level=3,
+            )
+
+            self._logger.debug(f'{self._ssh_master_process=}')
+
+            def _wait_for_ssh_master() -> None:
+                try:
+                    self._run_guest_command(
+                        self._base_ssh_command
+                        + Command(
+                            '-O',
+                            'check',
+                            'unused-hostname',
+                        ),
+                        environment=Environment.from_environ(),
+                        silent=True,
+                    )
+
+                except RunError as exc:
+                    raise WaitingIncompleteError from exc
+
+            try:
+                Waiting(
+                    deadline=Deadline.from_seconds(SSH_MASTER_START_TIMEOUT),
+                    tick=10,
+                ).wait(_wait_for_ssh_master, self._logger)
+
+            except tmt.utils.wait.WaitingTimedOutError as exc:
+                raise ProvisionError('SSH master process failed to start.).') from exc
 
     @property
     def _ssh_command(self) -> Command:
