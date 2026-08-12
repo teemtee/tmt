@@ -283,7 +283,7 @@ SSH_MASTER_SOCKET_MAX_HASH_LENGTH = 64
 
 #: How many seconds to wait for the ``ssh`` master process to start up.
 #: This is the default value tmt would use unless told otherwise.
-DEFAULT_SSH_MASTER_START_TIMEOUT: int = 1 * 60
+DEFAULT_SSH_MASTER_START_TIMEOUT: int = 2 * 60
 
 #: How many seconds to wait for the ``ssh`` master process to start up.
 #: This is the effective value, combining the default and optional envvar,
