@@ -21,6 +21,10 @@ xfail_plans=(
     # Intentionally should fail at install or verify stage
     # TODO: Check the failure more narrowly
     "^/broken/verified-artifacts"
+    # Same failure like the dnf4, but the explicit --best flag does not need to be included (#5090)
+    # Interestingly `/verified-artifacts/obsoletes/basic/downgrade` does not fail, it seems it does not
+    # read the other repo metadata there, but things may change in the future
+    "^/verified-artifacts/obsoletes/pre-installed/downgrade"
 )
 xfail_plans_nobest=(
     # On dnf4 these plans fail because of the intrinsic --best flag passed (#5090)
@@ -32,9 +36,6 @@ xfail_plans_nobest=(
     "^/broken/no-artifacts/.*/pre-installed/with-devel$"
     "^/broken/no-artifacts/obsoletes/basic$"
     "^/broken/no-artifacts/upgrade/with-devel$"
-    # Interestingly `/verified-artifacts/obsoletes/basic/downgrade` does not fail, it seems it does not
-    # read the other repo metadata there, but things may change in the future
-    "^/verified-artifacts/obsoletes/pre-installed/downgrade"
 )
 
     while IFS= read -r image; do
