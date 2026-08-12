@@ -74,6 +74,7 @@ from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
+from tmt.container import simple_field as simple_field
 from tmt.log import LoggableValue
 from tmt.utils.environment import Environment
 from tmt.utils.themes import style
