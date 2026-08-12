@@ -122,13 +122,15 @@ def _explore_custom_directories(logger: Logger) -> None:
     logger.debug('Import plugins from custom directories.')
     logger = logger.descend()
 
-    if not tmt.utils.Environment.environ.get(ENVIRONMENT_NAME):
+    environment = tmt.utils.Environment.from_environ()
+
+    if not environment.get(ENVIRONMENT_NAME):
         logger.debug(
             f"No custom directories found in the '{ENVIRONMENT_NAME}' environment variable."
         )
         return
 
-    for _path in tmt.utils.Environment.environ[ENVIRONMENT_NAME].split(os.pathsep):
+    for _path in environment[ENVIRONMENT_NAME].split(os.pathsep):
         # TID251: `pathlib` does not provide `os.patch.expandvars`, its
         # use is allowed. For the simplicity, keeping `expanduser` as well,
         # to avoid str -> Path -> str -> Path conversion.
