@@ -118,11 +118,11 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
 
-    environ: ClassVar['Environment']
+    _environ: ClassVar['Environment']
 
     @classmethod
     def _init_environ(cls) -> None:
-        cls.environ = Environment(
+        cls._environ = Environment(
             {key: EnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
         )
 
@@ -514,7 +514,7 @@ class Environment(dict[str, EnvVarValue]):
         Extract environment variables from the live environment
         """
 
-        return cls.environ.copy()
+        return cls._environ.copy()
 
     @classmethod
     def from_fmf_context(cls, fmf_context: 'FmfContext') -> 'Environment':
@@ -776,5 +776,6 @@ class Environment(dict[str, EnvVarValue]):
             intrinsic_only=True,
             logger=logger,
         )
+
 
 Environment._init_environ()
