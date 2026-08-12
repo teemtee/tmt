@@ -1863,7 +1863,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             logger=self._logger,
         )
 
-    def read_file(self, filepath: Path, debug_level: VerbosityLevel = 2) -> str:
+    def read_file(self, filepath: Path, debug_level: DebugLevel = 2) -> str:
         """
         Read a file from the workdir of this object.
 
