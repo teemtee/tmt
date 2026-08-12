@@ -228,8 +228,13 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             guest.execute(
                 ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
             )
-        except Exception:
-            self.logger.warning(f"No artifacts to contribute from '{source_path}'.")
-            return
+
+        except tmt.utils.RunError as error:
+            if error.stderr and "No such file" in error.stderr:
+                self.logger.warning(f"No artifacts to contribute from '{source_path}'.")
+                return
+            raise tmt.utils.PrepareError(
+                f"Failed to copy artifacts from '{source_path}' to '{shared_repo_dir}'."
+            ) from error
 
         self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")
