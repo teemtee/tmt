@@ -486,6 +486,18 @@ class YumEngine(DnfEngine):
         done
         """)
 
+    def list_packages(self, repository: Repository) -> ShellScript:
+        return (
+            Command(
+                'repoquery',
+                '--all',
+                '--disablerepo=*',
+                *[f'--enablerepo={repo_id}' for repo_id in repository.repo_ids],
+                '--queryformat',
+                rf'%{{repoid}};{self._full_nevra_querytag}\n',
+            )
+        ).to_script()
+
     def enable_repo(self, *repo_ids: str) -> ShellScript:
         return (self._yum_config_manager_command() + Command('--enable', *repo_ids)).to_script()
 

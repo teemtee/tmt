@@ -1,12 +1,29 @@
 /plan:
     discover:
         how: fmf
-    prepare:
-        how: artifact
-        provide:
-          - repository-file:file://../test-bar.repo
     execute:
         how: tmt
+
+adjust:
+    - when: distro == centos-7
+      prepare+:
+        - name: local-repo
+          how: shell
+          order: 40
+          script: |
+              mkdir -p /var/tmp/tmt-test-bar-local-repo
+              cp local-repo/*.rpm /var/tmp/tmt-test-bar-local-repo/
+              createrepo /var/tmp/tmt-test-bar-local-repo
+        - name: provide-repository-local
+          how: artifact
+          provide:
+            - repository-file:file://../test-bar-local.repo
+    - when: distro != centos-7
+      prepare+:
+        - name: provide-repository-remote
+          how: artifact
+          provide:
+            - repository-file:file://../test-bar.repo
 
 /test:
     test: ./test.sh
