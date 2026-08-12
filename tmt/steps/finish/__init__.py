@@ -133,6 +133,10 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
             return
 
         if self.plan.provision.ready_guests:
+            # Notify guests that the finish step begins.
+            for guest in self._steppified_ready_guests:
+                guest.on_step_start(self)
+
             self._queue.reset()
 
             for phase in self.phases(classes=(Action, FinishPlugin)):
@@ -240,6 +244,10 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
 
                 # To separate "finish" from "pull" queue visually
                 self.info('')
+
+            # Notify guests that the finish step has completed.
+            for guest in self._steppified_ready_guests:
+                guest.on_step_complete(self)
 
             self.summary()
 

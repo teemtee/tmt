@@ -30,6 +30,7 @@ from typing import (
     overload,
 )
 
+import click
 import fmf.utils
 
 import tmt.ansible
@@ -55,6 +56,7 @@ from tmt.container import (
     key_to_option,
     option_to_key,
 )
+from tmt.log import Topic as Topic
 from tmt.package_managers import (
     FileSystemPath,
     Package,
@@ -68,6 +70,7 @@ from tmt.utils import (
     ProvisionError,
     RunError,
     ShellScript,
+    StreamLogger,
     configure_constant,
     effective_workdir_root,
 )
@@ -2460,6 +2463,16 @@ class Guest(
 
         return output
 
+    def on_step_start(self, step: 'tmt.steps.Step') -> None:
+        """
+        Called when a step begins execution.
+
+        Does nothing for :py:class:`Guest`. Should be overridden in subclass if needed.
+
+        :param step: the step that has completed.
+        """
+        pass
+
     def on_step_complete(self, step: 'tmt.steps.Step') -> None:
         """
         Called when a step completes execution.
@@ -3073,6 +3086,9 @@ class GuestSsh(Guest, CommandCollector):
     _ssh_master_process_lock: threading.Lock
     _ssh_master_process: Optional['subprocess.Popen[bytes]'] = None
 
+    _ssh_master_process_stdout_logger: Optional[StreamLogger] = None
+    _ssh_master_process_stderr_logger: Optional[StreamLogger] = None
+
     #: If set, SSH multiplexing will be considered disabled no matter
     #: other conditions. Useful for temporarily disabling the multiplexing.
     _ssh_multiplexing_disabled: bool = False
@@ -3169,6 +3185,9 @@ class GuestSsh(Guest, CommandCollector):
         self.info("building container image from collected commands", "green")
         self.package_manager.build_container()
 
+    def on_step_start(self, step: 'tmt.steps.Step') -> None:
+        self._cleanup_ssh_master_process()
+
     def on_step_complete(self, step: 'tmt.steps.Step') -> None:
         """
         Called when a step completes execution.
@@ -3179,6 +3198,8 @@ class GuestSsh(Guest, CommandCollector):
         """
         if self.has_collected_commands:
             self.flush_collected()
+
+        self._cleanup_ssh_master_process()
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
@@ -3202,6 +3223,30 @@ class GuestSsh(Guest, CommandCollector):
             return False
 
         return True
+
+    @contextlib.contextmanager
+    def ssh_multiplexing_disabled(self) -> Iterator[None]:
+        """
+        Disable SSH multiplexing for the duration of this context manager.
+
+        Master process is still running, but it is not contacted by ``ssh``
+        commands.
+
+        .. code-block:: python
+
+            with guest.ssh_multiplexing_disabled():
+                # SSH multiplexing is disabled here.
+        """
+
+        original, self._ssh_multiplexing_disabled = self._ssh_multiplexing_disabled, True
+
+        self.debug('SSH multiplexing has been disabled.')
+
+        yield
+
+        self.debug('SSH multiplexing has been restored.')
+
+        self._ssh_multiplexing_disabled = original
 
     @property
     def is_ssh_multiplexing_enabled(self) -> bool:
@@ -3352,29 +3397,103 @@ class GuestSsh(Guest, CommandCollector):
 
         return command + self._ssh_options
 
-    def _spawn_ssh_master_process(self) -> subprocess.Popen[bytes]:
+    def _flush_ssh_master_loggers(self) -> None:
         """
-        Spawn the SSH master process
+        Finalize and terminate the SSH master process loggers.
         """
+
+        if self._ssh_master_process_stdout_logger is not None:
+            self._ssh_master_process_stdout_logger.join()
+
+        if self._ssh_master_process_stderr_logger is not None:
+            self._ssh_master_process_stderr_logger.join()
+
+        self._ssh_master_process_stdout_logger = None
+        self._ssh_master_process_stderr_logger = None
+
+    def _flush_ssh_master_socket_path(self) -> None:
+        """
+        Terminate and unlink the SSH master process socket.
+        """
+
+        if not self._ssh_master_socket_path:
+            return
+
+        self.debug(f"Remove SSH master socket '{self._ssh_master_socket_path}'.", level=3)
+
+        try:
+            self._ssh_master_socket_path.unlink(missing_ok=True)
+            self._ssh_master_socket_reservation_path.unlink(missing_ok=True)
+
+        except OSError as error:
+            self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
+
+        del self._ssh_master_socket_path
+        del self._ssh_master_socket_reservation_path
+
+    def _flush_ssh_master_process(self) -> None:
+        """
+        Finalize all use of the SSH master process.
+
+        After calling this method, no SSH master process-related attribute
+        of the :py:class:`Guest` class refers to process details.
+        """
+
+        self._flush_ssh_master_loggers()
+        self._flush_ssh_master_socket_path()
+
+        self._ssh_master_process = None
+
+    def _spawn_ssh_master_process(self, logger: Optional[tmt.log.Logger] = None) -> None:
+        """
+        Spawn the SSH master process.
+        """
+
+        logger = logger or self._logger
 
         # NOTE: do not modify `command`, it might be reused by the caller. To
         # be safe, include it in our own command.
         ssh_master_command = (
-            self._base_ssh_command + self._ssh_options + Command("-MNnT", self._ssh_guest)
+            self._base_ssh_command + self._ssh_options + Command("-v", "-MNnT", self._ssh_guest)
         )
 
-        self.debug(f"Spawning the SSH master process: {ssh_master_command}")
+        logger.debug(f"Spawning the SSH master process: {ssh_master_command}")
 
-        return subprocess.Popen(
+        self._ssh_master_process = subprocess.Popen(
             ssh_master_command.to_popen(),
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
+
+        logger.debug(f'Spawning the SSH master process {self._ssh_master_process.pid}.', level=3)
+
+        self._ssh_master_process_stdout_logger = StreamLogger(
+            f'ssh-master[{self._ssh_master_process.pid}].stdout',
+            stream=self._ssh_master_process.stdout,
+            logger=logger.debug,
+            click_context=click.get_current_context(silent=True),
+            stream_output=True,
+        )
+
+        self._ssh_master_process_stderr_logger = StreamLogger(
+            f'ssh-master[{self._ssh_master_process.pid}].stderr',
+            stream=self._ssh_master_process.stderr,
+            logger=logger.debug,
+            click_context=click.get_current_context(silent=True),
+            stream_output=True,
+        )
+
+        self._ssh_master_process_stdout_logger.start()
+        self._ssh_master_process_stderr_logger.start()
 
     def _cleanup_ssh_master_process(
         self, signal: _signal.Signals = _signal.SIGTERM, logger: Optional[tmt.log.Logger] = None
     ) -> None:
+        """
+        Terminate and clean up the SSH master process.
+        """
+
         logger = logger or self._logger
 
         if not self.is_ssh_multiplexing_enabled:
@@ -3409,7 +3528,7 @@ class GuestSsh(Guest, CommandCollector):
                     f'Terminating the SSH master process {self._ssh_master_process.pid} timed out.'
                 )
 
-            self._ssh_master_process = None
+            self._flush_ssh_master_process()
 
     def _assert_ssh_master_process(self) -> None:
         """
@@ -3430,30 +3549,18 @@ class GuestSsh(Guest, CommandCollector):
                     level=3,
                 )
 
-                self._ssh_master_process = None
-
-                self.debug(f"Remove SSH master socket '{self._ssh_master_socket_path}'.", level=3)
-
-                try:
-                    self._ssh_master_socket_path.unlink(missing_ok=True)
-
-                except OSError as error:
-                    self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
+                self._flush_ssh_master_process()
 
             if self._ssh_master_process is None:
                 self._logger.debug(
-                    'SSH master process is not running and will be spawned.',
-                    level=3,
+                    'SSH master process is not running and will be spawned.', level=3
                 )
 
-                self._ssh_master_process = self._spawn_ssh_master_process()
+                self._spawn_ssh_master_process()
 
             self._logger.debug(
-                'Checking whether the the SSH master process is up and running.',
-                level=3,
+                'Checking whether the the SSH master process is up and running.', level=3
             )
-
-            self._logger.debug(f'{self._ssh_master_process=}')
 
             def _wait_for_ssh_master() -> None:
                 try:
@@ -3488,26 +3595,6 @@ class GuestSsh(Guest, CommandCollector):
 
         return self._base_ssh_command
 
-    def _unlink_ssh_master_socket_path(self) -> None:
-        if not self.is_ssh_multiplexing_enabled:
-            return
-
-        with self._ssh_master_process_lock:
-            if not self._ssh_master_socket_path:
-                return
-
-            self.debug(f"Remove SSH master socket '{self._ssh_master_socket_path}'.", level=3)
-
-            try:
-                self._ssh_master_socket_path.unlink(missing_ok=True)
-                self._ssh_master_socket_reservation_path.unlink(missing_ok=True)
-
-            except OSError as error:
-                self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
-
-            del self._ssh_master_socket_path
-            del self._ssh_master_socket_reservation_path
-
     def _run_ansible(
         self,
         playbook: AnsibleApplicable,
@@ -3538,6 +3625,15 @@ class GuestSsh(Guest, CommandCollector):
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
+        # In general, yes, we should let Ansible use the SSH multiplexing,
+        # but there is a problem with reboots: once Ansible reboots the
+        # guest, the known master process dies, and new one is spawn - one
+        # we don't know anything about, and we can't manage it anymore.
+        # Therefore temporarily disabling the multiplexing until Ansible
+        # and reboot begin to play better with our kids.
+        #
+        # self._assert_ssh_master_process()
+
         ansible_command = Command(
             'ansible-playbook', *self._ansible_verbosity(), *self._ansible_extra_args(extra_args)
         )
@@ -3550,15 +3646,21 @@ class GuestSsh(Guest, CommandCollector):
         self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
 
         # Build command arguments
-        ansible_command += Command(
-            '--ssh-common-args',
-            self._ssh_options.to_element(),
-            '-i',
-            str(inventory_path),
-            '--limit',
-            self.name,
-            playbook,
-        )
+        with self.ssh_multiplexing_disabled():
+            ansible_command += Command(
+                '--ssh-common-args',
+                (
+                    # `-Sauto` should let Ansible use SSH multiplexing,
+                    # but it will have to spawn its own master process.
+                    # We cannot let it mess ours.
+                    self._ssh_options + Command('-Sauto')
+                ).to_element(),
+                '-i',
+                str(inventory_path),
+                '--limit',
+                self.name,
+                playbook,
+            )
 
         try:
             return self._run_guest_command(
@@ -3963,9 +4065,6 @@ class GuestSsh(Guest, CommandCollector):
 
         # Close the master ssh connection
         self._cleanup_ssh_master_process()
-
-        # Remove the ssh socket
-        self._unlink_ssh_master_socket_path()
 
     def stop(self) -> None:
         """
