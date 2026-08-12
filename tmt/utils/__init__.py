@@ -107,15 +107,17 @@ def configure_optional_constant(default: Optional[int], envvar: str) -> Optional
         given default value if the variable did not exist.
     """
 
-    if envvar not in Environment.environ:
+    environment = Environment.from_environ()
+
+    if envvar not in environment:
         return default
 
     try:
-        return int(Environment.environ[envvar])
+        return int(environment[envvar])
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={Environment.environ[envvar]}' as integer."
+            f"Could not parse '{envvar}={environment[envvar]}' as integer."
         ) from exc
 
 
@@ -130,12 +132,14 @@ def configure_constant(default: int, envvar: str) -> int:
         given default value if the variable did not exist.
     """
 
+    environment = Environment.from_environ()
+
     try:
-        return int(Environment.environ.get(envvar, default))
+        return int(environment.get(envvar, default))
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={Environment.environ[envvar]}' as integer."
+            f"Could not parse '{envvar}={environment[envvar]}' as integer."
         ) from exc
 
 
@@ -150,12 +154,14 @@ def configure_float_constant(default: float, envvar: str) -> float:
         given default value if the variable did not exist.
     """
 
+    environment = Environment.from_environ()
+
     try:
-        return float(Environment.environ.get(envvar, default))
+        return float(environment.get(envvar, default))
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={Environment.environ[envvar]}' as float."
+            f"Could not parse '{envvar}={environment[envvar]}' as float."
         ) from exc
 
 
@@ -171,7 +177,7 @@ def configure_bool_constant(default: bool, envvar: str) -> bool:
     :returns: value extracted from the environment variable, or the
         given default value if the variable did not exist.
     """
-    value = Environment.environ.get(envvar)
+    value = Environment.from_environ().get(envvar)
     if value is None:
         return default
     return value == "1"
@@ -324,8 +330,10 @@ def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     if workdir_root_option:
         return workdir_root_option
 
-    if 'TMT_WORKDIR_ROOT' in Environment.environ:
-        return Path(Environment.environ['TMT_WORKDIR_ROOT'])
+    environment = Environment.from_environ()
+
+    if 'TMT_WORKDIR_ROOT' in environment:
+        return Path(environment['TMT_WORKDIR_ROOT'])
 
     return WORKDIR_ROOT
 
@@ -2420,7 +2428,7 @@ class TracebackVerbosity(enum.Enum):
     @classmethod
     def from_env(cls) -> 'TracebackVerbosity':
         return TracebackVerbosity.from_spec(
-            Environment.environ.get('TMT_SHOW_TRACEBACK', '0').lower()
+            Environment.from_environ().get('TMT_SHOW_TRACEBACK', '0').lower()
         )
 
 
@@ -3350,7 +3358,7 @@ def get_state_format(format: Optional[str] = None) -> StateFormat:
 #: The default state format. It is initialized via ``TMT_STATE_FORMAT``
 #: environment variable.
 DEFAULT_STATE_FORMAT: Final[StateFormat] = get_state_format(
-    format=Environment.environ.get('TMT_STATE_FORMAT', 'yaml').lower()
+    format=Environment.from_environ().get('TMT_STATE_FORMAT', 'yaml').lower()
 )
 
 
