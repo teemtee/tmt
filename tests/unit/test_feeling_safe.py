@@ -37,7 +37,7 @@ def test_assert_is_allowed(
     tmt_version: str,
     deprecated_version: str,
     expect_warn: bool,
-    expect_exception: str,
+    expect_exception: bool,
     root_logger: Logger,
     monkeypatch: _pytest.monkeypatch.MonkeyPatch,
     caplog: _pytest.logging.LogCaptureFixture,

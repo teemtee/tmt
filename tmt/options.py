@@ -298,12 +298,12 @@ SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
         choices=tmt.utils.feeling_safe.unsafe_behavior_names(),
         envvar='TMT_FEELING_SAFE',
         help="""
-             This options will enable potentially unsafe behavior such
+             This option will enable potentially unsafe behavior such
              as executing tests directly on the test runner using the
              ``local`` provision method.
 
              Use with caution, only when you can fully trust the ``tmt``
-             metadata  or if you know what you are doing.
+             metadata or if you know what you are doing.
              """,
     ),
     *PLUGIN_SECURITY_OPTIONS,
