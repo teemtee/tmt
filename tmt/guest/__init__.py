@@ -549,6 +549,16 @@ SoftRebootModes = Literal[RebootMode.SOFT, RebootMode.SYSTEMD_SOFT]
 HardRebootModes = Literal[RebootMode.HARD]
 
 
+class SSHMasterProcessFailedToStartError(ProvisionError):
+    def __init__(
+        self,
+        causes: Optional[list[Exception]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__('SSH master process failed to start.', *args, **kwargs)
+
+
 class DownloadError(tmt.utils.GeneralError):
     """
     Raised when download fails.
@@ -619,7 +629,7 @@ class BootMark(abc.ABC):
             # Same boot mark, reboot didn't happen yet, retrying
             raise tmt.utils.wait.WaitingIncompleteError
 
-        except tmt.utils.RunError as error:
+        except (tmt.utils.RunError, SSHMasterProcessFailedToStartError) as error:
             guest.debug('Failed to fetch boot mark.')
 
             raise tmt.utils.wait.WaitingIncompleteError from error
@@ -3585,7 +3595,7 @@ class GuestSsh(Guest, CommandCollector):
                 default_ssh_master_start_waiting().wait(_wait_for_ssh_master, self._logger)
 
             except tmt.utils.wait.WaitingTimedOutError as exc:
-                raise ProvisionError('SSH master process failed to start.') from exc
+                raise SSHMasterProcessFailedToStartError from exc
 
     @property
     def _ssh_command(self) -> Command:
