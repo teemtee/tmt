@@ -47,8 +47,6 @@ xfail_plans_nobest=(
         extra_env=""
         if is_centos_7 "$image"; then
              extra_env="-e DNF_CMD=yum"
-            # TODO: centos7 is hard
-            continue
         fi
 
         phase_prefix="$(test_phase_prefix $image)"
@@ -63,7 +61,7 @@ xfail_plans_nobest=(
                     break
                 fi
             done
-            if is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
+            if is_centos_7 "$image" || is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
                 for check_pattern in ${xfail_plans_nobest[@]}; do
                     if [[ "$plan" =~ $check_pattern ]]; then
                         xfail="(XFAIL)"
