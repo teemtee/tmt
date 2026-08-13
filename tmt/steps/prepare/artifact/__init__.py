@@ -338,7 +338,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     def _prepare_verify(self, providers: list[ArtifactProvider], guest: Guest) -> None:
         """
-        Prepare the install phases and verify-instalation phase.
+        Prepare the install phases and verify-installation phase.
 
         The main workflow for this step is:
 
