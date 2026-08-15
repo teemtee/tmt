@@ -1,0 +1,6 @@
+summary:
+    Ensure that beakerlib libraries work with execute --force
+description:
+    Run a beakerlib test which requires a library and imports it
+    using `rlImport --all`. Then rerun it again using `tmt run
+    --last execute --force`. Make sure that everything works.
