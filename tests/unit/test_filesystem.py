@@ -1,5 +1,6 @@
 import os
 import stat
+import subprocess
 import time
 from typing import Optional, cast
 from unittest import mock
@@ -208,7 +209,8 @@ def test_permission_error_handling(
     dest_dir.chmod(0o444)
     # ... but that wouldn't stop root user. You know, like the one our
     # tests run in CI. Let root know we insist.
-    dest_dir.chmod(stat.SF_IMMUTABLE)
+    if os.getuid() == 0:
+        subprocess.check_call(['chattr', '+i', str(dest_dir)])
 
     with pytest.raises(tmt.utils.GeneralError, match=r'(?i)Failed to copy tree'):
         tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
