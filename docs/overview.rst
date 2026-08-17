@@ -380,7 +380,7 @@ behaviour of the ``tmt`` command.
 TMT_DEBUG
     Make the developer-focused debugging output more verbose. Using this
     environment variable has the same effect as the equal number of
-    ``-d`` options. The value go from ``0`` to ``3`` for increasingly
+    ``-d`` options. The value goes from ``0`` to ``3`` for increasingly
     detailed logging:
 
     * ``-d``/``TMT_DEBUG=1``: High-level info. Framework choice,

@@ -7,7 +7,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "tmt plan  show /plan-with-valid-ref"
+        rlRun -s "tmt plan show /plan-with-valid-ref"
         rlAssertNotGrep "warn:" $rlRun_LOG
         rlAssertGrep "ref branch-or-tag-ref" $rlRun_LOG
         rlAssertGrep "ref 8deadbeaf8" $rlRun_LOG
