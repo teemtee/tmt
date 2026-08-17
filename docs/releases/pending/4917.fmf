@@ -1,0 +1,4 @@
+description: |
+  The :ref:`finish shell</plugins/finish/shell>` plugin now runs
+  scripts immediately on image-mode guests instead of collecting
+  them for deferred execution that never happened.

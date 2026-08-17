@@ -2533,6 +2533,26 @@ class Guest(
     ) -> Optional[tmt.utils.CommandOutput]:
         pass
 
+    @overload
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        environment: Optional[Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        immediately: bool = True,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
+        **kwargs: Any,
+    ) -> Optional[tmt.utils.CommandOutput]:
+        pass
+
     @abc.abstractmethod
     def execute(
         self,
@@ -2550,19 +2570,24 @@ class Guest(
         on_process_end: Optional[OnProcessEndCallback] = None,
         sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
-    ) -> tmt.utils.CommandOutput:
+    ) -> Optional[tmt.utils.CommandOutput]:
         """
         Execute a command on the guest.
 
         :param command: either a command or a shell script to execute.
-        :param cwd: if set, execute command in this directory on the guest.
+        :param cwd: execute command in this directory on the guest.
         :param environment: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
+        :param test_session: if True, this is the actual test being run.
         :param immediately: if False, the command may be collected for later
             batch execution on guests that support it (e.g., bootc guests).
             Commands with ``immediately=True`` (default) are always executed
             right away. Use ``immediately=False`` for commands that modify
             system state and can be batched (e.g., package installation).
+            When a command is deferred, ``None`` is returned instead of
+            :py:class:`CommandOutput`.
+        :returns: command output, or ``None`` if the command was deferred
+            for batch execution (when ``immediately=False`` on supported guests).
         """
 
         raise NotImplementedError
@@ -3757,6 +3782,26 @@ class GuestSsh(Guest, CommandCollector):
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[False] = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.VerboseLoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
+        **kwargs: Any,
+    ) -> Optional[tmt.utils.CommandOutput]:
+        pass
+
+    @overload
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        environment: Optional[Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.VerboseLoggingFunction] = None,

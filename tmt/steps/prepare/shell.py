@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Optional, cast
+from typing import Any, ClassVar, Optional, cast
 
 import fmf.utils
 
@@ -108,6 +108,9 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     _data_class = PrepareShellData
     _url_clone_lock = threading.Lock()
     _cloned_repo_path_envvar_name = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
+
+    # Prepare scripts may be deferred for later execution.
+    _execute_immediately: ClassVar[bool] = False
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
@@ -248,7 +251,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 cwd=worktree,
                 environment=environment,
                 sourced_files=[self.step.plan.plan_source_script],
-                immediately=False,
+                immediately=self._execute_immediately,
             )
 
         script_queue = self.data.script[:]

@@ -61,11 +61,7 @@ rlJournalStart
         rlPhaseStartTest "Remote Script"
             rlRun -s "tmt -vvv run provision --how=$PROVISION_HOW $image_opt prepare finish cleanup plan -n url" 0 "Prepare using a remote script"
             rlAssertGrep "Hello world" "$rlRun_LOG" #check for the prepare script
-            # TODO: #4785 Preparing from a remote script is broken in Image Mode (finish)
-            # https://github.com/teemtee/tmt/issues/4917
-            if [ "$IMAGE_MODE" != "yes" ]; then
-                rlAssertGrep "third" "$rlRun_LOG" # check for the finish script
-            fi
+            rlAssertGrep "third" "$rlRun_LOG" # check for the finish script
             assert_image_mode
         rlPhaseEnd
     done <<< "$IMAGES"
