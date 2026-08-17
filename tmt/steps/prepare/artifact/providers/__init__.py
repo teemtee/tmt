@@ -347,3 +347,34 @@ def _register_hints(
 
 
 provides_artifact_provider = _PROVIDER_REGISTRY.create_decorator(on_register=_register_hints)
+
+
+def copy_rpms_to_shared_repo(
+    guest: Guest,
+    source_path: Path,
+    shared_repo_dir: Path,
+    logger: tmt.log.Logger,
+) -> None:
+    """
+    Copy RPMs from a provider's download directory into the shared repository.
+
+    :param guest: the guest to run the copy on.
+    :param source_path: directory containing downloaded RPMs.
+    :param shared_repo_dir: shared repository directory to copy into.
+    :param logger: logger instance.
+    :raises PrepareError: when the copy fails for reasons other than missing files.
+    """
+
+    try:
+        guest.execute(
+            ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
+        )
+    except tmt.utils.RunError as error:
+        if error.stderr and "No such file" in error.stderr:
+            logger.warning(f"No artifacts to contribute from '{source_path}'.")
+            return
+        raise tmt.utils.PrepareError(
+            f"Failed to copy artifacts from '{source_path}' to '{shared_repo_dir}'."
+        ) from error
+
+    logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")
