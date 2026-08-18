@@ -7,7 +7,7 @@ cleanup() {
 
 rlJournalStart
     rlPhaseStartSetup
-        export TMT_FEELING_SAFE=all
+        export TMT_FEELING_SAFE=1
         rlRun "pushd data"
     rlPhaseEnd
 
