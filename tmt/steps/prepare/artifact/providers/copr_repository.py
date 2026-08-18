@@ -67,6 +67,7 @@ class CoprRepositoryProvider(ArtifactProvider):
     """
 
     repository: Optional[Repository] = None
+    downloads_artifacts = False
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:

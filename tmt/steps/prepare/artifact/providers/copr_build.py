@@ -12,13 +12,11 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 from tmt.container import container, simple_field
-from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
-    copy_rpms_to_shared_repo,
     provides_artifact_provider,
 )
 
@@ -215,12 +213,3 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 
         return [self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas]
-
-    def contribute_to_shared_repo(
-        self,
-        guest: Guest,
-        source_path: tmt.utils.Path,
-        shared_repo_dir: tmt.utils.Path,
-        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
-    ) -> None:
-        copy_rpms_to_shared_repo(guest, source_path, shared_repo_dir, self.logger)

@@ -2,7 +2,7 @@ import glob
 import urllib.parse
 from collections.abc import Sequence
 from functools import cached_property
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import tmt.utils
 from tmt.container import container, simple_field
@@ -13,7 +13,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
-    copy_rpms_to_shared_repo,
     provides_artifact_provider,
 )
 
@@ -125,12 +124,3 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error
-
-    def contribute_to_shared_repo(
-        self,
-        guest: Guest,
-        source_path: tmt.utils.Path,
-        shared_repo_dir: tmt.utils.Path,
-        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
-    ) -> None:
-        copy_rpms_to_shared_repo(guest, source_path, shared_repo_dir, self.logger)
