@@ -412,7 +412,7 @@ FILTERING_OPTIONS: list[ClickOptionDecoratorType] = [
              Use arbitrary Python expression for filtering.
 
              This is an unsafe behavior, and requires either
-             ``--allow-unsafe-behavior=cli.conditions`` or ``--feeling-safe``.
+             ``--allow-unsafe-behavior=cli.condition`` or ``--feeling-safe``.
              """,
     ),
     option(
