@@ -184,7 +184,8 @@ def main(
     force_color: bool,
     show_time: bool,
     pre_check: bool,
-    feeling_safe: Sequence[str],
+    feeling_safe: Optional[bool],
+    allow_unsafe_behavior: Sequence[str],
     **kwargs: Any,
 ) -> None:
     """
@@ -223,7 +224,7 @@ def main(
     # Save click context and fmf context for future use
     tmt.utils.Common.store_cli_invocation(click_contex)
 
-    tmt.utils.feeling_safe.allow_unsafe_behavior(*feeling_safe)
+    tmt.utils.feeling_safe.allow_unsafe_behavior(feeling_safe, *allow_unsafe_behavior)
 
     # Run pre-checks
     if pre_check:

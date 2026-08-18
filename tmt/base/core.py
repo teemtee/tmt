@@ -2264,9 +2264,8 @@ class Tree(tmt.utils.Common):
         """
         Collect ``--condition`` options from the command line
 
-        Get conditions for the given class. Also ensure that the
-        ``--feeling-safe`` option is enabled as these can
-        potentially be dangerous.
+        Get conditions for the given class. Also make sure this unsafe
+        behavior is allowed.
         """
 
         cli_conditions: list[str] = list(cls._opt('conditions', []))

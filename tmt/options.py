@@ -294,13 +294,38 @@ PLUGIN_SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
 SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
-        multiple=True,
-        choices=tmt.utils.feeling_safe.unsafe_behavior_names(),
+        is_flag=True,
+        default=None,
         envvar='TMT_FEELING_SAFE',
         help="""
              This option will enable potentially unsafe behavior such
              as executing tests directly on the test runner using the
              ``local`` provision method.
+
+             This option is stronger than ``--allow-unsafe-behavior``,
+             and it is processed first. ``tmt --feeling-safe`` will
+             act the same as ``tmt --allow-unsafe-behavior=all``. Unlike
+             ``--allow-unsafe-behavior``, this option does not support
+             granular control, enables or disables every behavior at once.
+
+             Use with caution, only when you can fully trust the ``tmt``
+             metadata or if you know what you are doing.
+             """,
+    ),
+    option(
+        '--allow-unsafe-behavior',
+        multiple=True,
+        choices=tmt.utils.feeling_safe.unsafe_behavior_names(),
+        envvar='TMT_ALLOW_UNSAFE_BEHAVIOR',
+        help="""
+             This option will enable potentially unsafe behavior such
+             as executing tests directly on the test runner using the
+             ``local`` provision method.
+
+             This option is softer than ``--feeling-safe``, and it is
+             processed after ``--feeling-safe``. Unlike ``--feeling-safe``,
+             this option allows granular control over which unsafe behavior
+             would be enabled.
 
              Use with caution, only when you can fully trust the ``tmt``
              metadata or if you know what you are doing.
@@ -383,7 +408,12 @@ FILTERING_OPTIONS: list[ClickOptionDecoratorType] = [
         'conditions',
         metavar="EXPR",
         multiple=True,
-        help="Use arbitrary Python expression for filtering (requires --feeling-safe).",
+        help="""
+             Use arbitrary Python expression for filtering.
+
+             This is an unsafe behavior, and requires either
+             ``--allow-unsafe-behavior=cli.conditions`` or ``--feeling-safe``.
+             """,
     ),
     option(
         '--enabled',
@@ -424,7 +454,12 @@ FILTERING_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
         'conditions',
         metavar="EXPR",
         multiple=True,
-        help="Use arbitrary Python expression for filtering (requires --feeling-safe).",
+        help="""
+             Use arbitrary Python expression for filtering.
+
+             This is an unsafe behavior, and requires either
+             ``--allow-unsafe-behavior=cli.condition`` or ``--feeling-safe``.
+             """,
     ),
     option(
         '--enabled',

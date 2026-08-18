@@ -59,7 +59,8 @@ class UnsafeBehavior:
 
         raise GeneralError(
             f"{self.label[0].upper()}{self.label[1:]}"
-            f" is allowed only with the '--feeling-safe={self.name}' option."
+            f" is allowed only with the '--allow-unsafe-behavior={self.name}'"
+            " or '--feeling-safe' option."
         )
 
     def assert_is_allowed(self, logger: 'Logger') -> None:
@@ -82,7 +83,8 @@ class UnsafeBehavior:
             ):
                 logger.warning(
                     f"Starting with tmt {self.locked_since}, {self.label}"
-                    " will require '--feeling-safe' option."
+                    f" will require either '--allow-unsafe-behavior={self.name}'"
+                    " or '--feeling-safe' option."
                 )
 
                 return
@@ -172,18 +174,29 @@ def name_to_unsafe_behavior(*names: str) -> Iterator[UnsafeBehavior]:
         yield known_ub_map[name]
 
 
-def allow_unsafe_behavior(*ubs: str) -> None:
+def allow_unsafe_behavior(feeling_safe: Optional[bool], *ubs: str) -> None:
     """
     Allow the given unsafe behaviors.
 
     All other unsafe behaviors would not be allowed: the
     list of allowed behaviors is emptied, and then populated with
     the provided set.
+
+    :param feeling_safe: a "big switch": ``True`` is equivalent to
+        ``all`` in ``ubs``, ``False`` is equeivalent to ``none`` in
+        ``ubs``. When not set, ``ubs`` is left unmodified.
+    :param ubs: a list of unsafe behavior names.
     """
 
     global ALLOWED_BEHAVIORS
 
     ALLOWED_BEHAVIORS.clear()
+
+    if feeling_safe is True:
+        ubs = ('all', *ubs)
+
+    elif feeling_safe is False:
+        ubs = ('none', *ubs)
 
     for ub in name_to_unsafe_behavior(*ubs):
         ALLOWED_BEHAVIORS.add(ub)
