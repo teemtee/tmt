@@ -175,7 +175,7 @@ class ArtifactProvider(ABC):
             caught, logged as warnings, and ignored.
         """
 
-        self.logger.info(f"Downloading artifacts to '{download_path!s}'.")
+        self.logger.debug(f"Downloading artifacts to '{download_path!s}'.", level=2)
 
         # Ensure download directory exists on guest (create only if missing)
         guest.execute(
@@ -192,12 +192,10 @@ class ArtifactProvider(ABC):
         #  downloaded and external ones
         for artifact in self.artifacts:
             local_path = download_path / artifact.filename
-            self.logger.debug(f"Downloading '{artifact}' to '{local_path}'.")
 
             try:
                 self._download_artifact(artifact, guest, local_path)
                 downloaded_paths.append(local_path)
-                self.logger.info(f"Downloaded '{artifact}' to '{local_path}'.")
 
             except DownloadError as error:
                 # Warn about the failed download and move on
@@ -213,7 +211,6 @@ class ArtifactProvider(ABC):
                     f"Unexpected error downloading '{artifact}'."
                 ) from error
 
-        self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
 
     def get_repositories(self) -> list['Repository']:
@@ -261,9 +258,6 @@ class ArtifactProvider(ABC):
                         repo_id=rpm_version.repo_id,
                     )
                 )
-            self.logger.debug(
-                f"Enumerated {len(packages)} packages from repository '{repository.name}'."
-            )
 
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation

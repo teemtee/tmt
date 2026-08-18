@@ -82,16 +82,17 @@ enabled=1
 gpgcheck=0
 priority={self.repository_priority}"""
 
-        self.logger.debug(f"Generated .repo file content:\n{repo_content}")
+        self.logger.debug(
+            f"Creating repository '{repo_name}' from baseurl: {baseurl}\n{repo_content}",
+            level=2,
+        )
 
         # Create Repository object
         self.repository = Repository.from_content(
             content=repo_content, name=repo_name, logger=self.logger
         )
 
-        self.logger.info(f"Repository initialized: {self.repository.name} (baseurl: {baseurl})")
         return []
 
     def get_repositories(self) -> list[Repository]:
-        self.logger.info(f"Providing repository '{self.repository.name}' for installation")
         return [self.repository]

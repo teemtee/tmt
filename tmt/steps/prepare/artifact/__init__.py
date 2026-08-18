@@ -305,7 +305,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # This ensures consistent handling across all providers
         for repo in repositories:
             guest.package_manager.install_repository(repo)
-            logger.debug(f"Installed repository '{repo.name}'.")
 
         # Enumerate artifacts from installed repositories.
         for provider in providers:
@@ -317,12 +316,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Verify phase injection
         if self.data.verify:
             self._inject_verify_phase(providers, guest)
-
-        # Report configuration summary
-        logger.info(
-            f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
-            f"and {len(repositories)} repository(ies)."
-        )
 
         return outcome
 

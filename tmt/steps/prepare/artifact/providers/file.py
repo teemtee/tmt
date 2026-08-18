@@ -122,7 +122,6 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
                         compress=True,
                     ),
                 )
-            self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error
 
@@ -135,4 +134,6 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
         guest.execute(
             ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
         )
-        self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")
+        self.logger.debug(
+            f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.", level=2
+        )
