@@ -109,7 +109,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     _url_clone_lock = threading.Lock()
     _cloned_repo_path_envvar_name = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
-    # Prepare scripts may be deferred for later execution.
+    #: Whether to run scripts immediately or defer them when the guest supports it.
     _execute_immediately: ClassVar[bool] = False
 
     @property
