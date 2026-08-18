@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from tmt.package_managers._rpm import RpmVersion
-from tmt.utils import Path
+from tmt.utils import Path, PrepareError
 
 
 @pytest.mark.parametrize(
@@ -32,12 +32,8 @@ def test_file_artifact_provider_deduplicates_globs(tmp_path, caplog, artifact_pr
         subdir.mkdir()
         (subdir / "baz-1.0-1.fc43.x86_64.rpm").touch()
 
-    provider = artifact_provider(f"file:{tmp_path}/*/baz-1.0-1.fc43.x86_64.rpm")
-    artifacts = list(provider.artifacts)
-
-    assert len(artifacts) == 1
-    assert artifacts[0].id == "baz-1.0-1.fc43.x86_64"
-    assert "Duplicate artifact" in caplog.text
+    with pytest.raises(PrepareError, match="Duplicate rpm files found!"):
+        artifact_provider(f"file:{tmp_path}/*/baz-1.0-1.fc43.x86_64.rpm")
 
 
 def test_download_artifact(tmp_path, artifact_provider):
