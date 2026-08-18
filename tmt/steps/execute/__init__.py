@@ -462,7 +462,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         command: ShellScript,
         *,
         cwd: Path,
-        log: tmt.log.LoggingFunction,
+        log: tmt.log.VerboseLoggingFunction,
         interactive: bool,
         deadline: Optional[tmt.utils.wait.Deadline],
     ) -> tmt.utils.CommandOutput:
@@ -649,7 +649,7 @@ class ResultCollection:
         result = fmf.utils.validate_data(self.results, schema, schema_store=schema_store)
 
         if not result.errors:
-            self.invocation.logger.debug('Results successfully validated.', level=4, shift=1)
+            self.invocation.logger.debug('Results successfully validated.', level=3, shift=1)
 
             return
 

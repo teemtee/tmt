@@ -1096,7 +1096,7 @@ EOF
                     },
                 ]
 
-            logger.debug('mrack request', req, level=4)
+            logger.debug('mrack request', req, level=3)
 
             logger.info('whiteboard', host.whiteboard, 'green')
 

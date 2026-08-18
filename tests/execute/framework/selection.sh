@@ -7,7 +7,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Combine shell and beakerlib"
-        rlRun -s "tmt run -avvvvdddr"
+        rlRun -s "tmt run -avvvdddr"
         # The default test framework should be 'shell'
         rlAssertGrep "Execute '/tests/shell/default' as a 'shell' test." $rlRun_LOG
         # Explicit framework in test should always override default

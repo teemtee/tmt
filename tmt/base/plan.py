@@ -673,7 +673,7 @@ class Plan(
         self.debug(
             "Ignoring the following paths during worktree sync",
             tmt.utils.format_value(ignore),
-            level=4,
+            level=3,
         )
 
         with (
