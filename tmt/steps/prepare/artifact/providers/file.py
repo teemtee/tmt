@@ -121,6 +121,5 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
                         compress=True,
                     ),
                 )
-            self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error
