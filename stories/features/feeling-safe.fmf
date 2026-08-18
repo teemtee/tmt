@@ -22,18 +22,18 @@ description: |
     correct and safe. It would be beneficial to allow informed use
     of these scripts.
 
-    ``tmt`` command gains a new option, ``--feeling-safe``. When
-    specified, tmt will allow and obey possibly unsafe metadata keys
-    and command line options. When not specified, keys and options
-    deemed unsafe would lead to an error.
+    ``tmt`` command has two options, ``--feeling-safe`` and
+    ``--allow-unsafe-behavior``. When specified, tmt will allow and obey
+    possibly unsafe metadata keys and command line options. When not
+    specified, keys and options deemed unsafe would lead to an error.
 
     It is possible to allow either all unsafe behavior, with
-    ``--feeling-safe=all``, or allow just a subset. This may be very
-    handy when the otherwise useful behavior could be constrained by
-    other means user controls. For example, CI maintainer would like
-    to allow custom reboot scripts the :py:ref:`/plugins/provision/connect`
-    plugin supports while still preventing use of the
-    :py:ref:`/plugins/provision/local` plugin.
+    ``--feeling-safe`` or ``--allow-unsafe-behavior=all``, or allow just
+    a subset. This may be very handy when the otherwise useful behavior
+    could be constrained by other means user controls. For example, CI
+    maintainer would like to allow custom reboot scripts the
+    :py:ref:`/plugins/provision/connect` plugin supports while still
+    preventing use of the :py:ref:`/plugins/provision/local` plugin.
 
     .. versionadded:: 1.30
 

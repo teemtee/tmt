@@ -49,8 +49,8 @@ rlJournalStart
         rlAssertGrep "'--condition' command-line option is allowed only with the '--feeling-safe' option" $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "tmt plan ls --condition with --feeling-safe=cli.condition"
-        rlRun -s "tmt --feeling-safe=cli.condition plan ls --condition 'True'"
+    rlPhaseStartTest "tmt plan ls --condition with --allow-unsafe-behavior=cli.condition"
+        rlRun -s "tmt --allow-unsafe-behavior=cli.condition plan ls --condition 'True'"
         rlAssertGrep "/plans/features/core" $rlRun_LOG
         rlAssertGrep "/plans/features/basic" $rlRun_LOG
     rlPhaseEnd

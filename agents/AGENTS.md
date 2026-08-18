@@ -69,7 +69,7 @@ make build-deps
 pre-commit run --all-files
 
 # Run the core test plan - runs on developer's workstation
-tmt --feeling-safe=provision/local -vv run -a provision -h local plan -n '^/plans/features/core$'
+tmt --allow-unsafe-behavior=provision/local -vv run -a provision -h local plan -n '^/plans/features/core$'
 ```
 
 ### Building and Packaging

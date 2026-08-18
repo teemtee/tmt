@@ -41,7 +41,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test unsafe SSH options are allowed with --feeling-safe $PROVISION_HOW"
-      rlRun "tmt --feeling-safe=provision.unsafe-ssh-options run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n unsafe-ssh-options"
+      rlRun "tmt --allow-unsafe-behavior=provision.unsafe-ssh-options run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n unsafe-ssh-options"
       rlAssertGrep "Run command: ssh .*-oPermitLocalCommand yes" "$run/log.txt"
       rlAssertGrep "Run command: ssh .*-oLocalCommand=echo \"LocalCommand is not allowed\"" "$run/log.txt"
     rlPhaseEnd
