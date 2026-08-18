@@ -29,7 +29,6 @@ from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Optional,
     Union,
     cast,
@@ -117,14 +116,6 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment and
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
-
-    _environ: ClassVar['Environment']
-
-    @classmethod
-    def _init_environ(cls) -> None:
-        cls._environ = Environment(
-            {key: EnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
-        )
 
     def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
         super().__init__(data or {})
@@ -514,7 +505,9 @@ class Environment(dict[str, EnvVarValue]):
         Extract environment variables from the live environment
         """
 
-        return cls._environ.copy()
+        return Environment(
+            {key: EnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
+        )
 
     @classmethod
     def from_fmf_context(cls, fmf_context: 'FmfContext') -> 'Environment':
@@ -776,6 +769,3 @@ class Environment(dict[str, EnvVarValue]):
             intrinsic_only=True,
             logger=logger,
         )
-
-
-Environment._init_environ()
