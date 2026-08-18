@@ -1,0 +1,43 @@
+description: |
+    New ``jira`` export and report plugins allow synchronizing
+    test metadata and results with a Jira instance.
+
+    Use ``tmt tests export --how jira`` to create or update
+    ``Test Case`` work items in a Jira project from fmf metadata.
+    Credentials are provided via ``--jira-url``, ``--jira-user``
+    and ``--jira-token`` options or the corresponding
+    ``TMT_PLUGIN_EXPORT_JIRA_*`` environment variables. Use
+    ``--create`` to create new test cases and ``--link-jira`` to
+    write the Jira issue URL back into the fmf ``link`` section
+    as an ``implements`` relation for future lookups.
+
+    .. code-block:: shell
+
+        tmt tests export --how jira --create --link-jira \
+            --jira-url https://issues.redhat.com \
+            --jira-user me@example.com --jira-token TOKEN \
+            --project-id RHELTEST
+
+    Use ``tmt run report --how jira`` to post test execution
+    results as comments on ``Test Result`` subtasks grouped by
+    distro version and, when the fmf test metadata defines a
+    ``component``, by package NVR as well. The distro version and
+    architecture are read from guest ``os-release`` facts. The
+    package NVR is queried from the guest's package manager (``rpm``
+    or ``apt``) using the test ``component`` key; results without a
+    component are grouped by distro version only. Credentials are
+    required the same way
+    as for the export plugin, but without the ``jira-`` option
+    prefix: ``url``, ``user`` and ``token`` (or the corresponding
+    ``TMT_PLUGIN_REPORT_JIRA_*`` environment variables) together
+    with ``project-id`` are all mandatory.
+
+    .. code-block:: yaml
+
+        report:
+            how: jira
+            url: https://issues.redhat.com
+            user: me@example.com
+            token: <token>
+            project-id: RHELTEST
+            compose-id: RHEL-10.3-20260817.0
