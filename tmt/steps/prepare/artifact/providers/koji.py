@@ -251,18 +251,22 @@ class KojiTask(KojiArtifactProvider):
         )
 
     def _populate_artifacts(self) -> None:
-        self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
+        self.logger.debug(f"Fetching RPMs for task '{self.id}'.", level=2)
         # If task produced a build, reuse build path
         if self.build_id is not None:
             self.logger.debug(
-                f"Task '{self.id}' produced build '{self.build_id}', fetching RPMs from the build."
+                f"Task '{self.id}' produced build '{self.build_id}', "
+                f"fetching RPMs from the build.",
+                level=3,
             )
             assert self.build_provider is not None
             self._artifacts.extend(self.build_provider.artifacts)
             return
 
         # Otherwise, list the task output files for scratch builds
-        self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
+        self.logger.debug(
+            f"Task '{self.id}' did not produce a build, fetching scratch RPMs.", level=3
+        )
 
         artifacts: list[ArtifactInfo] = []
         seen_ids = set()  # Multiple tasks may produce the same RPM
@@ -270,7 +274,7 @@ class KojiTask(KojiArtifactProvider):
         for child_task in self._get_task_children(int(self.id)):
             for filename in self._call_api("listTaskOutput", child_task):
                 if not filename.endswith(".rpm"):
-                    self.logger.warning(f"Skipping '{filename}': not an RPM")
+                    self.logger.debug(f"Skipping '{filename}': not an RPM", level=3)
                     continue
                 rpm = self.make_rpm_artifact(child_task, filename)
                 if rpm.id not in seen_ids:
@@ -278,7 +282,7 @@ class KojiTask(KojiArtifactProvider):
                     seen_ids.add(rpm.id)
                 else:
                     self.logger.debug(
-                        f"Skipping redundant RPM '{rpm.id}' from task '{child_task}'"
+                        f"Skipping redundant RPM '{rpm.id}' from task '{child_task}'", level=3
                     )
 
         self._artifacts.extend(artifacts)
@@ -297,7 +301,7 @@ class KojiBuild(KojiArtifactProvider):
         return int(self.id)
 
     def _populate_artifacts(self) -> None:
-        self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.")
+        self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.", level=2)
 
         self._artifacts.extend(
             [
@@ -338,6 +342,6 @@ class KojiNvr(KojiArtifactProvider):
         """
         RPM artifacts for the given NVR.
         """
-        self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
+        self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.", level=2)
         assert self.build_provider is not None
         self._artifacts.extend(self.build_provider.artifacts)

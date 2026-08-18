@@ -172,7 +172,6 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         :returns: list of package dictionaries containing NEVRA info.
         """
         results_url = urljoin(self.result_url + "/", "results.json")
-        self.logger.debug(f"Fetching results.json from '{results_url}'.")
         try:
             with tmt.utils.retry_session(logger=self.logger) as session:
                 response = session.get(results_url)
@@ -211,7 +210,6 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         )
 
     def _populate_artifacts(self) -> None:
-        self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 
         self._artifacts.extend([self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas])
