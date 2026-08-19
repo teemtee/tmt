@@ -35,7 +35,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test unsafe SSH options are not allowed $PROVISION_HOW"
       rlRun "unset TMT_FEELING_SAFE; tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW plan -n unsafe-ssh-options" 2
-      rlAssertGrep "Unsafe SSH option is allowed only with the '--feeling-safe' option" "$run/log.txt"
+      rlAssertGrep "Unsafe SSH option is allowed only with the '--allow-unsafe-behavior=provision.unsafe-ssh-options' or '--feeling-safe' option." "$run/log.txt"
       rlAssertNotGrep "Run command: ssh .*-oPermitLocalCommand yes" "$run/log.txt"
       rlAssertNotGrep "Run command: ssh .*-oLocalCommand=echo \"LocalCommand is not allowed\"" "$run/log.txt"
     rlPhaseEnd
