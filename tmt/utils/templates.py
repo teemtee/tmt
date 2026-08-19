@@ -618,9 +618,7 @@ def render_diff(
         Compare two objects and render "missing" and "added" lines.
         """
 
-        for line in difflib.ndiff(
-            dict_to_yaml(left).splitlines(), dict_to_yaml(right).splitlines()
-        ):
+        for line in difflib.ndiff(to_yaml(left).splitlines(), to_yaml(right).splitlines()):
             # See https://docs.python.org/3/library/difflib.html#difflib.Differ for "markers"
             # at beginnings of lines
 

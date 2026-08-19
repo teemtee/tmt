@@ -393,9 +393,16 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
                 topic=tmt.log.Topic.ADJUST_DECISIONS,
             )
 
-        else:
-            assert before is not None
+        elif before is None:
+            logger.verbose(
+                f"fmf node '{node.name}' modified by adjust rule",
+                tmt.utils.format_value(rule, key_color='cyan'),
+                color='green',
+                level=3,
+                topic=tmt.log.Topic.ADJUST_DECISIONS,
+            )
 
+        else:
             logger.verbose(
                 f"fmf node '{node.name}' modified by adjust rule",
                 tmt.utils.templates.render_diff(
