@@ -436,7 +436,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             verify_phase = PreparePlugin.delegate(self.step, data=verify_data)  # pyright: ignore[reportUnknownVariableType]
             self.step.add_phase(verify_phase)  # pyright: ignore[reportUnknownArgumentType]
 
-    def essential_requires(self) -> list[tmt.base.core.Dependency]:
+    def essential_requires(self, guest: Guest) -> list[tmt.base.core.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts
         return [
             tmt.base.core.DependencySimple('/usr/bin/createrepo'),

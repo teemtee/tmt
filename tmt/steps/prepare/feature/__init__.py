@@ -387,7 +387,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
 
         return outcome
 
-    def essential_requires(self) -> list[tmt.base.core.Dependency]:
+    def essential_requires(self, guest: 'Guest') -> list[tmt.base.core.Dependency]:
         """
         Collect all essential requirements of the plugin.
 
