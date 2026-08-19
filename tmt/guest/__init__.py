@@ -972,6 +972,10 @@ class GuestFacts(SerializableContainer):
         }
 
     @functools.cached_property
+    def _delimiters(self) -> tuple[str, str]:
+        return (f'# start-marker-tmt-{os.getpid()} #', f'# end-marker-tmt-{os.getpid()} #')
+
+    @functools.cached_property
     def _fact_snippets(self) -> list[tuple[str, guest_fact[Any], str]]:
         """
         Collect all fact collection snippets from the facts.
@@ -1062,6 +1066,8 @@ class GuestFacts(SerializableContainer):
         # one or more of their requirements are still pending.
         blocked_facts: set[str] = set()
 
+        start_delimiter, end_delimiter = self._delimiters
+
         scripts: list[str] = [f'unset {name}' for name, _, _ in pending_facts if name in facts]
 
         def _emit_fact_probe(name: str, fact: guest_fact[Any], snippet: str) -> None:
@@ -1071,9 +1077,9 @@ class GuestFacts(SerializableContainer):
                 '\n'.join(
                     [
                         f'{name}=$({snippet})',
-                        f'echo ">>> {name}"',
+                        f'echo "{start_delimiter} {name}"',
                         f'echo "${name}"',
-                        'echo "<<<"',
+                        f'echo "{end_delimiter} {name}"',
                     ]
                 )
             )
@@ -1132,19 +1138,21 @@ class GuestFacts(SerializableContainer):
 
         facts = {}
 
+        start_delimiter, end_delimiter = self._delimiters
+
         current_fact: Optional[str] = None
         current_fact_content: list[str] = []
 
         for line in output.splitlines():
             line = line.strip()
 
-            if line.startswith('>>> '):
-                current_fact = line[4:]
+            if line.startswith(start_delimiter):
+                current_fact = line.split('#')[2].strip()
 
-            elif line.startswith('<<<'):
+            elif line.startswith(end_delimiter):
                 if current_fact is None:
                     raise GeneralError(
-                        "Malformed fact probe output: closing marker '<<<' without opening marker."
+                        "Malformed fact probe output: closing marker without opening marker."
                     )
 
                 facts[current_fact] = self._facts()[current_fact].extract(
