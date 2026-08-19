@@ -60,7 +60,8 @@ def test_assert_is_allowed(
             caplog,
             message=MATCH(
                 rf"warn: Starting with tmt {ub.locked_since},"
-                r" test unsafe behavior will require '--feeling-safe' option\."
+                r" test unsafe behavior will require either '--allow-unsafe-behavior=test'"
+                r" or '--feeling-safe' option\."
             ),
             levelno=logging.WARNING,
         )

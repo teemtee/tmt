@@ -46,7 +46,7 @@ rlJournalStart
 
     rlPhaseStartTest "tmt plan ls --condition requires --feeling-safe"
         rlRun -s "unset TMT_FEELING_SAFE; tmt plan ls --condition 'True'" 2
-        rlAssertGrep "'--condition' command-line option is allowed only with the '--feeling-safe' option" $rlRun_LOG
+        rlAssertGrep "'--condition' command-line option is allowed only with the '--allow-unsafe-behavior=cli.condition' or '--feeling-safe' option." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "tmt plan ls --condition with --allow-unsafe-behavior=cli.condition"
