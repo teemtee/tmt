@@ -438,9 +438,13 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     def essential_requires(self, guest: Guest) -> list[tmt.base.core.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts
-        return [
-            tmt.base.core.DependencySimple('/usr/bin/createrepo'),
+        requires: list[tmt.base.core.Dependency] = [
+            tmt.base.core.DependencySimple('/usr/bin/createrepo')
         ]
+        if guest.facts.package_manager == "yum":
+            # On yum we need `yum-plugin-priorities` in order to handle repo priorities
+            requires.append(tmt.base.core.DependencySimple("yum-plugin-priorities"))
+        return requires
 
     def _detect_duplicate_nvras(
         self, provider: ArtifactProvider, seen_nvras: dict[str, str]
