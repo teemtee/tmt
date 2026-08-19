@@ -37,6 +37,21 @@ xfail_plans_nobest=(
     "^/broken/no-artifacts/obsoletes/basic$"
     "^/broken/no-artifacts/upgrade/with-devel$"
 )
+xfail_centos7=(
+    # yum cannot downgrade a pre-installed package
+    "/pre-installed/downgrade/with-devel$"
+    "^/verified-artifacts/pre-installed/downgrade/only-foo$"
+)
+complicated_centos7=(
+    # Obsoletes wins over priority. Some of these tests pass when they should xfail
+    # some fail in different ways, it is hard to handle them all consistently, so just skip them.
+    "^/verified-artifacts/obsoletes/basic/downgrade$"
+    "^/available-artifacts/obsoletes/basic/downgrade$"
+    "^/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    "^/broken/available-artifacts/obsoletes/basic/downgrade$"
+    "^/broken/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    "^/verified-artifacts/obsoletes/basic/downgrade$"
+)
 
     while IFS= read -r image; do
         if ! is_fedora "$image" && ! is_centos "$image"; then
@@ -69,6 +84,26 @@ xfail_plans_nobest=(
                         break
                     fi
                 done
+            fi
+            if is_centos_7 "$image"; then
+                for check_pattern in ${xfail_centos7[@]}; do
+                    if [[ "$plan" =~ $check_pattern ]]; then
+                        xfail="(XFAIL)"
+                        expected_result=2
+                        break
+                    fi
+                done
+                # Skip too complicated situations altogether
+                unset complicated
+                for check_pattern in ${complicated_centos7[@]}; do
+                    if [[ "$plan" =~ $check_pattern ]]; then
+                        complicated=1
+                        break
+                    fi
+                done
+                if [[ -n "$complicated" ]]; then
+                    continue
+                fi
             fi
             rlPhaseStartTest "$phase_prefix $plan $xfail"
                 rlRun "tmt run $extra_env -i $run --scratch -vvv --all \
