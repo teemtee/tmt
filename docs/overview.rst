@@ -397,9 +397,24 @@ TMT_PLUGINS
     separated with the ``:`` character can be provided as well.
 
 TMT_FEELING_SAFE
-    Set this variable to enable potentially unsafe behavior such as
-    executing tests directly on the test runner using the ``local``
-    provision method. See ``tmt --help`` for all possible values.
+    Set this variable to enable potentially unsafe behavior such
+    as executing tests directly on the test runner using the
+    ``local`` provision method. See ``tmt --help`` for the full
+    documentation, and interaction between ``--feeling-safe`` and
+    ``--allow-unsafe-behavior`` which allows more granular control,
+    and the corresponding ``TMT_ALLOW_UNSAFE_BEHAVIOR`` environment
+    variable.
+
+    Use with caution, only when you can fully trust the ``tmt`` metadata
+    or if you know what you are doing.
+
+TMT_ALLOW_UNSAFE_BEHAVIOR
+    Set this variable to enable potentially unsafe behavior such
+    as executing tests directly on the test runner using the
+    ``local`` provision method. See ``tmt --help`` for the full
+    documentation, and interaction between ``--allow-unsafe-behavior``
+    and ``--feeling-safe`` and the corresponding ``TMT_FEELING_SAFE``
+    environment variable.
 
     Use with caution, only when you can fully trust the ``tmt`` metadata
     or if you know what you are doing.
