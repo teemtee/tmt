@@ -235,7 +235,6 @@ def _copy_tree_shutil(
                 entry
                 for entry in entries
                 if str(current_dirpath_relative / entry).rstrip('/') in exclude_paths
-                or entry.rstrip('/') in exclude_paths
             }
 
         _copytree(ignore=_ignore)
