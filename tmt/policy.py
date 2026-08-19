@@ -158,8 +158,8 @@ class Instruction(MetadataContainer):
                     KEY_DIFF_TEMPLATE,
                     DIFF=render_diff(
                         _DIFF_TEMPLATE,
-                        old_value_exported,
-                        current_value_exported,
+                        {key: old_value_exported},
+                        {key: current_value_exported},
                     ),
                     OLD_VALUE_SOURCE=old_value_source,
                     NEW_VALUE_SOURCE=current_value_source,
