@@ -533,9 +533,14 @@ class YumEngine(DnfEngine):
     def check_presence(self, *installables: Installable) -> ShellScript:
         queries: list[str] = []
         for original_installable in installables:
-            sanitized = shlex.quote(str(self._sanitize_rpm_whatprovides(original_installable)))
-            original = shlex.quote(str(original_installable))
-            queries.append(f"rpm -q --whatprovides {sanitized} >&2 || echo {original}")
+            escaped = shlex.quote(str(original_installable))
+            if original_installable != self._sanitize_rpm_whatprovides(original_installable):
+                # this only happens when there is a nevra where we cannot use --whatprovides
+                # but normal `rpm -q` works
+                queries.append(f"rpm -q {escaped} >&2 || echo {escaped}")
+            else:
+                # Otherwise, do the actual presence check
+                queries.append(f"rpm -q --whatprovides {escaped} >&2 || echo {escaped}")
         return ShellScript("\n".join(queries))
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
