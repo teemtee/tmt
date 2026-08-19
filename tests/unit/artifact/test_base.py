@@ -1,4 +1,3 @@
-import re
 from unittest.mock import MagicMock
 
 import pytest
@@ -44,11 +43,6 @@ def mock_provider(root_logger):
         logger=root_logger,
         parent=mock_prepare_artifact,
     )
-
-
-def test_filter_artifacts(mock_provider):
-    artifacts = list(mock_provider._filter_artifacts([re.compile("mock")]))
-    assert artifacts == []
 
 
 def test_download_artifacts(tmp_path, root_logger, mock_provider):

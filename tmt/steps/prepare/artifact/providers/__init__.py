@@ -4,9 +4,8 @@ Abstract base class for artifact providers.
 
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from functools import cached_property
-from re import Pattern
 from shlex import quote
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -108,7 +107,7 @@ class ArtifactProvider(ABC):
     #: repository, and so on.
     id: ArtifactProviderId = simple_field(init=False)
 
-    #: All artifacts known to this provider. Populated by
+    #: Writable internal field of :py:attr:`artifacts`. To be populated by
     #: :py:meth:`_download_artifact` and/or :py:meth:`enumerate_artifacts`.
     _artifacts: list[ArtifactInfo] = simple_field(init=False, default_factory=list)
 
@@ -139,14 +138,12 @@ class ArtifactProvider(ABC):
         raise NotImplementedError
 
     @property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def artifacts(self) -> Iterator[ArtifactInfo]:
         """
-        Collect all artifacts available from this provider.
-
-        :returns: a list of provided artifacts.
+        All artifacts known to this provider.
         """
 
-        return self._artifacts
+        yield from self._artifacts
 
     def _download_artifact(
         self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
@@ -164,7 +161,6 @@ class ArtifactProvider(ABC):
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[tmt.utils.Path]:
         """
         Fetch all artifacts to the specified destination.
@@ -173,17 +169,13 @@ class ArtifactProvider(ABC):
             downloaded.
         :param download_path: path into which the artifact should be
             downloaded.
-        :param exclude_patterns: if set, artifacts whose names match any
-            of the given regular expressions would not be downloaded.
         :returns: a list of paths to the downloaded artifacts.
         :raises GeneralError: Unexpected errors outside the download process.
         :note: Errors during individual artifact downloads are
             caught, logged as warnings, and ignored.
         """
 
-        self.logger.info(f"Downloading artifacts to '{download_path!s}'.")
-
-        exclude_patterns = exclude_patterns or []
+        self.logger.debug(f"Downloading artifacts to '{download_path!s}'.", level=2)
 
         # Ensure download directory exists on guest (create only if missing)
         guest.execute(
@@ -196,14 +188,14 @@ class ArtifactProvider(ABC):
 
         downloaded_paths: list[tmt.utils.Path] = []
 
-        for artifact in self._filter_artifacts(exclude_patterns):
+        # FIXME: This is not the correct usage of the artifacts, it mixes both artifacts to be
+        #  downloaded and external ones
+        for artifact in self.artifacts:
             local_path = download_path / artifact.filename
-            self.logger.debug(f"Downloading '{artifact}' to '{local_path}'.")
 
             try:
                 self._download_artifact(artifact, guest, local_path)
                 downloaded_paths.append(local_path)
-                self.logger.info(f"Downloaded '{artifact}' to '{local_path}'.")
 
             except DownloadError as error:
                 # Warn about the failed download and move on
@@ -219,21 +211,7 @@ class ArtifactProvider(ABC):
                     f"Unexpected error downloading '{artifact}'."
                 ) from error
 
-        self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
-
-    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfo]:
-        """
-        Filter artifacts based on exclude patterns.
-
-        :param exclude_patterns: artifact whose name matches any of
-            these patterns would be skipped.
-        :yields: artifacts that satisfy the filtering.
-        """
-
-        for artifact in self.artifacts:
-            if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
-                yield artifact
 
     def get_repositories(self) -> list['Repository']:
         """
@@ -241,7 +219,7 @@ class ArtifactProvider(ABC):
         """
         return []
 
-    def enumerate_artifacts(self, guest: Guest) -> None:
+    def enumerate_artifacts(self, guest: Guest, repository: 'Repository') -> None:
         """
         Enumerate artifacts from repositories returned by :py:meth:`get_repositories`
         and populate :py:attr:`_artifacts`. Call this after repositories are installed.
@@ -249,39 +227,34 @@ class ArtifactProvider(ABC):
         For repository providers only. Does not include artifacts contributed to
         the shared repository — those are handled by :py:meth:`contribute_to_shared_repo`.
         """
-        for repository in self.get_repositories():
-            try:
-                packages = guest.package_manager.list_packages(repository)
-            except tmt.utils.RunError as error:
-                tmt.utils.show_exception_as_warning(
-                    exception=error,
-                    message=f"Failed to enumerate packages from repository '{repository.name}'.",
-                    logger=self.logger,
-                )
-                continue
-            for rpm_version in packages:
-                from tmt.package_managers._rpm import RpmVersion
+        try:
+            packages = guest.package_manager.list_packages(repository)
+        except tmt.utils.RunError as error:
+            tmt.utils.show_exception_as_warning(
+                exception=error,
+                message=f"Failed to enumerate packages from repository '{repository.name}'.",
+                logger=self.logger,
+            )
+            return
+        for rpm_version in packages:
+            from tmt.package_managers._rpm import RpmVersion
 
-                if not isinstance(rpm_version, RpmVersion):
-                    raise tmt.utils.GeneralError(
-                        f"Unexpected package type '{type(rpm_version).__name__}' "
-                        f"from repository '{repository.name}'."
-                    )
-                if rpm_version.repo_id is None:
-                    raise tmt.utils.GeneralError(
-                        f"Package '{rpm_version}' from repository '{repository.name}' "
-                        f"has no repo_id."
-                    )
-                self._artifacts.append(
-                    ArtifactInfo(
-                        version=rpm_version,
-                        provider=self,
-                        location=repository.name,
-                        repo_id=rpm_version.repo_id,
-                    )
+            if not isinstance(rpm_version, RpmVersion):
+                raise tmt.utils.GeneralError(
+                    f"Unexpected package type '{type(rpm_version).__name__}' "
+                    f"from repository '{repository.name}'."
                 )
-            self.logger.debug(
-                f"Enumerated {len(packages)} packages from repository '{repository.name}'."
+            if rpm_version.repo_id is None:
+                raise tmt.utils.GeneralError(
+                    f"Package '{rpm_version}' from repository '{repository.name}' has no repo_id."
+                )
+            self._artifacts.append(
+                ArtifactInfo(
+                    version=rpm_version,
+                    provider=self,
+                    location=repository.name,
+                    repo_id=rpm_version.repo_id,
+                )
             )
 
     # B027: "... is an empty method in an abstract base class, but has
@@ -292,7 +265,6 @@ class ArtifactProvider(ABC):
         guest: Guest,
         source_path: Path,
         shared_repo_dir: Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> None:
         """
         Contribute artifacts to the shared repository.
@@ -305,8 +277,6 @@ class ArtifactProvider(ABC):
         :param source_path: path where the artifacts are located (source for contribution).
         :param shared_repo_dir: path to the shared repository directory where
             artifacts should be contributed.
-        :param exclude_patterns: if set, artifacts whose names match any
-            of the given regular expressions would not be contributed.
         """
         pass
 

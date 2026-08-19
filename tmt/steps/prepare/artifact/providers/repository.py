@@ -2,7 +2,6 @@
 Artifact provider for discovering RPMs from repository files.
 """
 
-from re import Pattern
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -65,7 +64,6 @@ class RepositoryFileProvider(ArtifactProvider):
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[tmt.utils.Path]:
         # Fetches and initializes the repository from the URL.
         # Repository provider does not download individual artifacts. Instead, it fetches
@@ -73,15 +71,13 @@ class RepositoryFileProvider(ArtifactProvider):
         # then available through the package manager.
         # It returns an Empty list, as no individual artifact files are downloaded.
 
-        self.logger.info(f"Initializing repository provider with URL: {self.id}")
-
         parsed = urlparse(self.id)
         # If the file is a relative path, we need the netloc part also
         parsed_path = Path(f"{parsed.netloc}{parsed.path}")
         if parsed.scheme == 'file':
             # Normalize relative paths to be relative to user_anchor_path
             parsed_path = self.parent.step.plan.user_anchor_path / parsed_path
-            self.logger.info(f"Reading repository file from local path: {parsed_path}")
+            self.logger.debug(f"Reading repository file from local path: {parsed_path}", level=3)
             self.repository = Repository.from_file_path(file_path=parsed_path, logger=self.logger)
         else:
             repo_filename = parsed_path.name
@@ -100,14 +96,14 @@ class RepositoryFileProvider(ArtifactProvider):
                 output.stdout or '', repo_filename.removesuffix('.repo'), self.logger
             )
 
-        self.logger.info(
+        self.logger.debug(
             f"Repository initialized: {self.repository.name} "
-            f"(repo IDs: {', '.join(self.repository.repo_ids)})"
+            f"(repo IDs: {', '.join(self.repository.repo_ids)})",
+            level=2,
         )
         return []
 
     def get_repositories(self) -> list[Repository]:
-        self.logger.info(f"Providing repository '{self.repository.name}' for installation ")
         return [self.repository]
 
 
@@ -137,8 +133,6 @@ def create_repository(
     """
     repo_name = repo_name or f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
 
-    logger.info(f"Creating repository '{repo_name}' from directory '{artifact_dir}'")
-
     # Ensure the artifact directory exists
     guest.execute(
         tmt.utils.Command('mkdir', '-p', artifact_dir),
@@ -146,7 +140,6 @@ def create_repository(
     )
 
     # Create Repository Metadata
-    logger.info(f"Creating repository metadata for '{artifact_dir}'.")
     try:
         guest.package_manager.create_repository(artifact_dir)
     except RunError as error:
@@ -160,13 +153,10 @@ enabled=1
 gpgcheck=0
 priority={priority}"""
 
-    logger.debug(f"Generated .repo file content:\n{repo_string}")
-
-    # Create Repository Object
-    created_repository = Repository.from_content(
-        content=repo_string, name=repo_name, logger=logger
+    logger.debug(
+        f"Creating repository '{repo_name}' from directory '{artifact_dir}'\n{repo_string}",
+        level=2,
     )
 
-    logger.info(f"Successfully created repository '{created_repository.name}' ")
-
-    return created_repository
+    # Create Repository Object
+    return Repository.from_content(content=repo_string, name=repo_name, logger=logger)
