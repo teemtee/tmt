@@ -24,6 +24,8 @@ Example::
 
 Profile output files are written to ``.profile_synthetic_runs/`` (or ``--profile-dir``).
 Runs use ``PYTHONPATH=<repo>`` so in-tree ``tmt`` is used when cwd is the nested tree.
+
+The expected runtime for this full script is several hours.
 """
 
 from __future__ import annotations

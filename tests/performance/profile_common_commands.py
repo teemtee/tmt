@@ -10,12 +10,14 @@ tree using the in-tree package:
     python3 tests/performance/profile_common_commands.py
 
 Profile output files are written to a temporary directory (or ``--profile-dir``).
+Subprocesses set ``PYTHONPATH=<repo>`` so the in-tree package is used regardless of cwd.
 """
 
 from __future__ import annotations
 
 import argparse
 import dataclasses
+import os
 import pstats
 import statistics
 import subprocess
@@ -124,6 +126,15 @@ def extract_metrics(prof_path: Path, label: str) -> ProfileMetrics:
     )
 
 
+def build_subprocess_env(repo: Path) -> dict[str, str]:
+    env = os.environ.copy()
+    pythonpath_parts = [str(repo)]
+    if env.get("PYTHONPATH"):
+        pythonpath_parts.append(env["PYTHONPATH"])
+    env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
+    return env
+
+
 def run_wall_clock(
     python: str,
     repo: Path,
@@ -131,11 +142,13 @@ def run_wall_clock(
     runs: int,
 ) -> float:
     times: list[float] = []
+    env = build_subprocess_env(repo)
     for _ in range(runs):
         start = time.perf_counter()
         subprocess.run(
             [python, "-m", "tmt", *args],
             cwd=repo,
+            env=env,
             capture_output=True,
             check=False,
         )
@@ -154,6 +167,7 @@ def run_cprofile(
     prof_path: Path,
 ) -> None:
     prof_path.parent.mkdir(parents=True, exist_ok=True)
+    env = build_subprocess_env(repo)
     subprocess.run(
         [
             python,
@@ -166,6 +180,7 @@ def run_cprofile(
             *args,
         ],
         cwd=repo,
+        env=env,
         capture_output=True,
         check=False,
     )
@@ -233,7 +248,7 @@ def print_cross_command_table(
             "Percentages in `_load_keys` / `logger.debug` / `_format_dict` "
             "are % of profile `total_tt`."
         )
-        print("Invocation: `python -m cProfile -m tmt …` from repo cwd (in-tree `python -m tmt`).")
+        print("Invocation: `PYTHONPATH=<repo> python -m cProfile -m tmt …` with cwd=<repo>.")
     else:
         col_widths = [max(len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
         line = "  ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
@@ -386,6 +401,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     print(f"Repository: {repo}", file=sys.stderr)
     print(f"Python: {args.python}", file=sys.stderr)
+    print(f"PYTHONPATH: {build_subprocess_env(repo)['PYTHONPATH']}", file=sys.stderr)
     print(f"Profile directory: {profile_dir}", file=sys.stderr)
 
     metrics = profile_commands(

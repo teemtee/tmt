@@ -54,6 +54,10 @@ tmt.1
 # Created by pytest-html reporting plugin
 /assets/style.css
 /report.html
+# Performance profiling
+.profile_common_commands/
+.profile_synthetic_runs/
+tests/performance/synthetic/
 
 # Virtual environment
 .env
