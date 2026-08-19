@@ -5,6 +5,7 @@ from collections.abc import Iterable, Sequence
 from typing import ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
+from tmt.base.core import DependencySimple
 from tmt.package_managers import (
     YUM_REPOS_DIR,
     FileSystemPath,
@@ -620,3 +621,9 @@ class Yum(Dnf):
         """
     ).to_shell_command()
     probe_priority = 40
+
+    def essential_requires(self) -> list[DependencySimple]:
+        return [
+            # We need `yum-plugin-priorities` in order to handle repo priorities
+            DependencySimple("yum-plugin-priorities")
+        ]
