@@ -33,6 +33,6 @@ prepare:
   discover+:
     filter+: " & tag: with-tmt"
   adjust+:
-    - when: distro == fedora-rawhide
+    - when: distro >= fedora-45
       enabled: false
       because: Python dependencies on PyPI have not caught up

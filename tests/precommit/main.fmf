@@ -6,6 +6,6 @@ require:
 tier: 4
 
 adjust+:
-  - when: distro == fedora-rawhide
+  - when: distro >= fedora-45
     result: xfail
     because: Python dependencies on PyPI have not caught up
