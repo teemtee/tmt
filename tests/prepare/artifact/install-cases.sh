@@ -17,42 +17,6 @@ rlJournalStart
         setup_distro_environment
     rlPhaseEnd
 
-xfail_plans=(
-    # Intentionally should fail at install or verify stage
-    # TODO: Check the failure more narrowly
-    "^/broken/verified-artifacts"
-    # Same failure like the dnf4, but the explicit --best flag does not need to be included (#5090)
-    # Interestingly `/verified-artifacts/obsoletes/basic/downgrade` does not fail, it seems it does not
-    # read the other repo metadata there, but things may change in the future
-    "^/verified-artifacts/obsoletes/pre-installed/downgrade"
-)
-xfail_plans_nobest=(
-    # On dnf4 these plans fail because of the intrinsic --best flag passed (#5090)
-    # Missing ^ here is intetional, to cover both /broken/available-artifacts and /available-artifacts
-    "/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
-    "^/broken/available-artifacts/basic"
-    "^/broken/available-artifacts/obsoletes/basic"
-    "^/broken/available-artifacts/.*pre-installed/.*/with-devel$"
-    "^/broken/no-artifacts/.*/pre-installed/with-devel$"
-    "^/broken/no-artifacts/obsoletes/basic$"
-    "^/broken/no-artifacts/upgrade/with-devel$"
-)
-xfail_centos7=(
-    # yum cannot downgrade a pre-installed package
-    "/pre-installed/downgrade/with-devel$"
-    "^/verified-artifacts/pre-installed/downgrade/only-foo$"
-)
-complicated_centos7=(
-    # Obsoletes wins over priority. Some of these tests pass when they should xfail
-    # some fail in different ways, it is hard to handle them all consistently, so just skip them.
-    "^/verified-artifacts/obsoletes/basic/downgrade$"
-    "^/available-artifacts/obsoletes/basic/downgrade$"
-    "^/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
-    "^/broken/available-artifacts/obsoletes/basic/downgrade$"
-    "^/broken/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
-    "^/verified-artifacts/obsoletes/basic/downgrade$"
-)
-
     while IFS= read -r image; do
         if ! is_fedora "$image" && ! is_centos "$image"; then
             # Can only test rpm artifacts right now
@@ -67,49 +31,81 @@ complicated_centos7=(
         phase_prefix="$(test_phase_prefix $image)"
 
         for plan in $(tmt plans ls); do
-            xfail=""
-            expected_result=0
-            for check_pattern in ${xfail_plans[@]}; do
-                if [[ "$plan" =~ $check_pattern ]]; then
-                    xfail="(XFAIL)"
-                    expected_result=2
-                    break
-                fi
-            done
-            if is_centos_7 "$image" || is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
+            xfail=
+            if [[ "$plan" =~ "^/broken/verified-artifacts" ]]; then
+                # Expected failure because we are explicitly installing a broken package
+                xfail=(
+                    'stderr:\s+ - nothing provides some-non-existent-package needed by .* from tmt-artifact-shared'
+                    'fail: Command .* install -y .* returned 1.'
+                )
+            elif [[ "$plan" =~ "^/verified-artifacts/obsoletes/pre-installed/downgrade" ]]; then
+                # Pre-installed package does not let the install downgrade, so this is expected to fail
+                xfail=(
+                    'stderr:\s+- installed package foo-ng-1.0-1.noarch obsoletes foo < 3.0-1 provided by foo-1.1-1.noarch from tmt-artifact-shared'
+                    'stderr:\s+- conflicting requests'
+                    'fail: Command .* install -y .* returned 1.'
+                )
+            elif is_centos_7 "$image" || is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
+                # On CentOS-like images --best flag is set by default so fallback mechanism is not applied and some cases fail
+                xfail_plans_nobest=(
+                    # Missing ^ here is intetional, to cover both /broken/available-artifacts and /available-artifacts
+                    "/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+                    "^/broken/available-artifacts/basic"
+                    "^/broken/available-artifacts/obsoletes/basic"
+                    "^/broken/available-artifacts/.*pre-installed/.*/with-devel$"
+                    "^/broken/no-artifacts/.*/pre-installed/with-devel$"
+                    "^/broken/no-artifacts/obsoletes/basic$"
+                    "^/broken/no-artifacts/upgrade/with-devel$"
+                )
                 for check_pattern in ${xfail_plans_nobest[@]}; do
                     if [[ "$plan" =~ $check_pattern ]]; then
-                        xfail="(XFAIL)"
-                        expected_result=2
+                        xfail=(
+                            'stderr:\s+- cannot install the best candidate for the job'
+                            'fail: Command .* install -y .* returned 1.'
+                        )
                         break
                     fi
                 done
             fi
             if is_centos_7 "$image"; then
-                for check_pattern in ${xfail_centos7[@]}; do
-                    if [[ "$plan" =~ $check_pattern ]]; then
-                        xfail="(XFAIL)"
-                        expected_result=2
-                        break
+                if [[ "$plan" =~ "/pre-installed/downgrade/with-devel$" || "$plan" =~ "^/verified-artifacts/pre-installed/downgrade/only-foo$"  ]]; then
+                    # yum cannot downgrade a pre-installed package
+                    xfail=(
+
+                    )
+                else
+                    # Obsoletes wins over priority. Some of these tests pass when they should xfail
+                    # some fail in different ways, it is hard to handle them all consistently, so just skip them.
+                    complicated_centos7=(
+                        "^/verified-artifacts/obsoletes/basic/downgrade$"
+                        "^/available-artifacts/obsoletes/basic/downgrade$"
+                        "^/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+                        "^/broken/available-artifacts/obsoletes/basic/downgrade$"
+                        "^/broken/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+                        "^/verified-artifacts/obsoletes/basic/downgrade$"
+                    )
+                    # Skip too complicated situations altogether
+                    unset complicated
+                    for check_pattern in ${complicated_centos7[@]}; do
+                        if [[ "$plan" =~ $check_pattern ]]; then
+                            complicated=1
+                            break
+                        fi
+                    done
+                    if [[ -n "$complicated" ]]; then
+                        continue
                     fi
-                done
-                # Skip too complicated situations altogether
-                unset complicated
-                for check_pattern in ${complicated_centos7[@]}; do
-                    if [[ "$plan" =~ $check_pattern ]]; then
-                        complicated=1
-                        break
-                    fi
-                done
-                if [[ -n "$complicated" ]]; then
-                    continue
                 fi
             fi
-            rlPhaseStartTest "$phase_prefix $plan $xfail"
-                rlRun "tmt run $extra_env -i $run --scratch -vvv --all \
+            expected_result=$(( 0${xfail:+2} ))
+            rlPhaseStartTest "$phase_prefix $plan ${xfail:+(XFAIL)}"
+                rlRun -s "tmt run $extra_env -i $run --scratch -vvv --all \
                     plan --name '^$plan$' \
                     provision -h $PROVISION_HOW --image $image" \
                     $expected_result "Run test case $plan $xfail"
+                for xfail_message in "${xfail[@]}"; do
+                    rlAssertGrep "$xfail_message" $rlRun_LOG -E
+                done
             rlPhaseEnd
         done
     done <<< "$IMAGES"
