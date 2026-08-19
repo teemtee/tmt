@@ -219,7 +219,7 @@ class ArtifactProvider(ABC):
         """
         return []
 
-    def enumerate_artifacts(self, guest: Guest) -> None:
+    def enumerate_artifacts(self, guest: Guest, repository: 'Repository') -> None:
         """
         Enumerate artifacts from repositories returned by :py:meth:`get_repositories`
         and populate :py:attr:`_artifacts`. Call this after repositories are installed.
@@ -227,37 +227,35 @@ class ArtifactProvider(ABC):
         For repository providers only. Does not include artifacts contributed to
         the shared repository — those are handled by :py:meth:`contribute_to_shared_repo`.
         """
-        for repository in self.get_repositories():
-            try:
-                packages = guest.package_manager.list_packages(repository)
-            except tmt.utils.RunError as error:
-                tmt.utils.show_exception_as_warning(
-                    exception=error,
-                    message=f"Failed to enumerate packages from repository '{repository.name}'.",
-                    logger=self.logger,
-                )
-                continue
-            for rpm_version in packages:
-                from tmt.package_managers._rpm import RpmVersion
+        try:
+            packages = guest.package_manager.list_packages(repository)
+        except tmt.utils.RunError as error:
+            tmt.utils.show_exception_as_warning(
+                exception=error,
+                message=f"Failed to enumerate packages from repository '{repository.name}'.",
+                logger=self.logger,
+            )
+            return
+        for rpm_version in packages:
+            from tmt.package_managers._rpm import RpmVersion
 
-                if not isinstance(rpm_version, RpmVersion):
-                    raise tmt.utils.GeneralError(
-                        f"Unexpected package type '{type(rpm_version).__name__}' "
-                        f"from repository '{repository.name}'."
-                    )
-                if rpm_version.repo_id is None:
-                    raise tmt.utils.GeneralError(
-                        f"Package '{rpm_version}' from repository '{repository.name}' "
-                        f"has no repo_id."
-                    )
-                self._artifacts.append(
-                    ArtifactInfo(
-                        version=rpm_version,
-                        provider=self,
-                        location=repository.name,
-                        repo_id=rpm_version.repo_id,
-                    )
+            if not isinstance(rpm_version, RpmVersion):
+                raise tmt.utils.GeneralError(
+                    f"Unexpected package type '{type(rpm_version).__name__}' "
+                    f"from repository '{repository.name}'."
                 )
+            if rpm_version.repo_id is None:
+                raise tmt.utils.GeneralError(
+                    f"Package '{rpm_version}' from repository '{repository.name}' has no repo_id."
+                )
+            self._artifacts.append(
+                ArtifactInfo(
+                    version=rpm_version,
+                    provider=self,
+                    location=repository.name,
+                    repo_id=rpm_version.repo_id,
+                )
+            )
 
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation
