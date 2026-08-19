@@ -78,6 +78,8 @@ def fixture_copy_tree_paths_git(copy_tree_paths: CopyTreePathConfig) -> CopyTree
 
     (source_dir / 'subdir' / '.gitignore').write_text('*.ignore-me\n')
 
+    (source_dir / 'subdir' / '.git').mkdir(parents=True)
+
     return source_dir, dest_dir, symlinks_supported
 
 
@@ -436,6 +438,7 @@ def test_copy_exclude_gitignore(
     assert (dest_dir / '.git').exists() is True
     assert (dest_dir / 'this-file-is-apparently-ignored.ignore-me').exists() is True
     assert (dest_dir / 'subdir' / 'this-file-is-also-ignored.ignore-me').exists() is False
+    assert (dest_dir / 'subdir' / '.git').exists() is True
 
 
 @pytest.mark.parametrize(
@@ -475,4 +478,6 @@ def test_copy_exclude_dot_git(
         return
 
     assert (source_dir / '.git').exists() is True
+    assert (source_dir / 'subdir' / '.git').exists() is True
     assert (dest_dir / '.git').exists() is False
+    assert (dest_dir / 'subdir' / '.git').exists() is True
