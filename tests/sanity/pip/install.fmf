@@ -26,8 +26,3 @@ environment:
     test: |
         /tmp/venv/bin/pip install .[all]
         /tmp/venv/bin/tmt --help
-
-    adjust+:
-      - when: distro >= fedora-45
-        result: xfail
-        because: Python dependencies on PyPI have not caught up
