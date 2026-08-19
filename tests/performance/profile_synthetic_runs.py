@@ -48,15 +48,14 @@ ProfileFuncKey = tuple[str, int, str]
 ProfileStatsEntry = tuple[int, int, float, float, dict[Any, int]]
 ProfileStatsDict = dict[ProfileFuncKey, ProfileStatsEntry]
 
-PERF_SCRIPTS_DIR = Path(__file__).resolve().parent
-
-DEFAULT_SYNTHETIC_DIR = Path("tests/performance/synthetic")
+PERF_DIR = Path("tests/performance")
+DEFAULT_SYNTHETIC_DIR = PERF_DIR / "synthetic"
 DEFAULT_SYNTHETIC_PLANS = ("plan-true", "plan-write")
 DEFAULT_SYNTHETIC_COUNT = 200
 DEFAULT_PROVISION_METHODS = ("local", "virtual", "container")
 DEFAULT_STATE_FORMATS = ("yaml", "json")
 DEFAULT_CLIB_MODES = ("with-clib", "without-clib")
-NO_CLIB_STUBS_DIR = PERF_SCRIPTS_DIR / "profile_synthetic_runs_stubs/no_clib"
+NO_CLIB_STUBS_DIR = PERF_DIR / "profile_synthetic_runs_stubs/no_clib"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -211,7 +210,7 @@ def ensure_synthetic_plan(
     missing = [plan for plan in plans if not (tests_root / f"{plan}.fmf").is_file()]
     if not missing:
         return
-    script = PERF_SCRIPTS_DIR / "create_synthetic_plan.py"
+    script = repo / PERF_DIR / "create_synthetic_plan.py"
     if not script.is_file():
         raise SystemExit(f"Synthetic plans missing and {script} not found.")
     print(
