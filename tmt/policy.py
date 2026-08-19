@@ -9,7 +9,7 @@ from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_f
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
 from tmt.utils.environment import Environment
-from tmt.utils.templates import render_diff, render_template
+from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
     from tmt.base.core import Core, Test
