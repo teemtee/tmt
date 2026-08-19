@@ -14,6 +14,8 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-docutils
 
 Requires:       git-core rsync sshpass
+# See note in pyproject.toml
+Requires:       python3dist(ruamel-yaml-clib)
 
 %if 0%{?fedora} < 40
 Obsoletes:      python3-tmt < %{version}-%{release}
