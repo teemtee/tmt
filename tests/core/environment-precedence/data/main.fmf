@@ -52,7 +52,7 @@
           script: ./populate-plan-environment-file.sh
 
         - how: shell
-        - script: LINE_PREFIX=prepare.2 ./dump-envvars.sh
+          script: LINE_PREFIX=prepare.2 ./dump-envvars.sh
 
     execute:
         how: tmt
