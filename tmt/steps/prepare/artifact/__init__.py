@@ -54,6 +54,16 @@ class PrepareArtifactData(PrepareStepData):
             """,
     )
 
+    repository_name: str = field(
+        default=SHARED_REPO_NAME,
+        option='--repository-name',
+        metavar='NAME',
+        help="""
+            Name of the shared aggregation repository created on the guest.
+            When not set, the default name is used.
+            """,
+    )
+
     verify: bool = field(
         default=True,
         option='--verify/--no-verify',
@@ -242,7 +252,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             artifact_dir=shared_repo_dir,
             guest=guest,
             logger=logger,
-            repo_name=SHARED_REPO_NAME,
+            repo_name=self.data.repository_name,
             priority=self.data.default_repository_priority,
         )
 
@@ -366,7 +376,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             'requires (dist-git)',
             'recommends (dist-git)',
         }
-        provider_repo_ids = {SHARED_REPO_NAME} | {
+        provider_repo_ids = {self.data.repository_name} | {
             repo_id
             for provider in providers
             for repo in provider.get_repositories()
