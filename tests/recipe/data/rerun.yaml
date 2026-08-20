@@ -1,0 +1,168 @@
+plans:
+  - cleanup:
+        enabled: false
+        phases:
+          - how: tmt
+            name: default-0
+            order: 50
+    discover:
+        enabled: false
+        phases:
+          - dist-git-download-only: false
+            dist-git-init: false
+            dist-git-install-builddeps: false
+            dist-git-merge: false
+            dist-git-remove-fmf-root: false
+            dist-git-source: false
+            fmf-id: false
+            how: fmf
+            modified-only: false
+            name: discover-fmf
+            order: 50
+            prune: false
+            sync-repo: false
+            url-content-type: git
+          - dist-git-download-only: false
+            dist-git-install-builddeps: false
+            dist-git-source: false
+            how: shell
+            keep-git-metadata: false
+            name: discover-shell
+            order: 50
+            tests:
+            - duration: 1h
+              enabled: true
+              manual: false
+              name: /shell-test
+              order: 50
+              result: respect
+              test: /bin/true
+              tty: false
+            url-content-type: git
+        tests:
+          - discover-phase: discover-fmf
+            duration: 5m
+            enabled: true
+            environment:
+                TEST_ENV: test_value
+            framework: beakerlib
+            manual: false
+            name: /discover-fmf/tests/first
+            order: 50
+            path: /discover-fmf/tests
+            require:
+              - name: /very/deep/file
+                type: library
+                url: https://github.com/beakerlib/test
+            restart-max-count: 1
+            restart-with-reboot: false
+            result: respect
+            serial-number: 1
+            summary: First test
+            test: ./test.sh
+            tty: false
+          - check:
+              - enabled: true
+                failure-pattern:
+                  - 'Call Trace:'
+                  - \ssegfault\s
+                how: dmesg
+                result: info
+            discover-phase: discover-fmf
+            duration: 5m
+            enabled: true
+            framework: shell
+            manual: false
+            name: /discover-fmf/tests/second
+            order: 50
+            path: /discover-fmf/tests
+            restart-max-count: 1
+            restart-with-reboot: false
+            result: respect
+            serial-number: 2
+            summary: Second test
+            test: echo SECOND_TEST
+            tty: false
+          - discover-phase: discover-shell
+            duration: 1h
+            enabled: true
+            framework: shell
+            manual: false
+            name: /discover-shell/shell-test
+            order: 50
+            path: /discover-shell/tests
+            restart-max-count: 1
+            restart-with-reboot: false
+            result: respect
+            serial-number: 3
+            test: /bin/true
+            tty: false
+    enabled: true
+    environment:
+       PLAN_ENV: plan_value
+    execute:
+        enabled: false
+        phases:
+          - duration: 1h
+            exit-first: false
+            how: tmt
+            ignore-duration: false
+            interactive: false
+            name: Execute phase
+            no-progress-bar: false
+            order: 50
+            restraint-compatible: false
+        results-path: plans/local/execute/results.yaml
+    finish:
+        enabled: false
+        phases:
+          - how: shell
+            name: default-0
+            order: 50
+            script:
+            - echo "Finish phase"
+    link:
+      - relates: https://something.org/related
+    name: /plans/local
+    order: 50
+    prepare:
+        enabled: false
+        phases:
+          - how: shell
+            name: default-0
+            order: 50
+            script:
+              - echo "Prepare phase"
+    provision:
+        enabled: false
+        phases:
+          - become: false
+            environment:
+                PROVISION_ENV: provision_value
+            force-pull: false
+            how: container
+            image: fedora
+            name: default-0
+            order: 50
+            pull-attempts: 5
+            pull-interval: 5
+            stop-time: 1
+            user: root
+    report:
+        enabled: true
+        phases:
+          - absolute-paths: false
+            display-guest: auto
+            how: html
+            name: default-0
+            open: false
+            order: 50
+    summary: A local plan
+run:
+    context:
+        distro:
+          - fedora
+    environment:
+        RUN_ENV: run_value
+    remove: false
+    root: /path/to/fmf_root
