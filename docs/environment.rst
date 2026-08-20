@@ -105,13 +105,19 @@ invocation.
 6.1.2 ``--environment-file`` option
 -----------------------------------
 
+Environment variables loaded from files referenced by the ``tmt run --environment-file``
+command-line option.
+
 6.1.3 ``--environment`` option
 ------------------------------
+
+Environment variables set via ``tmt run --environment`` command-line option.
 
 .. note::
 
     This set includes also files with environment variables when such
-    files are given to ``tmt run`` using the ``@<filepath>`` form.
+    files are given to ``tmt run --environment`` using the ``@<filepath>``
+    form.
 
 7. Variables exposed by tmt, run, plan, steps, plugins, and test frameworks
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
