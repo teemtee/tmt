@@ -388,7 +388,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv or sys.argv[1:])
+    args = parse_args(sys.argv[1:] if argv is None else argv)
+
     repo = args.repo.resolve()
     profile_dir = args.profile_dir or (repo / ".profile_common_commands")
     profile_dir.mkdir(parents=True, exist_ok=True)
