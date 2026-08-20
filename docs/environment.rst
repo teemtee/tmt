@@ -28,7 +28,9 @@ individual tests.
 ----------------------------------
 
 Environment variables loaded from files listed in the
-:tmt:story:`environment </spec/plans/environment-file>` plan key.
+
+:tmt:story:`environment-file </spec/plans/environment-file>` plan key.
+
 
 2.2. ``environment`` plan key
 -----------------------------
