@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     import tmt.steps.context.restart
     from tmt.base.plan import Plan
     from tmt.guest import Guest, TransferOptions
-    from tmt.result import BaseResult, PhaseResult
+    from tmt.result import PhaseResult
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
