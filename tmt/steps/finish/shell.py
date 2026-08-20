@@ -44,6 +44,9 @@ class FinishShell(tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData]
 
     _cloned_repo_path_envvar_name = "TMT_FINISH_SHELL_URL_REPOSITORY"
 
+    # Finish scripts must run immediately rather than being deferred.
+    _execute_immediately = True
+
     # We are reusing "prepare" step for "finish",
     # and they both have different expectations.
     # Mypy is not happy about this though.
