@@ -192,7 +192,11 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if not args.dry_run:
-        rel_root = tests_root.relative_to(repo)
+        try:
+            rel_root = tests_root.relative_to(repo)
+        except ValueError:
+            rel_root = tests_root
+
         print()
         print("Created synthetic plans and tests.")
         print(f"  cd {rel_root}")
