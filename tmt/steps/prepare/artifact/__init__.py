@@ -285,11 +285,12 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 provider.fetch_contents(guest, download_path)
 
                 # Then, have the provider contribute to the shared repository
-                provider.contribute_to_shared_repo(
-                    guest=guest,
-                    source_path=download_path,
-                    shared_repo_dir=shared_repo_dir,
-                )
+                if provider.downloads_artifacts:
+                    provider.contribute_to_shared_repo(
+                        guest=guest,
+                        source_path=download_path,
+                        shared_repo_dir=shared_repo_dir,
+                    )
 
             except tmt.utils.PrepareError:
                 raise

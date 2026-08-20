@@ -8,7 +8,7 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 import tmt.log
 import tmt.utils
@@ -115,6 +115,10 @@ class ArtifactProvider(ABC):
     #: The PrepareArtifact phase that owns this provider.
     parent: "PrepareArtifact"
 
+    #: Whether this provider downloads individual artifact files.
+    #: Providers that only register repositories should set this to ``False``.
+    downloads_artifacts: ClassVar[bool] = True
+
     def __post_init__(self) -> None:
         self.id = self._extract_provider_id(self.raw_id)
 
@@ -219,6 +223,11 @@ class ArtifactProvider(ABC):
                     f"Unexpected error downloading '{artifact}'."
                 ) from error
 
+        if not downloaded_paths:
+            raise tmt.utils.PrepareError(
+                f"No artifacts were downloaded for provider '{self.raw_id}'. "
+                f"Verify the provider identifier is correct."
+            )
         self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
 
@@ -284,15 +293,11 @@ class ArtifactProvider(ABC):
                 f"Enumerated {len(packages)} packages from repository '{repository.name}'."
             )
 
-    # B027: "... is an empty method in an abstract base class, but has
-    # no abstract decorator" - expected, it's a default implementation
-    # provided for subclasses. It is acceptable to do nothing.
-    def contribute_to_shared_repo(  # noqa: B027
+    def contribute_to_shared_repo(
         self,
         guest: Guest,
         source_path: Path,
         shared_repo_dir: Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> None:
         """
         Contribute artifacts to the shared repository.
@@ -305,10 +310,20 @@ class ArtifactProvider(ABC):
         :param source_path: path where the artifacts are located (source for contribution).
         :param shared_repo_dir: path to the shared repository directory where
             artifacts should be contributed.
-        :param exclude_patterns: if set, artifacts whose names match any
-            of the given regular expressions would not be contributed.
         """
-        pass
+        try:
+            guest.execute(
+                ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
+            )
+        except tmt.utils.RunError as error:
+            if error.stderr and "No such file" in error.stderr:
+                self.logger.warning(f"No artifacts to contribute from '{source_path}'.")
+                return
+            raise tmt.utils.PrepareError(
+                f"Failed to copy artifacts from '{source_path}' to '{shared_repo_dir}'."
+            ) from error
+
+        self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")
 
     @property
     def artifact_metadata(self) -> list[dict[str, Any]]:

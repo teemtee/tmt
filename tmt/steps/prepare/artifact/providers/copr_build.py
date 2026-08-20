@@ -5,7 +5,6 @@ Copr Build Artifact Provider
 import types
 from collections.abc import Sequence
 from functools import cached_property
-from shlex import quote
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urljoin
 
@@ -13,7 +12,6 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 from tmt.container import container, simple_field
-from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -21,7 +19,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProviderId,
     provides_artifact_provider,
 )
-from tmt.utils import ShellScript
 
 if TYPE_CHECKING:
     from munch import Munch
@@ -216,15 +213,3 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 
         return [self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas]
-
-    def contribute_to_shared_repo(
-        self,
-        guest: Guest,
-        source_path: tmt.utils.Path,
-        shared_repo_dir: tmt.utils.Path,
-        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
-    ) -> None:
-        guest.execute(
-            ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
-        )
-        self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")

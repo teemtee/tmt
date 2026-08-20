@@ -55,6 +55,14 @@ rlJournalStart
                 prepare --how artifact --provide file:$LIB_DIR/../rpms/bar" \
                 0 "Run directory"
         rlPhaseEnd
+
+        rlPhaseStartTest "$phase_prefix Fail on nonexistent file"
+            rlRun -s "tmt run -i $run --scratch -vvv --all \
+                provision -h $PROVISION_HOW --image $image \
+                prepare --how artifact --provide file:/no/such/package.rpm" \
+                2 "Nonexistent file should fail"
+            rlAssertGrep "No artifacts were downloaded" $rlRun_LOG
+        rlPhaseEnd
     done <<< "$IMAGES"
 
     rlPhaseStartCleanup
