@@ -40,6 +40,13 @@ rlJournalStart
         compare_recipe import.yaml
     rlPhaseEnd
 
+    rlPhaseStartTest "Test recipe generation after rerun"
+        rlRun -s "tmt -vv -c distro=fedora run --scratch --id $run -e RUN_ENV=run_value plan -n /plans/local"
+        rlRun -s "tmt -vv run --id $run report --how=html"
+        rlAssertExists "$recipe" "Recipe file exists"
+        compare_recipe rerun.yaml
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -rf $run" 0 "Remove run directory"

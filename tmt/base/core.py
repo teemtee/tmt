@@ -65,6 +65,7 @@ from tmt.container import (
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import ResultInterpret
 from tmt.utils import (
+    FieldValueSource,
     FmfContext,
     Path,
     ShellScript,
@@ -1237,13 +1238,17 @@ class Test(
 
     serial_number: int = field(default=0, internal=True)
 
-    _original_require: list[Dependency] = field(
+    original_require: list[Dependency] = field(
         internal=True,
         default_factory=list,
+        normalize=normalize_require,
+        exporter=lambda value: [dependency.to_minimal_spec() for dependency in value],
     )
-    _original_recommend: list[Dependency] = field(
+    original_recommend: list[Dependency] = field(
         internal=True,
         default_factory=list,
+        normalize=normalize_require,
+        exporter=lambda value: [dependency.to_minimal_spec() for dependency in value],
     )
 
     _KEYS_SHOW_ORDER = [
@@ -1359,8 +1364,11 @@ class Test(
             )
 
         self._update_metadata()
-        self._original_require = self.require.copy()
-        self._original_recommend = self.recommend.copy()
+        # Only copy the original require/recommend if they are not loaded from `tests.yaml`.
+        if self._field_value_sources.get('original_require') != FieldValueSource.FMF:
+            self.original_require = self.require.copy()
+        if self._field_value_sources.get('original_recommend') != FieldValueSource.FMF:
+            self.original_recommend = self.recommend.copy()
 
     @staticmethod
     def overview(tree: 'Tree') -> None:

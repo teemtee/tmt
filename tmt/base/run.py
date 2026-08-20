@@ -15,6 +15,7 @@ from typing import (
 
 import fmf
 import fmf.utils
+from click.core import ParameterSource
 
 import tmt.config
 import tmt.log
@@ -39,6 +40,7 @@ from tmt.recipe import RecipeManager
 from tmt.result import Result
 from tmt.utils import (
     Command,
+    FmfContext,
     GeneralError,
     HasRunWorkdir,
     HasUserAnchorPath,
@@ -74,6 +76,12 @@ class RunData(SerializableContainer):
         default_factory=Environment,
         serialize=lambda environment: environment.to_fmf_spec(),
         unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
+    )
+
+    context: FmfContext = field(
+        default_factory=FmfContext,
+        serialize=lambda context: context.to_spec(),
+        unserialize=lambda serialized: FmfContext.from_serialized(serialized),
     )
 
 
@@ -380,6 +388,26 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
             }
         )
 
+    def _restore_fmf_context(self) -> None:
+        """
+        Restore fmf context saved in the workdir.
+
+        If ``--context`` was given, keep the CLI context as-is.
+        Otherwise replace it with the context stored in the workdir.
+        """
+
+        if self.data is None or self._cli_context_object is None:
+            return
+
+        invocation = tmt.utils.Common.cli_invocation
+        if (
+            invocation is not None
+            and invocation.option_sources.get('context') == ParameterSource.COMMANDLINE
+        ):
+            return
+
+        self._cli_context_object.fmf_context = FmfContext(self.data.context)
+
     def save(self) -> None:
         """
         Save list of selected plans and enabled steps
@@ -396,6 +424,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
             plans=[plan.name for plan in self._plans] if self._plans is not None else None,
             steps=list(self._cli_context_object.steps),
             environment=self.environment,
+            context=self.fmf_context,
             remove=self.remove,
         )
         self.write_state(self.workdir / 'run', data.to_serialized())
@@ -428,6 +457,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
 
         assert self._cli_context_object is not None  # narrow type
         self._cli_context_object.steps = set(self.data.steps)
+        self._restore_fmf_context()
 
         self._plans = []
 
@@ -458,6 +488,8 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
+
+        self._restore_fmf_context()
 
         # If run id was given and root was not explicitly specified,
         # create a new Tree from the root in run.yaml
