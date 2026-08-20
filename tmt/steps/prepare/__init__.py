@@ -379,6 +379,10 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             missing='skip',
         )
 
+        # Notify guests that the prepare step begins.
+        for guest in self._steppified_ready_guests:
+            guest.on_step_start(self)
+
         if self._steppified_ready_guests:
             sync_with_guests(
                 self, 'push', PushTask(self._steppified_ready_guests, self._logger), self._logger
@@ -478,10 +482,6 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                 causes=exceptions,
             )
 
-        # Notify guests that the prepare step has completed.
-        for guest in self._steppified_ready_guests:
-            guest.on_step_complete(self)
-
         self.info('')
 
         # Pull artifacts created in the plan data directory
@@ -496,6 +496,10 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
 
             # To separate "prepare" from "pull" queue visually
             self.info('')
+
+        # Notify guests that the prepare step has completed.
+        for guest in self._steppified_ready_guests:
+            guest.on_step_complete(self)
 
         # Give a summary, update status and save
         self.summary()

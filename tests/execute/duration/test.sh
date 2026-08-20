@@ -46,7 +46,7 @@ rlJournalStart
                         rlAssertGrep "Adjust the test 'duration' attribute" $rlRun_LOG
                         rlAssertGrep "spec/tests.html#duration" $rlRun_LOG
 
-                        rlRun -s "grep -A4 'duration \"29\" exceeded' $tmp/log.txt"
+                        rlRun -s "grep -A10 'duration \"29\" exceeded' $tmp/log.txt"
 
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ sent SIGKILL signal' $rlRun_LOG"
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ kill confirmed' $rlRun_LOG"

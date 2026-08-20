@@ -1274,6 +1274,10 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
         # Clean up possible old results
         execute_phases[0]._results.clear()
 
+        # Notify guests that the execute step begins.
+        for guest in self.plan.provision.ready_guests:
+            guest.on_step_start(self)
+
         self._queue.reset()
 
         for phase in self.phases(classes=(Action, ExecutePlugin)):
@@ -1303,6 +1307,10 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
 
                 failed_tasks.append(outcome)
                 continue
+
+        # Notify guests that the execute has completed.
+        for guest in self.plan.provision.ready_guests:
+            guest.on_step_complete(self)
 
         # To separate "execute" from the follow-up logging visually
         self.info('')

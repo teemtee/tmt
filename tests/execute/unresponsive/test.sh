@@ -9,7 +9,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test must error out if machine becomes unresponsive during execution (#3647)."
         rlRun -s "tmt run -vv -a provision -h $PROVISION_HOW" "2"
-        rlAssertGrep 'Failed to verify rsync presence|Failed to push workdir' $rlRun_LOG '-E'
+        rlAssertGrep 'Failed to verify rsync presence|Failed to push workdir|SSH master process failed to start' $rlRun_LOG '-E'
         rlAssertGrep 'errr /unresponsive/test/error' $rlRun_LOG '-F'
         rlAssertGrep 'pending /unresponsive/test/pending' $rlRun_LOG '-F'
     rlPhaseEnd
