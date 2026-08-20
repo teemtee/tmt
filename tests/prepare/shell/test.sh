@@ -28,12 +28,12 @@ rlJournalStart
         }
 
         rlPhaseStartTest "Custom Script"
-            rlRun -s "tmt run -arv provision --how=$PROVISION_HOW $image_opt plan -n custom" 0 "Prepare using a custom script"
+            rlRun -s "tmt -vvvddd run -ar provision --how=$PROVISION_HOW $image_opt plan -n custom" 0 "Prepare using a custom script"
             assert_image_mode
         rlPhaseEnd
 
         rlPhaseStartTest "Commandline Script"
-            rlRun "tmt run -arv provision --how=$PROVISION_HOW $image_opt plan -n custom \
+            rlRun "tmt -vvvddd run -ar provision --how=$PROVISION_HOW $image_opt plan -n custom \
                 prepare -h shell -s './prepare.sh'" 0 "Prepare using a custom script from cmdline"
             assert_image_mode
         rlPhaseEnd
@@ -42,7 +42,7 @@ rlJournalStart
             # NOTE: These paths need to persist from the image and survive a reboot
             # See https://developers.redhat.com/articles/2025/08/25/what-image-mode-3-way-merge
             rlRun "FIRST=/usr/share/first SECOND=/usr/share/second"
-            rlRun -s "tmt run -arv -e FIRST=$FIRST -e SECOND=$SECOND provision --how=$PROVISION_HOW $image_opt plans -n multiple \
+            rlRun -s "tmt -vvvddd run -ar -e FIRST=$FIRST -e SECOND=$SECOND provision --how=$PROVISION_HOW $image_opt plans -n multiple \
                 prepare -h shell -s 'touch $FIRST' -s 'touch $SECOND'"
             assert_image_mode
         rlPhaseEnd
