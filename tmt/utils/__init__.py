@@ -960,7 +960,7 @@ class Command:
 
 
 class FrozenCommand(Command):
-    def __iadd__(self, other: Union['Command', RawCommand]) -> NoReturn:  # noqa: PYI034
+    def __iadd__(self, other: Union['Command', RawCommand]) -> NoReturn:
         # Do not raise `NotImplemented` - interpreter would be free to
         # change order of operands, or try another method, which we do
         # not want to allow: someone just tried to modify a frozen command,
