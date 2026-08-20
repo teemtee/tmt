@@ -19,15 +19,15 @@ rlJournalStart
 
 xfail_plans=(
     # Intentionally should fail at install or verify stage
-    # Or some are not yet supported (#4838)
+    # TODO: Check the failure more narrowly
     "^/broken/verified-artifacts"
-    "^/verified-artifacts/pre-installed/.*/only-foo$"
-    "^/verified-artifacts/obsoletes/pre-installed/downgrade/only-foo$"
-    "^/verified-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
-    "^/verified-artifacts/obsoletes/pre-installed/upgrade/only-foo$"
+    # Same failure like the dnf4, but the explicit --best flag does not need to be included (#5090)
+    # Interestingly `/verified-artifacts/obsoletes/basic/downgrade` does not fail, it seems it does not
+    # read the other repo metadata there, but things may change in the future
+    "^/verified-artifacts/obsoletes/pre-installed/downgrade"
 )
 xfail_plans_nobest=(
-    # On dnf4 these plans fail because of the intrinsic --best flag passed (#4838)
+    # On dnf4 these plans fail because of the intrinsic --best flag passed (#5090)
     # Missing ^ here is intetional, to cover both /broken/available-artifacts and /available-artifacts
     "/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
     "^/broken/available-artifacts/basic"

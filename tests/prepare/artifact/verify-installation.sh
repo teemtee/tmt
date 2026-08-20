@@ -22,7 +22,7 @@ rlJournalStart
         phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Test verify-installation phase injection (verify=true)"
-            rlRun -s "tmt run -i $run --scratch -vvv --all \
+            rlRun -s "tmt run -i $run --scratch -vvvdd --all \
                 plan --name /plan \
                 provision -h $PROVISION_HOW --image $image" \
                 0 "Verify should pass with verify=true (default)"
@@ -30,6 +30,7 @@ rlJournalStart
             rlAssertGrep "verify-artifact-packages" $rlRun_LOG
             rlAssertGrep "pass verify-artifact-packages / bar" $rlRun_LOG
             rlAssertGrep "All packages verified successfully" $rlRun_LOG
+            rlAssertGrep 'requires replace: bar -> bar-0:1.0-1.noarch' $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "$phase_prefix verify=false suppresses verify-installation phase"

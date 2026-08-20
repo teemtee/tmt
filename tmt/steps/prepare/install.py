@@ -2,7 +2,7 @@ import itertools
 import re
 import shutil
 from collections.abc import Iterator
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import fmf.utils
 
@@ -176,6 +176,15 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
     """
 
     _data_class = PrepareInstallData
+    #: A mapping of package installations to be replaced due to verified artifact
+    #: prepare step. This needs to be unique for each guest.
+    #:
+    #: .. seealso:: :py:meth:`tmt.steps.prepare.artifact.PrepareArtifact._prepare_verify`
+    artifact_override: dict[Guest, dict[Union[Package, FileSystemPath], Package]]
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.artifact_override = {}
 
     def _prepare_installables(
         self,
@@ -290,9 +299,15 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             )
 
         if self.packages:
+            if artifact_override := self.artifact_override.get(guest):
+                actual_install_packages = [
+                    artifact_override.get(pkg, pkg) for pkg in self.packages
+                ]
+            else:
+                actual_install_packages = self.packages
             install_outputs.append(
                 guest.package_manager.install(
-                    *self._list_installables('package', *self.packages),
+                    *self._list_installables('package', *actual_install_packages),
                     options=options,
                 )
             )

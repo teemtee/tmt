@@ -8,6 +8,7 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
+from tmt.package_managers import Package
 from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
@@ -20,7 +21,10 @@ from tmt.steps.prepare.artifact.providers import (
 # ``@provides_method`` causes pyright to lose the class type, which is the
 # root cause of all ``pyright: ignore`` waivers referencing these two classes.
 # This will be fixed by https://github.com/teemtee/tmt/issues/4766.
-from tmt.steps.prepare.install import PrepareInstall  # pyright: ignore[reportUnknownVariableType]
+from tmt.steps.prepare.install import (
+    PrepareInstall,  # pyright: ignore[reportUnknownVariableType]
+    PrepareInstallData,
+)
 from tmt.steps.prepare.verify_installation import (
     PrepareVerifyInstallation,  # pyright: ignore[reportUnknownVariableType]
     PrepareVerifyInstallationData,
@@ -98,6 +102,12 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     and their dist-git equivalents) actually came from the configured
     artifact repositories. User-defined ``prepare/install`` phases are
     not covered by this verification.
+
+    Also when ``verify`` is enabled and there is a unique package NVR in
+    the provider's repository that matches a requested package to install,
+    the installation of the provided package NVR is enforced. If there are
+    multiple package NVR that would match, this is left to the package
+    manager to handle.
 
     Currently, the following artifact providers are supported:
 
@@ -316,7 +326,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         # Verify phase injection
         if self.data.verify:
-            self._inject_verify_phase(providers, guest)
+            self._prepare_verify(providers, guest)
 
         # Report configuration summary
         logger.info(
@@ -326,12 +336,18 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         return outcome
 
-    def _inject_verify_phase(self, providers: list[ArtifactProvider], guest: Guest) -> None:
+    def _prepare_verify(self, providers: list[ArtifactProvider], guest: Guest) -> None:
         """
-        Inject a verify-installation phase for packages from these providers.
+        Prepare the install phases and verify-installation phase.
 
-        If a verify phase already exists for the same where= group, merge
-        the packages into it. Otherwise, create and add a new phase.
+        The main workflow for this step is:
+
+        1. Gather the ``prepare/install`` phases available thus far.
+        2. Find the packages that provide the requests in the ``package`` field of the
+           ``prepare/install`` phases.
+        3. If there is a unique package that provides a request, replace the request with the
+           specific package ``NEVRA``.
+        4. Inject or update the ``prepare/verify-installation`` phase.
         """
         # Collect packages from the install phases injected by tmt on behalf of
         # test/essential requirements. User-defined prepare/install phases are
@@ -350,16 +366,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             'requires (dist-git)',
             'recommends (dist-git)',
         }
-        pkg_names: set[str] = set()
-        _install_phases = self.step.phases(classes=PrepareInstall)  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
-        for install_phase in _install_phases:  # pyright: ignore[reportUnknownVariableType]
-            if install_phase.data.name not in _tmt_install_phase_names:  # pyright: ignore[reportUnknownMemberType]
-                continue
-            if not install_phase.enabled_on_guest(guest):  # pyright: ignore[reportUnknownMemberType]
-                continue
-            for pkg in install_phase.data.package:  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
-                pkg_names.add(str(pkg))  # pyright: ignore[reportUnknownArgumentType]
-
         provider_repo_ids = {SHARED_REPO_NAME} | {
             repo_id
             for provider in providers
@@ -367,33 +373,48 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             for repo_id in repo.repo_ids
         }
 
-        if not pkg_names:
+        verify_data = PrepareVerifyInstallationData(
+            name=self.VERIFY_PHASE_NAME,
+            how='verify-installation',
+            summary=self.VERIFY_PHASE_SUMMARY,
+            order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
+            where=list(self.data.where),
+            verify={},
+        )
+
+        for phase in self.step.phases(PrepareInstall):  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
+            assert isinstance(phase, PrepareInstall)  # narrow type
+            assert isinstance(phase.data, PrepareInstallData)  # narrow type
+            if phase.data.name not in _tmt_install_phase_names:
+                continue
+            if not phase.enabled_on_guest(guest):
+                continue
+            resolved = guest.package_manager.resolve_provides(
+                phase.data.package, repo_ids=provider_repo_ids
+            )
+            for request, packages in resolved.items():
+                if not packages:
+                    continue
+                # If we know there is a unique package in the artifact repos, narrow down the
+                # installation by overriding the package to be installed with the specific NVR
+                if len(packages) == 1:
+                    pkg = packages[0]
+                    self.debug(f"{phase.data.name} replace", f"{request} -> {pkg.nevra}", level=2)
+                    overrides = phase.artifact_override.setdefault(guest, {})  # pyright: ignore[reportUnknownVariableType, reportAttributeAccessIssue]
+                    overrides[Package(request)] = Package(pkg.nevra)
+                else:
+                    # Otherwise let the repo priority handle it as best as it can
+                    msg = f"{request}: {fmf.utils.listed([pkg.nevra for pkg in packages])}"
+                    self.debug(f"{phase.data.name} multi-match", msg, level=2)
+                # TODO(typing): repo_id here is always expected to be non-None
+                verify_data.verify[request] = [
+                    pkg.repo_id for pkg in packages if pkg.repo_id is not None
+                ]
+        if not verify_data.verify:
             self.debug(
                 'No packages in tmt-managed install phases, skipping artifact verification.'
             )
             return
-
-        # Resolve all requirements to canonical package names via whatprovides so
-        # they can be matched against artifact.version.name below.  This handles
-        # plain names, file paths, pkgconfig(...) and package-level provides
-        # Artifact repos are already configured on the guest at this
-        # point even though the packages themselves are not yet installed.
-
-        resolved = guest.package_manager.resolve_provides(list(pkg_names), provider_repo_ids)
-
-        resolved_names = {version.name for versions in resolved.values() for version in versions}
-
-        pkgs_to_verify: dict[str, set[str]] = {}
-        for provider in providers:
-            for artifact in provider.artifacts:
-                if artifact.version.name in resolved_names:
-                    pkgs_to_verify.setdefault(artifact.version.name, set()).add(artifact.repo_id)
-
-        if not pkgs_to_verify:
-            self.verbose('No packages to be installed were found in the provided artifacts.')
-            return
-
-        self.debug(f"Verifying {fmf.utils.listed(sorted(pkgs_to_verify), 'package')}.")
 
         # Look for an existing verify phase for this where= group.
         existing_verify: Optional[PrepareVerifyInstallation] = next(  # pyright: ignore[reportUnknownVariableType]
@@ -408,19 +429,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         if existing_verify is not None:
             # Merge into existing verify phase, extending repo lists rather than replacing them.
-            for verify_pkg, verify_repos in pkgs_to_verify.items():
+            for verify_pkg, verify_repos in verify_data.verify.items():
                 existing = existing_verify.data.verify.setdefault(verify_pkg, [])  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
                 existing.extend(repo_id for repo_id in verify_repos if repo_id not in existing)  # pyright: ignore[reportUnknownMemberType]
         else:
-            # Create and add a new verify phase.
-            verify_data = PrepareVerifyInstallationData(
-                name=self.VERIFY_PHASE_NAME,
-                how='verify-installation',
-                summary=self.VERIFY_PHASE_SUMMARY,
-                order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
-                where=list(self.data.where),
-                verify={pkg: sorted(repo_ids) for pkg, repo_ids in pkgs_to_verify.items()},
-            )
             verify_phase = PreparePlugin.delegate(self.step, data=verify_data)  # pyright: ignore[reportUnknownVariableType]
             self.step.add_phase(verify_phase)  # pyright: ignore[reportUnknownArgumentType]
 
