@@ -2,12 +2,13 @@
 """
 Collect cProfile data for common metadata-heavy tmt commands.
 
-Point ``REPO`` at the tmt git tree, edit ``COMMANDS`` if needed, then run::
+Point ``REPO`` at the tmt git tree, edit ``COMMANDS`` and ``profile_lib.py`` settings,
+then run::
 
     python3 tests/performance/profile_common_commands.py
 
-Writes ``.prof`` files to ``PROFILE_DIR``. Hotspot tables and other analysis live
-in ``summarize_profiles.py`` (common-commands preset at the top of that file).
+Writes ``.prof`` files to ``COMMON_COMMANDS_PROFILE_DIR`` under the repo root.
+See ``summarize_profiles.py`` for the common-commands analysis preset.
 """
 
 from __future__ import annotations
@@ -15,14 +16,18 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from profile_lib import build_subprocess_env, profile_safe_name, run_cprofile
+from profile_lib import (
+    COMMON_COMMANDS_PROFILE_DIR,
+    build_subprocess_env,
+    profile_safe_name,
+    run_cprofile,
+)
 
 # Standalone script: do not import tmt (see pyproject.toml TID251 for tests/performance/*).
 
 REPO = Path.cwd()
 WORK_DIR = REPO
 PYTHON = sys.executable
-PROFILE_DIR = REPO / ".profile_common_commands"
 
 # label, arguments passed to ``python -m tmt`` (after the cProfile wrapper).
 COMMANDS: list[tuple[str, list[str]]] = [
@@ -41,7 +46,7 @@ COMMANDS: list[tuple[str, list[str]]] = [
 def main() -> int:
     repo = REPO.resolve()
     work_dir = WORK_DIR.resolve()
-    profile_dir = PROFILE_DIR.resolve()
+    profile_dir = (repo / COMMON_COMMANDS_PROFILE_DIR).resolve()
     profile_dir.mkdir(parents=True, exist_ok=True)
     env = build_subprocess_env(repo)
 

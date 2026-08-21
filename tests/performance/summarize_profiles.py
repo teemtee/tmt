@@ -7,8 +7,8 @@ Edit the settings below, then::
     python3 tests/performance/summarize_profiles.py
 
 Works with output from ``profile_common_commands.py`` and
-``profile_synthetic_runs.py`` — swap ``PROFILE_DIR``, ``HOTSPOT_SPECS``, and
-related settings for each workload.
+``profile_synthetic_runs.py`` — swap ``PROFILE_DIR``, ``HOTSPOT_SPECS``, and related
+settings for each workload.
 """
 
 from __future__ import annotations
@@ -19,6 +19,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, cast
+
+from profile_lib import COMMON_COMMANDS_PROFILE_DIR, profile_safe_name
 
 # Standalone script: do not import tmt (see pyproject.toml TID251 for tests/performance/*).
 
@@ -38,41 +40,42 @@ class HotspotSpec:
 
 
 REPO = Path.cwd()
-PROFILE_DIR = REPO / ".profile_common_commands"
 TOP_N = 25
 MARKDOWN = False
 TABLE_TITLE = "Cross-command comparison (cProfile)"
 
-# ``None`` = every ``*.prof`` in PROFILE_DIR; otherwise explicit labels (must match
-# the profiler's safe .prof basename via profile_safe_name()).
-LABELS: list[str] | None = [
-    "tests ls",
-    "plans ls",
-    "stories ls",
-    "tests show (1 test)",
-    "run discover (core)",
-    "lint",
-]
+# ``None`` = every ``*.prof`` in PROFILE_DIR.
+LABELS: list[str] | None = None
+# otherwise explicit labels (must match the profiler's safe
+# .prof basename via profile_safe_name()).
+# LABELS: list[str] | None = [
+#     "tests ls",
+#     "plans ls",
+#     "stories ls",
+#     "tests show (1 test)",
+#     "run discover (core)",
+#     "lint",
+# ]
 
+# --- Common command preset ---------------------------------------------------
+PROFILE_DIR = COMMON_COMMANDS_PROFILE_DIR
 # Profile shown in the in-depth hotspot + top-functions section. ``None`` skips it.
 DETAIL_LABEL: str | None = "tests ls"
-
 # Hotspot columns for the comparison table.
 HOTSPOT_SPECS: tuple[HotspotSpec, ...] = (
     HotspotSpec("_load_keys", "_load_keys", "tmt/utils/__init__.py"),
     HotspotSpec("logger.debug", "debug", "tmt/log.py", exact_path_end="tmt/log.py"),
     HotspotSpec("_format_dict", "_format_dict", "tmt/utils/__init__.py"),
 )
-
 # Extra hotspots for the detail section only (may overlap with HOTSPOT_SPECS).
 DETAIL_HOTSPOT_SPECS: tuple[HotspotSpec, ...] = (
     HotspotSpec("indent", "indent", "tmt/log.py", exact_path_end="tmt/log.py"),
 )
 
 # --- Synthetic full-run preset (example) -----------------------------------
-# PROFILE_DIR = REPO / ".profile_synthetic_runs"
-# LABELS = None
-# DETAIL_LABEL = "run all provision local (true, yaml)"
+# from profile_lib import SYNTHETIC_RUNS_PROFILE_DIR
+# PROFILE_DIR = SYNTHETIC_RUNS_PROFILE_DIR
+# DETAIL_LABEL = "run all provision virtual (true, yaml)"
 # TABLE_TITLE = "Synthetic full-run comparison (cProfile)"
 # HOTSPOT_SPECS = (
 #     HotspotSpec("execute", "execute", "steps/execute/internal.py"),
@@ -107,10 +110,6 @@ class ProfileMetrics:
     total_tt: float
     profile_path: Path
     hotspots: dict[str, FunctionStats]
-
-
-def profile_safe_name(label: str) -> str:
-    return label.replace(" ", "_").replace("(", "").replace(")", "")
 
 
 def load_profile_stats(prof_path: Path) -> tuple[float, ProfileStatsDict]:
@@ -278,7 +277,7 @@ def print_profile_detail(
 
 
 def main() -> int:
-    profile_dir = PROFILE_DIR.resolve()
+    profile_dir = (REPO / PROFILE_DIR).resolve()
     if not profile_dir.is_dir():
         raise SystemExit(f"Profile directory not found: {profile_dir}")
 
