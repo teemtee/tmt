@@ -6,11 +6,13 @@ Profiles ``tmt run -a provision --how {local|virtual|container}`` for both
 synthetic plans (200 ``/usr/bin/true`` tests and 200 ``write.sh`` tests).
 Creates the nested fmf tree via ``create_synthetic_plan.py`` when missing.
 
-By default sweeps ``TMT_STATE_FORMAT`` (``yaml`` and ``json``) and ruamel
-YAML C acceleration (with vs. without ``_ruamel_yaml`` / ``ruamel.yaml.clib``).
+By default sweeps ``TMT_STATE_FORMAT`` (``yaml`` and ``json``).
 
 Cross-command tables highlight run-phase hotspots (execute, guest I/O, state
 serialization) rather than metadata loading.
+
+Profiles reflect whatever ``ruamel.yaml`` / ``ruamel.yaml.clib`` setup is in the
+active Python environment.
 
 Example::
 
@@ -19,8 +21,7 @@ Example::
 
     # Smaller matrix (noop plan, local only, yaml only)
     python3 tests/performance/profile_synthetic_runs.py \\
-        --plans plan-true --methods local \\
-        --state-formats yaml --clib-modes with-clib
+        --plans plan-true --methods local --state-formats yaml
 
 Profile output files are written to ``.profile_synthetic_runs/`` (or ``--profile-dir``).
 Runs use ``PYTHONPATH=<repo>`` so in-tree ``tmt`` is used when cwd is the nested tree.
@@ -54,8 +55,6 @@ DEFAULT_SYNTHETIC_PLANS = ("plan-true", "plan-write")
 DEFAULT_SYNTHETIC_COUNT = 200
 DEFAULT_PROVISION_METHODS = ("local", "virtual", "container")
 DEFAULT_STATE_FORMATS = ("yaml", "json")
-DEFAULT_CLIB_MODES = ("with-clib", "without-clib")
-NO_CLIB_STUBS_DIR = PERF_DIR / "profile_synthetic_runs_stubs/no_clib"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -78,8 +77,6 @@ class CommandSpec:
     variant: str
     method: str
     state_format: str
-    clib_mode: str
-    disable_clib: bool = False
 
 
 RUN_HOTSPOT_SPECS: tuple[HotspotSpec, ...] = (
@@ -116,7 +113,6 @@ class RunProfileMetrics:
     variant: str
     method: str
     state_format: str
-    clib_mode: str
     total_tt: float
     wall_avg: float
     profile_path: Path
@@ -160,7 +156,6 @@ def extract_run_metrics(
         variant=spec.variant,
         method=spec.method,
         state_format=spec.state_format,
-        clib_mode=spec.clib_mode,
         total_tt=total_tt,
         wall_avg=0.0,
         profile_path=prof_path,
@@ -174,28 +169,14 @@ def plan_variant_name(plan_name: str) -> str:
     return plan_name
 
 
-def build_subprocess_env(repo: Path, spec: CommandSpec) -> dict[str, str]:
+def build_subprocess_env(repo: Path, state_format: str) -> dict[str, str]:
     env = os.environ.copy()
-    pythonpath_parts: list[str] = []
-    if spec.disable_clib:
-        stub_root = (repo / NO_CLIB_STUBS_DIR).resolve()
-        pythonpath_parts.append(str(stub_root))
-    pythonpath_parts.append(str(repo))
+    pythonpath_parts = [str(repo)]
     if env.get("PYTHONPATH"):
         pythonpath_parts.append(env["PYTHONPATH"])
     env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
-    env["TMT_STATE_FORMAT"] = spec.state_format
+    env["TMT_STATE_FORMAT"] = state_format
     return env
-
-
-def ruamel_clib_available(python: str) -> bool:
-    probe = subprocess.run(
-        [python, "-c", "import importlib.util; print(importlib.util.find_spec('_ruamel_yaml'))"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return probe.returncode == 0 and "None" not in probe.stdout
 
 
 def ensure_synthetic_plan(
@@ -239,7 +220,6 @@ def synthetic_run_commands(
     plans: Sequence[str],
     methods: Sequence[str],
     state_formats: Sequence[str],
-    clib_modes: Sequence[str],
 ) -> list[CommandSpec]:
     run_cwd = (repo / synthetic_dir).resolve()
     commands: list[CommandSpec] = []
@@ -247,33 +227,29 @@ def synthetic_run_commands(
         variant = plan_variant_name(plan_name)
         for method in methods:
             for state_format in state_formats:
-                for clib_mode in clib_modes:
-                    disable_clib = clib_mode == "without-clib"
-                    label = f"run all provision {method} ({variant}, {state_format}, {clib_mode})"
-                    args = [
-                        "--feeling-safe",
-                        "run",
-                        "--scratch",
-                        "-a",
-                        "provision",
-                        "--how",
-                        method,
-                        "plan",
-                        "-n",
-                        plan_name,
-                    ]
-                    commands.append(
-                        CommandSpec(
-                            label=label,
-                            args=args,
-                            cwd=run_cwd,
-                            variant=variant,
-                            method=method,
-                            state_format=state_format,
-                            clib_mode=clib_mode,
-                            disable_clib=disable_clib,
-                        )
+                label = f"run all provision {method} ({variant}, {state_format})"
+                args = [
+                    "--feeling-safe",
+                    "run",
+                    "--scratch",
+                    "-a",
+                    "provision",
+                    "--how",
+                    method,
+                    "plan",
+                    "-n",
+                    plan_name,
+                ]
+                commands.append(
+                    CommandSpec(
+                        label=label,
+                        args=args,
+                        cwd=run_cwd,
+                        variant=variant,
+                        method=method,
+                        state_format=state_format,
                     )
+                )
     return commands
 
 
@@ -293,7 +269,7 @@ def run_tmt_subprocess(
     spec: CommandSpec,
     extra_args: list[str],
 ) -> subprocess.CompletedProcess[bytes]:
-    env = build_subprocess_env(repo, spec)
+    env = build_subprocess_env(repo, spec.state_format)
     return subprocess.run(
         [python, *extra_args, "-m", "tmt", *spec.args],
         cwd=spec.cwd,
@@ -404,7 +380,6 @@ def print_cross_command_table(
         "Variant",
         "Method",
         "TMT_STATE_FORMAT",
-        "ruamel clib",
         "Profile total_tt (s)",
         "Wall avg (s)",
         *[spec.column for spec in hotspot_specs],
@@ -414,7 +389,6 @@ def print_cross_command_table(
             metric.variant,
             metric.method,
             metric.state_format,
-            metric.clib_mode,
             f"{metric.total_tt:.2f}",
             f"{metric.wall_avg:.2f}",
             *[
@@ -441,10 +415,6 @@ def print_cross_command_table(
             "python -m cProfile -m tmt --feeling-safe run --scratch -a provision "
             "--how <method> plan -n <plan>` from `tests/performance/synthetic/`."
         )
-        print(
-            "`without-clib` prepends stub modules on `PYTHONPATH` to block "
-            "`_ruamel_yaml` and `ruamel.yaml.clib`."
-        )
     else:
         col_widths = [max(len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
         line = "  ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
@@ -459,14 +429,12 @@ def find_detail_metrics(
     variant: str,
     method: str,
     state_format: str,
-    clib_mode: str,
 ) -> RunProfileMetrics | None:
     for metric in metrics:
         if (
             metric.variant == variant
             and metric.method == method
             and metric.state_format == state_format
-            and metric.clib_mode == clib_mode
         ):
             return metric
     return None
@@ -601,14 +569,6 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         help="TMT_STATE_FORMAT values to sweep (default: yaml json)",
     )
     parser.add_argument(
-        "--clib-modes",
-        nargs="+",
-        choices=DEFAULT_CLIB_MODES,
-        default=list(DEFAULT_CLIB_MODES),
-        metavar="MODE",
-        help="ruamel.yaml C lib modes (default: with-clib without-clib)",
-    )
-    parser.add_argument(
         "--wall-runs",
         type=int,
         default=1,
@@ -650,12 +610,6 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         help="TMT_STATE_FORMAT for in-depth profile (default: yaml)",
     )
     parser.add_argument(
-        "--detail-clib-mode",
-        choices=DEFAULT_CLIB_MODES,
-        default="with-clib",
-        help="ruamel clib mode for in-depth profile (default: with-clib)",
-    )
-    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print planned actions without profiling",
@@ -668,12 +622,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     repo = args.repo.resolve()
     profile_dir = args.profile_dir or (repo / ".profile_synthetic_runs")
     profile_dir.mkdir(parents=True, exist_ok=True)
-
-    if "without-clib" in args.clib_modes and not ruamel_clib_available(args.python):
-        print(
-            "Note: _ruamel_yaml is not installed; with-clib and without-clib runs may match.",
-            file=sys.stderr,
-        )
 
     ensure_synthetic_plan(
         args.python,
@@ -690,7 +638,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.plans,
         args.methods,
         args.state_formats,
-        args.clib_modes,
     )
 
     print(f"Repository: {repo}", file=sys.stderr)
@@ -699,18 +646,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"Profile directory: {profile_dir}", file=sys.stderr)
     print(
         f"Matrix: {len(args.plans)} plan(s) x {len(args.methods)} method(s) x "
-        f"{len(args.state_formats)} state format(s) x {len(args.clib_modes)} clib mode(s) "
-        f"= {len(commands)} profile run(s)",
+        f"{len(args.state_formats)} state format(s) = {len(commands)} profile run(s)",
         file=sys.stderr,
     )
 
     if args.dry_run:
         for spec in commands:
             prof_path = profile_dir / f"{profile_safe_name(spec.label)}.prof"
-            clib_note = "disable-clib stubs" if spec.disable_clib else "native clib"
             print(
                 f"would profile {spec.label} "
-                f"(TMT_STATE_FORMAT={spec.state_format}, {clib_note}) -> {prof_path}",
+                f"(TMT_STATE_FORMAT={spec.state_format}) -> {prof_path}",
                 file=sys.stderr,
             )
         return 0
@@ -729,7 +674,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.cross_command_only:
         detail_label = (
             f"run all provision {args.detail_method} "
-            f"({args.detail_variant}, {args.detail_state_format}, {args.detail_clib_mode})"
+            f"({args.detail_variant}, {args.detail_state_format})"
         )
         detail_prof = profile_dir / f"{profile_safe_name(detail_label)}.prof"
         detail_metrics = find_detail_metrics(
@@ -737,7 +682,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.detail_variant,
             args.detail_method,
             args.detail_state_format,
-            args.detail_clib_mode,
         )
         if detail_prof.is_file():
             print()
