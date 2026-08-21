@@ -425,6 +425,8 @@ typing-modules = ["tmt._compat.typing"]
 "docs/ext/*.py" = ["TID251"]
 # Standalone scripts do not depend on tmt package
 "scripts/*" = ["TID251"]
+# Standalone performance scripts do not depend on tmt package
+"tests/performance/*" = ["TID251"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["tmt.utils.field"]

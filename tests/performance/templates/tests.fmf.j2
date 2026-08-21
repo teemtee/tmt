@@ -1,0 +1,9 @@
+test: /usr/bin/true
+duration: 1m
+adjust:
+  - when: type == write
+    test: ./write.sh
+
+{% for i in range(count) %}
+/test_{{ "{:04d}".format(i) }}:
+{% endfor %}
