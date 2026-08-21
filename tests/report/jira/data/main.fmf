@@ -1,0 +1,17 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+/test:
+    framework: shell
+    /pass:
+        summary: Run command 'true'
+        test: 'true'
+        id: 5fc3b1dc-5a60-40ea-b384-bc15d894ac70
+    /fail:
+        summary: Run command 'false'
+        test: 'false'
+        id: 8ada9c66-b809-4aa4-bd06-8ebf1dd4e5bd

@@ -1,0 +1,36 @@
+$id: /schemas/report/jira
+$schema: http://json-schema.org/draft-07/schema
+type: object
+additionalProperties: false
+required:
+  - how
+properties:
+  how:
+    enum:
+      - jira
+  name:
+    type: string
+  url:
+    type: string
+  project-id:
+    type: string
+  token:
+    type: string
+  user:
+    type: string
+  compose-id:
+    type: string
+  component-nvr:
+    type: string
+  fix-version:
+    type: string
+  logs:
+    type: string
+  assignee:
+    type: string
+  when:
+    $ref: /schemas/common#/definitions/when
+  order:
+    $ref: /schemas/common#/definitions/order
+  summary:
+    $ref: /schemas/common#/definitions/summary

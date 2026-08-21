@@ -872,7 +872,26 @@ _test_export_default = 'yaml'
 )
 @option(
     '--project-id',
-    help='Use specific Polarion project ID.',
+    help='Use specific Polarion or Jira project ID.',
+)
+@option(
+    '--jira-url',
+    help='Jira instance base URL (e.g. https://issues.redhat.com). '
+    'Can also be set via TMT_PLUGIN_EXPORT_JIRA_URL.',
+)
+@option(
+    '--jira-token',
+    help='Jira API token for authentication. Can also be set via TMT_PLUGIN_EXPORT_JIRA_TOKEN.',
+)
+@option(
+    '--jira-user',
+    help='Jira user email for authentication. Can also be set via TMT_PLUGIN_EXPORT_JIRA_USER.',
+)
+@option(
+    '--link-jira / --no-link-jira',
+    default=False,
+    is_flag=True,
+    help='Add Jira link to fmf testcase metadata as an implements relation.',
 )
 @option(
     '--link-polarion / --no-link-polarion',
@@ -892,7 +911,7 @@ _test_export_default = 'yaml'
     '--ignore-git-validation',
     is_flag=True,
     help="""
-         Ignore unpublished git changes and export to Nitrate. The case might not be able to be
+         Ignore unpublished git changes and export regardless. The case might not be able to be
          scheduled!
          """,
 )
@@ -908,7 +927,7 @@ _test_export_default = 'yaml'
 @option(
     '--create',
     is_flag=True,
-    help="Create test cases in nitrate if they don't exist.",
+    help="Create test cases in Nitrate/Polarion/Jira if they don't exist.",
 )
 @option(
     '--general / --no-general',
