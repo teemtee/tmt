@@ -21,7 +21,7 @@ Example::
 
     # Smaller matrix (noop plan, local only, yaml only)
     python3 tests/performance/profile_synthetic_runs.py \\
-        --plans plan-true --methods local --state-formats yaml
+        --plans true --methods local --state-formats yaml
 
 Profile output files are written to ``.profile_synthetic_runs/`` (or ``--profile-dir``).
 Runs use ``PYTHONPATH=<repo>`` so in-tree ``tmt`` is used when cwd is the nested tree.
@@ -51,7 +51,7 @@ ProfileStatsDict = dict[ProfileFuncKey, ProfileStatsEntry]
 
 PERF_DIR = Path("tests/performance")
 DEFAULT_SYNTHETIC_DIR = PERF_DIR / "synthetic"
-DEFAULT_SYNTHETIC_PLANS = ("plan-true", "plan-write")
+DEFAULT_SYNTHETIC_PLANS = ("true", "write")
 DEFAULT_SYNTHETIC_COUNT = 200
 DEFAULT_PROVISION_METHODS = ("local", "virtual", "container")
 DEFAULT_STATE_FORMATS = ("yaml", "json")
@@ -179,6 +179,10 @@ def build_subprocess_env(repo: Path, state_format: str) -> dict[str, str]:
     return env
 
 
+def synthetic_tree_ready(tests_root: Path) -> bool:
+    return (tests_root / "plan.fmf").is_file() and (tests_root / "tests.fmf").is_file()
+
+
 def ensure_synthetic_plan(
     python: str,
     repo: Path,
@@ -188,14 +192,13 @@ def ensure_synthetic_plan(
     dry_run: bool,
 ) -> None:
     tests_root = (repo / synthetic_dir).resolve()
-    missing = [plan for plan in plans if not (tests_root / f"{plan}.fmf").is_file()]
-    if not missing:
+    if synthetic_tree_ready(tests_root):
         return
     script = repo / PERF_DIR / "create_synthetic_plan.py"
     if not script.is_file():
-        raise SystemExit(f"Synthetic plans missing and {script} not found.")
+        raise SystemExit(f"Synthetic tree missing and {script} not found.")
     print(
-        f"Creating synthetic plans ({count} tests per plan; missing: {', '.join(missing)})...",
+        f"Creating synthetic tree ({count} tests, plans: {', '.join(plans)})...",
         file=sys.stderr,
     )
     cmd = [
@@ -550,7 +553,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         nargs="+",
         default=list(DEFAULT_SYNTHETIC_PLANS),
         metavar="PLAN",
-        help="Synthetic plans to profile (default: plan-true plan-write)",
+        help="Synthetic plan names from plan.fmf (default: true write)",
     )
     parser.add_argument(
         "--methods",
