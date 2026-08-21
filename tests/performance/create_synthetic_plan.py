@@ -2,12 +2,9 @@
 """
 Create synthetic tmt plans and tests for performance experiments.
 
-Edit the settings below, then from the tmt git tree::
+Edit the settings in ``profile_lib.py``, then from the tmt git tree::
 
     python3 tests/performance/create_synthetic_plan.py
-
-Renders templates from ``tests/performance/templates/`` into
-``tests/performance/synthetic/``.
 """
 
 from __future__ import annotations
@@ -19,7 +16,6 @@ import jinja2
 from profile_lib import PERF_DIR, SYNTHETIC_COUNT, SYNTHETIC_DIR
 
 REPO = Path.cwd()
-FMF_VERSION = "1"
 
 TEMPLATE_DIR = PERF_DIR / "templates"
 TESTS_TEMPLATE = TEMPLATE_DIR / "tests.fmf.j2"
@@ -59,7 +55,7 @@ def main() -> int:
 
     tests_root.mkdir(parents=True, exist_ok=True)
     (tests_root / ".fmf").mkdir(parents=True, exist_ok=True)
-    (tests_root / ".fmf" / "version").write_text(FMF_VERSION)
+    (tests_root / ".fmf" / "version").write_text("1")
 
     (tests_root / "tests.fmf").write_text(
         render_template(repo, TESTS_TEMPLATE, count=SYNTHETIC_COUNT),
@@ -68,17 +64,9 @@ def main() -> int:
     copy_file(repo / WRITE_SCRIPT_SOURCE, tests_root / "write.sh")
     (tests_root / "write.sh").chmod(0o755)
 
-    rel_root = tests_root.relative_to(repo)
     print(f"Repository: {repo}")
     print(f"Tests: {SYNTHETIC_COUNT} synthetic tests, plans true + write")
     print(f"Tests directory: {tests_root}")
-    print()
-    print("Created synthetic plans and tests.")
-    print(f"  cd {rel_root}")
-    print("  tmt run discover plan -n true")
-    print("  tmt run discover plan -n write")
-    print()
-    print("Consider gitignoring:", rel_root)
 
     return 0
 

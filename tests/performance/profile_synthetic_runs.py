@@ -2,28 +2,27 @@
 """
 Collect cProfile data for synthetic full tmt runs.
 
-Point ``REPO`` at the tmt git tree, edit the matrix settings below, then run::
+Point ``REPO`` at the tmt git tree, create the synthetic fmf tree with
+``create_synthetic_plan.py``, edit matrix settings below, then run::
 
     python3 tests/performance/profile_synthetic_runs.py
 
-Creates the synthetic fmf tree via ``create_synthetic_plan.py`` when missing.
-Writes ``.prof`` files to ``PROFILE_DIR``. Hotspot tables and other analysis live
-in ``summarize_profiles.py`` (synthetic preset at the bottom of that file).
+Writes ``.prof`` files to ``SYNTHETIC_RUNS_PROFILE_DIR`` under the repo root.
+See ``summarize_profiles.py`` for the synthetic analysis preset.
 
 The default matrix runtime is several hours.
 """
 
 from __future__ import annotations
 
-import subprocess
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 from profile_lib import (
     PERF_DIR,
-    SYNTHETIC_COUNT,
     SYNTHETIC_DIR,
+    SYNTHETIC_RUNS_PROFILE_DIR,
     build_subprocess_env,
     profile_safe_name,
     run_cprofile,
@@ -34,7 +33,6 @@ from profile_lib import (
 REPO = Path.cwd()
 WORK_DIR = REPO / SYNTHETIC_DIR
 PYTHON = sys.executable
-PROFILE_DIR = REPO / ".profile_synthetic_runs"
 
 PLANS: tuple[str, ...] = ("true", "write")
 PROVISION_METHODS: tuple[str, ...] = ("local", "virtual", "container")
@@ -47,17 +45,11 @@ def synthetic_tree_ready(tests_root: Path) -> bool:
     return (tests_root / "plan.fmf").is_file() and (tests_root / "tests.fmf").is_file()
 
 
-def ensure_synthetic_plan(python: str, repo: Path, work_dir: Path) -> None:
+def require_synthetic_plan(work_dir: Path) -> None:
     if synthetic_tree_ready(work_dir):
         return
-    script = repo / CREATE_SYNTHETIC_SCRIPT
-    if not script.is_file():
-        raise SystemExit(f"Synthetic tree missing and {script} not found.")
-    print(
-        f"Creating synthetic tree ({SYNTHETIC_COUNT} tests, plans: {', '.join(PLANS)})...",
-        file=sys.stderr,
-    )
-    subprocess.run([python, str(script)], cwd=repo, check=True)
+    print(f"Warning: synthetic plan not found under {work_dir}", file=sys.stderr)
+    raise SystemExit(f"Run first: python3 {CREATE_SYNTHETIC_SCRIPT}")
 
 
 def iter_run_specs(
@@ -70,18 +62,22 @@ def iter_run_specs(
         for method in methods:
             for state_format in state_formats:
                 label = f"run all provision {method} ({plan_name}, {state_format})"
-                args = [
-                    "--feeling-safe",
-                    "run",
-                    "--scratch",
-                    "-a",
-                    "provision",
-                    "--how",
-                    method,
-                    "plan",
-                    "-n",
-                    plan_name,
-                ]
+                args: list[str] = []
+                if method == "local":
+                    args.append("--feeling-safe")
+                args.extend(
+                    [
+                        "run",
+                        "--scratch",
+                        "-a",
+                        "provision",
+                        "--how",
+                        method,
+                        "plan",
+                        "-n",
+                        plan_name,
+                    ]
+                )
                 specs.append((label, args, state_format))
     return specs
 
@@ -89,10 +85,10 @@ def iter_run_specs(
 def main() -> int:
     repo = REPO.resolve()
     work_dir = WORK_DIR.resolve()
-    profile_dir = PROFILE_DIR.resolve()
+    profile_dir = (repo / SYNTHETIC_RUNS_PROFILE_DIR).resolve()
     profile_dir.mkdir(parents=True, exist_ok=True)
 
-    ensure_synthetic_plan(PYTHON, repo, work_dir)
+    require_synthetic_plan(work_dir)
 
     specs = iter_run_specs(PLANS, PROVISION_METHODS, STATE_FORMATS)
 
@@ -115,11 +111,7 @@ def main() -> int:
             print(f"Warning: {label} exited {completed.returncode}", file=sys.stderr)
         print(f"  -> {prof_path} (TMT_STATE_FORMAT={state_format})", file=sys.stderr)
 
-    print(
-        "\nDone. Edit the synthetic preset in tests/performance/summarize_profiles.py, "
-        "then run it.",
-        file=sys.stderr,
-    )
+    print("\nDone. Run: python3 tests/performance/summarize_profiles.py", file=sys.stderr)
     return 0
 
 

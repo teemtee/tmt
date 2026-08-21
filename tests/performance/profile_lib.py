@@ -9,10 +9,12 @@ from pathlib import Path
 PERF_DIR = Path("tests/performance")
 SYNTHETIC_DIR = PERF_DIR / "synthetic"
 SYNTHETIC_COUNT = 200
+COMMON_COMMANDS_PROFILE_DIR = Path(".profile_common_commands")
+SYNTHETIC_RUNS_PROFILE_DIR = Path(".profile_synthetic_runs")
 
 
 def profile_safe_name(label: str) -> str:
-    return label.replace(" ", "_").replace("(", "").replace(")", "")
+    return label.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "")
 
 
 def build_subprocess_env(repo: Path, state_format: str | None = None) -> dict[str, str]:
