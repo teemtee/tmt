@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """
-Create two tmt plans and ~N synthetic shell tests per plan for performance experiments.
+Create synthetic tmt plans and tests for performance experiments.
 
-One plan discovers only ``/usr/bin/true`` noop tests; the other discovers only
-``write.sh`` tests that write random data to temporary files. Output lives under
-``tests/performance/synthetic/`` by default as a nested fmf tree.
+Renders templates from ``tests/performance/templates/`` into a nested fmf tree
+under ``tests/performance/synthetic/``. Templates use a ``.fmf.j2`` suffix so
+they are not loaded as fmf metadata under ``tests/``.
+
+The generated ``plan.fmf`` defines two plans, ``true`` and ``write``; the write
+plan sets ``context.type: write`` so tests run ``write.sh`` via fmf adjust.
 
 Example::
 
     cd /path/to/tmt
-    python3 tests/performance/create_synthetic_plan.py --count 200
+    python3 tests/performance/create_synthetic_plan.py
     cd tests/performance/synthetic
-    tmt -n plan-true run discover
-    tmt -n plan-write run discover
+    tmt run discover plan -n true
+    tmt run discover plan -n write
 """
 
 from __future__ import annotations
@@ -21,67 +24,22 @@ import argparse
 import shutil
 from pathlib import Path
 
-TRUE_TEST_FMF = """\
-summary: Synthetic noop test {index:04d}
-test: /usr/bin/true
-framework: shell
-tag: synthetic-true
-tier: 3
-duration: 1m
-"""
+import jinja2
 
-WRITE_TEST_FMF = """\
-summary: Synthetic random write test {index:04d}
-test: ./write.sh
-framework: shell
-tag: synthetic-write
-tier: 3
-duration: 1m
-"""
-
-WRITE_SCRIPT = """\
-#!/bin/bash
-set -eu
-workdir="${TMT_TEST_DATA:-${TMPDIR:-/tmp}/tmt-synthetic-write}"
-mkdir -p "${workdir}/synthetic-write"
-for index in 1 2 3 4 5; do
-    head -c 4096 /dev/urandom | base64 > "${workdir}/synthetic-write/blob-${index}.dat"
-done
-"""
-
+PERF_DIR = Path("tests/performance")
+TEMPLATE_DIR = PERF_DIR / "templates"
+DEFAULT_SYNTHETIC_DIR = PERF_DIR / "synthetic"
+DEFAULT_COUNT = 200
 FMF_VERSION = "1"
 
-TRUE_PLAN_FMF = """\
-summary: Synthetic noop performance plan ({count} /usr/bin/true tests)
-description:
-    Generated noop shell tests for metadata and run performance experiments.
-discover:
-    how: fmf
-    filter: tag:synthetic-true
-provision:
-    how: local
-execute:
-    how: tmt
-"""
-
-WRITE_PLAN_FMF = """\
-summary: Synthetic write performance plan ({count} write.sh tests)
-description:
-    Generated shell tests that write random data to files for run performance
-    experiments.
-discover:
-    how: fmf
-    filter: tag:synthetic-write
-provision:
-    how: local
-execute:
-    how: tmt
-"""
+TESTS_TEMPLATE = TEMPLATE_DIR / "tests.fmf.j2"
+PLAN_TEMPLATE = TEMPLATE_DIR / "plan.fmf.j2"
+WRITE_SCRIPT_SOURCE = TEMPLATE_DIR / "write.sh"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate synthetic tmt tests and two discoverable plans.",
+        description="Generate synthetic tmt tests and plans.",
     )
     parser.add_argument(
         "--repo",
@@ -92,66 +50,37 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--count",
         type=int,
-        default=200,
+        default=DEFAULT_COUNT,
         metavar="N",
-        help="Number of tests per plan (default: 200 noop + 200 write)",
+        help=f"Number of synthetic tests (default: {DEFAULT_COUNT})",
     )
     parser.add_argument(
         "--tests-dir",
         type=Path,
-        default=Path("tests/performance/synthetic"),
-        help="Tests tree relative to --repo (default: tests/performance/synthetic)",
+        default=DEFAULT_SYNTHETIC_DIR,
+        help=f"Output tree relative to --repo (default: {DEFAULT_SYNTHETIC_DIR})",
     )
     parser.add_argument(
         "--clean",
         action="store_true",
-        help="Remove existing generated tests and plans before creating new ones",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print actions without writing files",
+        help="Remove existing generated tree before creating new files",
     )
     return parser.parse_args(argv)
 
 
-def write_file(path: Path, content: str, dry_run: bool) -> None:
-    if dry_run:
-        print(f"would write {path}")
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)
-
-
-def remove_tree(path: Path, dry_run: bool) -> None:
-    if not path.exists():
-        return
-    if dry_run:
-        print(f"would remove {path}")
-        return
-    if path.is_file():
-        path.unlink()
-    else:
-        shutil.rmtree(path)
-
-
-def create_true_test(test_dir: Path, index: int, dry_run: bool) -> None:
-    write_file(
-        test_dir / "main.fmf",
-        TRUE_TEST_FMF.format(index=index),
-        dry_run,
+def render_template(repo: Path, template: Path, **context: object) -> str:
+    template_path = repo / template
+    environment = jinja2.Environment(
+        autoescape=True,
+        loader=jinja2.FileSystemLoader(template_path.parent),
+        keep_trailing_newline=True,
     )
+    return environment.get_template(template_path.name).render(**context)
 
 
-def create_write_test(test_dir: Path, index: int, dry_run: bool) -> None:
-    write_file(test_dir / "main.fmf", WRITE_TEST_FMF.format(index=index), dry_run)
-    write_file(test_dir / "write.sh", WRITE_SCRIPT, dry_run)
-    if not dry_run:
-        (test_dir / "write.sh").chmod(0o755)
-
-
-def create_fmf_root(tree_root: Path, dry_run: bool) -> None:
-    write_file(tree_root / ".fmf" / "version", FMF_VERSION, dry_run)
+def copy_file(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -161,51 +90,38 @@ def main(argv: list[str] | None = None) -> int:
 
     repo = args.repo.resolve()
     tests_root = (repo / args.tests_dir).resolve()
-    true_plan_path = tests_root / "plan-true.fmf"
-    write_plan_path = tests_root / "plan-write.fmf"
+    sources = (
+        TESTS_TEMPLATE,
+        PLAN_TEMPLATE,
+        WRITE_SCRIPT_SOURCE,
+    )
+    for source in sources:
+        if not (repo / source).is_file():
+            raise SystemExit(f"Missing source file: {repo / source}")
 
-    if args.clean:
-        remove_tree(tests_root, args.dry_run)
+    if args.clean and tests_root.exists():
+        shutil.rmtree(tests_root)
 
+    tests_root.mkdir(parents=True, exist_ok=True)
+    (tests_root / ".fmf").mkdir(parents=True, exist_ok=True)
+    (tests_root / ".fmf" / "version").write_text(FMF_VERSION)
+
+    (tests_root / "tests.fmf").write_text(render_template(repo, TESTS_TEMPLATE, count=args.count))
+    (tests_root / "plan.fmf").write_text(render_template(repo, PLAN_TEMPLATE))
+    copy_file(repo / WRITE_SCRIPT_SOURCE, tests_root / "write.sh")
+    (tests_root / "write.sh").chmod(0o755)
+
+    rel_root = tests_root.relative_to(repo)
     print(f"Repository: {repo}")
-    print(f"Tests: {args.count} noop + {args.count} write = {args.count * 2} total")
+    print(f"Tests: {args.count} synthetic tests, plans true + write")
     print(f"Tests directory: {tests_root}")
-    print(f"Noop plan: {true_plan_path}")
-    print(f"Write plan: {write_plan_path}")
-
-    for index in range(1, args.count + 1):
-        create_true_test(tests_root / "true" / f"{index:04d}", index, args.dry_run)
-
-    for index in range(1, args.count + 1):
-        create_write_test(tests_root / "write" / f"{index:04d}", index, args.dry_run)
-
-    create_fmf_root(tests_root, args.dry_run)
-    write_file(
-        true_plan_path,
-        TRUE_PLAN_FMF.format(count=args.count),
-        args.dry_run,
-    )
-    write_file(
-        write_plan_path,
-        WRITE_PLAN_FMF.format(count=args.count),
-        args.dry_run,
-    )
-
-    if not args.dry_run:
-        try:
-            rel_root = tests_root.relative_to(repo)
-        except ValueError:
-            rel_root = tests_root
-
-        print()
-        print("Created synthetic plans and tests.")
-        print(f"  cd {rel_root}")
-        print("  tmt -n plan-true tests ls")
-        print("  tmt -n plan-write tests ls")
-        print("  tmt -n plan-true run discover")
-        print("  tmt -n plan-write run discover")
-        print()
-        print("Consider gitignoring:", rel_root)
+    print()
+    print("Created synthetic plans and tests.")
+    print(f"  cd {rel_root}")
+    print("  tmt run discover plan -n true")
+    print("  tmt run discover plan -n write")
+    print()
+    print("Consider gitignoring:", rel_root)
 
     return 0
 
