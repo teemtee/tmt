@@ -1,0 +1,12 @@
+description: |
+  The :tmt:story:`/stories/features/feeling-safe` is no longer working
+  in the all-or-nothing mode, and new ``--allow-unsafe-behavior`` option
+  now allows enabling unsafe behavior in a granular manner.
+
+  Users of :tmt:story:`/stories/features/feeling-safe` need to account
+  for the following changes:
+
+  * ``--feeling-safe`` works as it used to.
+  * ``--allow-unsafe-behavior`` option now offers the granularity,
+    compared to ``--feeling-safe`` being the all-or-nothing switch.
+  * step-level ``--feeling-safe`` option is no longer supported.

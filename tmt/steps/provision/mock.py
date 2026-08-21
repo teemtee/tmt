@@ -21,6 +21,7 @@ from tmt.container import container, field
 from tmt.guest import RebootMode
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.environment import Environment
+from tmt.utils.feeling_safe import UB_PROVISION_MOCK_PLUGIN
 from tmt.utils.wait import Waiting
 
 MOCK_PIPE: Path = Path('/srv/tmt-mock')
@@ -835,10 +836,10 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
 
     .. warning::
 
-        This plugin requires the ``--feeling-safe`` option or
-        the ``TMT_FEELING_SAFE=1`` environment variable defined.
-        While it is roughly as safe as ``container`` provisioning,
-        it has access to local filesystem.
+        While the plugin is roughly as safe as ``container`` provisioning,
+        it has access to local filesystem. As an unsafe behavior, this
+        plugin must be explicitly allowed and requires either
+        ``--allow-unsafe-behavior=provision/mock`` or ``--feeling-safe``.
 
     Using the plugin:
 
@@ -890,7 +891,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        self.assert_feeling_safe("1.58", "The 'mock' provision plugin")
+        UB_PROVISION_MOCK_PLUGIN.assert_is_allowed(self._logger)
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'mock' provision plugin does not support hardware requirements.")

@@ -8,6 +8,7 @@ import tmt.utils
 from tmt.container import container, field, option_to_key
 from tmt.guest import RebootMode
 from tmt.utils import Command, ShellScript
+from tmt.utils.feeling_safe import UB_REBOOT_KEYS
 from tmt.utils.wait import Waiting
 
 
@@ -319,14 +320,8 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         if not self.data.guest:
             raise tmt.utils.SpecificationError('Provide a host name or an ip address to connect.')
 
-        if (
-            any((self.data.soft_reboot, self.data.systemd_soft_reboot, self.data.hard_reboot))
-            and not self.is_feeling_safe
-        ):
-            raise tmt.utils.GeneralError(
-                "Custom soft, systemd soft, and hard reboot commands are allowed "
-                "only with the '--feeling-safe' option."
-            )
+        if any((self.data.soft_reboot, self.data.systemd_soft_reboot, self.data.hard_reboot)):
+            UB_REBOOT_KEYS.assert_is_allowed(self._logger)
 
         data = ConnectGuestData.from_plugin(self)
 
