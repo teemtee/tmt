@@ -67,6 +67,22 @@ def fixture_copy_tree_paths(tmppath: Path) -> CopyTreePathConfig:
     return source_dir, dest_dir, symlinks_supported
 
 
+@pytest.fixture(name="copy_tree_paths_git")
+def fixture_copy_tree_paths_git(copy_tree_paths: CopyTreePathConfig) -> CopyTreePathConfig:
+    source_dir, dest_dir, symlinks_supported = copy_tree_paths
+
+    subprocess.check_call(['git', 'init'], cwd=source_dir)
+
+    (source_dir / 'this-file-is-apparently-ignored.ignore-me').touch()
+    (source_dir / 'subdir' / 'this-file-is-also-ignored.ignore-me').touch()
+
+    (source_dir / 'subdir' / '.gitignore').write_text('*.ignore-me\n')
+
+    (source_dir / 'subdir' / '.git').mkdir(parents=True)
+
+    return source_dir, dest_dir, symlinks_supported
+
+
 @pytest.fixture(name="tmpdir_creator")
 def fixture_tmpdir_creator(tmppath: Path) -> tmt.utils.filesystem.TmpDirCreator:
     @contextlib.contextmanager
@@ -270,10 +286,22 @@ def test_fallback(
     tmt.utils.filesystem.copy_tree(src=source_dir, dst=dest_dir, logger=root_logger)
 
     cast(MagicMock, mock_copy_tree_cp).assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        git_root=None,
+        logger=mock.ANY,
     )
     cast(MagicMock, mock_copy_tree_shutil).assert_called_once_with(
-        src=source_dir, dst=dest_dir, tmpdir_creator=None, logger=mock.ANY
+        src=source_dir,
+        dst=dest_dir,
+        tmpdir_creator=None,
+        exclude_git=False,
+        exclude_gitignore=False,
+        git_root=None,
+        logger=mock.ANY,
     )
 
     # Verify files were copied using the fallback approach (shutil.copytree)
@@ -369,3 +397,87 @@ def test_copy_to_existing_destination(
     # Check symlink if supported
     if symlinks_supported:
         assert Path.is_symlink(dest_dir / "symlink.txt")
+
+
+@pytest.mark.parametrize(
+    ('strategy', 'return_value'),
+    [
+        (tmt.utils.filesystem._copy_tree_rsync, tmt.utils.filesystem.StrategyOutcome.SUCCESS),
+        (tmt.utils.filesystem._copy_tree_cp, tmt.utils.filesystem.StrategyOutcome.YIELD),
+        (tmt.utils.filesystem._copy_tree_shutil, tmt.utils.filesystem.StrategyOutcome.SUCCESS),
+    ],
+)
+def test_copy_exclude_gitignore(
+    strategy: tmt.utils.filesystem.CopyStrategy,
+    return_value: tmt.utils.filesystem.StrategyOutcome,
+    tmpdir_creator: tmt.utils.filesystem.TmpDirCreator,
+    copy_tree_paths_git: CopyTreePathConfig,
+    root_logger: tmt.log.Logger,
+) -> None:
+    """
+    Test copying into a destination directory but ignoring ``.gitignore`` entries.
+    """
+
+    source_dir, dest_dir, _ = copy_tree_paths_git
+
+    assert (
+        strategy(
+            src=source_dir,
+            dst=dest_dir,
+            tmpdir_creator=tmpdir_creator,
+            exclude_gitignore=True,
+            git_root=source_dir,
+            logger=root_logger,
+        )
+        is return_value
+    )
+
+    if return_value is not tmt.utils.filesystem.StrategyOutcome.SUCCESS:
+        return
+
+    assert (dest_dir / '.git').exists() is True
+    assert (dest_dir / 'this-file-is-apparently-ignored.ignore-me').exists() is True
+    assert (dest_dir / 'subdir' / 'this-file-is-also-ignored.ignore-me').exists() is False
+    assert (dest_dir / 'subdir' / '.git').exists() is True
+
+
+@pytest.mark.parametrize(
+    ('strategy', 'return_value'),
+    [
+        (tmt.utils.filesystem._copy_tree_rsync, tmt.utils.filesystem.StrategyOutcome.SUCCESS),
+        (tmt.utils.filesystem._copy_tree_cp, tmt.utils.filesystem.StrategyOutcome.YIELD),
+        (tmt.utils.filesystem._copy_tree_shutil, tmt.utils.filesystem.StrategyOutcome.SUCCESS),
+    ],
+)
+def test_copy_exclude_dot_git(
+    strategy: tmt.utils.filesystem.CopyStrategy,
+    return_value: tmt.utils.filesystem.StrategyOutcome,
+    tmpdir_creator: tmt.utils.filesystem.TmpDirCreator,
+    copy_tree_paths_git: CopyTreePathConfig,
+    root_logger: tmt.log.Logger,
+) -> None:
+    """
+    Test copying into a destination directory but ignoring ``.git`` directory.
+    """
+
+    source_dir, dest_dir, _ = copy_tree_paths_git
+
+    assert (
+        strategy(
+            src=source_dir,
+            dst=dest_dir,
+            tmpdir_creator=tmpdir_creator,
+            exclude_git=True,
+            git_root=source_dir,
+            logger=root_logger,
+        )
+        is return_value
+    )
+
+    if return_value is not tmt.utils.filesystem.StrategyOutcome.SUCCESS:
+        return
+
+    assert (source_dir / '.git').exists() is True
+    assert (source_dir / 'subdir' / '.git').exists() is True
+    assert (dest_dir / '.git').exists() is False
+    assert (dest_dir / 'subdir' / '.git').exists() is True
