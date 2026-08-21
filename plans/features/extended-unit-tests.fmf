@@ -21,8 +21,10 @@ adjust+:
             systemctl stop systemd-resolved
             systemctl mask systemd-resolved
             rm -f /etc/resolv.conf
-            systemctl restart NetworkManager
+            systemctl restart NetworkManager || true
             sleep 5
+            systemctl status NetworkManager.service
+            journalctl -xeu NetworkManager.service
             cat /etc/resolv.conf
             ps xa | grep resolv
             netstat -pnl
