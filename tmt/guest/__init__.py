@@ -201,7 +201,7 @@ def configure_ssh_options() -> tmt.utils.RawCommand:
 
     options: tmt.utils.RawCommand = []
 
-    for name, value in os.environ.items():
+    for name, value in Environment.from_environ().items():
         match = SSH_OPTIONS_ENVVAR_PATTERN.match(name)
 
         if not match:
