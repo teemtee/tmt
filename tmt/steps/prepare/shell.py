@@ -163,7 +163,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
-        logger.info('overview', f'{overview} found', 'green')
+        logger.info('overview', f'{overview} found', color='green')
 
         worktree = self.step.plan.worktree
         assert worktree is not None  # narrow type
@@ -188,7 +188,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                     )
 
                     if self.data.ref:
-                        self.info('ref', self.data.ref, 'green')
+                        self.info('ref', self.data.ref, color='green')
                         self.run(Command('git', 'checkout', '-f', self.data.ref), cwd=repo_path)
 
             guest.push(
@@ -261,7 +261,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             script_index = script_count - len(script_queue)
             script = original_script = script_queue.pop(0)
 
-            logger.verbose('script', script, 'green')
+            logger.verbose('script', script, color='green')
 
             script_name = f'{self.name} / script #{script_index}'
 

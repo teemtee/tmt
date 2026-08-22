@@ -763,7 +763,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         self.assert_config_manager()
 
-        self.verbose('enable repo', fmf.utils.listed(repo_ids), 'green')
+        self.verbose('enable repo', fmf.utils.listed(repo_ids), color='green')
         self.guest.execute(self.engine.enable_repo(*repo_ids))
 
     def disable_repo(self, *repo_ids: str) -> None:
@@ -777,7 +777,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         self.assert_config_manager()
 
-        self.verbose('disable repo', fmf.utils.listed(repo_ids), 'green')
+        self.verbose('disable repo', fmf.utils.listed(repo_ids), color='green')
         self.guest.execute(self.engine.disable_repo(*repo_ids))
 
     def enable_copr(self, *repositories: str) -> None:
