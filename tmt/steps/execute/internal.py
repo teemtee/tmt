@@ -669,7 +669,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         return self._results
 
-    def essential_requires(self) -> list[tmt.base.core.Dependency]:
+    def essential_requires(self, guest: 'Guest') -> list[tmt.base.core.Dependency]:
         """
         Collect all essential requirements of the plugin.
 

@@ -173,7 +173,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
         return self._guest
 
-    def essential_requires(self) -> list['tmt.base.core.Dependency']:
+    def essential_requires(self, guest: tmt.guest.Guest) -> list['tmt.base.core.Dependency']:
         """
         Collect all essential requirements of the guest implementation.
 

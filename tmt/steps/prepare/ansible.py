@@ -295,7 +295,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
         return outcome
 
-    def essential_requires(self) -> list[tmt.base.core.Dependency]:
+    def essential_requires(self, guest: 'Guest') -> list[tmt.base.core.Dependency]:
         """
         Collect all essential requirements of the plugin.
 
