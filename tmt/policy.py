@@ -9,7 +9,7 @@ from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_f
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
 from tmt.utils.environment import Environment
-from tmt.utils.templates import render_template
+from tmt.utils.templates import render_diff, render_template
 
 if TYPE_CHECKING:
     from tmt.base.core import Core, Test
@@ -18,17 +18,20 @@ if TYPE_CHECKING:
 T = TypeVar('T')
 
 
+_DIFF_TEMPLATE = """
+{{ DIFF | join('\n') }}
+"""
+
+
 #: A template showing changes made by an instruction.
 KEY_DIFF_TEMPLATE = """
-{{ OLD_VALUE | to_yaml | prefix('- ') | style(fg='red') | trim }}
-{{ NEW_VALUE | to_yaml | prefix('+ ') | style(fg='green') | trim }}
+{{ DIFF }}
 
 Field value source changed from {{ OLD_VALUE_SOURCE.value | style(fg='red') }} to {{ NEW_VALUE_SOURCE.value | style(fg='green') }}
 """  # noqa: E501
 
 STEP_DIFF_TEMPLATE = """
-{{ OLD_VALUE | to_yaml | prefix('- ') | style(fg='red') | trim }}
-{{ NEW_VALUE | to_yaml | prefix('+ ') | style(fg='green') | trim }}
+{{ DIFF }}
 """
 
 
@@ -153,8 +156,11 @@ class Instruction(MetadataContainer):
                 f"Modified '{obj.name}'",
                 render_template(
                     KEY_DIFF_TEMPLATE,
-                    OLD_VALUE={key: old_value_exported},
-                    NEW_VALUE={key: current_value_exported},
+                    DIFF=render_diff(
+                        _DIFF_TEMPLATE,
+                        {key: old_value_exported},
+                        {key: current_value_exported},
+                    ),
                     OLD_VALUE_SOURCE=old_value_source,
                     NEW_VALUE_SOURCE=current_value_source,
                     # ignore[arg-type]: not sure why, but mypy sees this
@@ -215,6 +221,8 @@ class PlanInstruction(Instruction):
                     template,
                     VALUE=current_value_exported,
                     VALUE_SOURCE=current_value_source.value,
+                    OLD_VALUE=old_value_exported,
+                    OLD_VALUE_SOURCE=old_value_source,
                     PLAN=obj,
                 )
 
@@ -254,10 +262,11 @@ class PlanInstruction(Instruction):
                         f"Modified '{obj.name}'",
                         render_template(
                             STEP_DIFF_TEMPLATE,
-                            OLD_VALUE={key: old_value_exported},
-                            NEW_VALUE={key: current_value_exported},
-                            OLD_VALUE_SOURCE=old_value_source,
-                            NEW_VALUE_SOURCE=current_value_source,
+                            DIFF=render_diff(
+                                _DIFF_TEMPLATE,
+                                {key: old_value_exported},
+                                {key: current_value_exported},
+                            ),
                         ),
                         topic=Topic.POLICY,
                     )
