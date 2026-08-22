@@ -925,14 +925,25 @@ Chat
 Merging
 ------------------------------------------------------------------
 
-Pull request merging is done by one of maintainers who have a good
-overview of the whole code. Maintainer who will take care of
-the process will assign themselves to the pull request.
-Before merging it's good to check the following:
+Pull request merging is done by maintainers who have the write
+permission to the ``main`` branch. The following is required
+before merging a pull request:
+
+* At least two positive reviews provided
+* All review conversations have been resolved
+
+Before merging it's also good to check the following:
 
 * New test coverage added if appropriate, all tests passed
 * Documentation has been added or updated where appropriate
-* At least two positive reviews provided by the maintainers
+
+Some settings, like conversation resolution, are `enforced`__ by
+the ruleset. The release lead can `override`__ some requirements
+if needed, for example documentation changes do not need the full
+test coverage to be exercised. Use the override responsibly.
+
+__ https://github.com/teemtee/tmt/blob/main/.github/settings/enforced.json
+__ https://github.com/teemtee/tmt/blob/main/.github/settings/override.json
 
 Merge commits are not used, rebase on the latest ``main`` instead.
 Use the GitHub's ``Squash & Merge`` button which will generate the
