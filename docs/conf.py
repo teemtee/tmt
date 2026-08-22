@@ -316,8 +316,6 @@ linkcheck_ignore = [
     r'https://www.cpu-world.com.*',
     # Stack Overflow uses captcha and these links are not essential
     r'https://stackoverflow.com.*',
-    # no-color.org seems to be down, no sign of long-term issue
-    r'https://no-color.org/',
 ]
 linkcheck_request_headers = {
     "*": {
