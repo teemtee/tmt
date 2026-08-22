@@ -83,8 +83,9 @@ import tmt.steps
 from tmt.container import container
 from tmt.guest import Guest, TransferOptions
 from tmt.steps import safe_filename
+from tmt.steps.context import StepContext
 from tmt.utils import Path, ShellScript
-from tmt.utils.environment import Environment, EnvVarValue, HasIntrinsicEnvironment
+from tmt.utils.environment import Environment, EnvVarValue
 from tmt.utils.templates import render_template
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
@@ -193,7 +194,7 @@ def effective_pidfile_root() -> Path:
 
 
 @container
-class PidFileContext(HasIntrinsicEnvironment):
+class PidFileContext(StepContext):
     #: Phase owning this context.
     phase: tmt.steps.BasePlugin[Any, Any]
 
