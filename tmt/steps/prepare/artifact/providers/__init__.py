@@ -27,9 +27,6 @@ NEVRA_PATTERN = re.compile(
     r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
 )
 
-#: Name of the shared repository that download providers contribute RPMs into.
-SHARED_REPO_NAME: str = 'tmt-artifact-shared'
-
 
 class UnsupportedOperationError(RuntimeError):
     """
@@ -48,7 +45,7 @@ class ArtifactInfo:
     provider: "ArtifactProvider"
     #: Repository ID this artifact is available from. Used during verification
     #: to confirm the artifact was installed from the expected repository.
-    repo_id: str = SHARED_REPO_NAME
+    repo_id: str = 'tmt-artifact-shared'
 
     @property
     def id(self) -> str:

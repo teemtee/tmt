@@ -196,6 +196,7 @@ class KojiArtifactProvider(ArtifactProvider):
             version=version_info,
             location=urljoin(self._top_url, path),
             provider=self,
+            repo_id=self.parent.data.repository_name,
         )
 
 
@@ -240,6 +241,7 @@ class KojiTask(KojiArtifactProvider):
             version=RpmVersion.from_filename(filename),
             location=url,
             provider=self,
+            repo_id=self.parent.data.repository_name,
         )
 
     @cached_property
