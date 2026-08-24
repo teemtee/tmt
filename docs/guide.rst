@@ -62,9 +62,9 @@ directly on your localhost:
 
 .. code-block:: shell
 
-    tmt --feeling-safe run --all provision --how local
+    tmt --allow-unsafe-behavior=provision/local run --all provision --how local
 
-Note that the extra ``--feeling-safe`` option is needed for the
+Note that the extra ``--allow-unsafe-behavior`` option is needed for the
 :ref:`/plugins/provision/local` provision plugin as it can be
 dangerous to execute unknown code directly on your system. If
 you're afraid that the test could break your machine or just want

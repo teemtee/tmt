@@ -14,6 +14,7 @@ import click
 import tmt.lint
 import tmt.log
 import tmt.utils
+import tmt.utils.feeling_safe
 from tmt.container import container
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
@@ -276,21 +277,7 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
     ),
 ]
 
-SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
-    option(
-        '--feeling-safe',
-        metavar='FEELING_SAFE',
-        envvar='TMT_FEELING_SAFE',
-        is_flag=True,
-        default=False,
-        help="""
-             WARNING: with this option, tmt would be allowed to make
-             potentially dangerous actions. For example, some metadata
-             keys may cause scripts being executed on the runner.
-             Do not use this option unless you trust metadata consumed
-             by tmt, or unless you know what you are doing.
-             """,
-    ),
+PLUGIN_SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--exposable-runner-devices',
         metavar='PATTERN',
@@ -302,6 +289,49 @@ SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
              expressions passed to this option would be made accessible.
              """,
     ),
+]
+
+SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
+    option(
+        '--feeling-safe',
+        is_flag=True,
+        default=None,
+        envvar='TMT_FEELING_SAFE',
+        help="""
+             This option will enable potentially unsafe behavior such
+             as executing tests directly on the test runner using the
+             ``local`` provision method.
+
+             This option is stronger than ``--allow-unsafe-behavior``,
+             and it is processed first. ``tmt --feeling-safe`` will
+             act the same as ``tmt --allow-unsafe-behavior=all``. Unlike
+             ``--allow-unsafe-behavior``, this option does not support
+             granular control, enables or disables every behavior at once.
+
+             Use with caution, only when you can fully trust the ``tmt``
+             metadata or if you know what you are doing.
+             """,
+    ),
+    option(
+        '--allow-unsafe-behavior',
+        multiple=True,
+        choices=tmt.utils.feeling_safe.unsafe_behavior_names(),
+        envvar='TMT_ALLOW_UNSAFE_BEHAVIOR',
+        help="""
+             This option will enable potentially unsafe behavior such
+             as executing tests directly on the test runner using the
+             ``local`` provision method.
+
+             This option is softer than ``--feeling-safe``, and it is
+             processed after ``--feeling-safe``. Unlike ``--feeling-safe``,
+             this option allows granular control over which unsafe behavior
+             would be enabled.
+
+             Use with caution, only when you can fully trust the ``tmt``
+             metadata or if you know what you are doing.
+             """,
+    ),
+    *PLUGIN_SECURITY_OPTIONS,
 ]
 
 # TODO: Maybe this should be reversed.
@@ -378,7 +408,12 @@ FILTERING_OPTIONS: list[ClickOptionDecoratorType] = [
         'conditions',
         metavar="EXPR",
         multiple=True,
-        help="Use arbitrary Python expression for filtering (requires --feeling-safe).",
+        help="""
+             Use arbitrary Python expression for filtering.
+
+             This is an unsafe behavior, and requires either
+             ``--allow-unsafe-behavior=cli.condition`` or ``--feeling-safe``.
+             """,
     ),
     option(
         '--enabled',
@@ -419,7 +454,12 @@ FILTERING_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
         'conditions',
         metavar="EXPR",
         multiple=True,
-        help="Use arbitrary Python expression for filtering (requires --feeling-safe).",
+        help="""
+             Use arbitrary Python expression for filtering.
+
+             This is an unsafe behavior, and requires either
+             ``--allow-unsafe-behavior=cli.condition`` or ``--feeling-safe``.
+             """,
     ),
     option(
         '--enabled',

@@ -1621,14 +1621,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return self._get_cli_flag('should_run_again', 'again', False)
 
     @property
-    def is_feeling_safe(self) -> bool:
-        """
-        Whether the current run is allowed to run unsafe actions
-        """
-
-        return self._get_cli_flag('is_feeling_safe', 'feeling_safe', False)
-
-    @property
     def import_before_name_filter(self) -> bool:
         """
         Whether to import all external plans before applying name-based filters
