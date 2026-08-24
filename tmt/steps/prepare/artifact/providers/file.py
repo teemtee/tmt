@@ -67,6 +67,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             version=RpmVersion.from_filename(tmt.utils.Path(path).name),
             location=path,
             provider=self,
+            repo_id=self.parent.data.repository_name,
         )
 
     @cached_property

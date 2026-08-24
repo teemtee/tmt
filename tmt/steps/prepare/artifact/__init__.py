@@ -13,7 +13,6 @@ from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
-    SHARED_REPO_NAME,
     ArtifactProvider,
     Repository,
 )
@@ -31,6 +30,9 @@ from tmt.steps.prepare.verify_installation import (
 )
 from tmt.utils import Path
 from tmt.utils.environment import Environment
+
+#: Name of the shared repository that download providers contribute RPMs into.
+SHARED_REPO_NAME: str = 'tmt-artifact-shared'
 
 
 @container
@@ -59,8 +61,8 @@ class PrepareArtifactData(PrepareStepData):
         option='--repository-name',
         metavar='NAME',
         help="""
-            Name of the shared aggregation repository created on the guest.
-            When not set, the default name is used.
+            Name of the tmt generated repo containing all artifacts
+            that are generated.
             """,
     )
 
