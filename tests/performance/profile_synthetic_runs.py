@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
 """
 Collect cProfile data for synthetic full tmt runs.
-
-Point ``REPO`` at the tmt git tree, create the synthetic fmf tree with
-``create_synthetic_plan.py``, edit matrix settings below, then run::
-
-    python3 tests/performance/profile_synthetic_runs.py
-
-Writes ``.prof`` files to ``SYNTHETIC_RUNS_PROFILE_DIR`` under the repo root.
-See ``summarize_profiles.py`` for the synthetic analysis preset.
-
-The default matrix runtime is several hours.
 """
 
 from __future__ import annotations

@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 """
 Summarize cProfile ``.prof`` files from performance profiling scripts.
-
-Edit the settings below, then::
-
-    python3 tests/performance/summarize_profiles.py
-
-Works with output from ``profile_common_commands.py`` and
-``profile_synthetic_runs.py`` — swap ``PROFILE_DIR``, ``HOTSPOT_SPECS``, and related
-settings for each workload.
 """
 
 from __future__ import annotations

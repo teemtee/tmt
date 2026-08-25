@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 """
 Collect cProfile data for common metadata-heavy tmt commands.
-
-Point ``REPO`` at the tmt git tree, edit ``COMMANDS`` and ``profile_lib.py`` settings,
-then run::
-
-    python3 tests/performance/profile_common_commands.py
-
-Writes ``.prof`` files to ``COMMON_COMMANDS_PROFILE_DIR`` under the repo root.
-See ``summarize_profiles.py`` for the common-commands analysis preset.
 """
 
 from __future__ import annotations

@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 """
 Create synthetic tmt plans and tests for performance experiments.
-
-Edit the settings in ``profile_lib.py``, then from the tmt git tree::
-
-    python3 tests/performance/create_synthetic_plan.py
 """
 
 from __future__ import annotations
