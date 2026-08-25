@@ -131,6 +131,48 @@ story: 'As a user I want to comfortably work with tests'
           - implemented-by: /tmt/export/polarion.py
           - verified-by: /plans/remote/polarion
 
+    /jira:
+        story: 'I want to export test metadata into Jira.'
+        example: tmt test export --how jira --create --link-jira --project-id RHELTEST
+        description: |
+            Export test metadata to a Jira project as ``Test Case``
+            work items. Authentication uses a Jira API token with
+            HTTP Basic Auth. Provide credentials via CLI options or
+            environment variables:
+
+            .. code-block:: shell
+
+                export TMT_PLUGIN_EXPORT_JIRA_URL=https://issues.redhat.com
+                export TMT_PLUGIN_EXPORT_JIRA_USER=me@example.com
+                export TMT_PLUGIN_EXPORT_JIRA_TOKEN=<token>
+
+            The following ``fmf`` attributes are exported to the
+            corresponding Jira ``Test Case`` fields:
+
+            * ``summary`` — summary
+            * ``description`` — description
+            * ``id`` — ``ID`` custom field used for future lookup
+            * ``component`` — components
+            * ``tag`` + ``Tier{N}`` — labels
+            * ``contact`` — assignee (email resolved to a Jira Cloud
+              ``accountId`` via the user search API)
+            * ``enabled`` — status (``Active`` or ``Retired``)
+            * ``link[test-script]`` or ``extra-task`` or repo URL
+              — ``URL`` custom field
+            * ``link[implements]`` matching the Polarion URL
+              — ``External issue URL`` custom field
+
+            ``verifies`` links are recreated as Jira issue links:
+            links to issues on the same instance become ``tests``
+            issue links; Bugzilla links become remote links.
+
+            After a successful export, add ``--link-jira`` to
+            write an ``implements`` link back to the fmf metadata
+            so that subsequent exports and reports can locate the
+            Jira ``Test Case`` without a UUID search.
+        link:
+          - implemented-by: /tmt/export/jira.py
+
 /filter:
     story: 'Filter available tests'
     description: |
