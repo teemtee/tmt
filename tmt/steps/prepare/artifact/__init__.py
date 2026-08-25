@@ -13,6 +13,7 @@ from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
+    SHARED_REPO_NAME,
     ArtifactProvider,
     Repository,
 )
@@ -30,9 +31,6 @@ from tmt.steps.prepare.verify_installation import (
 )
 from tmt.utils import Path
 from tmt.utils.environment import Environment
-
-#: Name of the shared repository that download providers contribute RPMs into.
-SHARED_REPO_NAME: str = 'tmt-artifact-shared'
 
 
 @container
