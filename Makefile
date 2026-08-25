@@ -393,6 +393,7 @@ clean:  ## Remove all temporary files, packaging artifacts and docs
 	rm -f .coverage tags
 	rm -rf examples/convert/{main.fmf,test.md,Manual} Manual
 	rm -f tests/full/repo_copy.tgz
+	rm -rf .profile_common_commands .profile_synthetic_runs tests/performance/synthetic
 
 clean/images:  ## Remove tmt images
 	for image in $(TMT_DISTRO_CONTAINER_IMAGES); do \
