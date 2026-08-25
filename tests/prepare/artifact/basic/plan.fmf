@@ -8,6 +8,7 @@ prepare:
     script: ./pre_artifact_check.sh
   - name: Main artifact to test
     how: artifact
+    repository-name: custom-artifact-repo
     provide:
       - file:../rpms/bar/bar-1.0-1.noarch.rpm
   - name: Sanity checks after artifact repo setup
