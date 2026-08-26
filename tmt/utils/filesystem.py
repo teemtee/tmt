@@ -72,8 +72,9 @@ def _copy_tree_cp(
     * Using ``--reflink=auto`` means ``cp`` automatically falls back
       to standard copy if reflink isn't supported by the filesystem.
 
-    :returns: ``True`` if successful, ``False`` if ``cp`` command fails
-        with :py:class:`RunError`.
+    :returns: :py:attr:`StrategyOutcome.SUCCESS` when successful,
+        :py:attr:`StrategyOutcome.FAIL` when the ``cp`` command
+        fails.
     """
 
     logger.debug(f"Copy tree '{src}' => '{dst}' using 'cp --reflink=auto' strategy.")
@@ -107,14 +108,17 @@ def _copy_tree_rsync(
     """
     Copy directory using ``rsync -a``.
 
-    :returns: ``True`` if successful, ``False`` if ``rsync`` command
-        fails with :py:class:`RunError`.
+    :returns: :py:attr:`StrategyOutcome.SUCCESS` when successful,
+        :py:attr:`StrategyOutcome.YIELD` when ``tmpdir_creator``
+        was not provided, and :py:attr:`StrategyOutcome.FAIL`
+        when the ``rsync`` command fails.
     """
 
     if tmpdir_creator is None:
         logger.debug(
             f"Copy tree '{src}' => '{dst}' using 'rsync -a' strategy"
-            " not possible without a temporary directory."
+            " not possible without a temporary directory.",
+            level=3,
         )
 
         return StrategyOutcome.YIELD
@@ -155,8 +159,9 @@ def _copy_tree_shutil(
     * Maintains symlinks (``symlinks=True``).
     * Merges with existing destination directories (``dirs_exist_ok=True``).
 
-    :returns: ``True`` if successful. ``False`` is never returned, failed
-        operations raise an exception.
+    :returns: :py:attr:`StrategyOutcome.SUCCESS` when successful. No
+        other value is ever returned, failed operation will raise an
+        exception.
     """
 
     logger.debug(f"Copy tree '{src}' => '{dst}' using 'shutil.copytree' strategy.")
