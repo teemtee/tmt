@@ -23,7 +23,7 @@ def _copy_tree_cp(
     Attempt to copy directory using ``cp -a --reflink=auto``.
 
     ``cp -a --reflink=auto`` provides copy-on-write, and ``cp``'s own
-    fallback).
+    fallback.
 
     * Reflinks provide fast, space-efficient copies that behave like
       normal copies.
