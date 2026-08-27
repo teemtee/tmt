@@ -308,6 +308,11 @@ man_pages = [(master_man, '', 'tmt Documentation', [author], 1)]
 # -- Options for linkcheck builder ----------------------------------------
 linkcheck_retries = 3
 linkcheck_ignore = [
+    # Ansible website started rejecting probes with HTTP 429
+    'https://docs.ansible.com/.*',
+    # This location seems to be gone, but maybe it will reappear or get
+    # replaced with new one.
+    'https://docs.pagure.org/koji/draft_builds/',
     # Github "source code line" anchors are apparently too dynamic for linkcheck
     # to detect correctly. The link exists, a browser can open it, but linkcheck
     # reports a broken link.
