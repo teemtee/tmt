@@ -767,7 +767,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         if self.should_run_again:
             assert self.parent is not None  # narrow type
             assert isinstance(self.parent, Execute)  # narrow type
-            self.parent._old_results = Results(self.parent._results[:])
+            self.parent._old_results = self.parent._results.copy()
             self.parent._results.clear()
 
         return invocations
@@ -1342,7 +1342,7 @@ class Execute(tmt.steps.StepWithQueue[ExecuteStepData, None]):
 
         self._assert_required_tests_executed()
 
-    def results(self) -> 'tmt.result.Results[tmt.result.Result]':
+    def results(self) -> Results[Result]:
         """
         Results from executed tests
 

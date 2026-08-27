@@ -1005,7 +1005,7 @@ class Step(
         self,
         result_class: type[ResultT],
         allow_missing: bool = False,
-    ) -> tmt.result.Results[ResultT]:
+    ) -> Results[ResultT]:
         """
         Load results of this step from the workdir
         """

@@ -1,5 +1,15 @@
 import enum
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Optional,
+    SupportsIndex,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 import fmf.utils
 
@@ -535,6 +545,26 @@ class Results(list[ResultT]):
     Effectively a fancy list of results, with a few helper methods for
     the collection as a whole.
     """
+
+    @overload
+    def __getitem__(self, i: SupportsIndex) -> ResultT:
+        pass
+
+    @overload
+    def __getitem__(self, i: slice) -> 'Results[ResultT]':
+        pass
+
+    def __getitem__(self, i: Union[SupportsIndex, slice]) -> Union[ResultT, 'Results[ResultT]']:
+        if isinstance(i, slice):
+            return Results(super().__getitem__(i))
+
+        return super().__getitem__(i)
+
+    def __add__(self, other: 'Results[ResultT]') -> 'Results[ResultT]':  # type: ignore[override]
+        return Results(super().__add__(other))
+
+    def copy(self) -> 'Results[ResultT]':
+        return Results(super().copy())
 
     def total(self) -> dict[ResultOutcome, int]:
         """
