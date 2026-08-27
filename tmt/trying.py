@@ -392,6 +392,7 @@ class Try(tmt.utils.Common):
             plans=[plan.name for plan in self.plans],
             steps=list(self._cli_context_object.steps),
             environment=self.environment,
+            context=self.fmf_context,
             remove=self.opt('remove'),
         )
         tmt.utils.write_state(self.workdir / 'run', data.to_serialized())
