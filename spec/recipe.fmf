@@ -23,6 +23,14 @@ description: |
         in previous run to modify the recipe and filter the tests that should
         be reexecuted.
 
+    .. note::
+        The recipe stores a static snapshot of test metadata, but it does not
+        include external files referenced by tests (for example a script pointed
+        to by ``test: script.sh``). When a recipe is executed with
+        ``tmt run --recipe ...``, metadata such as ``require`` is taken from the
+        recipe as saved. Later changes to the corresponding fmf files have no
+        effect unless the recipe itself is updated.
+
     .. code-block:: yaml
 
         # Mapping, stores run configuration
