@@ -20,7 +20,7 @@ from tmt.utils import (
     Path,
     ShellScript,
 )
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment
 from tmt.utils.feeling_safe import UB_PROVISION_LOCAL_PLUGIN
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
