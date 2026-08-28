@@ -1,0 +1,5 @@
+description: |
+  Fixed SSH reconnection failures after guest reboot when the SSH master
+  process died but tmt still reused its control socket. tmt now shuts
+  down the master during reboot and spawns a fresh one before the next
+  ``ssh`` command.

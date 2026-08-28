@@ -1,0 +1,3 @@
+description: |
+  Fixed empty flag keys in fmf metadata being loaded as ``None`` instead
+  of their default value.

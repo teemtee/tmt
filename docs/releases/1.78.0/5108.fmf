@@ -1,0 +1,4 @@
+description: |
+  Fixed :ref:`/plugins/prepare/artifact` failing with a confusing ``cp`` error
+  when no RPMs were downloaded. tmt now stops immediately with a clear message
+  when an artifact provider yields no packages.
