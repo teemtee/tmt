@@ -1,0 +1,2 @@
+summary: Check that flag fields set to null in fmf resolve to defaults
+test: ./test.sh

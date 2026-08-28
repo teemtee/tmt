@@ -1,0 +1,13 @@
+summary: Plan with flag fields set to null in fmf
+report:
+    how: html
+    open:
+    absolute-paths:
+prepare:
+    how: install
+    package:
+        - tree
+    check-first:
+execute:
+    how: tmt
+    exit-first:

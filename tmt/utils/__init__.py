@@ -5179,6 +5179,8 @@ def dataclass_normalize_field(
 
         if metadata.normalize_callback:
             value = metadata.normalize_callback(key_address, raw_value, logger)
+        elif metadata.is_flag and raw_value is None:
+            value = metadata.materialized_default
 
     # TODO: we already access parameter source when importing CLI invocations in `Step.wake()`,
     # we should do the same here as well. It will require adding (optional) Click context
