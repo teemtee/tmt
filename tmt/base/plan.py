@@ -1,6 +1,8 @@
+import copy
 import enum
 import functools
 import itertools
+import os
 import re
 import shutil
 import tempfile
@@ -318,6 +320,7 @@ class Plan(
         self._derived_plans = []
         self._fmf_context_from_importing = inherited_fmf_context or FmfContext()
         self._environment_from_importing = inherited_environment or Environment()
+        self._matrix_environment = Environment()
 
         # Check for possible remote plan reference first
         reference = self.node.get(['plan', 'import'])  # pyright: ignore[reportUnknownVariableType]
@@ -539,6 +542,7 @@ class Plan(
         * importing plan's environment,
         * ``--environment`` and ``--environment-file`` options,
         * run's environment,
+        * matrix environment variables (``TMT_MATRIX_*``),
         * plan's properties.
         """
 
@@ -549,6 +553,7 @@ class Plan(
                     **self._environment_from_importing,
                     **self._environment_from_cli,
                     **self.my_run.environment,
+                    **self._matrix_environment,
                     **self._environment_from_intrinsics,
                 }
             )
@@ -558,6 +563,7 @@ class Plan(
                 **self._environment_from_fmf,
                 **self._environment_from_importing,
                 **self._environment_from_cli,
+                **self._matrix_environment,
                 **self._environment_from_intrinsics,
             }
         )
@@ -1637,7 +1643,12 @@ class Plan(
 
         return self._imported_plans
 
-    def derive_plan(self, derived_id: int, tests: dict[str, list[Test]]) -> 'Plan':
+    def derive_plan(
+        self,
+        derived_id: int | str,
+        tests: dict[str, list[Test]],
+        extra_environment: Optional[Environment] = None,
+    ) -> 'Plan':
         """
         Create a new plan derived from this one.
 
@@ -1646,14 +1657,41 @@ class Plan(
         New plan will have its own workdir, a copy of this plan's
         workdir.
 
-        :param derived_id: arbitrary number marking the new plan as Nth
-            plan derived from this plan.
+        :param derived_id: identifier for the derived plan, appended
+            to this plan's name.
         :param tests: lists of tests to limit the new plan to.
+        :param extra_environment: additional environment variables
+            to inject into the derived plan, also available for
+            variable expansion in node data.
         """
 
-        derived_plan = Plan(
-            node=self.node, run=self.my_run, logger=self._logger, name=f'{self.name}.{derived_id}'
-        )
+        saved_env: dict[str, Optional[str]] = {}
+        original_data: Optional[dict[str, Any]] = None
+
+        if extra_environment:
+            original_data = copy.deepcopy(self.node.data)
+            for key, value in extra_environment.items():
+                saved_env[key] = os.environ.get(key)
+                os.environ[key] = str(value)
+
+        try:
+            derived_plan = Plan(
+                node=self.node, run=self.my_run, logger=self._logger,
+                name=f'{self.name}.{derived_id}',
+            )
+        finally:
+            if extra_environment:
+                assert original_data is not None
+                self.node.data.clear()
+                self.node.data.update(original_data)
+                for key, orig_value in saved_env.items():
+                    if orig_value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = orig_value
+
+        if extra_environment:
+            derived_plan._matrix_environment = extra_environment
 
         derived_plan._original_plan = self
         derived_plan._original_plan_fmf_id = self.fmf_id

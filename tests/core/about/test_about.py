@@ -63,7 +63,7 @@ EXPECTED_PLUGIN_LIST = {
         "rpm-ostree",
         "yum",
     ],
-    "plan_shapers": ["max-tests", "repeat"],
+    "plan_shapers": ["matrix", "max-tests", "repeat"],
     "prepare.artifact.providers": [
         "brew.build",
         "brew.nvr",
