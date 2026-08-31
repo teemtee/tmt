@@ -73,12 +73,28 @@ def fixture_copy_tree_paths_git(copy_tree_paths: CopyTreePathConfig) -> CopyTree
 
     subprocess.check_call(['git', 'init'], cwd=source_dir)
 
-    (source_dir / 'this-file-is-apparently-ignored.ignore-me').touch()
-    (source_dir / 'subdir' / 'this-file-is-also-ignored.ignore-me').touch()
+    # Some regular files and directories.
+    (source_dir / 'first.txt').touch()
+    (source_dir / 'first.ignore-me').touch()
+    (source_dir / 'second.txt').touch()
 
-    (source_dir / 'subdir' / '.gitignore').write_text('*.ignore-me\n')
+    (source_dir / 'subdir' / 'first.txt').touch()
+    (source_dir / 'subdir' / 'first.ignore-me').touch()
+    (source_dir / 'subdir' / 'second.txt').touch()
 
+    # Ignore all files called `second.txt`, across all levels of the directory tree.
+    (source_dir / '.gitignore').write_text('second.txt\n')
+
+    # This is *not* the `.git` directory hosting git repo metadata - that
+    # one lives in the top level directory. This one is just an arbitrary
+    # directory called `.git`.
     (source_dir / 'subdir' / '.git').mkdir(parents=True)
+
+    # Ignore all files with the `.ignore-me` suffix - but only in the
+    # `subdir` and its subdirectories. If there is a matching file
+    # upwards or in sibling directories - and there is one - it should
+    # remain included.
+    (source_dir / 'subdir' / '.gitignore').write_text('*.ignore-me\n')
 
     return source_dir, dest_dir, symlinks_supported
 
@@ -436,8 +452,14 @@ def test_copy_exclude_gitignore(
         return
 
     assert (dest_dir / '.git').exists() is True
-    assert (dest_dir / 'this-file-is-apparently-ignored.ignore-me').exists() is True
-    assert (dest_dir / 'subdir' / 'this-file-is-also-ignored.ignore-me').exists() is False
+
+    assert (dest_dir / 'first.txt').exists() is True
+    assert (dest_dir / 'first.ignore-me').exists() is True
+    assert (dest_dir / 'second.txt').exists() is False
+
+    assert (dest_dir / 'subdir' / 'first.txt').exists() is True
+    assert (dest_dir / 'subdir' / 'first.ignore-me').exists() is False
+    assert (dest_dir / 'subdir' / 'second.txt').exists() is False
     assert (dest_dir / 'subdir' / '.git').exists() is True
 
 

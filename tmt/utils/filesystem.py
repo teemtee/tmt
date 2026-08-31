@@ -292,6 +292,20 @@ def copy_tree(
     dst: Path,
     tmpdir_creator: Optional[TmpDirCreator] = None,
     exclude_git: Literal[True] = True,
+    exclude_gitignore: Literal[False] = False,
+    git_root: Path,
+    logger: tmt.log.Logger,
+) -> None:
+    pass
+
+
+@overload
+def copy_tree(
+    *,
+    src: Path,
+    dst: Path,
+    tmpdir_creator: Optional[TmpDirCreator] = None,
+    exclude_git: Literal[True] = True,
     exclude_gitignore: Literal[True] = True,
     git_root: Path,
     logger: tmt.log.Logger,
