@@ -1,1 +1,4 @@
-local-repo/
+# Commented out - otherwise this test fails with the new `copy_tree`
+# implementations that obey `.gitignore` info, and would not copy RPMs
+# to the destination. And the test expects them to exist there...
+# local-repo/
