@@ -2,7 +2,7 @@ import http.server
 import socketserver
 import threading
 
-import tmt.utils.time
+import tmt.utils._time
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -38,4 +38,4 @@ if __name__ == '__main__':
     # Keep the script running
 
     while True:
-        tmt.utils.time.sleep(1)
+        tmt.utils._time.sleep(1)
