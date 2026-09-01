@@ -364,14 +364,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             WITH_INTERACTIVE=self.data.interactive,
         )
 
-        # Create topology files
-        topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
-        topology.guest = tmt.steps.GuestTopology(guest)
-
-        invocation.environment.update(
-            topology.push(dirpath=invocation.path, guest=guest, logger=logger)
-        )
-
         # Prepare the actual remote command
         remote_command: ShellScript
         if guest.become and not guest.facts.is_superuser:
@@ -539,6 +531,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Push workdir to guest and execute tests
         guest.push()
+
         # We cannot use enumerate here due to continue in the code
         index = 0
 
@@ -560,7 +553,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 progress_bar.update(progress, test.name)
                 logger.verbose('test', test.summary or test.name, color='cyan', shift=1, level=2)
 
-                self.execute(invocation=invocation, logger=logger)
+                self.execute(
+                    invocation=invocation,
+                    logger=logger,
+                )
 
                 assert invocation.real_duration is not None  # narrow type
                 duration = style(invocation.real_duration, fg='cyan')

@@ -385,6 +385,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
             self.restraint.intrinsic_environment,
             # Add variables the framework wants to expose
             self.test.test_framework.get_environment_variables(self, self.logger),
+            # Add variables from guest
+            self.guest.environment_from_topology,
         )
 
         return environment
