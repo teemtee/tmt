@@ -5,7 +5,7 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
 from tmt.utils import Path
-from tmt.utils.environment import Environment, HasEnvironment
+from tmt.utils.environment import Environment, HasIntrinsicEnvironment
 
 
 class AbortStep(tmt.utils.GeneralError):
@@ -15,7 +15,7 @@ class AbortStep(tmt.utils.GeneralError):
 
 
 @container
-class AbortContext(HasEnvironment):
+class AbortContext(HasIntrinsicEnvironment):
     """
     Provides API for handling a phase-requested abort of a step.
     """
@@ -43,5 +43,5 @@ class AbortContext(HasEnvironment):
         return self.request_path.exists()
 
     @property
-    def environment(self) -> Environment:
+    def intrinsic_environment(self) -> Environment:
         return Environment()
