@@ -627,7 +627,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             directory = fmf_root
         self.info('directory', directory, 'green')
         self.debug(f"Copy '{directory}' to '{self.test_dir}'.")
-        tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
+        tmt.utils.filesystem.copy_tree(src=directory, dst=self.test_dir, logger=self._logger)
         return path
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
@@ -676,9 +676,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
         tmt.utils.filesystem.copy_tree(
-            distgit_dir,
-            self.source_dir,
-            self._logger,
+            src=distgit_dir,
+            dst=self.source_dir,
+            logger=self._logger,
         )
 
         # patch & rediscover will happen later in the prepare step
@@ -902,7 +902,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                             f"Directory '{self.step.plan.node.root}' is not in a git repository."
                         ) from error
                     self.debug(f"Copy '{git_root}' to '{self.test_dir}'.")
-                    tmt.utils.filesystem.copy_tree(git_root, self.test_dir, self._logger)
+                    tmt.utils.filesystem.copy_tree(
+                        src=git_root, dst=self.test_dir, logger=self._logger
+                    )
             else:
                 if not dist_git_merge:
                     if self.data.path:
@@ -926,9 +928,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             src = self.source_dir / to_copy
             if src.is_dir():
                 tmt.utils.filesystem.copy_tree(
-                    self.source_dir / to_copy,
-                    self.test_dir if flatten else self.test_dir / to_copy,
-                    self._logger,
+                    src=self.source_dir / to_copy,
+                    dst=self.test_dir if flatten else self.test_dir / to_copy,
+                    logger=self._logger,
                 )
             else:
                 shutil.copyfile(src, self.test_dir / to_copy)
