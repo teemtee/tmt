@@ -69,23 +69,77 @@ class JiraInstance:
     A Jira instance configured with url and token
     """
 
-    def __init__(self, issue_tracker: IssueTracker, logger: tmt.log.Logger):
+    def __init__(
+        self,
+        *,
+        url: str,
+        email: str,
+        token: str,
+        logger: tmt.log.Logger,
+        tmt_web_url: Optional[str] = None,
+    ):
         """
-        Initialize Jira instance from the issue tracker config
+        Initialize a Jira instance from raw connection details.
+
+        ``tmt_web_url`` is only needed by :py:meth:`add_link_to_issue`;
+        callers that only export/report test data can leave it unset.
+        Use :py:meth:`from_issue_tracker` to construct one from a
+        configured issue tracker instead.
         """
 
-        self.url = str(issue_tracker.url)
-        self.tmt_web_url = str(issue_tracker.tmt_web_url)
-        self.email = issue_tracker.email
-        self.token = issue_tracker.token
+        self.url = url
+        self.tmt_web_url = tmt_web_url
+        self.email = email
+        self.token = token
 
         self.logger = logger
         jira_module = import_jira(logger)
 
         # ignore[attr-defined]: it is defined, but mypy seems to fail
         # detecting it correctly.
+        #
+        # get_server_info=False: skips an extra server-info request and,
+        # with it, the library's own PyPI update check, neither of which
+        # tmt needs. That request is also how the SDK detects Cloud vs
+        # Server/Data Center (self.jira.deploymentType), which several
+        # SDK methods use to decide which API to call -- e.g. search_issues
+        # falls back to the removed /rest/api/2/search on non-Cloud. Since
+        # this is always Jira Cloud here, set it directly instead.
+        #
+        # options={'rest_api_version': '3'}: the SDK defaults to the v2 API
+        # for everything except search (which it special-cases to v3 for
+        # Cloud). v2 doesn't understand Atlassian Document Format, which
+        # this module relies on for descriptions and comments, and its
+        # search endpoint has since been removed by Atlassian.
         self.jira = jira_module.JIRA(  # type: ignore[attr-defined]
-            server=self.url, basic_auth=(self.email, self.token)
+            server=self.url,
+            basic_auth=(self.email, self.token),
+            get_server_info=False,
+            options={'rest_api_version': '3'},
+        )
+        self.jira.deploymentType = 'Cloud'
+
+        # Caches for schema resolution (issue type IDs and custom field IDs).
+        # Populated on first lookup to minimize network requests.
+        self._issue_types: Optional[dict[str, str]] = None
+        self._fields_by_name: Optional[dict[str, list[str]]] = None
+
+    @classmethod
+    def from_issue_tracker(
+        cls,
+        issue_tracker: IssueTracker,
+        logger: tmt.log.Logger,
+    ) -> 'JiraInstance':
+        """
+        Initialize Jira instance from the issue tracker config
+        """
+
+        return cls(
+            url=str(issue_tracker.url),
+            email=issue_tracker.email,
+            token=issue_tracker.token,
+            tmt_web_url=str(issue_tracker.tmt_web_url),
+            logger=logger,
         )
 
     @classmethod
@@ -114,7 +168,7 @@ class JiraInstance:
 
             # Issue url must match
             if issue_url.startswith(str(issue_tracker.url)):
-                return JiraInstance(issue_tracker, logger=logger)
+                return JiraInstance.from_issue_tracker(issue_tracker, logger=logger)
 
         return None
 
@@ -135,6 +189,7 @@ class JiraInstance:
         )
 
         # Prepare the tmt web service link from all tmt objects
+        assert self.tmt_web_url is not None
         web_link_parameters: dict[str, str] = {}
         for tmt_object in tmt_objects:
             web_link_parameters.update(prepare_url_params(tmt_object))
@@ -147,6 +202,127 @@ class JiraInstance:
         issue_id = link.target.split('/')[-1]
         self.jira.add_simple_link(issue_id, {"url": web_link, "title": title})
         self.logger.print(f"Add link '{title}' to Jira issue '{link.target}'.")
+
+    #
+    # Connection utilities for the export and report plugins. Plain
+    # passthroughs to ``self.jira`` (create_issue, add_comment, ...) don't
+    # get a wrapper here; callers use the ``jira`` SDK client directly.
+    #
+
+    @staticmethod
+    def field_jql_id(field_id: str) -> str:
+        """Extract the numeric part of a ``customfield_XXXXX`` ID for JQL's ``cf[XXXXX]``."""
+        return field_id.rsplit('_', 1)[-1]
+
+    def resolve_issue_type_id(self, project_id: str, name: str) -> str:
+        """
+        Resolve an issue type name (e.g. ``Test Case``) to its ID within a project.
+
+        Issue type IDs are project-specific, so this cannot be a fixed
+        constant shared across Jira instances or projects.
+        """
+        if self._issue_types is None:
+            self._issue_types = {
+                issue_type.name: str(issue_type.id)
+                for issue_type in self.jira.issue_types_for_project(project_id)
+            }
+
+        if name not in self._issue_types:
+            raise tmt.utils.ConvertError(
+                f"No '{name}' issue type found in project '{project_id}'."
+            )
+        return self._issue_types[name]
+
+    def resolve_field_id(self, name: str) -> str:
+        """
+        Resolve a custom field's display name (e.g. ``External issue URL``) to its field ID.
+
+        Field IDs are assigned per Jira instance and are not guaranteed to
+        be the same across different instances or projects.
+        """
+        if self._fields_by_name is None:
+            self._fields_by_name = {}
+            for field in self.jira.fields():
+                field_name = field.get('name')
+                if field_name:
+                    self._fields_by_name.setdefault(field_name, []).append(str(field['id']))
+
+        matches = self._fields_by_name.get(name, [])
+        if not matches:
+            raise tmt.utils.ConvertError(f"No '{name}' custom field found in Jira.")
+        if len(matches) > 1:
+            raise tmt.utils.ConvertError(
+                f"Multiple fields named '{name}' found in Jira: {matches}."
+            )
+        return matches[0]
+
+    def resolve_transition_id(self, issue_key: str, target_status_name: str) -> str:
+        """
+        Resolve the transition ID that moves an issue to ``target_status_name``.
+
+        Transition IDs are defined by the issue's workflow, which can
+        differ between issue types, projects and Jira instances.
+        """
+        for transition in self.jira.transitions(issue_key):
+            if transition.get('to', {}).get('name') == target_status_name:
+                return str(transition['id'])
+        raise tmt.utils.ConvertError(
+            f"No transition to status '{target_status_name}' available for '{issue_key}'."
+        )
+
+    def transition_issue(self, key: str, target_status_name: str) -> None:
+        """Transition an issue to ``target_status_name``, resolving the transition ID first."""
+        self.jira.transition_issue(key, self.resolve_transition_id(key, target_status_name))
+
+    def resolve_account_id(self, email: str) -> Optional[str]:
+        """
+        Resolve a Jira Cloud ``accountId`` from an email address.
+
+        Jira Cloud's REST API no longer accepts a ``name`` (login) when
+        assigning issues; an ``accountId`` looked up via the user search
+        endpoint is required instead.
+
+        The search performs a loose match and, when nothing really
+        matches, has been observed to fall back to returning arbitrary
+        unrelated users rather than an empty list. A candidate is
+        therefore only accepted when its email matches exactly
+        (case-insensitively); this can also legitimately fail to find an
+        existing account whose email is hidden by that user's Jira
+        privacy settings.
+        """
+        for user in self.jira.search_users(query=email):
+            if getattr(user, 'emailAddress', '').lower() == email.lower():
+                return str(user.accountId)
+        return None
+
+    def search_issues(
+        self, jql: str, max_results: int = 50, fields: Optional[list[str]] = None
+    ) -> list[dict[str, Any]]:
+        """Run a JQL search and return the raw matching issues."""
+        result = self.jira.search_issues(
+            jql,
+            maxResults=max_results,
+            json_result=True,
+            fields=fields if fields is not None else ['summary'],
+        )
+        assert isinstance(result, dict)  # json_result=True guarantees a dict
+        return cast(list[dict[str, Any]], result.get('issues', []))
+
+    def get_linked_issue_keys(self, key: str) -> set[str]:
+        """Return the keys of issues already linked to ``key`` via an issue link."""
+        issuelinks = self.jira.issue(key, fields='issuelinks').fields.issuelinks
+        keys: set[str] = set()
+        for issuelink in issuelinks:
+            other = getattr(issuelink, 'inwardIssue', None) or getattr(
+                issuelink, 'outwardIssue', None
+            )
+            if other:
+                keys.add(str(other.key))
+        return keys
+
+    def get_linked_remote_urls(self, key: str) -> set[str]:
+        """Return the URLs of remote (web) links already present on ``key``."""
+        return {str(remote_link.object.url) for remote_link in self.jira.remote_links(key)}
 
 
 def save_link_to_metadata(
