@@ -1,0 +1,4 @@
+description:
+    The :py:ref:`/plugins/report/display` report plugin will now
+    report results of the ``finish`` step as well as tests and the
+    ``prepare`` results.

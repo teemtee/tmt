@@ -308,7 +308,7 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
     Show results on the terminal.
 
     Give a concise summary of results produced by tests and ``prepare``
-    phases, directly on the terminal.
+    and ``finish`` phases, directly on the terminal.
 
     Allows to select the desired level of verbosity:
 
@@ -386,6 +386,13 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
         self._print_step_results(
             self.step.plan.execute,
             self.step.plan.execute.results(),
+            display_guest,
+            logger,
+        )
+
+        self._print_step_results(
+            self.step.plan.finish,
+            self.step.plan.finish.results,
             display_guest,
             logger,
         )
