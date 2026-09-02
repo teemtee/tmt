@@ -613,7 +613,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     abort_execute_exception = AbortStep(abort_message)
 
                 # Handle interrupt
-                if tmt.utils.signals.INTERRUPT_PENDING.is_set():
+                if tmt.utils.signals.is_interrupted():
                     interrupt_exception = tmt.utils.signals.Interrupted()
 
                     invocation.exceptions.append(interrupt_exception)

@@ -75,6 +75,7 @@ from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
 from tmt.log import DebugLevel, LoggableValue, VerbosityLevel
+from tmt.utils._time import sleep
 from tmt.utils.environment import Environment
 from tmt.utils.themes import style
 
@@ -4446,14 +4447,14 @@ class RetryStrategy(urllib3.util.retry.Retry):
                         self.logger.info(
                             f"Primary rate limit exceeded. Waiting {wait_time + 1} seconds."
                         )
-                    time.sleep(wait_time)
+                    sleep(wait_time)
 
             if 'Retry-After' in headers:
                 retry_after = int(headers['Retry-After'])
                 retry_after += 1
                 if self.logger:
                     self.logger.info(f"Secondary rate limit hit. Waiting {retry_after} seconds.")
-                time.sleep(retry_after)
+                sleep(retry_after)
 
             # Exponential backoff for unclear rate limit cases
             if self.total is not None:
@@ -4463,7 +4464,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
                         "Rate limit detected but no wait time specified. "
                         f"Using exponential backoff: {wait_time} seconds"
                     )
-                time.sleep(wait_time)
+                sleep(wait_time)
 
         # Handle other 403 cases
         elif 'X-GitHub-Request-Id' in headers:
@@ -6182,7 +6183,7 @@ def retry(
                 f"trying again in {interval:.2f} seconds.",
             )
             logger.fail(str(exc))
-            time.sleep(interval)
+            sleep(interval)
     raise RetryError(label, causes=exceptions)
 
 

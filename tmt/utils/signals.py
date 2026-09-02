@@ -51,7 +51,7 @@ _INTERRUPT_LOCK = threading.Lock()
 _INTERRUPT_MASKED = threading.Event()
 
 #: When set, interrupt was delivered to tmt, and tmt should react to it.
-INTERRUPT_PENDING = threading.Event()
+_INTERRUPT_PENDING = threading.Event()
 
 
 class Interrupted(tmt.utils.GeneralError):
@@ -183,9 +183,9 @@ def _interrupt_handler(signum: int, frame: Optional[FrameType]) -> None:
     logger.warning(f'Interrupt requested via {signal.Signals(signum).name} signal.')
 
     with _INTERRUPT_LOCK:
-        repeated = INTERRUPT_PENDING.is_set()
+        repeated = _INTERRUPT_PENDING.is_set()
 
-        INTERRUPT_PENDING.set()
+        _INTERRUPT_PENDING.set()
 
         if _INTERRUPT_MASKED.is_set():
             logger.warning('Interrupt is masked, postponing the reaction.')
@@ -226,9 +226,41 @@ class PreventSignals(contextlib.AbstractContextManager['PreventSignals']):
         with _INTERRUPT_LOCK:
             _INTERRUPT_MASKED.clear()
 
-            if not INTERRUPT_PENDING.is_set():
+            if not _INTERRUPT_PENDING.is_set():
                 self.logger.debug('Interrupt not detected, leaving safe block.', level=2)
 
                 return
 
             _quit_tmt(self.logger)
+
+
+def is_interrupted() -> bool:
+    """
+    Check whether tmt was interrupted.
+
+    :returns: ``True`` when tmt has been interrupted, ``False`` otherwise.
+    """
+
+    return _INTERRUPT_PENDING.is_set()
+
+
+def assert_not_interrupted(on_interrupted: Optional[Callable[[], None]] = None) -> None:
+    """
+    Check whether tmt was interrupted, and act accordingly.
+
+    When tmt was interrupted, the :py:class:`Interrupted` is raised to
+    stop the current code from continuing. When tmt was not interrupted,
+    return back to caller.
+
+    :param on_interrupted: a callback to invoke before raising the
+        :py:class:`Interrupted` exception.
+    :raises Interrupted: when tmt was interrupted.
+    """
+
+    if not is_interrupted():
+        return
+
+    if on_interrupted is not None:
+        on_interrupted()
+
+    raise Interrupted

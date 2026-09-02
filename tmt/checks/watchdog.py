@@ -1,7 +1,6 @@
 import datetime
 import re
 import threading
-import time
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Optional
 
@@ -16,6 +15,7 @@ from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Path, format_timestamp, render_run_exception_streams
+from tmt.utils._time import sleep
 from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
@@ -482,7 +482,7 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
                 if check.ssh_ping:
                     check.do_ssh_ping(invocation, guest_context, watchdog_logger)
 
-                time.sleep(check.interval)
+                sleep(check.interval)
 
             watchdog_logger.debug(f'Watchdog finished in thread {tid}')
 

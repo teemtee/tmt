@@ -1,4 +1,5 @@
 import datetime
+import functools
 import time
 from functools import cached_property
 from typing import Callable, TypeVar
@@ -7,6 +8,7 @@ import tmt.log
 from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.utils import GeneralError
+from tmt.utils._time import sleep
 
 T = TypeVar('T')
 
@@ -204,13 +206,11 @@ class Waiting:
         :raises Interrupted: when tmt has been interrupted.
         """
 
-        from tmt.utils.signals import INTERRUPT_PENDING, Interrupted
+        from tmt.utils.signals import assert_not_interrupted
 
-        def _check_interrupted() -> None:
-            if INTERRUPT_PENDING.is_set():
-                logger.debug('wait', f"'{check.__name__}' interrupted")
-
-                raise Interrupted
+        _log_on_interrupted = functools.partial(
+            logger.debug, 'wait', f"'{check.__name__}' interrupted"
+        )
 
         logger.debug(
             'wait',
@@ -222,7 +222,7 @@ class Waiting:
         )
 
         while True:
-            _check_interrupted()
+            assert_not_interrupted(_log_on_interrupted)
 
             with self.deadline:
                 if self.deadline.is_due:
@@ -238,8 +238,7 @@ class Waiting:
             try:
                 ret = check()
 
-                # Make sure interrupt is honored.
-                _check_interrupted()
+                assert_not_interrupted(_log_on_interrupted)
 
                 # Perform one extra check: if `check()` succeeded, but took more time than
                 # allowed, it should be recognized as a failed waiting too.
@@ -277,7 +276,7 @@ class Waiting:
                         f" {self.deadline!r}",
                     )
 
-                time.sleep(self.tick)
+                sleep(self.tick)
 
                 self.tick *= self.tick_increase
 
