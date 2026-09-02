@@ -205,6 +205,7 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             version=version_info,
             location=urljoin(base_url + "/", filename),
             provider=self,
+            repo_id=self.parent.data.repository_name,
         )
 
     @cached_property
