@@ -255,7 +255,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                 ].dependencies += tmt.base.core.assert_simple_dependencies(
                     # ignore[attr-defined]: mypy thinks that phase is Phase type, while its
                     # actually PluginClass
-                    phase.essential_requires(),  # type: ignore[attr-defined]
+                    phase.essential_requires(guest),  # type: ignore[attr-defined]
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger,
                 )
