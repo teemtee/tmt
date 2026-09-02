@@ -1,0 +1,272 @@
+#
+# Accepted instructions - the "right" side gets replaced with the "left side:
+#
+# * when seeing e-mail `x@y.z`, use e-mail `a@b.c` and name `Foo Bar` instead:
+#
+#   Foo Bar <a@b.c> <x@y.z>
+#
+# * when seeing e-mail `x@y.z` and name `Foo Baz`, use e-mail `a@b.c` and name `Foo Bar` instead:
+#
+#   Foo Bar <a@b.c> Foo Baz <x@y.z>
+#
+# See https://git-scm.com/docs/gitmailmap for detailed info.
+#
+
+# A
+Vaibhav D. Aren <vaibhavdaren@gmail.com> <vaibhavdaren@gmail.com>
+
+# B
+Tomáš Bajer <tbajer@redhat.com> <tbajer@redhat.com>
+Tomáš Bajer <tbajer@redhat.com> <tomasbaj@gmail.com>
+
+Laura Barcziova <lbarczio@redhat.com> <lbarczio@redhat.com>
+
+Natália Bubáková <nbubakov@redhat.com> <nbubakov@redhat.com>
+
+# C
+Pavel Cahyna <pcahyna@redhat.com> <pcahyna@redhat.com>
+
+Mario Casquero <mcasquer@redhat.com> <mcasquer@redhat.com>
+Mario Casquero <mcasquer@redhat.com> <97666707+mcasquer@users.noreply.github.com>
+
+Martin Cermak <mcermak@redhat.com> <mcermak@redhat.com>
+
+Iveta Cesalova <icesalov@redhat.com> <icesalov@redhat.com>
+
+Therese Cornell <tcornell@redhat.com> <tcornell@redhat.com>
+
+# D
+Philip Daly <pdaly@redhat.com> <pdaly@redhat.com>
+Philip Daly <pdaly@redhat.com> <97226651+pfdaly@users.noreply.github.com>
+
+Daniel Diblik <ddiblik@redhat.com> <ddiblik@redhat.com>
+
+Tibor Dudlák <tdudlak@redhat.com> <tdudlak@redhat.com>
+Tibor Dudlák <tdudlak@redhat.com> <Tiboris@users.noreply.github.com>
+
+# E
+Vojtěch Eichler <veichler@redhat.com> <veichler@redhat.com>
+Vojtěch Eichler <veichler@redhat.com> <74681499+Ajchler@users.noreply.github.com>
+
+Michael Engel <mengel@redhat.com> <mengel@redhat.com>
+
+# F
+Evgeny Fedin <efedin@redhat.com> <efedin@redhat.com>
+Evgeny Fedin <efedin@redhat.com> <jekaace@gmail.com>
+
+Andrea Fickova <afickova@redhat.com> <afickova@redhat.com>
+
+Matej Focko <mfocko@redhat.com> <mfocko@redhat.com>
+Matej Focko <mfocko@redhat.com> <mfocko@users.noreply.github.com>
+
+# G
+Bruno Goncalves <bgoncalv@redhat.com> <bgoncalv@redhat.com>
+
+Brian Grech <bgrech@redhat.com> <bgrech@redhat.com>
+Brian Grech <bgrech@redhat.com> <87876720+BeeGrech@users.noreply.github.com>
+
+Zhaojuan Guo <zguo@redhat.com> <zguo@redhat.com>
+
+# H
+Robin Hack <rhack@redhat.com> <rhack@redhat.com>
+
+Jan Havlín <jhavlin@redhat.com> <jhavlin@redhat.com>
+Jan Havlín <jhavlin@redhat.com> <havlin.honza@gmail.com>
+
+Jakub Heger <jheger@redhat.com> <jheger@redhat.com>
+
+Honza Horak <hhorak@redhat.com> <hhorak@redhat.com>
+
+Martin Hoyer <mhoyer@redhat.com> <mhoyer@redhat.com>
+Martin Hoyer <mhoyer@redhat.com> <mhoyer@redhat.om>  # indeed a typo
+
+Huijing Hei <hhei@redhat.com> <hhei@redhat.com>
+
+# I
+Guy Inger <ginger@redhat.com> <ginger@redhat.com>
+
+Ismail Ibrahim Quwarah <iquwarah@redhat.com> <iquwarah@redhat.com>
+Ismail Ibrahim Quwarah <iquwarah@redhat.com> <110352032+falconizmi@users.noreply.github.com>
+
+# J
+Jiri Jaburek <comps@nomail.dom> <comps@nomail.dom>
+Jiri Jaburek <comps@nomail.dom> <comps@users.noreply.github.com>
+
+# K
+Denis Karpelevich <dkarpele@redhat.com> <dkarpele@redhat.com>
+Denis Karpelevich <dkarpele@redhat.com> <56302307+dkarpele@users.noreply.github.com>
+
+Patrik Kis <pkis@redhat.com> <pkis@redhat.com>
+
+Martin Klusoň <mkluson@redhat.com> <mkluson@redhat.com>
+
+Marián Konček <mkoncek@redhat.com> <mkoncek@redhat.com>
+Marián Konček <mkoncek@redhat.com> <29146829+mkoncek@users.noreply.github.com>
+Marián Konček <mkoncek@redhat.com> <marian.koncek@mailbox.org>
+
+Yulia Kopkova <ykopkova@redhat.com> <ykopkova@redhat.com>
+Yulia Kopkova <ykopkova@redhat.com> <j.kopkova@gmail.com>
+
+Lukas Kotek <lkotek@redhat.com> <lkotek@redhat.com>
+
+Martin Kyral <mkyral@redhat.com> <mkyral@redhat.com>
+
+# L
+Frantisek Lachman <flachman@redhat.com> <flachman@redhat.com>
+
+Cristian Le <cle@redhat.com> <cle@redhat.com>
+Cristian Le <cle@redhat.com> <cristian.le@mpsd.mpg.de>
+Cristian Le <cle@redhat.com> <github@lecris.me>
+Cristian Le <cle@redhat.com> <git@lecris.dev>
+
+Vector Li <huanli@redhat.com> <huanli@redhat.com>
+Vector Li <huanli@redhat.com> <25093548+idorax@users.noreply.github.com>
+Vector Li <huanli@redhat.com> <idorax@126.com>
+
+Martin Litwora <mlitwora@redhat.com> <mlitwora@redhat.com>
+Martin Litwora <mlitwora@redhat.com> <43987098+kokesak@users.noreply.github.com>
+
+# M
+Jan Macku <jamacku@redhat.com> <jamacku@redhat.com>
+
+Petr Matyas <pmatyas@redhat.com> <pmatyas@redhat.com>
+Petr Matyas <pmatyas@redhat.com> <p.matyas13@gmail.com>
+
+Petr Menšík <pemensik@redhat.com> <pemensik@redhat.com>
+
+James Molet <jmolet@redhat.com> <jmolet@redhat.com>
+James Molet <jmolet@redhat.com> <Lorquas@gmail.com>
+
+Ondrej Moris <omoris@redhat.com> <omoris@redhat.com>
+Ondrej Moris <omoris@redhat.com> <ondrej.moris@gmail.com>
+
+Ondrej Mosnacek <omosnace@redhat.com> <omosnace@redhat.com>
+
+# N
+František Nečas <fnecas@redhat.com> <fnecas@redhat.com>
+František Nečas <fnecas@redhat.com> <fifinecas@seznam.cz>
+
+Štěpán Němec <snemec@redhat.com> <snemec@redhat.com>
+
+Lili Nie <lnie@redhat.com> <lnie@redhat.com>
+Lili Nie <lnie@redhat.com> <42671468+skycastlelily@users.noreply.github.com>
+
+# P
+Leos Pol <lpol@redhat.com> <lpol@redhat.com>
+
+Jiri Popelka <jpopelka@redhat.com> <jpopelka@redhat.com>
+
+Michal Pospíšil <mpospisi@redhat.com> <mpospisi@redhat.com>
+
+Miloš Prchlík <mprchlik@redhat.com> <mprchlik@redhat.com>
+
+# R
+Yariv Rachmani <yrachman@redhat.com> <yrachman@redhat.com>
+
+Renovate Bot <278025917+tmt-renovate-bot[bot]@users.noreply.github.com> <278025917+tmt-renovate-bot[bot]@users.noreply.github.com>
+Renovate Bot <278025917+tmt-renovate-bot[bot]@users.noreply.github.com> <29139614+renovate[bot]@users.noreply.github.com>
+
+# S
+Otto Sabart <osabart@redhat.com> <osabart@redhat.com>
+Otto Sabart <osabart@redhat.com> <seberm@users.noreply.github.com>
+
+Jan Ščotka <jscotka@redhat.com> <jscotka@redhat.com>
+
+Yaakov Selkowitz <yselkowi@redhat.com> <yselkowi@redhat.com>
+
+Mingyu Shi <mshi@redhat.com> <mshi@redhat.com>
+Mingyu Shi <mshi@redhat.com> <mingyu10@gmail.com>
+
+Rachel Sibley <rasibley@redhat.com> <rasibley@redhat.com>
+
+Marcin Sobczyk <msobczyk@redhat.com> <msobczyk@redhat.com>
+
+Alexander Sosedkin <asosedkin@redhat.com> <asosedkin@redhat.com>
+
+Michal Josef Špaček <mspacek@redhat.com> <mspacek@redhat.com>
+
+Petr Šplíchal <psplicha@redhat.com> <psplicha@redhat.com>
+Petr Šplíchal <psplicha@redhat.com> <psssssss@gmail.com>
+
+Michal Srb <michal@redhat.com> <michal@redhat.com>
+
+Karel Šrot <ksrot@redhat.com> <ksrot@redhat.com>
+Karel Šrot <ksrot@redhat.com> <kkaarreell@users.noreply.github.com>
+
+# T
+Adrian Tomasov <atomasov@redhat.com> <atomasov@redhat.com>
+
+Conor Tull <ctull@redhat.com> <ctull@redhat.com>
+
+# V
+Miroslav Vadkerti <mvadkert@redhat.com> <mvadkert@redhat.com>
+Miroslav Vadkerti <mvadkert@redhat.com> <thrix@vadkerti.net>
+
+Filip Vágner <fvagner@redhat.com> <fvagner@redhat.com>
+Filip Vágner <fvagner@redhat.com> <therazix@gmail.com>
+
+Pavel Valena <pvalena@redhat.com> <pvalena@redhat.com>
+
+Inessa Vasilevskaya <ivasilev@redhat.com> <ivasilev@redhat.com>
+
+Athrey Vinay <avinay@redhat.com> <avinay@redhat.com>
+Athrey Vinay <avinay@redhat.com> <athreyvinay@gmail.com>
+
+Evgeni Vakhonin <evakhoni@redhat.com> <evakhoni@redhat.com>
+
+Michael Vogt <mvogt@redhat.com> <mvogt@redhat.com>
+Michael Vogt <mvogt@redhat.com> <michael.vogt@gmail.com>
+
+# W
+Simon Walter <siwalter@redhat.com> <siwalter@redhat.com>
+
+# Z
+František Zatloukal <fzatlouk@redhat.com> <fzatlouk@redhat.com>
+
+Lukáš Zachar <lzachar@redhat.com> <lzachar@redhat.com>
+Lukáš Zachar <lzachar@redhat.com> <1548503+lukaszachy@users.noreply.github.com>
+Lukáš Zachar <lzachar@redhat.com> <lukas.zachy@gmail.com>
+Lukáš Zachar <lzachar@redhat.com> <lukaszachy@users.noreply.github.com>
+
+Martin Zeleny <mzeleny@redhat.com> <mzeleny@redhat.com>
+
+Yi Zhang <yi.zhang@redhat.com> <yi.zhang@redhat.com>
+
+
+# The following are raw, unsorted, remaining author name/email pairs from `git log`,
+# waiting to be processed.
+#
+# $ git log --pretty=format:"%an %ae" | sort | uniq
+#
+
+
+# Anatoli Babenia anatoli@rainforce.org
+# Carlos Rodriguez-Fernandez carlosrodrifernandez@gmail.com
+# Chris Kyrouac 2886111+ckyrouac@users.noreply.github.com
+# David Pascual 67168307+dav-pascual@users.noreply.github.com
+# Israel Santana isra@miscorreos.org
+# jinqiang zhang peeweep@0x0.ee
+# Link Dupont subpop@users.noreply.github.com
+# Luigi 63158371+pellecchialuigi@users.noreply.github.com
+# mhlavink mhlavink@redhat.com
+# Michal Ruprich michalruprich@gmail.com
+# Mike Stowell stowellm@users.noreply.github.com
+# Miro Hrončok miro@hroncok.cz
+# navtom navtom@protonmail.com
+# nishasaini nisaini15@gmail.com
+# pholica pholica@redhat.com
+# pkhartsk pkhartsk@redhat.com
+# qcheng-redhat 55085540+qcheng-redhat@users.noreply.github.com
+# qcheng-redhat qcheng@redhat.com
+# qiankehan hanhanzhiyeqianke@gmail.com
+# qiyuann 23047456+qiyuann@users.noreply.github.com
+# RHEmployee 65466291+RHEmployee@users.noreply.github.com
+# Sergei Petrosian 30409084+spetrosi@users.noreply.github.com
+# Siteshwar Vashisht siteshwar@gmail.com
+# Thiébaud Weksteen tweksteen@gmail.com
+# tkoscieln tkosciel@redhat.com
+# vber29 3442579051anna@gmail.com
+# Vinzenz Feenstra vfeenstr@redhat.com
+# Wayne Sun ericbreeze@gmail.com
+# Xiaofeng Wang henrywangxf@me.com
+# zhukovgreen iam@zhukovgreen.pro
