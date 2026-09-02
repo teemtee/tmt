@@ -55,8 +55,8 @@ event, and they do not finish on their own.
 
 The ssh client always allocates a tty, so the timeout handling works
 (#1387). Because the allocated tty is generally not suitable for the
-execution of test, or scripts in general, the wrapper uses ``|& cat`` to
-emulate execution without a tty. In certain cases, where the execution
+execution of test, or scripts in general, the wrapper uses ``2>&1 | cat``
+to emulate execution without a tty. In certain cases, where the execution
 of given action with available tty is required (#2381), the tty can be
 enabled in the outer script.
 
@@ -65,7 +65,7 @@ The outer wrapper handles the following 3 execution modes:
 * In the interactive mode, stdin and stdout are unhandled, it is expected
   user interacts with the executed command.
 * In the non-interactive mode without a tty, stdin is fed with
-  ``/dev/null`` (EOF), and ``|& cat`` is used to simulate the "no tty
+  ``/dev/null`` (EOF), and ``2>&1 | cat`` is used to simulate the "no tty
   available" for the running action.
 * In the non-interactive mode with a tty, stdin is available to the
   action, and the simulation of "tty not available" for output is not
@@ -82,6 +82,7 @@ import tmt.log
 import tmt.steps
 from tmt.container import container
 from tmt.guest import Guest, TransferOptions
+from tmt.package_managers.homebrew import HOMEBREW_PREFIXES
 from tmt.steps import safe_filename
 from tmt.utils import Path, ShellScript
 from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment
@@ -102,13 +103,14 @@ INNER_WRAPPER_TEMPLATE = jinja2.Template("""
 #: orchestration and invokes the inner wrapper.
 OUTER_WRAPPER_TEMPLATE = jinja2.Template("""
 {% macro log_to_dmesg(msg) %}
+# Logging test into kernel log
+if [ -e /dev/kmsg ]; then
     {%- if not GUEST.facts.is_superuser %}
-# Logging test into kernel log
-{{ GUEST.facts.sudo_prefix }} bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
+    {{ GUEST.facts.sudo_prefix }} bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
     {%- else %}
-# Logging test into kernel log
-echo "{{ msg }}" > /dev/kmsg
+    echo "{{ msg }}" > /dev/kmsg
     {%- endif %}
+fi
 {% endmacro %}
 
 {% macro enter() %}
@@ -139,6 +141,18 @@ flock "$TMT_TEST_PIDFILE_LOCK" -c "rm -f ${TMT_TEST_PIDFILE}" || exit 123
 if ! grep -q "{{ GUEST.scripts_path }}" <<< "${PATH}"; then
     export PATH={{ GUEST.scripts_path }}:${PATH}
 fi
+{%- if GUEST.facts.is_darwin %}
+{%- if GUEST.become and not GUEST.facts.is_superuser %}
+
+# Root deliberately runs Homebrew binaries owned by the ssh user, macOS has no system flock. On an
+# Intel Mac the scripts path above is the Homebrew prefix, which then comes first regardless.
+export PATH=${PATH}:{{ HOMEBREW_PREFIXES | join(':') }}
+{%- else %}
+
+# Make sure Homebrew binaries are searched by shell
+export PATH={{ HOMEBREW_PREFIXES | join(':') }}:${PATH}
+{%- endif %}
+{%- endif %}
 
 [ ! -z "$TMT_DEBUG" ] && set -x
 
@@ -167,7 +181,7 @@ set -o pipefail
 
 {{ enter() }}
 
-{{ COMMAND }} </dev/null |& cat
+{{ COMMAND }} </dev/null 2>&1 | cat
 _exit_code="$?"
 
 {{ exit () }}
@@ -176,6 +190,9 @@ _exit_code="$?"
 # Return the original exit code of the test script
 exit $_exit_code
 """)  # noqa: E501
+
+# A constant of the template, not a render variable, so that no caller can leave the prefixes out.
+OUTER_WRAPPER_TEMPLATE.globals['HOMEBREW_PREFIXES'] = HOMEBREW_PREFIXES
 
 
 def effective_pidfile_root() -> Path:

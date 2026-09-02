@@ -451,10 +451,34 @@ class TransferOptions:
     #: Run a ``mkdir -p`` of the destination before doing transfer
     create_destination: bool = False
 
+    #: Do not replace symlinked directories on the destination path
+    no_implied_dirs: bool = False
+
     def copy(self) -> 'TransferOptions':
         """Create a copy of the options."""
 
         return dataclasses.replace(self, exclude=self.exclude[:])
+
+    def adjusted_for(self, facts: 'GuestFacts', *, pushing: bool = True) -> 'TransferOptions':
+        """
+        Adjust options to the ``rsync`` and filesystem layout of a guest.
+
+        Apple's ``openrsync`` does not implement ``-s``, and macOS keeps
+        ``/var`` as a symlink into the read-only system volume, which a
+        ``--relative`` push would replace unless ``--no-implied-dirs`` is
+        used. ``openrsync`` does not accept that option as a sender,
+        hence it applies to pushes only.
+        """
+
+        options = self
+
+        if facts.has_openrsync:
+            options = dataclasses.replace(options, protect_args=False)
+
+        if facts.is_darwin and pushing:
+            options = dataclasses.replace(options, no_implied_dirs=True)
+
+        return options
 
     def to_rsync(self) -> list[str]:
         """Convert to rsync command line options."""
@@ -481,6 +505,8 @@ class TransferOptions:
             options.append('-R')
         if self.safe_links:
             options.append('--safe-links')
+        if self.no_implied_dirs:
+            options.append('--no-implied-dirs')
 
         return options
 
@@ -713,6 +739,8 @@ class GuestFacts(SerializableContainer):
     has_selinux: Optional[bool] = None
     has_systemd: Optional[bool] = None
     has_rsync: Optional[bool] = None
+    has_openrsync: Optional[bool] = None
+    is_darwin: Optional[bool] = None
     is_superuser: Optional[bool] = None
     can_sudo: Optional[bool] = None
     sudo_prefix: Optional[str] = None
@@ -883,6 +911,20 @@ class GuestFacts(SerializableContainer):
         if 'DISTRIB_DESCRIPTION' in self.lsb_release_content:
             return self.lsb_release_content['DISTRIB_DESCRIPTION']
 
+        # macOS has no release files, ask `sw_vers` instead.
+        if self._is_darwin(guest):
+            return self._query(
+                guest,
+                [
+                    (
+                        ShellScript(
+                            'echo "$(sw_vers -productName) $(sw_vers -productVersion)"'
+                        ).to_shell_command(),
+                        r'(.+)',
+                    )
+                ],
+            )
+
         # Nope, inspect more files.
         return self._query(
             guest,
@@ -893,16 +935,54 @@ class GuestFacts(SerializableContainer):
         )
 
     def _query_distro_id(self, guest: 'Guest') -> Optional[str]:
+        if self._is_darwin(guest):
+            return 'macos'
+
         return self.os_release_content.get('ID')
 
     def _query_distro_major_version(self, guest: 'Guest') -> Optional[int]:
         version_id = self.os_release_content.get('VERSION_ID')
+
+        if not version_id and self._is_darwin(guest):
+            # The distro fact, "macOS 15.7.7", already carries the answer of `sw_vers`.
+            if self.distro:
+                version_id = self.distro.split()[-1]
+
+            else:
+                version_id = self._query(guest, [(Command('sw_vers', '-productVersion'), r'(.+)')])
+
         if version_id:
             try:
                 return int(version_id.split('.')[0])
             except ValueError:
                 return None
         return None
+
+    def _is_darwin(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Tell whether the guest runs macOS.
+
+        :py:meth:`sync` sets :py:attr:`is_darwin` before the distro
+        queries, so the cached value is normally used, and the guest is
+        asked only when a distro fact is synced on its own.
+        """
+
+        if self.is_darwin is not None:
+            return self.is_darwin
+
+        return self._query_is_darwin(guest)
+
+    def _query_is_darwin(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether the guest runs macOS.
+        """
+
+        kernel_name = self._query(guest, [(Command('uname', '-s'), r'(.+)')])
+
+        if kernel_name is None:
+            return None
+
+        return kernel_name.strip() == 'Darwin'
 
     def _query_kernel_release(self, guest: 'Guest') -> Optional[str]:
         return self._query(guest, [(Command('uname', '-r'), r'(.+)')])
@@ -995,18 +1075,39 @@ class GuestFacts(SerializableContainer):
 
         return output is not None and output.stdout is not None
 
+    def _fetch_rsync_version(self, guest: 'Guest') -> Optional[tmt.utils.CommandOutput]:
+        """
+        Run ``rsync --version`` on the guest.
+
+        :returns: output of the command, or ``None`` when ``rsync`` is not available.
+        """
+
+        return self._execute(guest, Command('rsync', '--version'))
+
+    @staticmethod
+    def _is_openrsync(output: Optional[tmt.utils.CommandOutput]) -> Optional[bool]:
+        """
+        Tell from the output of ``rsync --version`` whether it is Apple's ``openrsync``.
+        """
+
+        if output is None or output.stdout is None:
+            return None
+
+        return output.stdout.lstrip().startswith('openrsync')
+
     def _query_has_rsync(self, guest: 'Guest') -> Optional[bool]:
         """
         Detect whether ``rsync`` is available.
         """
 
-        try:
-            guest.execute(Command('rsync', '--version'), silent=True)
+        return self._fetch_rsync_version(guest) is not None
 
-            return True
+    def _query_has_openrsync(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether ``rsync`` on the guest is Apple's ``openrsync``.
+        """
 
-        except tmt.utils.RunError:
-            return False
+        return self._is_openrsync(self._fetch_rsync_version(guest))
 
     def _query_is_superuser(self, guest: 'Guest') -> Optional[bool]:
         output = self._execute(guest, Command('whoami'))
@@ -1133,6 +1234,16 @@ class GuestFacts(SerializableContainer):
             GuestCapability.SYSLOG_ACTION_READ_CLEAR: True,
         }
 
+    def sync_rsync(self, guest: 'Guest') -> None:
+        """
+        Refresh :py:attr:`has_rsync` and :py:attr:`has_openrsync` with one ``rsync --version``.
+        """
+
+        rsync_version = self._fetch_rsync_version(guest)
+
+        self.has_rsync = rsync_version is not None
+        self.has_openrsync = self._is_openrsync(rsync_version)
+
     def sync(self, guest: 'Guest', *facts: str) -> None:
         """
         Update stored facts to reflect the given guest.
@@ -1162,6 +1273,7 @@ class GuestFacts(SerializableContainer):
             self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
 
             self.arch = self._query_arch(guest)
+            self.is_darwin = self._query_is_darwin(guest)
             self.distro = self._query_distro(guest)
             self.kernel_release = self._query_kernel_release(guest)
             self.package_manager = self._query_package_manager(guest)
@@ -1169,7 +1281,7 @@ class GuestFacts(SerializableContainer):
             self.has_selinux = self._query_has_selinux(guest)
             self.has_systemd = self._query_has_systemd(guest)
             self.systemd_soft_reboot = self._query_systemd_soft_reboot(guest)
-            self.has_rsync = self._query_has_rsync(guest)
+            self.sync_rsync(guest)
             self.is_superuser = self._query_is_superuser(guest)
             self.can_sudo = self._query_can_sudo(guest)
             self.sudo_prefix = self._query_sudo_prefix(guest)
@@ -1217,6 +1329,8 @@ class GuestFacts(SerializableContainer):
         yield _flag('has_systemd', 'systemd')
         yield _flag('systemd_soft_reboot', 'systemd soft-reboot')
         yield _flag('has_rsync', 'rsync')
+        yield _flag('has_openrsync', 'openrsync')
+        yield _flag('is_darwin', 'is darwin')
         yield _flag('is_superuser', 'is superuser')
         yield _flag('can_sudo', 'can sudo')
 
@@ -3740,18 +3854,32 @@ class GuestSsh(Guest, CommandCollector):
 
         if self.is_dry_run:
             return
-        if not self.facts.is_superuser and self.become:
+        if self.facts.is_superuser or not self.become:
+            return
+
+        workdir_root = effective_workdir_root()
+
+        # macOS has no setfacl, an inherited ACL entry replaces the default ACL.
+        # The entry also grants execute on files, which `setfacl o:rX` does not,
+        # since macOS ACLs cannot express conditional execute.
+        if self.facts.is_darwin:
+            acl_command = (
+                'chmod +a "everyone allow read,execute,file_inherit,directory_inherit,'
+                f'only_inherit" {workdir_root}'
+            )
+        else:
             self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
             self.package_manager.finalize_installation()
-            workdir_root = effective_workdir_root()
-            self.execute(
-                ShellScript(
-                    f"""
-                    mkdir -p {workdir_root};
-                    setfacl -d -m o:rX {workdir_root}
-                    """
-                )
+            acl_command = f'setfacl -d -m o:rX {workdir_root}'
+
+        self.execute(
+            ShellScript(
+                f"""
+                mkdir -p {workdir_root};
+                {acl_command}
+                """
             )
+        )
 
     @overload
     def execute(
@@ -3940,11 +4068,11 @@ class GuestSsh(Guest, CommandCollector):
         Make sure ``rsync`` is installed on the guest.
         """
 
-        # Refresh the fact first if it's unknown. This will prevent us
+        # Refresh the facts first if they are unknown. This will prevent us
         # trying to install rsync if it's (still, or already) installed,
         # with whatever price such an attempt comes with.
         if self.facts.has_rsync is None:
-            self.facts.sync(self, 'has_rsync')
+            self.facts.sync_rsync(self)
 
         if self.facts.has_rsync:
             return
@@ -3966,8 +4094,51 @@ class GuestSsh(Guest, CommandCollector):
                 f" connection itself."
             ) from exc
 
-        # We changed the state of the guest, refresh the fact.
-        self.facts.sync(self, 'has_rsync')
+        # We changed the state of the guest, refresh the facts.
+        self.facts.sync_rsync(self)
+
+    def _transfer_options(
+        self, options: TransferOptions, *, pushing: bool = True
+    ) -> TransferOptions:
+        """
+        Adjust transfer options to the guest, see :py:meth:`TransferOptions.adjusted_for`.
+        """
+
+        missing_facts = [
+            fact for fact in ('has_openrsync', 'is_darwin') if getattr(self.facts, fact) is None
+        ]
+
+        if missing_facts:
+            self.facts.sync(self, *missing_facts)
+
+        return options.adjusted_for(self.facts, pushing=pushing)
+
+    @staticmethod
+    def _remote_path(path: str, options: TransferOptions) -> str:
+        """
+        Prepare a path for the remote side of an ``rsync`` transfer.
+
+        Without ``-s``, the remote shell interprets the path, and it must be quoted.
+        The local ``rsync`` is told to send it as is, see :py:meth:`_transfer_environment`:
+        since 3.2.4 it would otherwise escape the path itself, and the quotes would
+        reach the remote shell as part of the file name.
+        """
+
+        return path if options.protect_args else quote(path)
+
+    @staticmethod
+    def _transfer_environment(options: TransferOptions) -> Optional[Environment]:
+        """
+        Environment for the local ``rsync`` of a transfer.
+
+        ``RSYNC_OLD_ARGS`` keeps ``rsync`` 3.2.4 and later from escaping the remote
+        path on their own, which :py:meth:`_remote_path` has already quoted for the
+        remote shell; older releases never escaped it and ignore the variable. It also
+        turns off the check 3.2.5 added against a remote sender slipping extra top-level
+        items into the file list, which matters for pulls from such a guest only.
+        """
+
+        return None if options.protect_args else Environment({'RSYNC_OLD_ARGS': EnvVarValue('1')})
 
     def push(
         self,
@@ -4005,7 +4176,7 @@ class GuestSsh(Guest, CommandCollector):
         self._assert_ssh_master_process()
 
         # Prepare options and the push command
-        options = options or DEFAULT_PUSH_OPTIONS
+        options = self._transfer_options(options or DEFAULT_PUSH_OPTIONS)
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -4027,14 +4198,16 @@ class GuestSsh(Guest, CommandCollector):
             "-e",
             self._ssh_command.to_element(),
             f"{source}{path_suffix}",
-            f"{self._ssh_guest}:{destination}{path_suffix}",
+            f"{self._ssh_guest}:{self._remote_path(f'{destination}{path_suffix}', options)}",
         ]
 
         try:
             if options.create_destination:
                 self.execute(Command("mkdir", "-p", destination.parent), silent=True)
 
-            self._run_guest_command(cmd, silent=True)
+            self._run_guest_command(
+                cmd, silent=True, environment=self._transfer_environment(options)
+            )
 
         except tmt.utils.RunError as exc:
             # Provide a reasonable error to the user
@@ -4075,7 +4248,7 @@ class GuestSsh(Guest, CommandCollector):
         self._assert_ssh_master_process()
 
         # Prepare options and the pull command
-        options = options or DEFAULT_PULL_OPTIONS
+        options = self._transfer_options(options or DEFAULT_PULL_OPTIONS, pushing=False)
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -4094,10 +4267,11 @@ class GuestSsh(Guest, CommandCollector):
                         *options.to_rsync(),
                         "-e",
                         self._ssh_command.to_element(),
-                        f"{self._ssh_guest}:{source}",
+                        f"{self._ssh_guest}:{self._remote_path(str(source), options)}",
                         destination,
                     ),
                     silent=True,
+                    environment=self._transfer_environment(options),
                 )
 
         except tmt.utils.RunError as exc:
