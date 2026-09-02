@@ -79,6 +79,7 @@ plans:
       force-pull: false
       how: container
       image: fedora
+      log-update-tick: 300
       name: default-0
       order: 50
       pull-attempts: 5
