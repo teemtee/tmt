@@ -5,3 +5,8 @@
     - name: Log ungrouped configuration
       ansible.builtin.debug:
         msg: "UNGROUPED_TASK_EXECUTED on {{ inventory_hostname }}"
+    - name: Check that context variables are set
+      assert:
+        that:
+          - tmt.context["plan-var"] == ["foo"]
+          - tmt.context["cli-var"] == ["bar"]
