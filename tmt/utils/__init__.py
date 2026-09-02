@@ -6086,12 +6086,17 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
         pass
 
     def __enter__(self) -> Self:
-        self.start_time = datetime.datetime.now(datetime.timezone.utc)
+        if not self.started:
+            self.start_time = datetime.datetime.now(datetime.timezone.utc)
 
         return self
 
     def __exit__(self, *args: object) -> None:
         self.end_time = datetime.datetime.now(datetime.timezone.utc)
+
+    @property
+    def started(self) -> bool:
+        return hasattr(self, 'start_time')
 
     @property
     def duration(self) -> datetime.timedelta:
@@ -6109,9 +6114,8 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     def duration_formatted(self) -> str:
         return format_duration(self.duration)
 
-    @classmethod
     def measure(
-        cls, fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+        self, fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
     ) -> tuple[Optional[T], Optional[Exception], 'Stopwatch']:
         """
         Run a function while the stopwatch is running.
@@ -6124,8 +6128,8 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
             raised an exception.
         """
 
-        with cls() as timer:
-            return (*safe_call(fn, *args, **kwargs), timer)
+        with self as _:
+            return (*safe_call(fn, *args, **kwargs), self)
 
 
 def format_timestamp(timestamp: datetime.datetime) -> str:
