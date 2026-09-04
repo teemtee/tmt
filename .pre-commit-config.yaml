@@ -18,7 +18,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.19.1"
+    rev: "v2.3.1"
     hooks:
       - id: mypy
         language: python # Required for Renovate additional_dependencies
@@ -58,7 +58,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.33.0.20260519; python_version < '3.10'"
+          - "types-requests<2.33.0.20260713; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -111,7 +111,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.33.0.20260519; python_version < '3.10'"
+          - "types-requests<2.33.0.20260713; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -122,12 +122,12 @@ repos:
           - "types-lxml"
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.59
+    rev: v0.0.78
     hooks:
       - id: ty
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.37.3"
+    rev: "0.38.0"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -152,7 +152,7 @@ repos:
           )$
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v26.4.0
+    rev: v26.8.0
     hooks:
       - id: ansible-lint
         language: python # Required for Renovate additional_dependencies
@@ -169,7 +169,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.15.20
+    rev: v0.16.6
     hooks:
       - id: ruff-check
         args:
@@ -178,7 +178,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.75.0
+    rev: 1.78.0
     hooks:
       - id: tmt-lint
         language: python # Required for Renovate additional_dependencies
@@ -197,21 +197,21 @@ repos:
           - "fmf>=1.6.0"
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
         additional_dependencies:
           - tomli # Required for python < 3.11
 
   - repo: https://github.com/djlint/djLint
-    rev: v1.39.4
+    rev: v1.45.0
     hooks:
       - id: djlint
         files: "\\.j2"
         types_or: ["jinja"]
 
   - repo: https://github.com/aristanetworks/j2lint.git
-    rev: v1.2.0
+    rev: v1.3.0
     hooks:
       - id: j2lint
         args:
@@ -223,7 +223,7 @@ repos:
           - "--"
 
   - repo: https://github.com/AleksaC/hadolint-py
-    rev: v2.14.0
+    rev: v2.15.1
     hooks:
       - id: hadolint
         files: ^containers/.*
@@ -265,7 +265,7 @@ repos:
       - id: zizmor
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.24
+    rev: 0.12.9
     hooks:
       # Keep pyproject.toml and uv.lock in sync
       - id: uv-lock
