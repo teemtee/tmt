@@ -48,7 +48,7 @@ class ArtifactInfo:
     provider: "ArtifactProvider"
     #: Repository ID this artifact is available from. Used during verification
     #: to confirm the artifact was installed from the expected repository.
-    repo_id: str = SHARED_REPO_NAME
+    repo_id: str
 
     @property
     def id(self) -> str:
