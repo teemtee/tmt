@@ -54,6 +54,14 @@ rlJournalStart
         rlAssertGrep "Execute script" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Test recipe loading with DistGit"
+        replace_fmf_root "distgit.yaml"
+        rlRun -s "tmt run -vvv --scratch --id $run --recipe distgit.yaml"
+        rlAssertGrep "pass /discover-fmf/test/shell/good" $rlRun_LOG
+        rlAssertGrep "pass /discover-shell/pyproject" $rlRun_LOG
+        rlAssertGrep "total: 2 tests passed" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
