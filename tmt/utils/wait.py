@@ -149,7 +149,7 @@ class Deadline:
             reached yet.
         """
 
-        return datetime.timedelta(self._now - self._deadline)
+        return datetime.timedelta(seconds=self._now - self._deadline)
 
     def __enter__(self) -> Self:
         self._now = time.monotonic()
@@ -217,8 +217,7 @@ class Waiting:
             f"waiting for condition '{check.__name__}'"
             f" with timeout {self.deadline.original_timeout},"
             f" deadline in {self.deadline.original_timeout.total_seconds()} seconds,"
-            f" checking every {self.tick:.2f} seconds"
-            f" {self.deadline!r}",
+            f" checking every {self.tick:.2f} seconds",
         )
 
         while True:
@@ -229,8 +228,7 @@ class Waiting:
                     logger.debug(
                         'wait',
                         f"'{check.__name__}' did not succeed,"
-                        f" {self.deadline.time_over.total_seconds():.2f} over quota"
-                        f" {self.deadline!r}",
+                        f" {self.deadline.time_over.total_seconds():.2f} over quota",
                     )
 
                     raise WaitingTimedOutError(check, self.deadline.original_timeout)
@@ -248,8 +246,7 @@ class Waiting:
                         logger.debug(
                             'wait',
                             f"'{check.__name__}' finished successfully but took too much time,"
-                            f" {self.deadline.time_over.total_seconds():.2f} over quota"
-                            f" {self.deadline!r}",
+                            f" {self.deadline.time_over.total_seconds():.2f} over quota",
                         )
 
                         raise WaitingTimedOutError(
@@ -259,8 +256,7 @@ class Waiting:
                     logger.debug(
                         'wait',
                         f"'{check.__name__}' finished successfully,"
-                        f" {self.deadline.time_left.total_seconds():.2f} seconds left"
-                        f" {self.deadline!r}",
+                        f" {self.deadline.time_left.total_seconds():.2f} seconds left",
                     )
 
                     return ret
@@ -273,8 +269,7 @@ class Waiting:
                         'wait',
                         f"'{check.__name__}' still pending,"
                         f" {self.deadline.time_left.total_seconds():.2f} seconds left,"
-                        f" current tick {self.tick:.2f} seconds"
-                        f" {self.deadline!r}",
+                        f" current tick {self.tick:.2f} seconds",
                     )
 
                 time.sleep(self.tick)
