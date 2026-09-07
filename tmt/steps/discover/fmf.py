@@ -18,7 +18,6 @@ import tmt.utils.git
 from tmt._compat.typing import Self
 from tmt.base.core import _RawAdjustRule
 from tmt.container import SerializableContainer, SpecBasedContainer, container, field
-from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import Command, NormalizationError, Path
 
 
@@ -570,6 +569,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     """
 
     _data_class = DiscoverFmfStepData
+    _distgit_extract_tests_later = True
 
     # Options which require .git to be present for their functionality
     _REQUIRES_GIT = {
@@ -643,58 +643,15 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if self.is_dry_run:
             return
 
-        dist_git_source = self.get('dist-git-source', False)
-
         self.log_import_plan_details()
 
-        # Dist-git source processing during discover step
-        if dist_git_source:
-            try:
-                git_root = tmt.utils.git.git_root(fmf_root=self.test_dir, logger=self._logger)
-                if not git_root:
-                    raise tmt.utils.DiscoverError(
-                        f"Directory '{self.test_dir}' is not a git repository."
-                    )
-                self.process_distgit_source(git_root)
-                return
-            except Exception as error:
-                raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
+        # DistGit sources are processed in Discover.discover_tests(). Tests from
+        # extracted sources are discovered later in post_dist_git().
+        if self.data.dist_git_source:
+            return
 
         # Discover tests
         self._tests = self.do_the_discovery(path)
-
-    def process_distgit_source(self, distgit_dir: Path) -> None:
-        """
-        Process dist-git source during the discover step.
-        """
-
-        self.download_distgit_source(
-            distgit_dir=distgit_dir,
-            target_dir=self.source_dir,
-            handler_name=self.get('dist-git-type'),
-        )
-
-        # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
-        tmt.utils.filesystem.copy_tree(
-            distgit_dir,
-            self.source_dir,
-            self._logger,
-        )
-
-        # patch & rediscover will happen later in the prepare step
-        if not self.get('dist-git-download-only'):
-            # Check if prepare is enabled, warn user if not
-            if not self.step.plan.prepare.enabled:
-                self.warn("Sources will not be extracted, prepare step is not enabled.")
-
-            insert_to_prepare_step(
-                discover_plugin=self,
-                sourcedir=self.source_dir,
-            )
-
-        # merge or not, detect later
-        self.step.plan.discover.extract_tests_later = True
-        self.info("Tests will be discovered after dist-git patching in prepare.")
 
     def do_the_discovery(self, path: Optional[Path] = None) -> list['tmt.base.core.Test']:
         """
@@ -939,8 +896,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         else:
             self.info('path', fmf_root, 'green')
 
-        # Discover tests
-        self._tests = self.do_the_discovery(fmf_root)
+        # Tests loaded from a recipe already have metadata.
+        # Still copy extracted sources so test files are present.
+        if not self.step.plan.discover.loaded_from_recipe:
+            self._tests = self.do_the_discovery(fmf_root)
 
         if self.get('prune', False):
             clone_dir = self.clone_dirpath / 'tests'
@@ -948,6 +907,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             self.prune_tree(clone_dir, fmf_root)
         else:
             self.install_libraries(self.test_dir, self.test_dir)
+
+        if self.step.plan.discover.loaded_from_recipe:
+            return
 
         self.adjust_test_attributes(fmf_root)
         self.apply_policies()

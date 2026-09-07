@@ -14,7 +14,8 @@ description: |
 
     .. note::
         All git repositories specified in the recipe will be fetched again during the
-        recipe execution.
+        recipe execution. DistGit sources enabled with ``dist-git-source`` are
+        downloaded and extracted again as well.
 
     .. note::
         When submitting a new run based on a recipe, the ``results-path`` key of the
