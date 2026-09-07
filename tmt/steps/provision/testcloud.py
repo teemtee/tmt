@@ -383,11 +383,18 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         help="List locally available images.",
     )
 
-    use_local_image: bool = field(
-        default=False,
-        option='--use-local-image',
+    image_cache: bool = field(
+        default=True,
+        option='--image-cache/--no-image-cache',
         is_flag=True,
-        help="Use a locally cached image, do not download a new one.",
+        help="Enable or disable image URL caching, enabled by default.",
+    )
+
+    image_cache_age: int = field(
+        default=7,
+        option='--image-cache-age',
+        metavar='DAYS',
+        help="Maximum age of cached image URLs in days, 7 by default.",
     )
 
     image_url: Optional[str] = field(
@@ -772,6 +779,9 @@ class GuestTestcloud(tmt.GuestSsh):
     connection: str
     arch: str
 
+    image_cache: bool
+    image_cache_age: int
+
     stop_retries: int
     stop_retry_delay: int
 
@@ -867,19 +877,6 @@ class GuestTestcloud(tmt.GuestSsh):
         if name_as_path.is_absolute() and name_as_path.is_file():
             return f'file://{name}'
 
-        # When using local images, search the cache directory
-        if self.use_local_image:
-            name_lower = name.lower().strip()
-            for image_file in sorted(
-                self.testcloud_image_dirpath.glob('*.qcow2'), reverse=True
-            ):
-                if name_lower in image_file.name.lower():
-                    return f'file://{image_file}'
-            raise ProvisionError(
-                f"No locally cached image matching '{name}'. "
-                f"Use '--list-local-images' to see available images."
-            )
-
         name = name.lower().strip()
         url: Optional[str] = None
         assert testcloud is not None
@@ -967,6 +964,9 @@ class GuestTestcloud(tmt.GuestSsh):
         # Get configuration
         assert testcloud is not None
         self.config = testcloud.config.get_config()
+
+        self.config.CACHE_IMAGES = self.image_cache
+        self.config.TRUST_DEADLINE = self.image_cache_age
 
         self.debug(f"testcloud version: {testcloud.__version__}")
 
@@ -1167,16 +1167,6 @@ class GuestTestcloud(tmt.GuestSsh):
         def prepare_image() -> None:
             self._image = testcloud.image.Image(self.image_url)
             self.verbose('qcow', self._image.name, 'green')
-
-            if self.use_local_image:
-                if not Path(self._image.local_path).exists():
-                    raise ProvisionError(
-                        f"Local image '{self._image.name}' not found. "
-                        f"Run without '--use-local-image' to download it, "
-                        f"or use '--list-local-images' to see available images."
-                    )
-                self.info('progress', 'using local image', 'cyan')
-                return
 
             if not Path(self._image.local_path).exists():
                 self.info('progress', 'downloading...', 'cyan')
