@@ -1413,7 +1413,7 @@ class GuestData(
         help="""
             Environment variables to be defined for this guest. These will be available
             during test execution and can be used to customize behavior on a per-guest basis.
-            Note that variables defined here can be overridden by test-level environment variables.
+            Variable set here are applied after test- and plan-specific environment variables.
             """,
         option=('-e', '--environment'),
         metavar='KEY=VALUE',
