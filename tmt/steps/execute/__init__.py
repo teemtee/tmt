@@ -372,10 +372,6 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
         environment['TMT_SOURCE_DIR'] = EnvVarValue(self.discover_phase.source_dir)
 
         environment.update(
-            # Add variables from plan
-            self.phase.step.plan.intrinsic_environment,
-            # Add variables from guest
-            self.guest.intrinsic_environment,
             # Add variables from invocation contexts
             self.abort.intrinsic_environment,
             self.reboot.intrinsic_environment,

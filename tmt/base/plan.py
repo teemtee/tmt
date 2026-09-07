@@ -532,18 +532,7 @@ class Plan(
         * plan's ``environment`` and ``environment-file`` keys,
         * importing plan's environment,
         * ``--environment`` and ``--environment-file`` options,
-        * run's environment,
-        * plan's properties.
         """
-
-        if self.my_run:
-            return Environment(
-                {
-                    **self._environment_from_fmf,
-                    **self._environment_from_importing,
-                    **self._environment_from_cli,
-                }
-            )
 
         return Environment(
             {
