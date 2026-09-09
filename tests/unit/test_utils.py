@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import queue
 import re
@@ -24,6 +25,7 @@ import tmt.plugins
 import tmt.result
 import tmt.steps.discover
 import tmt.utils
+import tmt.utils._time
 import tmt.utils.git
 import tmt.utils.jira
 import tmt.utils.templates
@@ -1096,7 +1098,7 @@ def test_wait_success_but_too_late(root_logger):
     """
 
     def check():
-        time.sleep(5)
+        tmt.utils._time.sleep(5)
 
     with pytest.raises(WaitingTimedOutError):
         Waiting(Deadline.from_seconds(1)).wait(check, root_logger)
@@ -1842,3 +1844,39 @@ def test_render_template_sandbox() -> None:
 
     with pytest.raises(GeneralError, match=r"Template used forbidden operation\."):
         tmt.utils.templates.render_template('{{ RESULT.__init__.__globals__ }}', RESULT=result)
+
+
+TIME_SLEEP_DELAY = 20.0
+
+
+def test_time_sleep() -> None:
+    start = time.monotonic()
+
+    tmt.utils._time.sleep(TIME_SLEEP_DELAY)
+
+    end = time.monotonic()
+
+    assert (end - start) >= TIME_SLEEP_DELAY
+
+
+def test_time_sleep_interrupted() -> None:
+    start = time.monotonic()
+
+    def _run() -> None:
+        with pytest.raises(tmt.utils.signals.Interrupted):
+            tmt.utils._time.sleep(TIME_SLEEP_DELAY)
+
+    sleeper = threading.Thread(target=_run)
+
+    sleeper.start()
+
+    time.sleep(TIME_SLEEP_DELAY / 4)  # noqa: TID251
+
+    with contextlib.suppress(KeyboardInterrupt):
+        tmt.utils.signals._interrupt_handler(signal.SIGINT, None)
+
+    sleeper.join()
+
+    end = time.monotonic()
+
+    assert (TIME_SLEEP_DELAY / 4) < (end - start) < TIME_SLEEP_DELAY

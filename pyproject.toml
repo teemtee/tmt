@@ -477,6 +477,7 @@ convention = "pep257"
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
+"time.sleep".msg = "Use tmt.utils.sleep instead."
 "typing.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
 "typing_extensions.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
 "typing.Self".msg = "Use tmt._compat.typing.Self instead."
