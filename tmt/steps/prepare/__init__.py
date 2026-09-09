@@ -260,6 +260,9 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                     self._logger,
                 )
 
+            # Package managers can also have essential_requires
+            collected_requires[guest].dependencies += guest.package_manager.essential_requires()
+
             # The `discover` step is different: no phases, just query tests
             # collected by the step itself. Maybe we could iterate over
             # `discover` phases, but I think re-runs and workdir reuse would
