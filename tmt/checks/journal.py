@@ -163,8 +163,6 @@ class JournalCheck(Check):
     def _save_journal(
         self, invocation: 'TestInvocation', logger: tmt.log.Logger
     ) -> tuple[ResultOutcome, list[Path]]:
-        assert invocation.start_time is not None  # narrow type
-
         path = invocation.check_files_path / TEST_POST_JOURNAL_FILENAME
 
         # Build journalctl command
@@ -188,7 +186,7 @@ class JournalCheck(Check):
         outcome = ResultOutcome.PASS
         failures: list[str] = []
 
-        output, exc, timer = Stopwatch.measure(invocation.guest.execute, script, silent=True)
+        output, exc, timer = Stopwatch().measure(invocation.guest.execute, script, silent=True)
 
         if exc:
             outcome = ResultOutcome.ERROR
