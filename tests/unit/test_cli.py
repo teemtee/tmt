@@ -266,3 +266,49 @@ def test_decide_colorization(
     monkeypatch.setattr(sys.stderr, 'isatty', lambda: testcase.simulate_tty)
 
     assert tmt.log.decide_colorization(no_color, force_color) == testcase.expected
+
+
+def test_discover_insert_omits_unused_cli_defaults(run_tmt: 'RunTmt', tmppath: Path) -> None:
+    """
+    ``--insert`` must not copy unused Click defaults such as ``repository``
+    and ``revision`` into the new phase.
+    """
+
+    from tmt.steps.discover import Discover
+
+    # CLI invocations are stored on the class and are not reset between
+    # tests, drop any leftovers before and after this test.
+    def _reset() -> None:
+        Discover.cli_invocations.clear()
+        Discover.cli_invocation = None
+
+    _reset()
+
+    root = tmppath / 'tree'
+    (root / '.fmf').mkdir(parents=True)
+    (root / '.fmf' / 'version').write_text('1\n')
+    (root / 'tests').mkdir()
+    (root / 'tests' / 'one.fmf').write_text('test: /bin/true\n')
+    (root / 'plans').mkdir()
+    (root / 'plans' / 'main.fmf').write_text('discover:\n    how: fmf\nexecute:\n    how: tmt\n')
+
+    try:
+        result = run_tmt(
+            '--root',
+            str(root),
+            'run',
+            '-i',
+            str(tmppath / 'run'),
+            'discover',
+            '--insert',
+            '--how',
+            'fmf',
+            '--test',
+            '/tests/one',
+        )
+    finally:
+        _reset()
+
+    assert result.exit_code == 0, result.output
+    assert "Field 'repository' is deprecated" not in result.output
+    assert "Field 'revision' is deprecated" not in result.output
