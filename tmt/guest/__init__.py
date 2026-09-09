@@ -2012,6 +2012,9 @@ class Guest(
         if self.plan_environment_path is not None:
             environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
 
+        if self.plan_source_script_path:
+            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
+
         return environment
 
     @classmethod

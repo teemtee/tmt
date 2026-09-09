@@ -408,25 +408,13 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
 
         environment.update(self.intrinsic_environment)
 
-        # TODO: these are owned by plan, but at wrong position, and
-        # they will be owned by plan again once the dust of environment
-        # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
-        # for more.
-        if self.guest.plan_environment_path:
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(
-                self.guest.plan_environment_path
-            )
-
-        if self.guest.plan_source_script_path:
-            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.guest.plan_source_script_path)
-
         environment.update(
             # Add variables from invocation contexts
-            self.abort,
-            self.reboot,
-            self.restart,
-            self.pidfile,
-            self.restraint,
+            self.abort.intrinsic_environment,
+            self.reboot.intrinsic_environment,
+            self.restart.intrinsic_environment,
+            self.pidfile.intrinsic_environment,
+            self.restraint.intrinsic_environment,
             # Add variables the framework wants to expose
             self.test.test_framework.get_environment_variables(self, self.logger),
         )
