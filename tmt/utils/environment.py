@@ -666,31 +666,35 @@ class Environment(dict[str, EnvVarValue]):
 
         base_environment = base_environment or cls()
 
-        # 1. test[].environment
-        if not intrinsic_only and test is not None:
-            base_environment.update(test.environment)
+        # The order and numbering follows the specification written down
+        # in /docs/environment.rst.
 
-        # 2. plan.environment-file
-        # 3. plan.environment
-        # 4. importing plan "native" environment
-        if not intrinsic_only and plan is not None:
-            base_environment.update(plan.environment)
+        if not intrinsic_only:
+            # 1. test[].environment
+            if test is not None:
+                base_environment.update(test.environment)
 
-        # 5. provision[].environment
-        if not intrinsic_only and guest is not None:
-            base_environment.update(guest.environment)
+            # 2. plan.environment-file
+            # 3. plan.environment
+            # 4. importing plan "native" environment
+            if plan is not None:
+                base_environment.update(plan.environment)
 
-        # 6. $TMT_PLAN_ENVIRONMENT_FILE
-        if not intrinsic_only and guest is not None:
-            base_environment.update(guest.plan_environment)
+            # 5. provision[].environment
+            if guest is not None:
+                base_environment.update(guest.environment)
 
-        # 7. command-line input
-        # 7.1 `tmt run`
-        if not intrinsic_only and run is not None:
-            base_environment.update(run.environment)
+            # 6. $TMT_PLAN_ENVIRONMENT_FILE
+            if guest is not None:
+                base_environment.update(guest.plan_environment)
 
-        # 7.2 `tmt * export` - TODO
-        # 7.3 `tmt try` - TODO
+            # 7. command-line input
+            # 7.1 `tmt run`
+            if run is not None:
+                base_environment.update(run.environment)
+
+            # 7.2 `tmt * export` - TODO
+            # 7.3 `tmt try` - TODO
 
         # 8. intrinsic variables
         if test is not None and test_invocation is not None:
