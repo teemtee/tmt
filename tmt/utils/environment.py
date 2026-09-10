@@ -33,6 +33,7 @@ from typing import (
     Optional,
     Union,
     cast,
+    overload,
 )
 
 import requests
@@ -116,7 +117,7 @@ class EnvVar:
         #: Environment variable is exposed to ``finish`` phases.
         FINISH = enum.auto()
 
-        #: Environment variable is exposed to individual tests..
+        #: Environment variable is exposed to individual tests.
         TEST = enum.auto()
 
     #: Name of the environment variable
@@ -124,6 +125,15 @@ class EnvVar:
 
     #: Scope of the environment variable.
     scope: Scope
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, EnvVar):
+            return NotImplemented
+
+        return self.name == other.name
 
 
 class HasEnvironment(abc.ABC):
@@ -178,6 +188,35 @@ class Environment(dict[EnvVarName, EnvVarValue]):
 
     def __setitem__(self, key: _IncomingEnvVarName, value: EnvVarValue) -> None:
         super().__setitem__((key.name if not isinstance(key, str) else key), value)
+
+    def __contains__(self, key: _IncomingEnvVarName) -> bool:  # type: ignore[override]
+        return super().__contains__(key.name if not isinstance(key, str) else key)
+
+    @overload  # type: ignore[override]
+    def get(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
+        pass
+
+    @overload
+    def get(self, key: _IncomingEnvVarName, default: EnvVarValue) -> EnvVarValue:
+        pass
+
+    def get(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
+        self, key: _IncomingEnvVarName, default: Optional[EnvVarValue] = None
+    ) -> Optional[EnvVarValue]:
+        return super().get(key.name if not isinstance(key, str) else key, default)
+
+    @overload  # type: ignore[override]
+    def pop(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
+        pass
+
+    @overload
+    def pop(self, key: _IncomingEnvVarName, default: EnvVarValue) -> EnvVarValue:
+        pass
+
+    def pop(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
+        self, key: _IncomingEnvVarName, default: Optional[EnvVarValue] = None
+    ) -> Optional[EnvVarValue]:
+        return super().pop(key.name if not isinstance(key, str) else key, default)
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':
