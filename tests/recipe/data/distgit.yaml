@@ -1,0 +1,136 @@
+plans:
+- cleanup:
+    enabled: true
+    phases:
+    - how: tmt
+      name: default-0
+      order: 50
+  discover:
+    enabled: true
+    phases:
+    - dist-git-download-only: false
+      dist-git-extract: tmt-1.74.0/tests/execute/basic/data
+      dist-git-init: false
+      dist-git-install-builddeps: false
+      dist-git-merge: false
+      dist-git-remove-fmf-root: false
+      dist-git-source: true
+      fmf-id: false
+      how: fmf
+      modified-only: false
+      name: discover-fmf
+      order: 50
+      prune: false
+      ref: 518edd9
+      sync-repo: false
+      test:
+      - ^/test/shell/good$
+      url: https://src.fedoraproject.org/rpms/tmt.git
+      url-content-type: git
+    - dist-git-download-only: false
+      dist-git-install-builddeps: false
+      dist-git-source: true
+      how: shell
+      keep-git-metadata: false
+      name: discover-shell
+      order: 50
+      ref: 518edd9
+      tests:
+      - duration: 1h
+        enabled: true
+        manual: false
+        name: /pyproject
+        order: 50
+        result: respect
+        test: test -e $TMT_SOURCE_DIR/tmt-1.74.0/pyproject.toml
+        tty: false
+      url: https://src.fedoraproject.org/rpms/tmt.git
+      url-content-type: git
+    tests:
+    - discover-phase: discover-fmf
+      duration: 5m
+      enabled: true
+      framework: shell
+      manual: false
+      name: /discover-fmf/test/shell/good
+      order: 50
+      path: /discover-fmf/tests/tmt-1.74.0/tests/execute/basic/data
+      restart-max-count: 1
+      restart-with-reboot: false
+      result: respect
+      serial-number: 2
+      summary: Passing test
+      test: 'true'
+      tty: false
+    - discover-phase: discover-shell
+      duration: 1h
+      enabled: true
+      framework: shell
+      manual: false
+      name: /discover-shell/pyproject
+      order: 50
+      path: /discover-shell/tests
+      restart-max-count: 1
+      restart-with-reboot: false
+      result: respect
+      serial-number: 1
+      test: test -e $TMT_SOURCE_DIR/tmt-1.74.0/pyproject.toml
+      tty: false
+  enabled: true
+  environment:
+    PLAN_ENV: plan_value
+  execute:
+    enabled: true
+    phases:
+    - duration: 1h
+      exit-first: false
+      how: tmt
+      ignore-duration: false
+      interactive: false
+      name: default-0
+      no-progress-bar: false
+      order: 50
+      restraint-compatible: false
+    results-path: plans/distgit/execute/results.yaml
+  finish:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+      order: 50
+  name: /plans/distgit
+  order: 50
+  prepare:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+      order: 50
+  provision:
+    enabled: true
+    phases:
+    - become: false
+      environment:
+        PROVISION_ENV: provision_value
+      force-pull: false
+      how: container
+      image: fedora
+      name: default-0
+      order: 50
+      pull-attempts: 5
+      pull-interval: 5
+      stop-time: 1
+      user: root
+  report:
+    enabled: true
+    phases:
+    - display-guest: auto
+      how: display
+      name: default-0
+      order: 50
+  summary: A plan with distgit sources
+run:
+  context: {}
+  environment: {}
+  remove: false
+  root: /path/to/fmf_root
