@@ -24,7 +24,6 @@ from pathlib import Path
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autodoc.typehints',
     'sphinx_reredirects',
     # Custom extensions defined in ext
     'tmt_setup',
