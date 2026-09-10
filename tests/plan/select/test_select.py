@@ -66,8 +66,8 @@ def test_show_with_filter(run_tmt: 'RunTmt', filter_option: str) -> None:
 
 @pytest.mark.nonunit
 @pytest.mark.parametrize('name_option', ['-n', '--name'])
-def test_run_with_name(run_tmt: 'RunTmt', tmpdir: Path, name_option: str) -> None:
-    result = run_tmt('run', '-i', tmpdir, 'discover', 'plan', name_option, 'core')
+def test_run_with_name(run_tmt: 'RunTmt', tmppath: Path, name_option: str) -> None:
+    result = run_tmt('run', '-i', tmppath, 'discover', 'plan', name_option, 'core')
 
     assert not result.stdout
     assert re.search(r'(?m)^/plans/features/core$', result.stderr)
@@ -75,12 +75,12 @@ def test_run_with_name(run_tmt: 'RunTmt', tmpdir: Path, name_option: str) -> Non
 
 @pytest.mark.nonunit
 @pytest.mark.parametrize('name_option', ['-n', '--name'])
-def test_run_with_invalid_name(run_tmt: 'RunTmt', tmpdir: Path, name_option: str) -> None:
+def test_run_with_invalid_name(run_tmt: 'RunTmt', tmppath: Path, name_option: str) -> None:
     with pytest.raises(GeneralError, match=r'(?m)^No plans found\.$'):
         run_tmt(
             'run',
             '-i',
-            tmpdir,
+            tmppath,
             'discover',
             'plan',
             name_option,
