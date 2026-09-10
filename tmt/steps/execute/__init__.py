@@ -408,6 +408,17 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
 
         environment.update(self.intrinsic_environment)
 
+        environment.update(
+            # Add variables from invocation contexts
+            self.abort.intrinsic_environment,
+            self.reboot.intrinsic_environment,
+            self.restart.intrinsic_environment,
+            self.pidfile.intrinsic_environment,
+            self.restraint.intrinsic_environment,
+            # Add variables the framework wants to expose
+            self.test.test_framework.get_environment_variables(self, self.logger),
+        )
+
         self._environment = environment
 
         return environment
@@ -546,7 +557,9 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
                 on_process_end=_reset_process,
                 test_session=True,
                 friendly_command=str(self.test.test),
-                sourced_files=[self.phase.step.plan.plan_source_script],
+                sourced_files=[self.guest.plan_source_script_path]
+                if self.guest.plan_source_script_path
+                else [],
             )
 
             if error is not None:

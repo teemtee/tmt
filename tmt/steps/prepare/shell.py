@@ -243,7 +243,9 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 command=command,
                 cwd=worktree,
                 environment=environment,
-                sourced_files=[self.step.plan.plan_source_script],
+                sourced_files=[guest.plan_source_script_path]
+                if guest.plan_source_script_path
+                else [],
                 immediately=self._execute_immediately,
             )
 
