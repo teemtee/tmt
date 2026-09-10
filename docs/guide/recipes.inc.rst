@@ -6,7 +6,7 @@ Recipes
 A recipe is a YAML file that captures a complete, static snapshot
 of a ``tmt`` run after all dynamic evaluation has been resolved.
 It stores preprocessed information about plans, tests and run
-configuration, together with a link to the ``results.yaml`` files
+configuration, together with a link to the ``results.yaml`` file
 from the original run.
 
 tmt generates a recipe at the end of every run, and stores it as
