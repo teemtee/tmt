@@ -195,6 +195,20 @@ class ENV_TMT_PLAN_ENVIRONMENT_FILE(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.PREPARE | EnvVar.Scope.EXECUTE | EnvVar.Scope.FINISH | EnvVar.Scope.TEST
 
 
+class ENV_TMT_PLAN_SOURCE_SCRIPT(EnvVar):  # noqa: N801
+    """
+    Path to the file that will be sourced in all tests and prepare/shell
+    phases. Unlike ``TMT_PLAN_ENVIRONMENT_FILE``, this file can be an
+    arbitrary content that can be parsed by ``bash``. In order to use it,
+    populate its content in a prepare step.
+
+    .. versionadded:: 1.63
+    """
+
+    name = 'TMT_PLAN_SOURCE_SCRIPT'
+    scope = EnvVar.Scope.PREPARE | EnvVar.Scope.EXECUTE | EnvVar.Scope.FINISH | EnvVar.Scope.TEST
+
+
 @container
 class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     duration: str = field(
