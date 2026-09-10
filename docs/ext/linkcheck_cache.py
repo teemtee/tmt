@@ -3,24 +3,11 @@ Sphinx extension to cache linkcheck results
 """
 
 import datetime
-import functools
 import json
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
-
-
-@functools.cache
-def get_web_git_url(app: "Sphinx") -> str:
-    from tmt.log import Logger
-    from tmt.utils.git import GitInfo, web_git_url
-
-    gitinfo = GitInfo.from_fmf_root(
-        fmf_root=app.srcdir.parent,
-        logger=Logger.get_bootstrap_logger(),
-    )
-    return web_git_url(gitinfo.url, gitinfo.ref)
 
 
 def linkcheck_cache(app: "Sphinx", uri: str) -> Optional[str]:
@@ -33,12 +20,6 @@ def linkcheck_cache(app: "Sphinx", uri: str) -> Optional[str]:
             cache_data = json.load(f)
         except json.JSONDecodeError:
             cache_data = {}
-
-    # Redirect paths pointing to the current git tree to filepaths
-    web_git_url = get_web_git_url(app)
-    if uri.startswith(web_git_url):
-        path = uri.removeprefix(web_git_url)
-        return str(app.srcdir.parent / path.lstrip("/"))
 
     # Check if we have cached this uri yet
     if uri in cache_data:
