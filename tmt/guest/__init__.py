@@ -2015,7 +2015,9 @@ class Guest(
             environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(self.plan_environment_path)
 
         if self.plan_source_script_path:
-            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
+            from tmt.steps.execute import ENV_TMT_PLAN_SOURCE_SCRIPT
+
+            environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = EnvVarValue(self.plan_source_script_path)
 
         return environment
 
@@ -2362,7 +2364,9 @@ class Guest(
                 )
 
             if self.plan_source_script_path:
-                environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
+                from tmt.steps.execute import ENV_TMT_PLAN_SOURCE_SCRIPT
+
+                environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = EnvVarValue(self.plan_source_script_path)
 
         else:
             # Create a copy of given environment - this prevents any
