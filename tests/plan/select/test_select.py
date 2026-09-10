@@ -82,13 +82,18 @@ def test_run_with_invalid_name(run_tmt: 'RunTmt', tmpdir: Path, name_option: str
 def test_condition_requires_feeling_safe(run_tmt: 'RunTmt') -> None:
     with pytest.raises(
         GeneralError,
-        match=r"'--condition' command-line option is allowed only with the '--allow-unsafe-behavior=cli.condition' or '--feeling-safe' option."
+        match=(
+            r"'--condition' command-line option is allowed only with the"
+            r" '--allow-unsafe-behavior=cli\.condition' or '--feeling-safe' option\."
+        ),
     ):
         run_tmt('plan', 'ls', '--condition', 'True')
 
 
 def test_condition_works_with_feeling_safe(run_tmt: 'RunTmt') -> None:
-    result = run_tmt('--allow-unsafe-behavior', 'cli.condition', 'plan', 'ls', '--condition', 'True')
+    result = run_tmt(
+        '--allow-unsafe-behavior', 'cli.condition', 'plan', 'ls', '--condition', 'True'
+    )
 
     assert result.exit_code == 0
 
