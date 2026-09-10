@@ -53,7 +53,7 @@ def cwd(path: Path) -> Iterator[Path]:
         consequences in a multithreaded environment.
     """
 
-    cwd = Path.cwd()
+    original_cwd = Path.cwd()
 
     os.chdir(path)
 
@@ -61,7 +61,7 @@ def cwd(path: Path) -> Iterator[Path]:
         yield path
 
     finally:
-        os.chdir(cwd)
+        os.chdir(original_cwd)
 
 
 def with_cwd(path: Path) -> Callable[[Callable[P, T]], Callable[P, T]]:
@@ -94,7 +94,7 @@ class RunTmt(Protocol):
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
-        catch_exceptions: bool = False,
+        catch_exceptions: bool = True,
         color: bool = False,
         **kwargs: Any,
     ) -> click.testing.Result:
