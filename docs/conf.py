@@ -265,3 +265,10 @@ redirects = {
     "releases": "releases/index.html",
     "code/autodocs": "z_autodocs/",
 }
+
+# ------
+
+# Skip incorrect warning when `type` is a class attribute
+# https://github.com/sphinx-doc/sphinx/issues/14223
+# https://github.com/sphinx-doc/sphinx/pull/14391
+suppress_warnings = ["ref.python"]
