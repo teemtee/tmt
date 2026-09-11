@@ -197,9 +197,17 @@ def find_jira_issues(
     if results:
         return sort_by_key(results)
 
-    # Fall back to title search and verify via remote links
-    title = github_item.title.replace('\\', '\\u002F').replace('"', '\\"')
-    query = f'project = "{JIRA_PROJECT}" AND summary ~ "\\"{title}\\""'
+    # Fall back to title search and verify via remote links. The summary
+    # field only supports the tokenized `~` operator (no exact match), and
+    # `~` cannot do reliable phrase matching because Jira analyzes both the
+    # query and the indexed text: separators like `\`, `"` or `/` are
+    # dropped, so a phrase containing them never matches. We therefore
+    # rebuild the search terms the same way the analyzer tokenizes them —
+    # words only, but keeping intra-word apostrophes (e.g. `doesn't`) which
+    # Jira treats as part of the word. The exact match is then confirmed
+    # via the upstream remote link below.
+    title = " ".join(re.findall(r"\w+(?:'\w+)*", github_item.title))
+    query = f'project = "{JIRA_PROJECT}" AND summary ~ "{title}"'
     candidates = jira.search_issues(query, maxResults=False, json_result=False)
     assert isinstance(candidates, list)
 
