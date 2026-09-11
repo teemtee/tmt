@@ -1,0 +1,6 @@
+description: |
+  A new :ref:`recipes` section has been added to the guide
+  documenting how to inspect and edit ``recipe.yaml`` files,
+  and how to filter tests with `tmt-recipe-tool`__.
+
+  __ https://github.com/teemtee/tools/tree/main/tmt-recipe-tool

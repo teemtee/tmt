@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/provision/virtual.testcloud` plugin now supports
+  ``use-image-cache`` and ``image-cache-age`` keys to control how
+  Testcloud images are cached. Images are now cached for 7 days by default.
