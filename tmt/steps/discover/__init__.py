@@ -386,9 +386,9 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         # Save fmf metadata
         for file_path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
             tmt.utils.filesystem.copy_tree(
-                file_path,
-                clone_tree_path / file_path.relative_to(tree_path),
-                self._logger,
+                src=file_path,
+                dst=clone_tree_path / file_path.relative_to(tree_path),
+                logger=self._logger,
             )
 
         # Save upgrade plan
@@ -405,9 +405,9 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             assert test.path is not None  # narrow type
             relative_test_path = test.path.unrooted()
             tmt.utils.filesystem.copy_tree(
-                tree_path / relative_test_path,
-                clone_tree_path / relative_test_path,
-                self._logger,
+                src=tree_path / relative_test_path,
+                dst=clone_tree_path / relative_test_path,
+                logger=self._logger,
             )
 
             # Copy all parent main.fmf files
@@ -425,7 +425,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         # Clean phase.test_dir and copy back only required tests and files from clone_dir
         # This is to have correct paths in tests
         shutil.rmtree(self.test_dir, ignore_errors=True)
-        tmt.utils.filesystem.copy_tree(clone_dir, self.test_dir, self._logger)
+        tmt.utils.filesystem.copy_tree(src=clone_dir, dst=self.test_dir, logger=self._logger)
 
         if self.clone_dirpath.exists():
             shutil.rmtree(self.clone_dirpath, ignore_errors=True)
