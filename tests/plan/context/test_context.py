@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import pytest
-from tests import with_cwd
+from tests import with_fmf_root
 
 from tmt.utils import Path
 
@@ -14,8 +14,8 @@ DATA_DIR = TEST_DIR / 'data'
 
 
 @pytest.mark.nonunit
-@with_cwd(DATA_DIR)
-def test_plan_with_good_context(run_tmt: 'RunTmt') -> None:
+@with_fmf_root(DATA_DIR)
+def test_plan_with_good_context(run_tmt: 'RunTmt', fmf_root: Path) -> None:
     """
     Plan with a good context
     """
@@ -29,8 +29,8 @@ def test_plan_with_good_context(run_tmt: 'RunTmt') -> None:
 
 
 @pytest.mark.nonunit
-@with_cwd(DATA_DIR)
-def test_plan_with_bad_context(run_tmt: 'RunTmt') -> None:
+@with_fmf_root(DATA_DIR)
+def test_plan_with_bad_context(run_tmt: 'RunTmt', fmf_root: Path) -> None:
     """
     Plan with a bad context
     """
@@ -42,8 +42,8 @@ def test_plan_with_bad_context(run_tmt: 'RunTmt') -> None:
 
 
 @pytest.mark.nonunit
-@with_cwd(DATA_DIR)
-def test_plan_with_good_context_and_bad_command_line(run_tmt: 'RunTmt') -> None:
+@with_fmf_root(DATA_DIR)
+def test_plan_with_good_context_and_bad_command_line(run_tmt: 'RunTmt', fmf_root: Path) -> None:
     """
     Plan with a good context, overwritten by command line
     """
@@ -67,8 +67,8 @@ def test_plan_with_good_context_and_bad_command_line(run_tmt: 'RunTmt') -> None:
 
 
 @pytest.mark.nonunit
-@with_cwd(DATA_DIR)
-def test_plan_with_broken_values(run_tmt: 'RunTmt') -> None:
+@with_fmf_root(DATA_DIR)
+def test_plan_with_broken_values(run_tmt: 'RunTmt', fmf_root: Path) -> None:
     """
     Plan with broken values
     """
