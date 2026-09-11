@@ -164,8 +164,8 @@ or use command line options to enable/disable specific steps:
 
 .. code-block:: shell
 
-    tmt run --recipe recipe.yaml --all
-    tmt run --recipe recipe.yaml --until report
+    tmt run --recipe /var/tmp/tmt/run-001/recipe.yaml --all
+    tmt run --recipe /var/tmp/tmt/run-001/recipe.yaml --until report
 
 
 The following command runs the ``/plans/local`` plan from the
