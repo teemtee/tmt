@@ -73,6 +73,7 @@ def test_run_with_name(run_tmt: 'RunTmt', tmppath: Path, name_option: str) -> No
 
     assert not result.stdout
     assert re.search(r'(?m)^/plans/features/core$', result.stderr)
+    assert not re.search(r'(?m)^/plans/features/basic$', result.stderr)
 
 
 @pytest.mark.nonunit
