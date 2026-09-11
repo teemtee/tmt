@@ -1,0 +1,286 @@
+.. _environment-variables:
+
+:tocdepth: 2
+
+Environment variables
+~~~~~~~~~~~~~~~~~~~~~
+
+Exposed by tmt
+^^^^^^^^^^^^^^
+
+The following sections describe various sets of environment variables
+exposed by tmt to various user-provided actions - scripts and commands
+provided by the user via plan and test metadata keys, from
+``prepare/shell`` scripts to individual tests. Sets of environment
+variables are listed in their order of precedence from least to greatest:
+the last listed variables override variables from previous set.
+
+1. User-provided test environment
+:::::::::::::::::::::::::::::::::
+
+As set via :tmt:story:`environment </spec/tests/environment>` key of
+individual tests.
+
+2. User-provided plan environment
+:::::::::::::::::::::::::::::::::
+
+2.1. ``environment-file`` plan key
+----------------------------------
+
+Environment variables loaded from files listed in the
+
+:tmt:story:`environment-file </spec/plans/environment-file>` plan key.
+
+
+2.2. ``environment`` plan key
+-----------------------------
+
+Environment variables set via
+:tmt:story:`environment </spec/plans/environment>` plan key.
+
+3. Environment inherited from the importing plan
+::::::::::::::::::::::::::::::::::::::::::::::::
+
+.. note::
+
+    These sets of environment variables exist only when the plan has been
+    :tmt:story:`imported </spec/plans/import-plans>`. Local plans do not
+    have an importing plan, and have no plan to inherit environment from.
+
+3.1. Importing plan's ``environment-file`` plan key
+---------------------------------------------------
+
+Environment variables loaded from files listed in the
+importing plan's :tmt:story:`environment </spec/plans/environment-file>`
+plan key.
+
+3.2. Importing plan's ``environment`` plan key
+----------------------------------------------
+
+Environment variables set via
+importing plan's :tmt:story:`environment </spec/plans/environment>` plan
+key.
+
+3.3. Importing plan's importing plan
+------------------------------------
+
+This set is the recursive aspect of the inherited environment:
+
+* An imported plan ``/A`` inherits the aforementioned environment variables
+  from its importing plan, ``/B``.
+* Said importing plan, ``/B``, might have been an imported plan as well,
+  imported by a plan called ``/C``. This makes ``/C`` the importing plan
+  of ``/B``, and ``/B`` itself inherits the aforementioned environment
+  variables from its importing plan, ``/C``. These variables are then
+  inherited by ``/A``.
+
+The chain of importing plans is followed to its end, until there is no
+importing plan to inherit from.
+
+4. User-provided guest environment
+::::::::::::::::::::::::::::::::::
+
+As set via :ref:`environment </plugins/provision/common-keys>` key of
+individual ``provision`` phases. Applies to user commands executed on
+the given guest.
+
+5. User-controlled plan environment file
+::::::::::::::::::::::::::::::::::::::::
+
+Environment variables loaded from a file the ``TMT_PLAN_ENVIRONMENT_FILE``
+environment variable points at.
+
+6. User-provided environment from command-line
+::::::::::::::::::::::::::::::::::::::::::::::
+
+6.1 ``tmt run`` command-line
+----------------------------
+
+6.1.1 Command-line options from the previous ``tmt run`` invocation
+-------------------------------------------------------------------
+
+Environment variables saved in the run directory by a previous ``tmt run``
+invocation.
+
+6.1.2 ``--environment-file`` option
+-----------------------------------
+
+Environment variables loaded from files referenced by the ``tmt run --environment-file``
+command-line option.
+
+6.1.3 ``--environment`` option
+------------------------------
+
+Environment variables set via ``tmt run --environment`` command-line option.
+
+.. note::
+
+    This set includes also files with environment variables when such
+    files are given to ``tmt run --environment`` using the ``@<filepath>``
+    form.
+
+7. Variables exposed by tmt, run, plan, steps, plugins, and test frameworks
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+These are the strongest sets of environment variables, always overriding
+preexisting ones.
+
+The variables here are not ordered by their order of precedence. They
+are owned and exposed by various tmt internal components and subsystems,
+and they do not conflict with each other. From the user perspective, they
+behave as a single set which overrides variables from all the previous
+sets, and their internal ordering is not relevant.
+
+Instead, they are grouped by plan steps, with notes mentioning possible
+limitations.
+
+* ``discover``
+    * ``TMT_PLAN_DATA``
+    * ``TMT_PLAN_ENVIRONMENT_FILE``
+    * ``TMT_PLAN_SOURCE_SCRIPT``
+    * ``TMT_TREE``
+    * ``TMT_VERSION``
+
+* ``provision``
+    * ``TMT_PLAN_DATA``
+    * ``TMT_PLAN_ENVIRONMENT_FILE``
+    * ``TMT_PLAN_SOURCE_SCRIPT``
+    * ``TMT_TREE``
+    * ``TMT_VERSION``
+
+* ``prepare``
+    * ``REBOOTCOUNT``
+    * ``RSTRNT_REBOOTCOUNT``
+    * ``TMT_TEST_PIDFILE``
+    * ``TMT_TEST_PIDFILE_LOCK``
+    * ``TMT_TEST_PIDFILE_ROOT``
+    * ``TMT_PLAN_DATA``
+    * ``TMT_PLAN_ENVIRONMENT_FILE``
+    * ``TMT_PLAN_SOURCE_SCRIPT``
+    * ``TMT_PREPARE_SHELL_URL_REPOSITORY``
+
+      .. note::
+
+         Only to the ``prepare/shell`` phases.
+    * ``TMT_REBOOT_REQUEST``
+    * ``TMT_REBOOT_COUNT``
+    * ``TMT_TEST_RESTART_COUNT``
+    * ``TMT_TOPOLOGY_BASH``
+    * ``TMT_TOPOLOGY_YAML``
+    * ``TMT_TREE``
+    * ``TMT_VERSION``
+
+* ``execute``
+    * ``BEAKERLIB_DIR``
+
+      .. note::
+
+         Only when a test with the ``beakerlib`` framework runs.
+    * ``BEAKERLIB_COMMAND_SUBMIT_LOG``
+
+      .. note::
+
+         Only when a test with the ``beakerlib`` framework runs.
+    * ``BEAKERLIB_COMMAND_REPORT_RESULT``
+
+      .. note::
+
+         Only when a test with the ``beakerlib`` framework runs.
+    * ``IN_PLACE_UPGRADE``
+
+      .. note::
+
+        To the ``execute/upgrade`` phases only.
+    * ``RSTRNT_REBOOTCOUNT``
+    * ``RSTRNT_TASKNAME``
+    * ``TESTID``
+
+      .. note::
+
+         Only when a test with the ``beakerlib`` framework runs.
+    * ``TMT_TEST_PIDFILE``
+    * ``TMT_TEST_PIDFILE_LOCK``
+    * ``TMT_TEST_PIDFILE_ROOT``
+    * ``TMT_PLAN_DATA``
+    * ``TMT_PLAN_ENVIRONMENT_FILE``
+    * ``TMT_PLAN_SOURCE_SCRIPT``
+    * ``TMT_REBOOT_COUNT``
+    * ``TMT_REBOOT_REQUEST``
+    * ``TMT_RESTRAINT_COMPATIBLE``
+    * ``TMT_SOURCE_DIR``
+    * ``TMT_TEST_DATA``
+    * ``TMT_TEST_INVOCATION_PATH``
+    * ``TMT_TEST_ITERATION_ID``
+    * ``TMT_TEST_METADATA``
+    * ``TMT_TEST_NAME``
+    * ``TMT_TEST_RESTART_COUNT``
+    * ``TMT_TEST_SERIAL_NUMBER``
+    * ``TMT_TEST_SUBMITTED_FILES``
+    * ``TMT_TOPOLOGY_BASH``
+    * ``TMT_TOPOLOGY_YAML``
+    * ``TMT_TREE``
+    * ``TMT_VERSION``
+
+* ``finish``
+    * ``REBOOTCOUNT``
+    * ``RSTRNT_REBOOTCOUNT``
+    * ``TMT_TEST_PIDFILE``
+    * ``TMT_TEST_PIDFILE_LOCK``
+    * ``TMT_TEST_PIDFILE_ROOT``
+    * ``TMT_PLAN_DATA``
+    * ``TMT_PLAN_ENVIRONMENT_FILE``
+    * ``TMT_PLAN_SOURCE_SCRIPT``
+    * ``TMT_PREPARE_SHELL_URL_REPOSITORY``
+
+      .. note::
+
+         Only to the ``finish/shell`` phases.
+    * ``TMT_REBOOT_REQUEST``
+    * ``TMT_REBOOT_COUNT``
+    * ``TMT_TEST_RESTART_COUNT``
+    * ``TMT_TOPOLOGY_BASH``
+    * ``TMT_TOPOLOGY_YAML``
+    * ``TMT_TREE``
+    * ``TMT_VERSION``
+
+
+Consumed by tmt itself
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+    The following environment variables are set for and consumed by tmt
+    process itself, and never propagated to user environment.
+
+* ``NO_COLOR``
+* ``TMT_BOOT_TIMEOUT``
+* ``TMT_CONNECT_TIMEOUT``
+* ``TMT_CONFIG_DIR``
+* ``TMT_DEBUG``
+* ``TMT_DOWNLOAD_ATTEMPTS``
+* ``TMT_DOWNLOAD_INTERVAL``
+* ``TMT_EXPOSABLE_RUNNER_DEVICES``
+* ``TMT_FEELING_SAFE``
+* ``TMT_FORCE_COLOR``
+* ``TMT_GIT_CLONE_ATTEMPTS``
+* ``TMT_GIT_CLONE_INTERVAL``
+* ``TMT_GIT_CLONE_TIMEOUT``
+* ``TMT_GIT_CREDENTIALS_URL_<suffix>``
+* ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
+* ``TMT_NO_COLOR``
+* ``TMT_OUTPUT_WIDTH``
+* ``TMT_PLUGIN_${STEP}_${PLUGIN}_${OPTION}``
+* ``TMT_PLUGINS``
+* ``TMT_POLICY_FILE``
+* ``TMT_POLICY_NAME``
+* ``TMT_POLICY_ROOT``
+* ``TMT_REBOOT_TIMEOUT``
+* ``TMT_REPORT_ARTIFACTS_URL``
+* ``TMT_RETRY_SESSION_BACKOFF_FACTOR``
+* ``TMT_RETRY_SESSION_BACKOFF_MAX``
+* ``TMT_RETRY_SESSION_RETRIES``
+* ``TMT_SCRIPTS_DIR``
+* ``TMT_SHOW_TRACEBACK``
+* ``TMT_SSH_*``
+* ``TMT_STATE_FORMAT``
+* ``TMT_WORKDIR_ROOT``
