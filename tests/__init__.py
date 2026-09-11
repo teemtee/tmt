@@ -2,9 +2,10 @@ import contextlib
 import functools
 import importlib.metadata
 import os
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Iterator, Mapping
 from typing import IO, Any, Callable, Optional, Protocol, TypeVar, Union
 
+import _pytest.monkeypatch
 import click.core
 import click.testing
 
@@ -78,6 +79,23 @@ def with_cwd(path: Path) -> Callable[[Callable[P, T]], Callable[P, T]]:
         return __with_cwd
 
     return _with_cwd
+
+
+@contextlib.contextmanager
+def not_feeling_safe(monkeypatch: _pytest.monkeypatch.MonkeyPatch) -> Generator[None]:
+    """
+    A context manager that disables the "feeling safe" mode.
+
+    Use in a test that needs to verify interaction with the "feeling
+    safe" mode. For convenience, the mode might be enabled globally for
+    all tests, which may mess with expectations of a particular test.
+    """
+
+    with monkeypatch.context():
+        monkeypatch.delenv('TMT_FEELING_SAFE', raising=False)
+        monkeypatch.delenv('TMT_ALLOW_UNSAFE_BEHAVIOR', raising=False)
+
+        yield
 
 
 class RunTmt(Protocol):
