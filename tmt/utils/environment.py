@@ -505,7 +505,9 @@ class Environment(dict[str, EnvVarValue]):
         Extract environment variables from the live environment
         """
 
-        return Environment({key: EnvVarValue(value) for key, value in os.environ.items()})
+        return Environment(
+            {key: EnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
+        )
 
     @classmethod
     def from_fmf_context(cls, fmf_context: 'FmfContext') -> 'Environment':
@@ -632,14 +634,16 @@ class Environment(dict[str, EnvVarValue]):
             provision/prepare/execute/finish phases.
         """
 
-        environ_backup = os.environ.copy()
-        os.environ.clear()
-        os.environ.update(self.to_environ())
+        environ_backup = Environment.from_environ()
+
+        os.environ.clear()  # noqa: TID251
+        os.environ.update(self.to_environ())  # noqa: TID251
+
         try:
             yield
         finally:
-            os.environ.clear()
-            os.environ.update(environ_backup)
+            os.environ.clear()  # noqa: TID251
+            os.environ.update(environ_backup)  # noqa: TID251
 
     @classmethod
     def _build_environment(

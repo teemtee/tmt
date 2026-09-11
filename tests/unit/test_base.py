@@ -13,7 +13,7 @@ import tmt.result
 import tmt.utils
 from tmt.base.core import FmfId, expand_node_data
 from tmt.base.links import Link, LinkNeedle, Links
-from tmt.utils import Path, SpecificationError
+from tmt.utils import Environment, Path, SpecificationError
 
 if TYPE_CHECKING:
     from tests import RunTmt
@@ -294,7 +294,7 @@ def test_expand_node_data(monkeypatch) -> None:
 
     expected = [*_expected, [*_expected], {f'key{i}': value for i, value in enumerate(_expected)}]
 
-    for envvar in os.environ:
+    for envvar in Environment.environ:
         monkeypatch.delenv(envvar)
 
     for envvar, value in environ.items():
