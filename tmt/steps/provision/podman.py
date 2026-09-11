@@ -644,7 +644,7 @@ class GuestContainer(tmt.Guest):
         if not self.is_ready:
             return
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop provisioned guest
         """
@@ -660,7 +660,7 @@ class GuestContainer(tmt.Guest):
             self.podman(
                 Command('container', 'stop', '--time', str(self.stop_time), self.container)
             )
-            self.info('container', 'stopped', 'green')
+            logger.info('container', 'stopped', 'green')
 
     def remove(self) -> None:
         """
