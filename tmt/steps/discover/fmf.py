@@ -625,7 +625,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         else:
             assert fmf_root is not None  # narrow type
             directory = fmf_root
-        self.info('directory', directory, 'green')
+        self.info('directory', directory, color='green')
         self.debug(f"Copy '{directory}' to '{self.test_dir}'.")
         tmt.utils.filesystem.copy_tree(directory, self.test_dir, self._logger)
         return path
@@ -710,10 +710,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Check the 'test --filter' option first, then from discover
         filters = list(tmt.base.core.Test._opt('filters') or self.get('filter', []))
         for filter_ in filters:
-            self.info('filter', filter_, 'green')
+            self.info('filter', filter_, color='green')
         # Names of tests selected by --test option
         if self.data.test:
-            self.info('tests', fmf.utils.listed([test.name for test in self.data.test]), 'green')
+            self.info(
+                'tests', fmf.utils.listed([test.name for test in self.data.test]), color='green'
+            )
 
         # Check the 'test --link' option first, then from discover
         # FIXME: cast() - typeless "dispatcher" method
@@ -723,7 +725,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         ]
 
         for link_needle in link_needles:
-            self.info('link', str(link_needle), 'green')
+            self.info('link', str(link_needle), color='green')
 
         excludes = list(tmt.base.core.Test._opt('exclude') or self.data.exclude)
         includes = list(tmt.base.core.Test._opt('include') or self.data.include)
@@ -734,7 +736,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if modified_url:
             previous = modified_url
             modified_url = tmt.utils.git.clonable_git_url(modified_url)
-            self.info('modified-url', modified_url, 'green')
+            self.info('modified-url', modified_url, color='green')
             if previous != modified_url:
                 self.debug(f"Original url was '{previous}'.")
             self.debug(f"Fetch also '{modified_url}' as 'reference'.")
@@ -751,13 +753,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 'modified-ref',
                 tmt.utils.git.default_branch(repository=self.test_dir, logger=self._logger),
             )
-            self.info('modified-ref', modified_ref, 'green')
+            self.info('modified-ref', modified_ref, color='green')
             ref_commit = self.run(
                 Command('git', 'rev-parse', '--short', str(modified_ref)),
                 cwd=self.test_dir,
             )
             assert ref_commit.stdout is not None
-            self.verbose('modified-ref hash', ref_commit.stdout.strip(), 'green')
+            self.verbose('modified-ref hash', ref_commit.stdout.strip(), color='green')
             output = self.run(
                 Command(
                     'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
@@ -937,7 +939,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if fmf_root is None or fmf_root.resolve() == Path.cwd().resolve():
             fmf_root = Path('')
         else:
-            self.info('path', fmf_root, 'green')
+            self.info('path', fmf_root, color='green')
 
         # Discover tests
         self._tests = self.do_the_discovery(fmf_root)

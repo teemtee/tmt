@@ -489,7 +489,7 @@ class Provision(tmt.steps.Step):
 
         # Summary of provisioned guests
         guests = fmf.utils.listed(self.ready_guests, 'guest')
-        self.info('summary', f'{guests} provisioned', 'green', shift=1)
+        self.info('summary', f'{guests} provisioned', color='green', shift=1)
         # Guest list in verbose mode
         for guest in self.ready_guests:
             if not guest.name.startswith(tmt.utils.DEFAULT_NAME):
@@ -504,7 +504,7 @@ class Provision(tmt.steps.Step):
 
         # Nothing more to do if already done
         if self.status() == 'done':
-            self.info('status', 'done', 'green', shift=1)
+            self.info('status', 'done', color='green', shift=1)
             self.summary()
             self.actions()
             return

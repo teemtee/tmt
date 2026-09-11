@@ -492,7 +492,7 @@ class StreamLogger(Thread):
         for _line in self.stream:
             line = _line.decode('utf-8', errors='replace')
             if self.stream_output and line != '':
-                self.logger(self.log_header, line.rstrip('\n'), 'yellow', level=3)
+                self.logger(self.log_header, line.rstrip('\n'), color='yellow', level=3)
             self.output.append(line)
 
     def get_output(self) -> Optional[str]:
@@ -1671,6 +1671,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def print(
         self,
         text: str,
+        *,
         color: 'tmt.utils.themes.Style' = None,
     ) -> None:
         """
@@ -1690,6 +1691,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         topic: Optional[tmt.log.Topic] = None,
@@ -1712,6 +1714,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: 'VerbosityLevel' = 1,
@@ -1738,6 +1741,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: 'DebugLevel' = 1,
@@ -1760,14 +1764,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             stacklevel=stacklevel + 1,
         )
 
-    def warn(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
+    def warn(self, message: str, *, shift: int = 0, stacklevel: int = 1) -> None:
         """
         Show a yellow warning message on info level, send to stderr
         """
 
         self._logger.warning(message, shift=shift, stacklevel=stacklevel + 1)
 
-    def fail(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
+    def fail(self, message: str, *, shift: int = 0, stacklevel: int = 1) -> None:
         """
         Show a red failure message on info level, send to stderr
         """
@@ -1778,6 +1782,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[str] = None,
+        *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 1,
         level: VerbosityLevel = 3,
