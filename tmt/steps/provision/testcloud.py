@@ -383,6 +383,20 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         help="List locally available images.",
     )
 
+    image_cache: bool = field(
+        default=True,
+        option='--image-cache/--no-image-cache',
+        is_flag=True,
+        help="Enable or disable image URL caching, enabled by default.",
+    )
+
+    image_cache_age: int = field(
+        default=7,
+        option='--image-cache-age',
+        metavar='DAYS',
+        help="Maximum age of cached image URLs in days, 7 by default.",
+    )
+
     image_url: Optional[str] = field(
         default=None,
         internal=True,
@@ -765,6 +779,9 @@ class GuestTestcloud(tmt.GuestSsh):
     connection: str
     arch: str
 
+    image_cache: bool
+    image_cache_age: int
+
     stop_retries: int
     stop_retry_delay: int
 
@@ -947,6 +964,9 @@ class GuestTestcloud(tmt.GuestSsh):
         # Get configuration
         assert testcloud is not None
         self.config = testcloud.config.get_config()
+
+        self.config.CACHE_IMAGES = self.image_cache
+        self.config.TRUST_DEADLINE = self.image_cache_age
 
         self.debug(f"testcloud version: {testcloud.__version__}")
 
@@ -1147,6 +1167,7 @@ class GuestTestcloud(tmt.GuestSsh):
         def prepare_image() -> None:
             self._image = testcloud.image.Image(self.image_url)
             self.verbose('qcow', self._image.name, 'green')
+
             if not Path(self._image.local_path).exists():
                 self.info('progress', 'downloading...', 'cyan')
             try:
