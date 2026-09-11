@@ -13,11 +13,11 @@ This split is similar to the python sphinx domain workflow.
 import abc
 import typing
 from functools import cached_property
-from typing import Generic, Optional
+from typing import Generic, Optional, TypeVar
 
 from docutils.parsers.rst import directives
 from sphinx import addnodes
-from sphinx.directives import ObjDescT, ObjectDescription
+from sphinx.directives import ObjectDescription
 from sphinx.roles import XRefRole
 from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
@@ -34,6 +34,10 @@ if typing.TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+# TODO: Remove this when bumping to python3.12 format
+#  or actually how is this supposed to be handled when we keep the superclass's generic state?
+ObjDescT = TypeVar("ObjDescT")
 
 
 class TmtDirective(SphinxDirective, abc.ABC):
