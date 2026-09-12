@@ -132,7 +132,7 @@ requre:  ## Regenerate test data for integration tests
 ## Documentation
 ##
 docs: clean  ## Build documentation
-	uv sync --frozen --extra docs
+	uv sync --frozen --group docs
 	uv run sphinx-build -E -b html docs docs/_build
 
 man:  ## Build man page
