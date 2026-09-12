@@ -1,0 +1,4 @@
+description: |
+    The ``finish`` step now runs before ``report``. After the ``execute``
+    step is complete, finishing tasks are executed first and results
+    are reported afterwards.
