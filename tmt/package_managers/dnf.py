@@ -5,6 +5,7 @@ from collections.abc import Iterable, Sequence
 from typing import ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
+from tmt.base.core import DependencySimple
 from tmt.package_managers import (
     YUM_REPOS_DIR,
     FileSystemPath,
@@ -533,9 +534,14 @@ class YumEngine(DnfEngine):
     def check_presence(self, *installables: Installable) -> ShellScript:
         queries: list[str] = []
         for original_installable in installables:
-            sanitized = shlex.quote(str(self._sanitize_rpm_whatprovides(original_installable)))
-            original = shlex.quote(str(original_installable))
-            queries.append(f"rpm -q --whatprovides {sanitized} >&2 || echo {original}")
+            escaped = shlex.quote(str(original_installable))
+            if original_installable != self._sanitize_rpm_whatprovides(original_installable):
+                # this only happens when there is a nevra where we cannot use --whatprovides
+                # but normal `rpm -q` works
+                queries.append(f"rpm -q {escaped} >&2 || echo {escaped}")
+            else:
+                # Otherwise, do the actual presence check
+                queries.append(f"rpm -q --whatprovides {escaped} >&2 || echo {escaped}")
         return ShellScript("\n".join(queries))
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
@@ -615,3 +621,9 @@ class Yum(Dnf):
         """
     ).to_shell_command()
     probe_priority = 40
+
+    def essential_requires(self) -> list[DependencySimple]:
+        return [
+            # We need `yum-plugin-priorities` in order to handle repo priorities
+            DependencySimple("yum-plugin-priorities")
+        ]
