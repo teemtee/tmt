@@ -60,3 +60,10 @@ duration: 20m
     tag+:
       - provision-only
       - provision-virtual
+
+/essential-requires:
+    summary: Disabled checks should not install their essential requirements
+    test: ./test-essential-requires.sh
+    tag+:
+      - provision-only
+      - provision-virtual

@@ -244,3 +244,13 @@
         /reboot:
             summary: Test should fail due to reboot timeout
             test: '[ "$TMT_REBOOT_COUNT" == "0" ] && tmt-reboot -t 1 -c reboot || echo'
+
+/essential-requires:
+    test: /bin/true
+
+    /enabled:
+        check: dmesg
+    /disabled:
+        check:
+          - how: dmesg
+            enabled: false
