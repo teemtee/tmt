@@ -372,10 +372,6 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
         environment['TMT_SOURCE_DIR'] = EnvVarValue(self.discover_phase.source_dir)
 
         environment.update(
-            # Add variables from plan
-            self.phase.step.plan.intrinsic_environment,
-            # Add variables from guest
-            self.guest.intrinsic_environment,
             # Add variables from invocation contexts
             self.abort.intrinsic_environment,
             self.reboot.intrinsic_environment,
@@ -391,37 +387,23 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
     @property
     def environment(self) -> Environment:
         if self._environment is None:
-            # narrow type
-            assert isinstance(self.phase.step.plan.my_run, tmt.base.run.Run)
-
-            environment = Environment()
-
-            environment.update(
-                self.guest.environment,
-                self.test.environment,
-                self.guest.plan_environment,
-                self.phase.step.plan.environment,
+            self._environment = Environment.build_environment(
+                test=self.test,
+                plan=self.phase.step.plan,
+                run=self.phase.step.plan.my_run,
+                guest=self.guest,
+                test_invocation=self,
+                logger=self.logger,
             )
 
-        else:
-            environment = self._environment
-
-        environment.update(self.intrinsic_environment)
-
-        environment.update(
-            # Add variables from invocation contexts
-            self.abort.intrinsic_environment,
-            self.reboot.intrinsic_environment,
-            self.restart.intrinsic_environment,
-            self.pidfile.intrinsic_environment,
-            self.restraint.intrinsic_environment,
-            # Add variables the framework wants to expose
-            self.test.test_framework.get_environment_variables(self, self.logger),
+        return self._environment.refresh_intrinsics(
+            test=self.test,
+            plan=self.phase.step.plan,
+            run=self.phase.step.plan.my_run,
+            guest=self.guest,
+            test_invocation=self,
+            logger=self.logger,
         )
-
-        self._environment = environment
-
-        return environment
 
     def invoke_check(self, event: CheckEvent, check: Check) -> list[CheckResult]:
         results, exc, timer = Stopwatch().measure(

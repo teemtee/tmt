@@ -22,20 +22,6 @@
             how: shell
             script: ./setup_env.sh
 
-    /env-file-override:
-        prepare:
-            how: shell
-            script: echo "MYVAR1=MYVAR1_VALUE" >> $TMT_PLAN_ENVIRONMENT_FILE
-        environment-file:
-            - override.env
-
-    /env-override:
-        prepare:
-            how: shell
-            script: echo "MYVAR1=MYVAR1_VALUE" >> $TMT_PLAN_ENVIRONMENT_FILE
-        environment:
-            MYVAR1: MYVAR1_OVERRIDE
-
     /execute-override:
         discover:
             how: shell
