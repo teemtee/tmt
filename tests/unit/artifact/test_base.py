@@ -23,6 +23,7 @@ class MockProvider(ArtifactProvider):
                 version=Version(name="mock", version="1.0", release="1", arch="x86_64"),
                 location="http://example.com/mock-1.0-1.x86_64.rpm",
                 provider=self,
+                repo_id="mock-repo",
             )
         ]
 
@@ -92,7 +93,7 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
         },
         "nvra": "mock-1.0-1.x86_64",
         "location": "http://example.com/mock-1.0-1.x86_64.rpm",
-        "repo_id": "tmt-artifact-shared",
+        "repo_id": "mock-repo",
     }
     assert artifact == expected
 
