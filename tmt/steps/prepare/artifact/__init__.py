@@ -60,7 +60,7 @@ class PrepareArtifactData(PrepareStepData):
         metavar='NAME',
         help="""
             Name of the tmt generated repo containing all artifacts
-            that are generated.
+            that are downloaded on the guest.
             """,
     )
 
