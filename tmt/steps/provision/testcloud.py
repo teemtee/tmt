@@ -51,6 +51,7 @@ Workarounds: Any
 X86_64ArchitectureConfiguration: Any
 AArch64ArchitectureConfiguration: Any
 S390xArchitectureConfiguration: Any
+RISCV64ArchitectureConfiguration: Any
 Ppc64leArchitectureConfiguration: Any
 SystemNetworkConfiguration: Any
 UserNetworkConfiguration: Any
@@ -71,6 +72,7 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
     global X86_64ArchitectureConfiguration
     global AArch64ArchitectureConfiguration
     global S390xArchitectureConfiguration
+    global RISCV64ArchitectureConfiguration
     global Ppc64leArchitectureConfiguration
     global SystemNetworkConfiguration
     global UserNetworkConfiguration
@@ -88,6 +90,7 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
             Ppc64leArchitectureConfiguration,
             QCow2StorageDevice,
             RawStorageDevice,
+            RISCV64ArchitectureConfiguration,
             S390xArchitectureConfiguration,
             SystemNetworkConfiguration,
             TPMConfiguration,
@@ -372,7 +375,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
     arch: str = field(
         default=DEFAULT_ARCH,
         option=('-a', '--arch'),
-        choices=['x86_64', 'aarch64', 's390x', 'ppc64le'],
+        choices=['x86_64', 'aarch64', 's390x', 'ppc64le', 'riscv64'],
         help="What architecture to virtualize, host arch by default.",
     )
 
@@ -1093,6 +1096,12 @@ class GuestTestcloud(tmt.GuestSsh):
                     "The s390x architecture does not support 'uefi' boot, "
                     "using 'bios' boot method instead."
                 )
+        elif self.arch == "riscv64":
+            domain.system_architecture = RISCV64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=uefi,
+                model="virt",
+            )
         else:
             raise tmt.utils.ProvisionError("Unknown architecture requested.")
 
