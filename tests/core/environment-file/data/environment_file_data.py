@@ -18,4 +18,4 @@ env_vars_parametrization = (
 
 @pytest.mark.parametrize(*env_vars_parametrization)
 def test_environment_file_with_variables(env_name, value):
-    assert Environment.environ[env_name] == value
+    assert Environment.from_environ()[env_name] == value
