@@ -294,7 +294,7 @@ def test_expand_node_data(monkeypatch) -> None:
 
     expected = [*_expected, [*_expected], {f'key{i}': value for i, value in enumerate(_expected)}]
 
-    for envvar in Environment.environ:
+    for envvar in Environment.from_environ():
         monkeypatch.delenv(envvar)
 
     for envvar, value in environ.items():
