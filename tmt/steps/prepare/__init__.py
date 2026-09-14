@@ -260,6 +260,9 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                     self._logger,
                 )
 
+            # TODO(5154): package_manager's logger here is of provision. We swap it here
+            #  for a prepare one until all PackageManager methods require logger parameter.
+            guest.package_manager._logger = self._logger
             # Package managers can also have essential_requires
             collected_essential_requires[
                 guest
