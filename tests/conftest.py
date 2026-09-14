@@ -1,9 +1,11 @@
+import functools
 import os
 import pathlib
 import shutil
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
+import _pytest.fixtures
 import _pytest.logging
 import _pytest.tmpdir
 import fmf.base
@@ -14,10 +16,24 @@ from tmt.base.plan import Plan
 from tmt.log import Logger
 from tmt.steps.provision import Provision
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
-from tmt.utils import Path
+from tmt.utils import Path, RawCommand
 
 if TYPE_CHECKING:
     from pytest_container.container import ContainerData
+
+
+@pytest.fixture(name='_extra_tmt_options')
+def _fixture_extra_tmt_options() -> RawCommand:
+    """
+    Collection of extra options to pass to ``tmt`` command.
+
+    This fixture is not to be used directly in tests. It is used by
+    fixtures to collect additional command-line options for the main
+    command, ``tmt``: fixtures that do wish to enhance the command would
+    require this fixture, and add their options to the provided list.
+    """
+
+    return []
 
 
 @pytest.fixture(name='root_logger')
@@ -29,13 +45,30 @@ def fixture_root_logger(caplog: _pytest.logging.LogCaptureFixture) -> Logger:
     return Logger.create(verbose=0, debug=0, quiet=False, apply_colors_logging=False)
 
 
+@pytest.fixture(name='fmf_root')
+def fixture_fmf_root(
+    _extra_tmt_options: RawCommand, request: _pytest.fixtures.FixtureRequest
+) -> Path:
+    assert isinstance(request.param, Path)
+
+    # Let the main tmt command know it's supposed to use the given fmf
+    # root...
+    _extra_tmt_options += ['-r', request.param]
+
+    # ... but also propagate the path to the test, just like fixtures do.
+    # The test might wish to work with the path as well.
+    return request.param
+
+
 @pytest.fixture(name='run_tmt')
-def fixture_run_tmt() -> RunTmt:
+def fixture_run_tmt(
+    _extra_tmt_options: RawCommand, request: _pytest.fixtures.FixtureRequest
+) -> RunTmt:
     """
     Invoke a ``tmt`` command with given options.
     """
 
-    return CliRunner().invoke
+    return functools.partial(CliRunner().invoke, extra_tmt_options=_extra_tmt_options)
 
 
 # Equivalent fixtures to `tmp_path_factory` and `tmp_path` recasting the paths
