@@ -1,4 +1,3 @@
-import functools
 import os
 import pathlib
 import shutil
@@ -11,29 +10,39 @@ import _pytest.tmpdir
 import fmf.base
 import pytest
 
-from tests import CliRunner, RunTmt
+from tests import CliRunner, RunTmt, TmtCliOptions, TmtCliRunOptions
 from tmt.base.plan import Plan
 from tmt.log import Logger
 from tmt.steps.provision import Provision
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
-from tmt.utils import Path, RawCommand
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     from pytest_container.container import ContainerData
 
 
-@pytest.fixture(name='_extra_tmt_options')
-def _fixture_extra_tmt_options() -> RawCommand:
-    """
-    Collection of extra options to pass to ``tmt`` command.
+@pytest.fixture
+def _cli_runner() -> CliRunner:
+    return CliRunner()
 
-    This fixture is not to be used directly in tests. It is used by
-    fixtures to collect additional command-line options for the main
-    command, ``tmt``: fixtures that do wish to enhance the command would
-    require this fixture, and add their options to the provided list.
-    """
 
-    return []
+@pytest.fixture
+def _tmt_cli_options(_cli_runner: CliRunner) -> TmtCliOptions:
+    opts = TmtCliOptions()
+    _cli_runner.opts = opts
+    return opts
+
+
+@pytest.fixture
+def _tmt_cli_run_options(
+    _cli_runner: CliRunner, _tmt_cli_options: TmtCliOptions
+) -> TmtCliRunOptions:
+    opts = TmtCliRunOptions()
+    # Transform the _tmt_cli_options into a TmtCliRunOptions
+    # This may break if the fields _tmt_cli_options are not pointer-like attributes
+    opts._root_options = _tmt_cli_options._root_options
+    _cli_runner.opts = opts
+    return opts
 
 
 @pytest.fixture(name='root_logger')
@@ -47,13 +56,13 @@ def fixture_root_logger(caplog: _pytest.logging.LogCaptureFixture) -> Logger:
 
 @pytest.fixture(name='fmf_root')
 def fixture_fmf_root(
-    _extra_tmt_options: RawCommand, request: _pytest.fixtures.FixtureRequest
+    _tmt_cli_options: TmtCliOptions, request: _pytest.fixtures.FixtureRequest
 ) -> Path:
     assert isinstance(request.param, Path)
 
     # Let the main tmt command know it's supposed to use the given fmf
     # root...
-    _extra_tmt_options += ['-r', request.param]
+    _tmt_cli_options._root_options += ['-r', request.param]
 
     # ... but also propagate the path to the test, just like fixtures do.
     # The test might wish to work with the path as well.
@@ -61,14 +70,12 @@ def fixture_fmf_root(
 
 
 @pytest.fixture(name='run_tmt')
-def fixture_run_tmt(
-    _extra_tmt_options: RawCommand, request: _pytest.fixtures.FixtureRequest
-) -> RunTmt:
+def fixture_run_tmt(_cli_runner: CliRunner) -> RunTmt:
     """
     Invoke a ``tmt`` command with given options.
     """
 
-    return functools.partial(CliRunner().invoke, extra_tmt_options=_extra_tmt_options)
+    return _cli_runner.invoke
 
 
 # Equivalent fixtures to `tmp_path_factory` and `tmp_path` recasting the paths

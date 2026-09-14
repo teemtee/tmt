@@ -2,7 +2,8 @@ import contextlib
 import functools
 import importlib.metadata
 import os
-from collections.abc import Generator, Iterator, Mapping, Sequence
+from collections.abc import Generator, Iterator, Mapping
+from dataclasses import dataclass, field  # noqa: TID251
 from typing import IO, Any, Callable, Optional, Protocol, TypeVar, Union
 
 import _pytest.monkeypatch
@@ -15,7 +16,7 @@ import tmt.cli._root
 from tmt._compat.typing import ParamSpec
 from tmt._compat.typing import TypeAlias as TypeAlias
 from tmt.log import Logger as Logger
-from tmt.utils import Command, Path, RawCommandElement
+from tmt.utils import Command, Path, RawCommand, RawCommandElement
 
 _CLICK_VERSION = tuple(int(_s) for _s in importlib.metadata.version('click').split('.'))
 
@@ -149,7 +150,59 @@ class RunTmt(Protocol):
         pass
 
 
+@dataclass
+class TmtCliOptions:
+    _root_options: RawCommand = field(default_factory=list)
+
+    def to_options(self) -> Iterator[RawCommandElement]:
+        yield from self._root_options
+
+
+@dataclass
+class TmtCliRunOptions(TmtCliOptions):
+    # Run level options
+    run_id: Optional[Path] = None
+
+    # Run subcommands
+    discover: Optional[RawCommand] = None
+    provision: Optional[RawCommand] = None
+    prepare: Optional[RawCommand] = None
+    execute: Optional[RawCommand] = None
+    report: Optional[RawCommand] = None
+    finish: Optional[RawCommand] = None
+    cleanup: Optional[RawCommand] = None
+    plans: Optional[RawCommand] = None
+    tests: Optional[RawCommand] = None
+    login: Optional[RawCommand] = None
+    reboot: Optional[RawCommand] = None
+
+    def to_options(self) -> Iterator[RawCommandElement]:
+        yield from super().to_options()
+        yield "run"
+        if self.run_id:
+            yield f"--id={self.run_id}"
+        for part in [
+            "discover",
+            "provision",
+            "prepare",
+            "execute",
+            "report",
+            "finish",
+            "cleanup",
+            "plans",
+            "tests",
+            "login",
+            "reboot",
+        ]:
+            if (part_opts := getattr(self, part)) is not None:
+                assert isinstance(part_opts, list)
+                yield part
+                yield from part_opts
+
+
 class CliRunner(click.testing.CliRunner):
+    opts: Optional[TmtCliOptions] = None
+
     def __init__(self) -> None:
         if _CLICK_VERSION >= (8, 2, 0):
             super().__init__(charset='utf-8', echo_stdin=False)
@@ -157,11 +210,10 @@ class CliRunner(click.testing.CliRunner):
         else:
             super().__init__(charset='utf-8', echo_stdin=False, mix_stderr=False)
 
-    def invoke(  # type: ignore[override]
+    def _invoke(
         self,
-        *args: RawCommandElement,
+        *args: str,
         command: Optional[click.BaseCommand] = None,
-        extra_tmt_options: Optional[Sequence[RawCommandElement]] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
         catch_exceptions: bool = True,
@@ -173,11 +225,31 @@ class CliRunner(click.testing.CliRunner):
         tmt.__main__.import_cli_commands()
 
         command = command or tmt.cli._root.main
-        options = Command(*(*(extra_tmt_options or []), *args))
 
         return super().invoke(
             command,
-            args=options.to_popen(),
+            args=args,
+            input=input,
+            env=env,
+            catch_exceptions=catch_exceptions,
+            color=color,
+            **kwargs,
+        )
+
+    def invoke(  # type: ignore[override]
+        self,
+        *args: RawCommandElement,
+        command: Optional[click.BaseCommand] = None,
+        input: Optional[Union[str, bytes, IO[Any]]] = None,
+        env: Optional[Mapping[str, Optional[str]]] = None,
+        catch_exceptions: bool = True,
+        color: bool = False,
+        **kwargs: Any,
+    ) -> click.testing.Result:
+        options = Command(*(self.opts.to_options() if self.opts else []), *args)
+        return self._invoke(
+            *options.to_popen(),
+            command=command,
             input=input,
             env=env,
             catch_exceptions=catch_exceptions,
