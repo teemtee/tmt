@@ -881,17 +881,14 @@ _test_export_default = 'yaml'
 )
 @option(
     '--jira-url',
-    envvar='TMT_PLUGIN_EXPORT_JIRA_URL',
     help='Jira instance base URL, e.g. ``https://issues.redhat.com``.',
 )
 @option(
     '--jira-token',
-    envvar='TMT_PLUGIN_EXPORT_JIRA_TOKEN',
     help='Jira API token for authentication.',
 )
 @option(
     '--jira-user',
-    envvar='TMT_PLUGIN_EXPORT_JIRA_USER',
     help='Jira user email for authentication.',
 )
 @option(

@@ -8,9 +8,9 @@ import pytest
 import tmt.base.core
 import tmt.log
 from tests import CliRunner, reset_common
-from tmt.export.jira import _build_fields, _text_to_adf
+from tmt.export.jira import JiraExporter
 from tmt.identifier import ID_KEY
-from tmt.utils import ConvertError, Path
+from tmt.utils import ExportError, Path
 from tmt.utils.jira import JiraInstance
 
 
@@ -21,9 +21,17 @@ class FakeIssueType:
 
 
 class FakeUser:
-    def __init__(self, account_id: str, email_address: str) -> None:
+    def __init__(
+        self,
+        account_id: str,
+        email_address: str,
+        display_name: str = '',
+        name: str = '',
+    ) -> None:
         self.accountId = account_id
         self.emailAddress = email_address
+        self.displayName = display_name or email_address
+        self.name = name or email_address
 
 
 class FakeIssueRef:
@@ -50,9 +58,11 @@ class FakeIssueFields:
         status_name: str,
         issuelinks: list[FakeIssueLink],
         custom_fields: Optional[dict[str, Any]] = None,
+        issue_type_name: str = 'Test Case',
     ) -> None:
         self.status = FakeStatus(status_name)
         self.issuelinks = issuelinks
+        self.issuetype = FakeIssueType('10239', issue_type_name)
         if custom_fields:
             for k, v in custom_fields.items():
                 setattr(self, k, v)
@@ -65,9 +75,12 @@ class FakeIssue:
         status_name: str = 'New',
         issuelinks: Optional[list[FakeIssueLink]] = None,
         custom_fields: Optional[dict[str, Any]] = None,
+        issue_type_name: str = 'Test Case',
     ) -> None:
         self.key = key
-        self.fields = FakeIssueFields(status_name, issuelinks or [], custom_fields)
+        self.fields = FakeIssueFields(
+            status_name, issuelinks or [], custom_fields, issue_type_name
+        )
         self.updated_fields: Optional[dict[str, Any]] = None
 
     def update(self, fields: dict[str, Any]) -> None:
@@ -104,6 +117,7 @@ class FakeJiraClient:
         ]
         self.users: list[FakeUser] = []
         self.remote_links_map: dict[str, list[FakeRemoteLink]] = {}
+        self.nonexistent_issues: set[str] = set()
         self.created_issues: list[dict[str, Any]] = []
         self.created_issue_links: list[tuple[str, str, str]] = []
         self.created_remote_links: list[tuple[str, dict[str, Any]]] = []
@@ -132,6 +146,10 @@ class FakeJiraClient:
         return FakeIssue(self.create_result_key)
 
     def issue(self, key: str, fields: Any = None, **kwargs: Any) -> FakeIssue:
+        if key in self.nonexistent_issues:
+            import jira
+
+            raise jira.JIRAError(status_code=404, text=f"Issue {key} does not exist")
         return self.issues.setdefault(key, FakeIssue(key))
 
     def transitions(self, issue: str) -> list[dict[str, Any]]:
@@ -162,7 +180,7 @@ def _mock_network(fake_jira: FakeJiraClient) -> Any:
         unittest.mock.patch('tmt.utils.git.validate_git_status', return_value=(True, '')),
         # Avoid a live lookup against a real Polarion instance when ~/.pylero
         # happens to be configured on the machine running the tests.
-        unittest.mock.patch('tmt.export.jira._find_polarion_case_url', return_value=None),
+        unittest.mock.patch.object(JiraExporter, '_find_polarion_case_url', return_value=None),
     ):
         yield
     # CliRunner options are cached on Common-derived classes; clean up so a
@@ -219,7 +237,7 @@ FIELD_IDS = {
 
 class TestBuildFields:
     def test_minimal(self) -> None:
-        fields = _build_fields(
+        fields = JiraExporter._build_fields(
             project_id='RHELTEST',
             summary='Check something',
             description=None,
@@ -234,7 +252,7 @@ class TestBuildFields:
         assert fields == {'summary': 'Check something', 'customfield_10591': 'abc-123'}
 
     def test_full(self) -> None:
-        fields = _build_fields(
+        fields = JiraExporter._build_fields(
             project_id='RHELTEST',
             summary='Check something',
             description='Longer text',
@@ -249,7 +267,7 @@ class TestBuildFields:
         )
         assert fields['project'] == {'key': 'RHELTEST'}
         assert fields['issuetype'] == {'id': '10239'}
-        assert fields['description'] == _text_to_adf('Longer text')
+        assert fields['description'] == JiraExporter._text_to_adf('Longer text')
         assert fields['customfield_10591'] == 'abc-123'
         assert fields['components'] == [{'name': 'kernel'}]
         assert fields['labels'] == ['Tier1']
@@ -260,14 +278,14 @@ class TestBuildFields:
 
 class TestTextToAdf:
     def test_empty(self) -> None:
-        assert _text_to_adf('') == {
+        assert JiraExporter._text_to_adf('') == {
             'type': 'doc',
             'version': 1,
             'content': [{'type': 'paragraph', 'content': []}],
         }
 
     def test_multiline(self) -> None:
-        adf = _text_to_adf('first\n\nsecond')
+        adf = JiraExporter._text_to_adf('first\n\nsecond')
         assert [p['content'][0]['text'] for p in adf['content']] == ['first', 'second']
 
 
@@ -288,7 +306,7 @@ class TestResolveIssueTypeId:
         self, jira_instance: JiraInstance, fake_jira: FakeJiraClient
     ) -> None:
         fake_jira.issue_types_response = [FakeIssueType('10239', 'Test Case')]
-        with pytest.raises(ConvertError, match="No 'Bug' issue type found"):
+        with pytest.raises(ExportError, match="No 'Bug' issue type found"):
             jira_instance.resolve_issue_type_id('RHELTEST', 'Bug')
 
     def test_result_is_cached(
@@ -308,7 +326,7 @@ class TestResolveFieldId:
         self, jira_instance: JiraInstance, fake_jira: FakeJiraClient
     ) -> None:
         fake_jira.fields_response = []
-        with pytest.raises(ConvertError, match="No 'ID' custom field found"):
+        with pytest.raises(ExportError, match="No 'ID' custom field found"):
             jira_instance.resolve_field_id('ID')
 
     def test_ambiguous_raises(
@@ -318,7 +336,7 @@ class TestResolveFieldId:
             {'id': 'customfield_10591', 'name': 'ID'},
             {'id': 'customfield_99999', 'name': 'ID'},
         ]
-        with pytest.raises(ConvertError, match="Multiple fields named 'ID'"):
+        with pytest.raises(ExportError, match="Multiple fields named 'ID'"):
             jira_instance.resolve_field_id('ID')
 
     def test_result_is_cached(
@@ -338,14 +356,28 @@ class TestResolveTransitionId:
         self, jira_instance: JiraInstance, fake_jira: FakeJiraClient
     ) -> None:
         fake_jira.transitions_response = [{'id': '3', 'to': {'name': 'Active'}}]
-        with pytest.raises(ConvertError, match="No transition to status 'Retired'"):
+        with pytest.raises(ExportError, match="No transition to status 'Retired'"):
             jira_instance.resolve_transition_id('RHELTEST-1', 'Retired')
 
 
 class TestResolveAccountId:
-    def test_exact_match(self, jira_instance: JiraInstance, fake_jira: FakeJiraClient) -> None:
+    def test_exact_email_match(
+        self, jira_instance: JiraInstance, fake_jira: FakeJiraClient
+    ) -> None:
         fake_jira.users = [FakeUser('712020:abc', 'me@example.com')]
         assert jira_instance.resolve_account_id('me@example.com') == '712020:abc'
+
+    def test_display_name_match(
+        self, jira_instance: JiraInstance, fake_jira: FakeJiraClient
+    ) -> None:
+        fake_jira.users = [
+            FakeUser('712020:abc', 'hidden@example.com', display_name='Petr Matyas')
+        ]
+        assert jira_instance.resolve_account_id('Petr Matyas') == '712020:abc'
+
+    def test_username_match(self, jira_instance: JiraInstance, fake_jira: FakeJiraClient) -> None:
+        fake_jira.users = [FakeUser('712020:abc', 'hidden@example.com', name='pmatyas')]
+        assert jira_instance.resolve_account_id('pmatyas') == '712020:abc'
 
     def test_no_exact_match_returns_none(
         self, jira_instance: JiraInstance, fake_jira: FakeJiraClient
@@ -470,6 +502,57 @@ class TestExportToJira:
         assert saved_uuid is not None
         assert fake_jira.issues['RHELTEST-42'].updated_fields is not None
         assert fake_jira.issues['RHELTEST-42'].updated_fields['customfield_10591'] == saved_uuid
+
+    def test_implements_link_nonexistent_warns_and_falls_back_to_uuid(
+        self, fmf_root: Any, fake_jira: FakeJiraClient
+    ) -> None:
+        node = find_test_node(fmf_root)
+        with node as data:
+            data['link'] = [{'implements': 'https://issues.redhat.com/browse/RHELTEST-999'}]
+            data[ID_KEY] = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+
+        fake_jira.nonexistent_issues.add('RHELTEST-999')
+        fake_jira.search_result = {'issues': [{'key': 'RHELTEST-42'}]}
+
+        output = CliRunner().invoke(
+            'tests',
+            'export',
+            '--how',
+            'jira',
+            *CREDENTIALS,
+            '.',
+        )
+        assert output.exit_code == 0, output.output
+        assert "Jira issue 'RHELTEST-999' from implements link not found in Jira." in output.output
+        assert "Found via UUID: 'RHELTEST-42'." in output.output
+        assert "Test case 'RHELTEST-42' updated." in output.output
+
+    def test_implements_link_wrong_type_warns_and_falls_back_to_uuid(
+        self, fmf_root: Any, fake_jira: FakeJiraClient
+    ) -> None:
+        node = find_test_node(fmf_root)
+        with node as data:
+            data['link'] = [{'implements': 'https://issues.redhat.com/browse/RHELTEST-999'}]
+            data[ID_KEY] = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+
+        fake_jira.issues['RHELTEST-999'] = FakeIssue('RHELTEST-999', issue_type_name='Bug')
+        fake_jira.search_result = {'issues': [{'key': 'RHELTEST-42'}]}
+
+        output = CliRunner().invoke(
+            'tests',
+            'export',
+            '--how',
+            'jira',
+            *CREDENTIALS,
+            '.',
+        )
+        assert output.exit_code == 0, output.output
+        assert (
+            "Jira issue 'RHELTEST-999' from implements link is not a 'Test Case' (type: 'Bug')."
+            in output.output
+        )
+        assert "Found via UUID: 'RHELTEST-42'." in output.output
+        assert "Test case 'RHELTEST-42' updated." in output.output
 
     def test_link_jira_writes_implements_link(
         self, fmf_root: Any, fake_jira: FakeJiraClient

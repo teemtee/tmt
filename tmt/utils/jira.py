@@ -228,9 +228,7 @@ class JiraInstance:
             }
 
         if name not in self._issue_types:
-            raise tmt.utils.ConvertError(
-                f"No '{name}' issue type found in project '{project_id}'."
-            )
+            raise tmt.utils.ExportError(f"No '{name}' issue type found in project '{project_id}'.")
         return self._issue_types[name]
 
     def resolve_field_id(self, name: str) -> str:
@@ -249,9 +247,9 @@ class JiraInstance:
 
         matches = self._fields_by_name.get(name, [])
         if not matches:
-            raise tmt.utils.ConvertError(f"No '{name}' custom field found in Jira.")
+            raise tmt.utils.ExportError(f"No '{name}' custom field found in Jira.")
         if len(matches) > 1:
-            raise tmt.utils.ConvertError(
+            raise tmt.utils.ExportError(
                 f"Multiple fields named '{name}' found in Jira: {matches}."
             )
         return matches[0]
@@ -266,7 +264,7 @@ class JiraInstance:
         for transition in self.jira.transitions(issue_key):
             if transition.get('to', {}).get('name') == target_status_name:
                 return str(transition['id'])
-        raise tmt.utils.ConvertError(
+        raise tmt.utils.ExportError(
             f"No transition to status '{target_status_name}' available for '{issue_key}'."
         )
 
@@ -274,9 +272,9 @@ class JiraInstance:
         """Transition an issue to ``target_status_name``, resolving the transition ID first."""
         self.jira.transition_issue(key, self.resolve_transition_id(key, target_status_name))
 
-    def resolve_account_id(self, email: str) -> Optional[str]:
+    def resolve_account_id(self, query: str) -> Optional[str]:
         """
-        Resolve a Jira Cloud ``accountId`` from an email address.
+        Resolve a Jira Cloud ``accountId`` from an email address, display name or username.
 
         Jira Cloud's REST API no longer accepts a ``name`` (login) when
         assigning issues; an ``accountId`` looked up via the user search
@@ -285,13 +283,15 @@ class JiraInstance:
         The search performs a loose match and, when nothing really
         matches, has been observed to fall back to returning arbitrary
         unrelated users rather than an empty list. A candidate is
-        therefore only accepted when its email matches exactly
-        (case-insensitively); this can also legitimately fail to find an
-        existing account whose email is hidden by that user's Jira
-        privacy settings.
+        therefore only accepted when its email, display name or username
+        matches (case-insensitively).
         """
-        for user in self.jira.search_users(query=email):
-            if getattr(user, 'emailAddress', '').lower() == email.lower():
+        target = query.strip().lower()
+        for user in self.jira.search_users(query=query):
+            user_email = getattr(user, 'emailAddress', '').lower()
+            user_display = getattr(user, 'displayName', '').lower()
+            user_name = getattr(user, 'name', '').lower()
+            if target in (user_email, user_display, user_name):
                 return str(user.accountId)
         return None
 
