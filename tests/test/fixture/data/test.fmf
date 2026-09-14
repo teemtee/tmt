@@ -1,0 +1,32 @@
+/setup:
+  test: |
+    if [[ "$SKIP_SETUP" == "true" ]]; then
+      tmt-report-result / SKIP
+    elif [[ "$FAIL_SETUP" == "true" ]]; then
+      tmt-report-result / FAIL
+    else
+      touch $TMT_PLAN_DATA/fixture_file
+    fi
+/cleanup:
+  test: |
+    if [[ "$FAIL_CLEANUP" == "true" ]]; then
+      tmt-report-result / FAIL
+    else
+      rm $TMT_PLAN_DATA/fixture_file
+    fi
+
+/main_test:
+  fixture:
+    setup: /test/setup
+    cleanup: /test/cleanup
+  test: |
+    if [ ! -f "$TMT_PLAN_DATA/fixture_file" ]; then
+      echo "Fixture setup was not executed"
+      exit 1
+    fi
+
+/non_existent_fixture:
+  fixture:
+    setup: /non_existent
+  test: /bin/true
+  enabled: false

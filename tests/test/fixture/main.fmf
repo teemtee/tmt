@@ -1,0 +1,8 @@
+summary: Verify test fixture logic
+
+framework: shell
+test: $PYTEST ./test_fixture.py
+
+tag+:
+  - provision-only
+  - provision-local

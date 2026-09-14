@@ -1,0 +1,24 @@
+discover:
+  how: fmf
+provision:
+  how: local
+execute:
+  how: tmt
+
+environment:
+  SKIP_SETUP: "false"
+  FAIL_SETUP: "false"
+  FAIL_CLEANUP: "false"
+
+/select_only_test:
+  discover+:
+    test: /main_test
+/skip_setup:
+  environment+:
+    SKIP_SETUP: "true"
+/fail_setup:
+  environment+:
+    FAIL_SETUP: "true"
+/fail_cleanup:
+  environment+:
+    FAIL_CLEANUP: "true"
