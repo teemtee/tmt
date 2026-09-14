@@ -2324,6 +2324,12 @@ class ConvertError(MetadataError):
     """
 
 
+class ExportError(GeneralError):
+    """
+    Metadata export error
+    """
+
+
 class StructuredFieldError(GeneralError):
     """
     StructuredField parsing error

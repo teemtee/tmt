@@ -133,18 +133,14 @@ story: 'As a user I want to comfortably work with tests'
 
     /jira:
         story: 'I want to export test metadata into Jira.'
-        example: tmt test export --how jira --create --link-jira --project-id RHELTEST
+        example:
+            - tmt test export --how jira --create --link-jira --jira-url https://issues.redhat.com --jira-user me@example.com --jira-token <token> --project-id RHELTEST
         description: |
             Export test metadata to a Jira project as ``Test Case``
             work items. Authentication uses a Jira API token with
-            HTTP Basic Auth. Provide credentials via CLI options or
-            environment variables:
-
-            .. code-block:: shell
-
-                export TMT_PLUGIN_EXPORT_JIRA_URL=https://issues.redhat.com
-                export TMT_PLUGIN_EXPORT_JIRA_USER=me@example.com
-                export TMT_PLUGIN_EXPORT_JIRA_TOKEN=<token>
+            HTTP Basic Auth. Provide credentials and target project
+            via the ``--jira-url``, ``--jira-user``, ``--jira-token``,
+            and ``--project-id`` options.
 
             The following ``fmf`` attributes are exported to the
             corresponding Jira ``Test Case`` fields:
@@ -154,7 +150,7 @@ story: 'As a user I want to comfortably work with tests'
             * ``id`` — ``ID`` custom field used for future lookup
             * ``component`` — components
             * ``tag`` + ``Tier{N}`` — labels
-            * ``contact`` — assignee (email resolved to a Jira Cloud
+            * ``contact`` — assignee (resolved to a Jira Cloud
               ``accountId`` via the user search API)
             * ``enabled`` — status (``Active`` or ``Retired``)
             * ``link[test-script]`` or ``extra-task`` or repo URL
