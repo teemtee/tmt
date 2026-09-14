@@ -188,6 +188,7 @@ class TmtCliRunOptions(TmtCliOptions):
         yield "run"
         if self.run_id:
             yield f"--id={self.run_id}"
+            yield "--scratch"
         for part in [
             "discover",
             "provision",
