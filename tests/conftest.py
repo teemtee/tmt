@@ -69,6 +69,13 @@ def fixture_fmf_root(
     return request.param
 
 
+@pytest.fixture(name='run_id')
+def fixture_run_id(_tmt_cli_run_options: TmtCliRunOptions, tmppath: Path) -> Path:
+    run_id = tmppath / "tmt_run"
+    _tmt_cli_run_options.run_id = run_id
+    return run_id
+
+
 @pytest.fixture(name='run_tmt')
 def fixture_run_tmt(_cli_runner: CliRunner) -> RunTmt:
     """
