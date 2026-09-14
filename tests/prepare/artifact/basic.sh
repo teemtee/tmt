@@ -25,6 +25,7 @@ rlJournalStart
             rlRun "tmt run -i $run --scratch -vvv --all \
                 provision -h $PROVISION_HOW --image $image" \
                 0 "Run tmt with artifact providers"
+            rlAssertGrep "Successfully created repository 'custom-artifact-repo'" "${run}/log.txt"
         rlPhaseEnd
     done <<< "$IMAGES"
 
