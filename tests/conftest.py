@@ -76,6 +76,15 @@ def fixture_run_id(_tmt_cli_run_options: TmtCliRunOptions, tmppath: Path) -> Pat
     return run_id
 
 
+@pytest.fixture(name='run_plan')
+def fixture_run_plan(
+    _tmt_cli_run_options: TmtCliRunOptions, request: _pytest.fixtures.FixtureRequest
+) -> str:
+    assert isinstance(request.param, str)
+    _tmt_cli_run_options.plans = [f"--name=^{request.param}$"]
+    return request.param
+
+
 @pytest.fixture(name='run_tmt')
 def fixture_run_tmt(_cli_runner: CliRunner) -> RunTmt:
     """
