@@ -394,7 +394,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         default=7,
         option='--image-cache-age',
         metavar='DAYS',
-        help="Maximum age of cached image URLs in days, 7 by default.",
+        help="Maximum age of cached image URLs in days.",
     )
 
     image_url: Optional[str] = field(
