@@ -3,7 +3,6 @@ name: lock file report
 on:
   pull_request:
     paths:
-      - 'uv.lock'
 
 permissions: {}
 
@@ -25,7 +24,7 @@ jobs:
       - name: Run uv-lock-report
         run: |
           pipx run --python "$PYTHON_PATH" uv-lock-report \
-            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --base-sha 0179a0992d7a61fa8ebf3ae515d6f2c722b9bdd3 \
             --base-path "${{ github.workspace }}" \
             --output-path report.json \
             --output-format table
