@@ -1,0 +1,34 @@
+name: lock file report
+
+on:
+  pull_request:
+    paths:
+
+permissions: {}
+
+jobs:
+  uv-lock-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        id: setup
+        with:
+          python-version: 3.x
+        # TODO: Move to upstream github action once it doesn't require permissions
+        # https://github.com/mw-root/uv-lock-report/issues/178
+      - name: Run uv-lock-report
+        run: |
+          pipx run --python "$PYTHON_PATH" uv-lock-report \
+            --base-sha eb3d53037bd90c9e5c209c7e01c61da40285c578 \
+            --base-path "${{ github.workspace }}" \
+            --output-path report.json \
+            --output-format table
+          jq -r "." report.json
+          jq -r ".markdown" report.json >> $GITHUB_STEP_SUMMARY
+        env:
+          PYTHON_PATH: ${{ steps.setup.outputs.python-path }}
