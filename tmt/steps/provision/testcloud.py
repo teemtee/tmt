@@ -1211,7 +1211,6 @@ class GuestTestcloud(tmt.GuestSsh):
         def prepare_image() -> None:
             self._image = testcloud.image.Image(self.image_url)
             self.verbose('qcow', self._image.name, 'green')
-
             if not Path(self._image.local_path).exists():
                 self.info('progress', 'downloading...', 'cyan')
             try:
