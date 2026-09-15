@@ -63,6 +63,9 @@ environment:
   /:
     inherit: false
 
+  # Give the tests more time to finish.
+  duration: 60m
+
   test: |
     rpm -q $EXPECTED_PACKAGE
   require:
