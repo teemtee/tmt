@@ -115,7 +115,7 @@ class RebootContext(StepContext):
             self.logger.debug(
                 f"{'Hard' if self.hard_requested else 'Soft'} reboot during {self.owner_label}"
                 f" with reboot count {self.reboot_counter}"
-                f" and test restart count {restart.restart_counter}."
+                f" and restart count {restart.restart_counter}."
             )
 
         else:
