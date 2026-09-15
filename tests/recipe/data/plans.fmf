@@ -58,3 +58,24 @@ environment:
     execute:
         how: tmt
         script: echo "Execute script"
+
+/distgit:
+    summary: A plan with distgit sources
+    discover:
+      - name: discover-fmf
+        how: fmf
+        url: https://src.fedoraproject.org/rpms/tmt.git
+        ref: 518edd9
+        dist-git-source: true
+        dist-git-extract: tmt-1.74.0/tests/execute/basic/data
+        test: ^/test/shell/good$
+      - name: discover-shell
+        how: shell
+        url: https://src.fedoraproject.org/rpms/tmt.git
+        ref: 518edd9
+        dist-git-source: true
+        tests:
+          - name: /pyproject
+            test: test -e $TMT_SOURCE_DIR/tmt-1.74.0/pyproject.toml
+    execute:
+        how: tmt
