@@ -201,7 +201,7 @@ class TmtCliRunOptions(TmtCliOptions):
 
 
 class CliRunner(click.testing.CliRunner):
-    opts: Optional[TmtCliOptions] = None
+    options: Optional[TmtCliOptions] = None
 
     def __init__(self) -> None:
         if _CLICK_VERSION >= (8, 2, 0):
@@ -246,7 +246,7 @@ class CliRunner(click.testing.CliRunner):
         color: bool = False,
         **kwargs: Any,
     ) -> click.testing.Result:
-        options = Command(*(self.opts.to_options() if self.opts else []), *args)
+        options = Command(*(self.options.to_options() if self.options else []), *args)
         return self._invoke(
             *options.to_popen(),
             command=command,

@@ -28,21 +28,21 @@ def _cli_runner() -> CliRunner:
 
 @pytest.fixture
 def _tmt_cli_options(_cli_runner: CliRunner) -> TmtCliOptions:
-    opts = TmtCliOptions()
-    _cli_runner.opts = opts
-    return opts
+    options = TmtCliOptions()
+    _cli_runner.options = options
+    return options
 
 
 @pytest.fixture
 def _tmt_cli_run_options(
     _cli_runner: CliRunner, _tmt_cli_options: TmtCliOptions
 ) -> TmtCliRunOptions:
-    opts = TmtCliRunOptions()
+    options = TmtCliRunOptions()
     # Transform the _tmt_cli_options into a TmtCliRunOptions
     # This may break if the fields _tmt_cli_options are not pointer-like attributes
-    opts._root_options = _tmt_cli_options._root_options
-    _cli_runner.opts = opts
-    return opts
+    options._root_options = _tmt_cli_options._root_options
+    _cli_runner.options = options
+    return options
 
 
 @pytest.fixture(name='root_logger')
