@@ -274,6 +274,47 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
     return tmt.utils.normalize_data_amount(key_address, value, logger)
 
 
+def normalize_image_cache_age(
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> 'Size':
+    """
+    Normalize image cache age as a time duration.
+
+    Accepts values like ``7d``, ``72h``, ``3600s``. Plain integers
+    are treated as days for backward compatibility.
+    """
+
+    from pint import Quantity
+
+    if isinstance(value, Quantity):
+        try:
+            value.to('day')
+            return value
+        except Exception as exc:
+            raise tmt.utils.NormalizationError(
+                key_address, value, 'a valid time duration (e.g., 7d, 72h, 3600s)'
+            ) from exc
+
+    if isinstance(value, (int, float)):
+        return tmt.hardware.UNITS(f'{value} day')
+
+    if isinstance(value, str):
+        if value.strip().isdigit():
+            value = f'{value} day'
+        try:
+            quantity = tmt.hardware.UNITS(value)
+            quantity.to('day')
+            return quantity
+        except Exception as exc:
+            raise tmt.utils.NormalizationError(
+                key_address, value, 'a valid time duration (e.g., 7d, 72h, 3600s)'
+            ) from exc
+
+    raise tmt.utils.NormalizationError(key_address, value, 'a time duration or a string')
+
+
 def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
     components = constraint.expand_name()
 
@@ -390,11 +431,14 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         help="Enable or disable image URL caching.",
     )
 
-    image_cache_age: int = field(
-        default=7,
+    image_cache_age: 'Size' = field(
+        default=tmt.hardware.UNITS('7 day'),
         option='--image-cache-age',
-        metavar='DAYS',
-        help="Maximum age of cached image URLs in days.",
+        metavar='DURATION',
+        help="Maximum age of cached image URLs.",
+        normalize=normalize_image_cache_age,
+        serialize=lambda value: str(value),
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
     )
 
     image_url: Optional[str] = field(
@@ -780,7 +824,7 @@ class GuestTestcloud(tmt.GuestSsh):
     arch: str
 
     use_image_cache: bool
-    image_cache_age: int
+    image_cache_age: 'Size'
 
     stop_retries: int
     stop_retry_delay: int
@@ -966,7 +1010,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config = testcloud.config.get_config()
 
         self.config.CACHE_IMAGES = self.use_image_cache
-        self.config.TRUST_DEADLINE = self.image_cache_age
+        self.config.TRUST_DEADLINE = int(self.image_cache_age.to('day').magnitude)
 
         self.debug(f"testcloud version: {testcloud.__version__}")
 
