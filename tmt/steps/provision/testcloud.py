@@ -383,11 +383,11 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         help="List locally available images.",
     )
 
-    image_cache: bool = field(
+    use_image_cache: bool = field(
         default=True,
-        option='--image-cache/--no-image-cache',
+        option='--use-image-cache/--no-use-image-cache',
         is_flag=True,
-        help="Enable or disable image URL caching, enabled by default.",
+        help="Enable or disable image URL caching.",
     )
 
     image_cache_age: int = field(
@@ -779,7 +779,7 @@ class GuestTestcloud(tmt.GuestSsh):
     connection: str
     arch: str
 
-    image_cache: bool
+    use_image_cache: bool
     image_cache_age: int
 
     stop_retries: int
@@ -965,7 +965,7 @@ class GuestTestcloud(tmt.GuestSsh):
         assert testcloud is not None
         self.config = testcloud.config.get_config()
 
-        self.config.CACHE_IMAGES = self.image_cache
+        self.config.CACHE_IMAGES = self.use_image_cache
         self.config.TRUST_DEADLINE = self.image_cache_age
 
         self.debug(f"testcloud version: {testcloud.__version__}")
