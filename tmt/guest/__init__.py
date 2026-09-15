@@ -2846,6 +2846,15 @@ class Guest(
 
                 raise tmt.utils.wait.WaitingIncompleteError from error
 
+            # The SSH master process can easily fail to start when invoked
+            # too early after issuing a reboot. The machine might be still
+            # up and running, yet going down, and the SSH master process
+            # may quit very soon. Or the machine might be still booting.
+            # And so on - in any case, treat this error as if we failed
+            # to connect to the guest.
+            except SSHMasterProcessFailedToStartError as error:
+                raise tmt.utils.wait.WaitingIncompleteError from error
+
         try:
             wait.wait(try_whoami, self._logger)
 
