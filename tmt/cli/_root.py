@@ -877,7 +877,25 @@ _test_export_default = 'yaml'
 )
 @option(
     '--project-id',
-    help='Use specific Polarion project ID.',
+    help='Use specific Polarion or Jira project ID.',
+)
+@option(
+    '--jira-url',
+    help='Jira instance base URL, e.g. ``https://issues.redhat.com``.',
+)
+@option(
+    '--jira-token',
+    help='Jira API token for authentication.',
+)
+@option(
+    '--jira-user',
+    help='Jira user email for authentication.',
+)
+@option(
+    '--link-jira / --no-link-jira',
+    default=False,
+    is_flag=True,
+    help='Add Jira link to fmf testcase metadata as an implements relation.',
 )
 @option(
     '--link-polarion / --no-link-polarion',
