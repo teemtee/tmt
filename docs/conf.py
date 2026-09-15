@@ -24,7 +24,6 @@ from pathlib import Path
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autodoc.typehints',
     'sphinx_reredirects',
     # Custom extensions defined in ext
     'tmt_setup',
@@ -265,3 +264,10 @@ redirects = {
     "releases": "releases/index.html",
     "code/autodocs": "z_autodocs/",
 }
+
+# ------
+
+# Skip incorrect warning when `type` is a class attribute
+# https://github.com/sphinx-doc/sphinx/issues/14223
+# https://github.com/sphinx-doc/sphinx/pull/14391
+suppress_warnings = ["ref.python"]

@@ -126,7 +126,7 @@ type-check = [
     "pyright",
     "types-Markdown",
     # prevent conflict between types-requests and urllib3
-    "types-requests<2.31.0.7; python_version < '3.10'",
+    "types-requests<2.33.0.20260907; python_version < '3.10'",
     "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
