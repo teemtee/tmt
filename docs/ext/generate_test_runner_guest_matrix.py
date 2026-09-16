@@ -39,7 +39,8 @@ def generate_test_runner_guest_matrix(app: "Sphinx") -> None:
 
     definitions = yaml_to_dict(definitions_filepath.read_text())
 
-    environment_names: list[str] = definitions['environments']
+    runner_environment_names: list[str] = definitions['runner_environments']
+    guest_environment_names: list[str] = definitions['guest_environments']
 
     try:
         unsupported_environments: list[Pattern[str]] = [
@@ -67,10 +68,10 @@ def generate_test_runner_guest_matrix(app: "Sphinx") -> None:
 
     matrix: dict[str, list[tuple[str, str]]] = {}
 
-    for runner in environment_names:
+    for runner in runner_environment_names:
         matrix[runner] = []
 
-        for guest in environment_names:
+        for guest in guest_environment_names:
             combination_key = f'{runner} + {guest}'
 
             for pattern, note in notes.items():
@@ -97,6 +98,7 @@ def generate_test_runner_guest_matrix(app: "Sphinx") -> None:
         sandboxed=False,
         LOGGER=logger,
         MATRIX=matrix,
+        GUEST_ENVIRONMENTS=guest_environment_names,
         NOTES=notes.values(),
     )
 
