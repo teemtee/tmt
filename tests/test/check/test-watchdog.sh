@@ -71,7 +71,7 @@ rlJournalStart
             rlAssertGrep "# failed 3 of 3 allowed" $watchdog_log
 
             rlRun "grep -E '\\[watchdog\\][[:space:]]+fail: exhausted 3 SSH ping attempts' $log"
-            rlAssertGrep "Hard reboot during test '/watchdog/ping' with reboot count 1 and test restart count 1." $log
+            rlAssertGrep "Hard reboot during test '/watchdog/ping' with reboot count 1 and restart count 1." $log
         fi
     rlPhaseEnd
 
