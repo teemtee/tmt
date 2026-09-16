@@ -28,6 +28,7 @@ from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, 
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
+    from tmt.base.core import DependencySimple
     from tmt.guest import Guest
     from tmt.package_managers._rpm import RpmVersion
 
@@ -552,6 +553,12 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self.engine = self._engine_class(guest=guest, logger=logger)
 
         self.guest = guest
+
+    def essential_requires(self) -> list["DependencySimple"]:
+        """
+        Collect all essential requirements of the package manager.
+        """
+        return []
 
     @abc.abstractmethod
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
