@@ -15,8 +15,8 @@ Guest Compatibility
    :header-rows: 1
 
    * - Runner / Guest
-    {% for runner in MATRIX.keys() %}
-     - **{{ runner }}**
+    {% for guest_environment in GUEST_ENVIRONMENTS %}
+     - **{{ guest_environment }}**
     {% endfor %}
 
 {% for runner, guests in MATRIX.items() %}
