@@ -1788,6 +1788,17 @@ wheels = [
 ]
 
 [[package]]
+name = "fedora-distro-aliases"
+version = "1.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "munch" },
+    { name = "requests", version = "2.32.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "requests", version = "2.34.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/37/25/6270d969dbb89ad5c810ea1bb5119109d168899ba90314e5626673a9f989/fedora_distro_aliases-1.8.tar.gz", hash = "sha256:8e59bb968241dbdcf50ac909ead252cdda82e50a252f147aa391086b966b85fd", size = 7514, upload-time = "2025-10-25T11:56:38.447Z" }
+
+[[package]]
 name = "filelock"
 version = "3.19.1"
 source = { registry = "https://pypi.org/simple" }
@@ -6292,18 +6303,19 @@ wheels = [
 
 [[package]]
 name = "testcloud"
-version = "0.11.8"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "fedora-distro-aliases" },
     { name = "libvirt-python" },
     { name = "packaging" },
     { name = "peewee" },
     { name = "requests", version = "2.32.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "requests", version = "2.34.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d5/d8/588d5d9e4ff5385d850df48d23ad22afa5a954157cd99d4fffcc9bb36665/testcloud-0.11.8.tar.gz", hash = "sha256:bc80571dff0f34b38eb0a8c84eff28b0f7613fead591e997baeadde5de2ba223", size = 72338, upload-time = "2025-07-24T19:33:19.978Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/37/1c3b1c86728c9b143498f1ee73195c37d74c24b41729526616cb667e9be0/testcloud-0.12.0.tar.gz", hash = "sha256:26fd97d24996dd487e2f3ce5a5d28ce884fb8899454392704ea48a25b73e170a", size = 70305, upload-time = "2026-09-15T10:18:21.29Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/cd/0482e305a490bac2724b0c7dbab84ed2d8d93123b7417ee6178a650ce8b5/testcloud-0.11.8-py3-none-any.whl", hash = "sha256:ed8821208aa878a177797c4a7e48ff4516b5c62efce3223638ffe21ce91c4595", size = 62811, upload-time = "2025-07-24T19:33:15.262Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/a2/db9a7e703218445e9a3959788f85380c41c3727b83125a48184d1ec7760e/testcloud-0.12.0-py3-none-any.whl", hash = "sha256:91f9e6ddc930c665129329b3d33bfd53b690b00ac20338531774807385f3bde1", size = 59922, upload-time = "2026-09-15T10:18:19.965Z" },
 ]
 
 [[package]]
@@ -6507,9 +6519,9 @@ requires-dist = [
     { name = "requests", specifier = ">=2.25.1" },
     { name = "ruamel-yaml", specifier = ">=0.16.6" },
     { name = "ruamel-yaml-clib" },
-    { name = "testcloud", marker = "extra == 'all'", specifier = ">=0.11.7" },
-    { name = "testcloud", marker = "extra == 'provision-bootc'", specifier = ">=0.11.7" },
-    { name = "testcloud", marker = "extra == 'provision-virtual'", specifier = ">=0.11.7" },
+    { name = "testcloud", marker = "extra == 'all'", specifier = ">=0.12.0" },
+    { name = "testcloud", marker = "extra == 'provision-bootc'", specifier = ">=0.12.0" },
+    { name = "testcloud", marker = "extra == 'provision-virtual'", specifier = ">=0.12.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4" },
     { name = "urllib3", specifier = ">=1.26.5,<3.0" },
 ]
