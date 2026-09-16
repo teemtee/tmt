@@ -7,8 +7,6 @@ runner_environments:
   - Fedora 44
   - Fedora 45
   - Fedora Rawhide
-  - Alpine 3
-  - Debian 12
   - Ubuntu 22
 
 guest_environments:
