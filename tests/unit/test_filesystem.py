@@ -212,8 +212,15 @@ def test_permission_error_handling(
     if os.getuid() == 0:
         subprocess.check_call(['chattr', '+i', str(dest_dir)])
 
-    with pytest.raises(tmt.utils.GeneralError, match=r'(?i)Failed to copy tree'):
-        tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+    try:
+        with pytest.raises(tmt.utils.GeneralError, match=r'(?i)Failed to copy tree'):
+            tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
+
+    finally:
+        # And don't forget to drop the immutability bit, otherwise the
+        # test may not be able to remove the directory.
+        if os.getuid() == 0:
+            subprocess.check_call(['chattr', '-i', str(dest_dir)])
 
 
 def test_nonexistent_source_directory(tmppath: Path, root_logger: tmt.log.Logger) -> None:
