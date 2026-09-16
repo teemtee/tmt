@@ -1124,17 +1124,28 @@ class Step(
 
         debug1(f'Update {self.__class__.__name__.lower()} phases by CLI invocations')
 
-        def _to_raw_step_datum(options: dict[str, Any]) -> _RawStepData:
+        def _to_raw_step_datum(invocation: 'tmt.cli.CliInvocation') -> _RawStepData:
             """
             Convert CLI options to fmf-like raw step data dictionary.
 
-            This means dropping all keys that cannot come from an fmf node, like
-            keys representing CLI options.
+            Drop keys that cannot come from an fmf node, such as keys representing
+            CLI actions. Also omit options that were not really given on the
+            command line or via environment. Click fills every option with its
+            default, so a naive copy would put unused deprecated aliases such as
+            ``repository`` and ``revision`` into an ``--insert`` phase.
             """
 
             def _iter_options() -> Iterator[tuple[str, Any]]:
-                for name, value in options.items():
-                    if name in ('update', 'update_missing', 'insert', 'allowed-how'):
+                for name, value in invocation.options.items():
+                    if name in ('update', 'update_missing', 'insert', 'allowed_how'):
+                        continue
+
+                    value_source = invocation.option_sources.get(name)
+                    if value_source not in (
+                        ParameterSource.COMMANDLINE,
+                        ParameterSource.ENVIRONMENT,
+                    ):
+                        debug4(f'{name} not really given via CLI/env, omit from raw step datum')
                         continue
 
                     yield key_to_option(name), value
@@ -1173,40 +1184,26 @@ class Step(
         def _patch_raw_datum(
             raw_datum: _RawStepData,
             incoming_raw_datum: _RawStepData,
-            invocation: 'tmt.cli.CliInvocation',
             missing_only: bool = False,
         ) -> None:
             """
             Copy options from one phase specification onto another.
 
             Serves as a helper for "patching" a phase with options coming from
-            a command line. It must avoid copying options that were not really
-            given by user - because of how options are handled, simple
-            ``dict.update()`` would not do as ``incoming_raw_datum`` would
-            contain **all** options as long as they have a default value.
-
-            Click is therefore consulted for each key/option, whether it was
-            really specified on the command line (or by an environment
-            variable).
+            a command line. ``incoming_raw_datum`` is expected to contain only
+            options really given by the user, see :py:func:`_to_raw_step_datum`,
+            therefore this helper only needs to handle ``--update-missing``
+            semantics.
             """
 
             debug3('raw step datum', str(raw_datum))
             debug3('incoming raw step datum', str(incoming_raw_datum))
-            debug3('CLI invocation', str(invocation.options))
 
             for opt, value in incoming_raw_datum.items():
                 if opt == 'name':
                     continue
 
-                key = option_to_key(opt)
-                value_source = invocation.option_sources.get(key)
-
-                debug3(f'{opt=} {key=} {value=} {value_source=}')
-
-                # Ignore CLI input if it's been provided by option's default
-                if value_source not in (ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
-                    debug4('value not really given via CLI/env, no effect')
-                    continue
+                debug3(f'{opt=} {value=}')
 
                 # Ignore CLI input if `--missing-only` has been set and datum already has the key.
                 if missing_only and opt in raw_datum:
@@ -1296,7 +1293,7 @@ class Step(
             elif invocation.options.get('insert'):
                 debug3('inserting new phase')
 
-                raw_datum = _to_raw_step_datum(invocation.options)
+                raw_datum = _to_raw_step_datum(invocation)
                 raw_datum = _ensure_name(raw_datum)
 
                 raw_data.append(raw_datum)
@@ -1309,13 +1306,13 @@ class Step(
                 needle = invocation.options.get('name')
 
                 if needle:
-                    incoming_raw_datum = _to_raw_step_datum(invocation.options)
+                    incoming_raw_datum = _to_raw_step_datum(invocation)
 
                     for raw_datum in raw_data:
                         if raw_datum['name'] != needle:
                             continue
 
-                        _patch_raw_datum(raw_datum, incoming_raw_datum, invocation)
+                        _patch_raw_datum(raw_datum, incoming_raw_datum)
 
                         break
 
@@ -1335,15 +1332,13 @@ class Step(
                 needle = invocation.options.get('name')
 
                 if needle:
-                    incoming_raw_datum = _to_raw_step_datum(invocation.options)
+                    incoming_raw_datum = _to_raw_step_datum(invocation)
 
                     for raw_datum in raw_data:
                         if raw_datum['name'] != needle:
                             continue
 
-                        _patch_raw_datum(
-                            raw_datum, incoming_raw_datum, invocation, missing_only=True
-                        )
+                        _patch_raw_datum(raw_datum, incoming_raw_datum, missing_only=True)
 
                         break
 
@@ -1369,7 +1364,7 @@ class Step(
             debug2(f'postponed invocation #{i}', str(invocation.options))
 
             pruned_raw_data: list[_RawStepData] = []
-            incoming_raw_datum = _to_raw_step_datum(invocation.options)
+            incoming_raw_datum = _to_raw_step_datum(invocation)
 
             # In the 'tmt try image' command user can specify their
             # preferred image name without specifying the provision
@@ -1415,10 +1410,10 @@ class Step(
                     )
 
                 if invocation.options.get('update_missing'):
-                    _patch_raw_datum(raw_datum, incoming_raw_datum, invocation, missing_only=True)
+                    _patch_raw_datum(raw_datum, incoming_raw_datum, missing_only=True)
 
                 else:
-                    _patch_raw_datum(raw_datum, incoming_raw_datum, invocation)
+                    _patch_raw_datum(raw_datum, incoming_raw_datum)
 
                 pruned_raw_data.append(raw_datum)
 
