@@ -228,7 +228,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
 
         if options.skip_missing:
             for package in missing:
-                self.info('package', str(package), 'green')
+                self.info('package', str(package), color='green')
                 try:
                     super().install(package, options=no_check_options)
                 except RunError as error:
