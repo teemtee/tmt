@@ -1,6 +1,5 @@
 import re
 from re import Pattern
-from time import sleep
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
@@ -9,6 +8,7 @@ from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Command, Path, ShellScript
+from tmt.utils._time import sleep
 from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:

@@ -2,6 +2,8 @@ import http.server
 import socketserver
 import threading
 
+import tmt.utils._time
+
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def send_error(self, code, message=None):
@@ -34,7 +36,6 @@ def run_server(port=8000):
 if __name__ == '__main__':
     run_server()
     # Keep the script running
-    import time
 
     while True:
-        time.sleep(1)
+        tmt.utils._time.sleep(1)
