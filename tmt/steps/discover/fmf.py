@@ -941,6 +941,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Discover tests
         self._tests = self.do_the_discovery(fmf_root)
+        self.process_tests()
 
         if self.get('prune', False):
             clone_dir = self.clone_dirpath / 'tests'

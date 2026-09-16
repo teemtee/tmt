@@ -186,6 +186,15 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.discover')
 
+    #: Working list of discovered tests. The :py:meth:`go` method must populate this
+    #: list with all the discovered tests in the phase without any filtering applied.
+    #: :py:meth:`process_tests` will then order and trim down this list to the relevant ones.
+    _tests: list[tmt.base.core.Test]
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._tests = []
+
     @property
     def test_dir(self) -> Path:
         return self.phase_workdir / 'tests'
@@ -200,6 +209,22 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
 
         self.go_prolog(logger or self._logger)
+
+    # TODO: Move the filtering and test adjustments in here
+    def process_tests(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """
+        Post process the discovered tests.
+
+        This may be reordering the tests, filter the tests to relevant ones, adjust the
+        tests, etc.
+        """
+
+    # TODO: In principle this should not be needed if we move all filtering into process_tests
+    def find_test(self, name: str) -> Optional[tmt.base.core.Test]:
+        """
+        Find a test from the discovered metadata
+        """
+        return next((test for test in self._tests if test.name == name), None)
 
     @abc.abstractmethod
     def tests(
@@ -675,6 +700,7 @@ class Discover(tmt.steps.Step):
             phase.discover_from_recipe(logger=logger)
         else:
             phase.go(path=path, logger=logger)
+            phase.process_tests(logger=logger)
 
         if phase.get('prune', False):
             clone_dir = phase.clone_dirpath / 'tests'
