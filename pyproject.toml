@@ -9,7 +9,7 @@ description = "Test Management Tool"
 readme = "README.rst"
 license = "MIT"
 license-file = "LICENSE"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Petr Splichal", email = "psplicha@redhat.com" },
     ]
@@ -23,9 +23,6 @@ keywords = [
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Utilities",
@@ -50,7 +47,6 @@ dependencies = [
     "ruamel.yaml>=0.16.6",
     "ruamel-yaml-clib",
     "urllib3>=1.26.5, <3.0",
-    "typing-extensions>=4; python_version < '3.13'",
     ]
 
 [project.optional-dependencies]
@@ -231,7 +227,7 @@ show_error_codes = true
 # annotations across module boundaries.
 follow_imports = "normal"
 
-python_version = "3.9"
+python_version = "3.12"
 files = [
     "tmt/",
     "tests/core/about/",
@@ -287,7 +283,7 @@ ignore = [
     "tmt/utils/structured_field.py",
 ]
 
-pythonVersion = "3.9"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
 
 # Be vewy, vewy stwict, we'we hunting wabbits^Wbugs.
@@ -436,7 +432,6 @@ ignore = [
     ]
 
 logger-objects = ["tmt.log.Logger"]
-typing-modules = ["tmt._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 # Less strict security checks in tests
@@ -449,7 +444,6 @@ typing-modules = ["tmt._compat.typing"]
     ]
 # The naming scheme of tmt/_compat will overshadow stdlib modules
 "tmt/_compat/pathlib.py" = ["A005"]
-"tmt/_compat/typing.py" = ["A005"]
 "tmt/_compat/warnings.py" = ["A005"]
 # Following files also overshadow stdlib modules
 "tmt/queue.py" = ["A005"]
@@ -479,15 +473,7 @@ convention = "pep257"
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"typing.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
-"typing_extensions.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
-"typing.Self".msg = "Use tmt._compat.typing.Self instead."
-"typing.Concatenate".msg = "Use tmt._compat.typing.Concatenate instead."
-"typing.ParamSpec".msg = "Use tmt._compat.typing.ParamSpec instead."
-"typing.TypeGuard".msg = "Use tmt._compat.typing.TypeGuard instead."
 "typing.TypeIs".msg = "Not present in centos-stream-10"
-"typing_extensions.Self".msg = "Use tmt._compat.typing.Self instead."
-"typing.override".msg = "Use tmt._compat.typing.override instead."
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 "pydantic".msg = "Use tmt._compat.pydantic instead."

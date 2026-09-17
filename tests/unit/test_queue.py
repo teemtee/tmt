@@ -1,6 +1,6 @@
 from collections.abc import Iterator
+from typing import Self
 
-from tmt._compat.typing import Self
 from tmt.log import Logger
 from tmt.queue import Queue
 from tmt.queue import Task as _Task

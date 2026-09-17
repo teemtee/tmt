@@ -15,11 +15,9 @@ PYDANTIC_VERSION = importlib.metadata.version('pydantic')
 PYDANTIC_V1 = PYDANTIC_VERSION.startswith("1.")
 
 if PYDANTIC_V1:
-    from typing import Any
+    from typing import Any, Self
 
     from pydantic import BaseModel as _BaseModel
-
-    from tmt._compat.typing import Self
 
     class BaseModel(_BaseModel):
         @classmethod

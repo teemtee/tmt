@@ -5,9 +5,7 @@ This module provides classes and utilities for managing Ansible inventory genera
 and configuration within tmt test plans.
 """
 
-from typing import TYPE_CHECKING, Any, Optional, cast
-
-from typing_extensions import TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast
 
 import tmt.log
 import tmt.utils

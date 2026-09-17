@@ -11,6 +11,7 @@ from typing import (
     Generic,
     NamedTuple,
     Optional,
+    Self,
     TypeVar,
     Union,
     cast,
@@ -20,14 +21,13 @@ import pint
 
 import tmt.log
 import tmt.utils
-from tmt._compat.typing import Self
 from tmt.container import SpecBasedContainer, container
 from tmt.utils import SpecificationError
 
 if TYPE_CHECKING:
-    from pint import Quantity
+    from typing import TypeAlias
 
-    from tmt._compat.typing import TypeAlias
+    from pint import Quantity
 
     #: A type of values describing sizes of things like storage or RAM.
     # Note: type-hinting is a bit wonky with pyright
