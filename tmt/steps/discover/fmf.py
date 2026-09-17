@@ -785,7 +785,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Initialize the metadata tree, search for available tests
         self.debug(f"Check metadata tree in '{tree_path}'.")
         tests = []
-        tree = tmt.Tree(
+        self._tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
             fmf_context=self.step.plan.fmf_context,
@@ -794,7 +794,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if not self.data.test or not any(test.adjust_rule for test in self.data.test):
             # - not test: we do not have any names filter (i.e. we take all tests)
             # - not any(.adjust_rule): we do not have any tests with custom adjust
-            tests += tree.tests(
+            tests += self._tree.tests(
                 filters=filters,
                 names=[test.name for test in self.data.test],
                 conditions=["manual is False"],
@@ -818,7 +818,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     )
                 else:
                     # Original tree without adjustments
-                    adjusted_tree = tree
+                    adjusted_tree = self._tree
                 tests += adjusted_tree.tests(
                     filters=filters,
                     names=[test.name],
@@ -829,6 +829,15 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     excludes=excludes,
                 )
         return tests
+
+    def find_test(self, name: str) -> Optional[tmt.base.core.Test]:
+        assert isinstance(self._tree, tmt.Tree)
+        # TODO: include adjust rules
+        tests = self._tree.tests(names=[f"^{name}$"], conditions=["manual is False"])
+        if not tests:
+            return None
+        assert len(tests) == 1
+        return tests[0]
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """
