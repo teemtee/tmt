@@ -1,17 +1,28 @@
 ---
 
 # A list of known, recognized environments for runners and guests
-environments:
+runner_environments:
+  - CentOS Stream 10
+  - Fedora 43
+  - Fedora 44
+  - Fedora 45
+  - Fedora Rawhide
+  - Ubuntu 24.04
+  - Ubuntu 26.04
+
+guest_environments:
   - CentOS 7
   - CentOS Stream 8
   - CentOS Stream 9
   - CentOS Stream 10
-  - Fedora 42
   - Fedora 43
+  - Fedora 44
+  - Fedora 45
   - Fedora Rawhide
   - Alpine 3
   - Debian 12
-  - Ubuntu 22
+  - Ubuntu 24.04
+  - Ubuntu 26.04
 
 #
 # Keys and list entries below are treated as regular expressions tested
@@ -26,13 +37,11 @@ unsupported: []
 unknown:
   # The following should work as runners, with tmt installed from PyPI,
   # but we do not know for sure.
-  - 'Alpine .*'
   - 'Ubuntu .*'
-  - 'Debian .*'
 
 notes:
-  - pattern: 'Fedora Rawhide \+ (CentOS 7|Centos Stream 8)'
-    title: Fedora Rawhide and Ansible 2.17+
+  - pattern: 'Fedora (44|45|Rawhide) \+ (CentOS 7|CentOS Stream 8)'
+    title: Fedora and Ansible 2.17+
     text: >
       The :ref:`prepare/ansible</plugins/prepare/ansible>`,
       :ref:`prepare/feature</plugins/prepare/feature>`

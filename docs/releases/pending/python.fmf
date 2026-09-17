@@ -1,0 +1,9 @@
+description: |
+    The minimal requirement for the test :term:`runner` is now
+    Python 3.12. Please make sure that you are using a supported
+    Python version on the system running ``tmt`` or use one of our
+    `container images`__. Note that this change does not affect in
+    any way :ref:`guest-compatibility`, i.e. the System Under Test
+    where tests are being executed.
+
+    __ https://quay.io/organization/teemtee/
