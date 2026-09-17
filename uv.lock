@@ -3094,7 +3094,6 @@ dependencies = [
     { name = "requests" },
     { name = "ruamel-yaml" },
     { name = "ruamel-yaml-clib" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
     { name = "urllib3" },
 ]
 
@@ -3248,7 +3247,6 @@ requires-dist = [
     { name = "testcloud", marker = "extra == 'all'", specifier = ">=0.11.7" },
     { name = "testcloud", marker = "extra == 'provision-bootc'", specifier = ">=0.11.7" },
     { name = "testcloud", marker = "extra == 'provision-virtual'", specifier = ">=0.11.7" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4" },
     { name = "urllib3", specifier = ">=1.26.5,<3.0" },
 ]
 provides-extras = ["all", "ansible", "export-polarion", "link-jira", "prepare-artifact", "provision-beaker", "provision-bootc", "provision-container", "provision-mock", "provision-virtual", "report-junit", "report-polarion", "test-convert"]

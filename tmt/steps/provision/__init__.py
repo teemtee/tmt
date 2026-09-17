@@ -4,6 +4,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
+    Self,
     TypeVar,
     Union,
     cast,
@@ -21,7 +22,6 @@ import tmt.options
 import tmt.queue
 import tmt.steps
 import tmt.utils
-from tmt._compat.typing import Self
 from tmt.ansible import AnsibleInventory
 from tmt.container import (
     SerializableContainer,

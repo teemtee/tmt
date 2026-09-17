@@ -1,10 +1,9 @@
 import datetime
 import time
 from functools import cached_property
-from typing import Callable, TypeVar
+from typing import Callable, Self, TypeVar
 
 import tmt.log
-from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.utils import GeneralError
 

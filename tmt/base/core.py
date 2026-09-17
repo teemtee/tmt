@@ -20,6 +20,7 @@ from typing import (
     ClassVar,
     Literal,
     Optional,
+    Self,
     TypedDict,
     TypeVar,
     Union,
@@ -52,7 +53,6 @@ import tmt.utils
 import tmt.utils.feeling_safe
 import tmt.utils.git
 import tmt.utils.jira
-from tmt._compat.typing import Self
 from tmt.checks import Check
 from tmt.container import (
     SerializableContainer,
