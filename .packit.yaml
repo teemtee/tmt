@@ -216,10 +216,6 @@ jobs:
     tmt_plan: '/tmt/plans/fusa/tests'
     targets:
       - epel-10
-    tf_extra_params:
-      settings:
-        pipeline:
-          type: tmt-multihost
 
   # OS-agnostic sanity and coding-standard checks
   - <<: *test-base
