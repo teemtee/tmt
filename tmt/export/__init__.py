@@ -18,6 +18,7 @@ from typing import (
     Generic,
     Optional,
     Protocol,
+    Self,
     TypeVar,
     Union,
     cast,
@@ -28,7 +29,6 @@ from click import echo
 
 import tmt.log
 import tmt.utils
-from tmt._compat.typing import Self
 from tmt.container import container, simple_field
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path
