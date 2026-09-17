@@ -7,7 +7,8 @@ runner_environments:
   - Fedora 44
   - Fedora 45
   - Fedora Rawhide
-  - Ubuntu 24
+  - Ubuntu 24.04
+  - Ubuntu 26.04
 
 guest_environments:
   - CentOS 7
@@ -20,7 +21,8 @@ guest_environments:
   - Fedora Rawhide
   - Alpine 3
   - Debian 12
-  - Ubuntu 24
+  - Ubuntu 24.04
+  - Ubuntu 26.04
 
 #
 # Keys and list entries below are treated as regular expressions tested
@@ -38,7 +40,7 @@ unknown:
   - 'Ubuntu .*'
 
 notes:
-  - pattern: 'Fedora (44|45|Rawhide) \+ (CentOS 7|Centos Stream 8)'
+  - pattern: 'Fedora (44|45|Rawhide) \+ (CentOS 7|CentOS Stream 8)'
     title: Fedora and Ansible 2.17+
     text: >
       The :ref:`prepare/ansible</plugins/prepare/ansible>`,
