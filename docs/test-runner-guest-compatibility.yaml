@@ -7,7 +7,7 @@ runner_environments:
   - Fedora 44
   - Fedora 45
   - Fedora Rawhide
-  - Ubuntu 22
+  - Ubuntu 24
 
 guest_environments:
   - CentOS 7
@@ -20,7 +20,7 @@ guest_environments:
   - Fedora Rawhide
   - Alpine 3
   - Debian 12
-  - Ubuntu 22
+  - Ubuntu 24
 
 #
 # Keys and list entries below are treated as regular expressions tested
@@ -35,9 +35,7 @@ unsupported: []
 unknown:
   # The following should work as runners, with tmt installed from PyPI,
   # but we do not know for sure.
-  - 'Alpine .*'
   - 'Ubuntu .*'
-  - 'Debian .*'
 
 notes:
   - pattern: 'Fedora (44|45|Rawhide) \+ (CentOS 7|Centos Stream 8)'
