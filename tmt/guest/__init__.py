@@ -3534,7 +3534,7 @@ class GuestSsh(Guest, CommandCollector):
         # NOTE: do not modify `command`, it might be reused by the caller. To
         # be safe, include it in our own command.
         ssh_master_command = (
-            self._base_ssh_command + self._ssh_options + Command("-v", "-MNnT", self._ssh_guest)
+            self._base_ssh_command + self._ssh_options + Command("-MNnT", self._ssh_guest)
         )
 
         logger.debug(f"Spawning the SSH master process: {ssh_master_command}")
