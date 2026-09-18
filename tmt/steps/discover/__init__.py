@@ -254,6 +254,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                     # If we found it, we do the same insertion step
                     setup_node = node.appendleft(setup_test)
                     handle_setup(setup_node)
+                setup_node.value._is_setup_for.append(node.value)
+                fixture._setup_test = setup_node.value
                 # Make sure the setup fixture will be run
                 setup_node.value.enabled = True
 
@@ -279,6 +281,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                         )
                     cleanup_node = node.appendright(cleanup_test)
                     handle_cleanup(cleanup_node)
+                cleanup_node.value._is_cleanup_for.append(node.value)
+                fixture._cleanup_test = cleanup_node.value
                 cleanup_node.value.enabled = True
 
         # Handle the actual tests's fixtures

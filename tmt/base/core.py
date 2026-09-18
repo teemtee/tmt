@@ -1162,6 +1162,8 @@ class TestFixture(
 ):
     setup: Optional[str] = None
     cleanup: Optional[str] = None
+    _setup_test: Optional["Test"] = None
+    _cleanup_test: Optional["Test"] = None
 
     @classmethod
     def normalize(
@@ -1182,6 +1184,13 @@ class TestFixture(
     def from_spec(cls, raw_data: dict[str, Any], logger: tmt.log.Logger) -> Self:  # type: ignore[override]
         data = cls()
         data._load_keys(raw_data, cls.__name__, logger)
+        # TODO: How to save and reload `_(setup|cleanup)_test`
+        return data
+
+    def to_spec(self) -> dict[str, Any]:
+        data = super().to_spec()
+        del data["_setup_test"]
+        del data["_cleanup_test"]
         return data
 
     def to_minimal_spec(self) -> dict[str, Any]:
@@ -1233,6 +1242,20 @@ class Test(
         default_factory=list,
         normalize=TestFixture.normalize,
         exporter=lambda value: [fixture.to_minimal_spec() for fixture in value],
+    )
+    # TODO: default_factory here is a no-op because Core overrides the __init__ and `_load_keys`
+    #  does not handle these default initializations properly. We use normalize to work around
+    #  this.
+    # TODO: How to save and reload these keys?
+    _is_setup_for: list["Test"] = field(
+        default_factory=list,
+        internal=True,
+        normalize=lambda key_address, raw_value, logger: raw_value or [],
+    )
+    _is_cleanup_for: list["Test"] = field(
+        default_factory=list,
+        internal=True,
+        normalize=lambda key_address, raw_value, logger: raw_value or [],
     )
     require: list[Dependency] = field(
         default_factory=list,

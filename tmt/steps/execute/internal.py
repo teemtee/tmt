@@ -559,11 +559,67 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 progress = f"{index + 1}/{len(test_invocations)}"
                 progress_bar.update(progress, test.name)
                 logger.verbose('test', test.summary or test.name, color='cyan', shift=1, level=2)
+                shift = 1 if self.verbosity_level < 2 else 2
 
+                # Check fixture setup results
+                # TODO: What about cleanups?
+                skip_result = None
+                for fixture in test.fixture:
+                    if not fixture._setup_test:
+                        continue
+                    setup_invocation = next(
+                        (
+                            inv
+                            for inv in test_invocations[:index]
+                            if inv.test == fixture._setup_test
+                        ),
+                        None,
+                    )
+                    if not setup_invocation:
+                        if not skip_result:
+                            skip_result = Result.from_test_invocation(
+                                invocation=invocation, result=ResultOutcome.SKIP
+                            )
+                        skip_result.note.append(f"Setup fixture '{fixture.setup}' did not run!")
+                        continue
+                    if any(
+                        result.result in {ResultOutcome.ERROR, ResultOutcome.FAIL}
+                        for result in setup_invocation.results
+                    ):
+                        # TODO: this constructor does not skip the checks
+                        if not skip_result:
+                            skip_result = Result.from_test_invocation(
+                                invocation=invocation, result=ResultOutcome.SKIP
+                            )
+                        skip_result.note.append(f"Setup fixture '{fixture.setup}' failed!")
+                    elif all(
+                        result.result == ResultOutcome.SKIP for result in setup_invocation.results
+                    ):
+                        if not skip_result:
+                            skip_result = Result.from_test_invocation(
+                                invocation=invocation, result=ResultOutcome.SKIP
+                            )
+                        skip_result.note.append(f"Setup fixture '{fixture.setup}' was skipped.")
+
+                if skip_result:
+                    # TODO: abstract this part and avoid the duplication
+                    if tmt.utils.signals.INTERRUPT_PENDING.is_set():
+                        interrupt_exception = tmt.utils.signals.Interrupted()
+                        invocation.exceptions.append(interrupt_exception)
+                    self._results.append(skip_result)
+                    self.step.plan.execute.update_results(self.results())
+                    self.step.plan.execute.save()
+                    ResultRenderer(
+                        basepath=self.phase_workdir,
+                        logger=logger,
+                        shift=shift,
+                        variables={'PROGRESS': f'[{progress}]'},
+                    ).print_result(skip_result)
+                    index += 1
+                    continue
                 self.execute(invocation=invocation, logger=logger)
 
                 duration = style(invocation.stopwatch.duration_formatted, fg='cyan')
-                shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle test restart. May include guest reboot too.
                 if invocation.restart.requested:
