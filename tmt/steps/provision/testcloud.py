@@ -395,6 +395,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         option='--image-cache-age',
         metavar='DURATION',
         help="Maximum age of cached image URLs.",
+        show_default=True,
         normalize=tmt.utils.normalize_duration,
         serialize=lambda value: str(value),
         unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
