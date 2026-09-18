@@ -435,6 +435,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
                 **super().to_spec(),
                 'memory': str(self.memory) if self.memory is not None else None,
                 'disk': str(self.disk) if self.disk is not None else None,
+                'image-cache-age': str(self.image_cache_age),
             },
         )
 
@@ -442,10 +443,12 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         spec = {**super().to_minimal_spec()}
         spec.pop('memory', None)
         spec.pop('disk', None)
+        spec.pop('image-cache-age', None)
         if self.memory is not None:
             spec['memory'] = str(self.memory)
         if self.disk is not None:
             spec['disk'] = str(self.disk)
+        spec['image-cache-age'] = str(self.image_cache_age)
         return cast(tmt.steps._RawStepData, spec)
 
     # TODO: custom handling for two fields - when the formatting moves into
