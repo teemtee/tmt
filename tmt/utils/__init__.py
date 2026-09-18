@@ -84,7 +84,7 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.utils.themes
     from tmt.guest import GuestLog
-    from tmt.hardware.constraints import Size
+    from tmt.hardware.constraints import Duration, Size
 
 
 def sanitize_string(text: str) -> str:
@@ -5671,6 +5671,49 @@ def normalize_data_amount(
             ) from exc
 
     raise NormalizationError(key_address, raw_value, 'a quantity or a string')
+
+
+def normalize_duration(
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> 'Duration':
+    """
+    Normalize a time duration.
+
+    Accepts values like ``7d``, ``72h``, ``3600s``. Plain integers
+    are treated as days for backward compatibility.
+    """
+
+    from pint import Quantity
+
+    import tmt.hardware
+
+    if isinstance(value, Quantity):
+        try:
+            value.to('day')
+            return value
+        except Exception as exc:
+            raise NormalizationError(
+                key_address, value, 'a valid time duration (e.g., 7d, 72h, 3600s)'
+            ) from exc
+
+    if isinstance(value, (int, float)):
+        return tmt.hardware.UNITS(f'{value} day')
+
+    if isinstance(value, str):
+        if value.strip().isdigit():
+            value = f'{value} day'
+        try:
+            quantity = tmt.hardware.UNITS(value)
+            quantity.to('day')
+            return quantity
+        except Exception as exc:
+            raise NormalizationError(
+                key_address, value, 'a valid time duration (e.g., 7d, 72h, 3600s)'
+            ) from exc
+
+    raise NormalizationError(key_address, value, 'a time duration or a string')
 
 
 # TODO: once we replace our custom "containers" with pydantic's `MetadataContainer`,

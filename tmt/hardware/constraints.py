@@ -34,6 +34,9 @@ if TYPE_CHECKING:
     # https://github.com/hgrecco/pint/issues/1166
     Size: TypeAlias = Quantity
 
+    #: A type of values describing time durations.
+    Duration: TypeAlias = Quantity
+
 #: Unit registry, used and shared by all code.
 UNITS = pint.UnitRegistry()
 
