@@ -24,3 +24,5 @@ order: 60
   description: |
     See the plans in `install-cases` for more details.
   test: ./install-cases.sh
+  # Give the tests more time to finish.
+  duration: 60m
