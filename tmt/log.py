@@ -52,7 +52,6 @@ from typing import (
 from ruamel.yaml import YAML
 
 from tmt._compat.pathlib import Path
-from tmt._compat.warnings import deprecated
 from tmt.container import SpecBasedContainer, container, simple_field
 
 if TYPE_CHECKING:
@@ -1097,15 +1096,6 @@ class Logger:
             ),
             stacklevel=stacklevel,
         )
-
-    @deprecated("Use Logger.warning instead")
-    def warn(
-        self,
-        message: str,
-        shift: int,
-        stacklevel: int = 1,
-    ) -> None:
-        return self.warning(message, shift, stacklevel=stacklevel + 1)
 
     def fail(
         self,
