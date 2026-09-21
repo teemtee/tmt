@@ -391,7 +391,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
     )
 
     image_cache_age: 'Duration' = field(
-        default=cast('Duration', '7 days'),
+        default=tmt.hardware.UNITS('7 days'),
         option='--image-cache-age',
         metavar='DURATION',
         help="Maximum age of cached image URLs.",
