@@ -1154,6 +1154,54 @@ class Core(
         return self.link.has_link(needle=needle)
 
 
+@container
+class TestFixture(
+    SerializableContainer,
+    SpecBasedContainer[dict[str, Any], dict[str, Any]],
+    tmt.utils.NormalizeKeysMixin,
+):
+    setup: Optional[str] = None
+    cleanup: Optional[str] = None
+    _setup_test: Optional["Test"] = None
+    _cleanup_test: Optional["Test"] = None
+
+    @classmethod
+    def normalize(
+        cls,
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger,
+    ) -> list["TestFixture"]:
+        if value is None:
+            return []
+        if isinstance(value, dict):
+            return [TestFixture.from_spec(value, logger)]
+        if isinstance(value, Iterable):
+            return [TestFixture.from_spec(fixture, logger) for fixture in value]
+        raise tmt.utils.SpecificationError(f"Invalid test fixture '{value}' at {key_address}.")
+
+    @classmethod
+    def from_spec(cls, raw_data: dict[str, Any], logger: tmt.log.Logger) -> Self:  # type: ignore[override]
+        data = cls()
+        data._load_keys(raw_data, cls.__name__, logger)
+        # TODO: How to save and reload `_(setup|cleanup)_test`
+        return data
+
+    def to_spec(self) -> dict[str, Any]:
+        data = super().to_spec()
+        del data["_setup_test"]
+        del data["_cleanup_test"]
+        return data
+
+    def to_minimal_spec(self) -> dict[str, Any]:
+        data = self.to_spec()
+        if not data["setup"]:
+            del data["setup"]
+        if not data["cleanup"]:
+            del data["cleanup"]
+        return data
+
+
 @container(repr=False)
 class Test(
     # TODO: `Test` does "have" environment, but it's a genuine attribute,
@@ -1190,6 +1238,25 @@ class Test(
     manual: bool = False
     tty: bool = False
 
+    fixture: list[TestFixture] = field(
+        default_factory=list,
+        normalize=TestFixture.normalize,
+        exporter=lambda value: [fixture.to_minimal_spec() for fixture in value],
+    )
+    # TODO: default_factory here is a no-op because Core overrides the __init__ and `_load_keys`
+    #  does not handle these default initializations properly. We use normalize to work around
+    #  this.
+    # TODO: How to save and reload these keys?
+    _is_setup_for: list["Test"] = field(
+        default_factory=list,
+        internal=True,
+        normalize=lambda key_address, raw_value, logger: raw_value or [],
+    )
+    _is_cleanup_for: list["Test"] = field(
+        default_factory=list,
+        internal=True,
+        normalize=lambda key_address, raw_value, logger: raw_value or [],
+    )
     require: list[Dependency] = field(
         default_factory=list,
         normalize=normalize_require,
@@ -1265,6 +1332,8 @@ class Test(
         'framework',
         'manual',
         'tty',
+        'setup_test',
+        'cleanup_test',
         'require',
         'recommend',
         'environment',

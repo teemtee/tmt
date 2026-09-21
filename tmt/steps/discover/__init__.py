@@ -12,6 +12,7 @@ import tmt
 import tmt.log
 import tmt.result
 from tmt.container import container, field, key_to_option
+from tmt.utils.llist import dllist
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
     import tmt.options
     import tmt.steps
     from tmt.base.plan import Plan
+    from tmt.utils.llist import dllistNode
 
 import tmt.base.core
 import tmt.steps
@@ -186,6 +188,15 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.discover')
 
+    #: Working list of discovered tests. The :py:meth:`go` method must populate this
+    #: list with all the discovered tests in the phase without any filtering applied.
+    #: :py:meth:`process_tests` will then order and trim down this list to the relevant ones.
+    _tests: list[tmt.base.core.Test]
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._tests = []
+
     @property
     def test_dir(self) -> Path:
         return self.phase_workdir / 'tests'
@@ -200,6 +211,110 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
 
         self.go_prolog(logger or self._logger)
+
+    def handle_test_fixtures(self, *, logger: tmt.log.Logger) -> None:
+        """
+        Reorder and/or inject the test fixtures
+        """
+
+        if not any(test.fixture for test in self._tests):
+            return
+
+        # Using linked lists makes it easier to iterate and manipulate the list recursively
+        tests_llist = dllist(self._tests)
+
+        def handle_setup(node: "dllistNode[tmt.base.core.Test]") -> None:
+            test = node.value
+            for fixture in test.fixture:
+                if not fixture.setup:
+                    continue
+                # We simply loop over the tests and as soon as we find a fixture setup required
+                # we make sure it is ordered before the test
+                for setup_node in tests_llist.iternodes():
+                    if setup_node.value.name == fixture.setup:
+                        if setup_node > node:
+                            # Move it before the test node
+                            setup_node = node.appendleft(setup_node.pop())
+                            # And we handle the current fixture's fixture as well
+                            # We only need to do this if we moved the setup fixture, otherwise
+                            # it would have already been handled in the previous pass
+                            handle_setup(setup_node)
+                        # Otherwise, the setup fixture is already present in the correct order
+                        # and we have nothing to do
+                        break
+                else:
+                    # Could not find the setup fixture, try to find it from metadata
+                    # TODO: can skip this when we get rid of find_test (will always be false)
+                    setup_test = self.find_test(fixture.setup)
+                    if not setup_test:
+                        raise tmt.utils.DiscoverError(
+                            f"Could not find setup fixture '{fixture.setup}' requested by"
+                            f" '{test.name}'"
+                        )
+                    # If we found it, we do the same insertion step
+                    setup_node = node.appendleft(setup_test)
+                    handle_setup(setup_node)
+                setup_node.value._is_setup_for.append(node.value)
+                fixture._setup_test = setup_node.value
+                # Make sure the setup fixture will be run
+                setup_node.value.enabled = True
+
+        def handle_cleanup(node: "dllistNode[tmt.base.core.Test]") -> None:
+            # The same as the setup handle but in reverse and inserting after the test
+            test = node.value
+            for fixture in test.fixture:
+                if not fixture.cleanup:
+                    continue
+                for cleanup_node in tests_llist.iternodes(reverse=True):
+                    if cleanup_node.value.name == fixture.cleanup:
+                        if cleanup_node < node:
+                            cleanup_node = node.appendright(cleanup_node.pop())
+                            handle_cleanup(cleanup_node)
+                        break
+                else:
+                    # TODO: can skip this when we get rid of find_test (will always be false)
+                    cleanup_test = self.find_test(fixture.cleanup)
+                    if not cleanup_test:
+                        raise tmt.utils.DiscoverError(
+                            f"Could not find cleanup fixture '{fixture.cleanup}' requested by"
+                            f" '{test.name}'"
+                        )
+                    cleanup_node = node.appendright(cleanup_test)
+                    handle_cleanup(cleanup_node)
+                cleanup_node.value._is_cleanup_for.append(node.value)
+                fixture._cleanup_test = cleanup_node.value
+                cleanup_node.value.enabled = True
+
+        # Handle the actual tests's fixtures
+        for test_node in tests_llist.iternodes():
+            # TODO: Checking disabled tests should not be done here
+            if not test_node.value.enabled:
+                continue
+            handle_setup(test_node)
+        for test_node in tests_llist.iternodes(reverse=True):
+            if not test_node.value.enabled:
+                continue
+            handle_cleanup(test_node)
+
+        self._tests = list(tests_llist)
+
+    # TODO: Move the filtering and test adjustments in here
+    def process_tests(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """
+        Post process the discovered tests.
+
+        This may be reordering the tests, filter the tests to relevant ones, adjust the
+        tests, etc.
+        """
+        logger = logger or self._logger
+        self.handle_test_fixtures(logger=logger)
+
+    # TODO: In principle this should not be needed if we move all filtering into process_tests
+    def find_test(self, name: str) -> Optional[tmt.base.core.Test]:
+        """
+        Find a test from the discovered metadata
+        """
+        return next((test for test in self._tests if test.name == name), None)
 
     @abc.abstractmethod
     def tests(
@@ -675,6 +790,7 @@ class Discover(tmt.steps.Step):
             phase.discover_from_recipe(logger=logger)
         else:
             phase.go(path=path, logger=logger)
+            phase.process_tests(logger=logger)
 
         if phase.get('prune', False):
             clone_dir = phase.clone_dirpath / 'tests'

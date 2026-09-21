@@ -112,6 +112,13 @@ def with_fmf_root(path: Path) -> Callable[[Callable[P, T]], Callable[P, T]]:
     return _with_fmf_root
 
 
+def run_plan(plan: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    def _run_plan(fn: Callable[P, T]) -> Callable[P, T]:
+        return pytest.mark.parametrize('run_plan', [plan], indirect=['run_plan'])(fn)
+
+    return _run_plan
+
+
 @contextlib.contextmanager
 def not_feeling_safe(monkeypatch: _pytest.monkeypatch.MonkeyPatch) -> Generator[None]:
     """
@@ -181,6 +188,7 @@ class TmtCliRunOptions(TmtCliOptions):
         yield "run"
         if self.run_id:
             yield f"--id={self.run_id}"
+            yield "--scratch"
         for part in [
             "discover",
             "provision",

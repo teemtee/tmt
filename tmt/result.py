@@ -384,9 +384,15 @@ class Result(BaseResult):
             context=invocation.phase.step.plan.fmf_context,
             result=result,
             note=note or [],
-            start_time=invocation.stopwatch.start_time_formatted,
-            end_time=invocation.stopwatch.end_time_formatted,
-            duration=invocation.stopwatch.duration_formatted,
+            start_time=invocation.stopwatch.start_time_formatted
+            if invocation.stopwatch.started
+            else None,
+            end_time=invocation.stopwatch.end_time_formatted
+            if invocation.stopwatch.started
+            else None,
+            duration=invocation.stopwatch.duration_formatted
+            if invocation.stopwatch.started
+            else None,
             ids={**invocation.test.ids, **(ids or {})},
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
