@@ -9,7 +9,7 @@ description = "Test Management Tool"
 readme = "README.rst"
 license = "MIT"
 license-file = "LICENSE"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Petr Splichal", email = "psplicha@redhat.com" },
     ]
@@ -23,11 +23,9 @@ keywords = [
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Utilities",
     "Topic :: Software Development :: Testing",
     "Operating System :: POSIX :: Linux",
