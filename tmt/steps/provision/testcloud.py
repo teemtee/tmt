@@ -443,7 +443,6 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         spec = {**super().to_minimal_spec()}
         spec.pop('memory', None)
         spec.pop('disk', None)
-        spec.pop('image-cache-age', None)
         if self.memory is not None:
             spec['memory'] = str(self.memory)
         if self.disk is not None:
