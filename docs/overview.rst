@@ -255,9 +255,9 @@ For CentOS and RHEL, first make sure that you have available the
 `EPEL <https://docs.fedoraproject.org/en-US/epel/>`_ repository.
 You might also have to enable additional repositories::
 
-    sudo dnf config-manager --enable crb         # CentOS 9
-    sudo dnf config-manager --enable rhel-CRB    # RHEL 9
-    sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    sudo dnf config-manager --set-enabled crb         # CentOS 10
+    sudo dnf config-manager --set-enabled rhel-CRB    # RHEL 10
+    sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
 
     sudo dnf install tmt
 

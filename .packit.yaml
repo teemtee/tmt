@@ -37,7 +37,6 @@ actions: &base-actions
 
 targets: &all-targets
   - fedora-all
-  - epel-9
   - epel-10
 
 # Uncomment below line if OpenScanHub scans are failing
@@ -74,9 +73,6 @@ _:
             - type: repository-file
               # yamllint disable-line rule:line-length
               id: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/fedora-rawhide/group_teemtee-stable-fedora-rawhide.repo
-            - type: repository-file
-              # yamllint disable-line rule:line-length
-              id: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/epel-9/group_teemtee-stable-epel-9.repo
 
   # Latest fedora & epel targets
   - &latest-targets
@@ -219,7 +215,7 @@ jobs:
     fmf_ref: "main"
     tmt_plan: '/tmt/plans/fusa/tests'
     targets:
-      - epel-9
+      - epel-10
 
   # OS-agnostic sanity and coding-standard checks
   - <<: *test-base
@@ -248,7 +244,6 @@ jobs:
         fast_forward_merge_into:
           - fedora-branched
           - epel-10
-          - epel-9
 
   # Create koji builds
   - job: koji_build
@@ -261,5 +256,4 @@ jobs:
     trigger: commit
     dist_git_branches:
       - fedora-branched
-      - epel-9
       - epel-10
