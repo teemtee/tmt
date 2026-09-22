@@ -1,5 +1,4 @@
-# The detach runner is intentionally not executable
-# same with Jinja2 template scripts
+# Jinja2 templates contain shebangs but are not meant to be executed
 addFilter("tmt.noarch: E: non-executable-script")
 
 # "provisioner" is intentional terminology in the Summary fields
