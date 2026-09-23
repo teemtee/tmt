@@ -49,6 +49,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.templates
 import tmt.utils
+import tmt.utils.units
 import tmt.utils.feeling_safe
 import tmt.utils.git
 import tmt.utils.jira
@@ -3007,7 +3008,7 @@ CleanCallback = Callable[[], bool]
 
 def _dir_size(path: Path) -> 'Quantity':
     """Return the total size in bytes of all files under path."""
-    return tmt.hardware.UNITS(f'{sum(f.lstat().st_size for f in path.rglob("*"))} bytes')
+    return tmt.utils.units.UNITS(f'{sum(f.lstat().st_size for f in path.rglob("*"))} bytes')
 
 
 class Clean(tmt.utils.Common):
@@ -3171,7 +3172,7 @@ class Clean(tmt.utils.Common):
                 shutil.rmtree(path)
             except OSError as error:
                 self.warn(f"Failed to remove '{path}': {error}.", shift=1)
-                return False, tmt.hardware.UNITS('0 bytes')
+                return False, tmt.utils.units.UNITS('0 bytes')
         return True, size
 
     def runs(self, id_: tuple[str, ...], keep: Optional[int]) -> bool:
@@ -3198,7 +3199,7 @@ class Clean(tmt.utils.Common):
                 all_workdirs = all_workdirs[keep:]
 
             successful = True
-            total_size = tmt.hardware.UNITS('0 bytes')
+            total_size = tmt.utils.units.UNITS('0 bytes')
             for workdir in all_workdirs:
                 success, size = self._clean_workdir(workdir)
                 if not success:

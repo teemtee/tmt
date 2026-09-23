@@ -23,23 +23,12 @@ import tmt.utils
 from tmt._compat.typing import Self
 from tmt.container import SpecBasedContainer, container
 from tmt.utils import SpecificationError
+from tmt.utils.units import UNITS
 
 if TYPE_CHECKING:
     from pint import Quantity
 
-    from tmt._compat.typing import TypeAlias
-
-    #: A type of values describing sizes of things like storage or RAM.
-    # Note: type-hinting is a bit wonky with pyright
-    # https://github.com/hgrecco/pint/issues/1166
-    Size: TypeAlias = Quantity
-
-#: Unit registry, used and shared by all code.
-UNITS = pint.UnitRegistry()
-
-# The default formatting should use unit symbols rather than full names.
-# reportDeprecated: in some Pint versions, this method is deprecated.
-UNITS.default_format = '~'  # type: ignore[reportDeprecated,unused-ignore]
+    from tmt.utils.units import Size
 
 
 class Operator(enum.Enum):
