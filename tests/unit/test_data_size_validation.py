@@ -6,6 +6,7 @@ import pytest
 
 import tmt.hardware
 import tmt.utils
+import tmt.utils.units
 from tmt.utils import NormalizationError
 
 
@@ -17,13 +18,13 @@ def test_valid_string_sizes(root_logger, size):
     result = tmt.utils.normalize_data_amount("test.field", size, root_logger)
 
     # Check that result already has bytes dimension (not converting, but checking dimension)
-    assert result.dimensionality == tmt.hardware.UNITS('1 byte').dimensionality
+    assert result.dimensionality == tmt.utils.units.UNITS('1 byte').dimensionality
 
 
 def test_valid_quantity_objects(root_logger):
     """Test that valid Quantity objects pass through"""
 
-    valid_quantity = tmt.hardware.UNITS("64 MB")
+    valid_quantity = tmt.utils.units.UNITS("64 MB")
     result = tmt.utils.normalize_data_amount("test.field", valid_quantity, root_logger)
 
     # Should return the same object
