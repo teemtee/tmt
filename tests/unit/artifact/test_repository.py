@@ -278,8 +278,8 @@ def test_fetch_contents(mock_guest_and_pm, artifact_provider, tmppath):
     assert len(artifacts) == 0
 
 
-def test_contribute_to_shared_repo(mock_guest_and_pm, artifact_provider, tmppath):
-    """Test that contribute_to_shared_repo does nothing for repository providers"""
+def contribute_to_shared_repository(mock_guest_and_pm, artifact_provider, tmppath):
+    """Test that contribute_to_shared_repository does nothing for repository providers"""
 
     mock_guest, mock_package_manager = mock_guest_and_pm
 
@@ -287,14 +287,15 @@ def test_contribute_to_shared_repo(mock_guest_and_pm, artifact_provider, tmppath
         "repository-file:https://download.docker.com/linux/centos/docker-ce.repo"
     )
 
-    # Call contribute_to_shared_repo
+    # Call contribute_to_shared_repository
     # Repository providers don't contribute files to the shared repo,
     # they just provide Repository objects via get_repositories()
     artifacts_dir = tmppath / "artifacts"
     shared_repo_dir = tmppath / "shared"
-    provider.contribute_to_shared_repo(mock_guest, artifacts_dir, shared_repo_dir)
+    provider.contribute_to_shared_repository(mock_guest, artifacts_dir, shared_repo_dir)
 
-    # Verify no package manager methods were called (since contribute_to_shared_repo is a no-op)
+    # Verify no package manager methods were called (since contribute_to_shared_repository is
+    # a no-op)
     mock_package_manager.install_repository.assert_not_called()
 
     # Verify artifacts returns empty list (no individual files)

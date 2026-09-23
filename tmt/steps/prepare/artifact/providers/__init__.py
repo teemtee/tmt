@@ -87,7 +87,7 @@ class ArtifactProvider(ABC):
 
     * **Download providers** (e.g. ``koji.build``): override :py:attr:`artifacts`
       as a ``@cached_property``, implement :py:meth:`_download_artifact` and
-      :py:meth:`contribute_to_shared_repo`. Do not use :py:attr:`_artifacts`.
+      :py:meth:`contribute_to_shared_repository`. Do not use :py:attr:`_artifacts`.
 
     * **Repository providers** (e.g. ``copr.repository``): implement
       :py:meth:`get_repositories`. After installation, :py:meth:`enumerate_artifacts`
@@ -256,7 +256,7 @@ class ArtifactProvider(ABC):
         and populate :py:attr:`_artifacts`. Call this after repositories are installed.
 
         For repository providers only. Does not include artifacts contributed to
-        the shared repository — those are handled by :py:meth:`contribute_to_shared_repo`.
+        the shared repository — those are handled by :py:meth:`contribute_to_shared_repository`.
         """
         for repository in self.get_repositories():
             try:
@@ -293,7 +293,7 @@ class ArtifactProvider(ABC):
                 f"Enumerated {len(packages)} packages from repository '{repository.name}'."
             )
 
-    def contribute_to_shared_repo(
+    def contribute_to_shared_repository(
         self,
         guest: Guest,
         source_path: Path,
