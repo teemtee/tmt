@@ -84,7 +84,7 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.utils.themes
     from tmt.guest import GuestLog
-    from tmt.hardware.constraints import Size
+    from tmt.utils.units import Size
 
 
 def sanitize_string(text: str) -> str:
@@ -5658,10 +5658,10 @@ def normalize_data_amount(
             ) from exc
 
     if isinstance(raw_value, str):
-        import tmt.hardware
+        from tmt.utils.units import UNITS
 
         try:
-            quantity = tmt.hardware.UNITS(raw_value)
+            quantity = UNITS(raw_value)
             # Check unit compatibility by converting to bytes
             quantity.to('bytes')
             return quantity

@@ -29,7 +29,6 @@ decoupled from the rest, and made available for inspection.
 from typing import TYPE_CHECKING
 
 from tmt.hardware.constraints import (
-    UNITS,
     Constraint,
     FlagConstraint,
     IntegerConstraint,
@@ -39,6 +38,7 @@ from tmt.hardware.constraints import (
     TextConstraint,
 )
 from tmt.hardware.requirements import Hardware
+from tmt.utils.units import UNITS
 
 if TYPE_CHECKING:
     from pint import Quantity

@@ -11,6 +11,7 @@ import tmt.log
 import tmt.result
 import tmt.steps.report
 import tmt.utils
+import tmt.utils.units
 import tmt.utils.templates
 from tmt._compat.pathlib import Path
 from tmt.base.core import Test
@@ -32,10 +33,10 @@ if TYPE_CHECKING:
     from tmt.hardware.constraints import Size
 
 JSON: 'TypeAlias' = Any
-DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')
-DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('50 kB')
+DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.utils.units.UNITS('1 MB')
+DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.utils.units.UNITS('50 kB')
 # https://reportportal.io/docs/log-data-in-reportportal/ImportDataToReportPortal
-MAX_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('32MB')
+MAX_LOG_SIZE_LIMIT: 'Size' = tmt.utils.units.UNITS('32MB')
 
 DEFAULT_LOG_PATTERNS: list[Pattern[str]] = [
     re.compile(pattern)
@@ -87,7 +88,7 @@ def _filter_invalid_chars(data: str, settings: LogFilterSettings) -> str:
 
 
 def _filter_log_per_size(data: str, settings: LogFilterSettings) -> str:
-    size = tmt.hardware.UNITS(f'{len(data)} bytes')
+    size = tmt.utils.units.UNITS(f'{len(data)} bytes')
     if size > settings.size:
         if settings.is_traceback:
             variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_TRACEBACK_SIZE_LIMIT"
@@ -233,7 +234,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
               """,
         normalize=_normalize_log_size_limit,
         serialize=lambda limit: str(limit),
-        unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
+        unserialize=lambda serialized: tmt.utils.units.UNITS(serialized),
     )
 
     traceback_size_limit: 'Size' = field(
@@ -248,7 +249,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help_example_values=[str(DEFAULT_TRACEBACK_SIZE_LIMIT), '1MB'],
         normalize=_normalize_log_size_limit,
         serialize=lambda limit: str(limit),
-        unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
+        unserialize=lambda serialized: tmt.utils.units.UNITS(serialized),
     )
 
     exclude_variables: str = field(
