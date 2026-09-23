@@ -39,7 +39,7 @@ from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.hardware.constraints import Size
+    from tmt.hardware.constraints import Duration, Size
 
 
 libvirt: Optional[types.ModuleType] = None
@@ -383,6 +383,24 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
         help="List locally available images.",
     )
 
+    use_image_cache: bool = field(
+        default=True,
+        option='--use-image-cache/--no-use-image-cache',
+        is_flag=True,
+        help="Enable or disable image URL caching.",
+    )
+
+    image_cache_age: 'Duration' = field(
+        default=tmt.hardware.UNITS('7 days'),
+        option='--image-cache-age',
+        metavar='DURATION',
+        help="Maximum age of cached image URLs.",
+        show_default=True,
+        normalize=tmt.utils.normalize_duration,
+        serialize=lambda value: str(value),
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
+    )
+
     image_url: Optional[str] = field(
         default=None,
         internal=True,
@@ -417,6 +435,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
                 **super().to_spec(),
                 'memory': str(self.memory) if self.memory is not None else None,
                 'disk': str(self.disk) if self.disk is not None else None,
+                'image-cache-age': str(self.image_cache_age),
             },
         )
 
@@ -428,6 +447,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
             spec['memory'] = str(self.memory)
         if self.disk is not None:
             spec['disk'] = str(self.disk)
+        spec['image-cache-age'] = str(self.image_cache_age)
         return cast(tmt.steps._RawStepData, spec)
 
     # TODO: custom handling for two fields - when the formatting moves into
@@ -765,6 +785,9 @@ class GuestTestcloud(tmt.GuestSsh):
     connection: str
     arch: str
 
+    use_image_cache: bool
+    image_cache_age: 'Duration'
+
     stop_retries: int
     stop_retry_delay: int
 
@@ -947,6 +970,9 @@ class GuestTestcloud(tmt.GuestSsh):
         # Get configuration
         assert testcloud is not None
         self.config = testcloud.config.get_config()
+
+        self.config.CACHE_IMAGES = self.use_image_cache
+        self.config.TRUST_DEADLINE = int(self.image_cache_age.to('day').magnitude)
 
         self.debug(f"testcloud version: {testcloud.__version__}")
 
