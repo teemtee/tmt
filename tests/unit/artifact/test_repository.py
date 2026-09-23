@@ -278,7 +278,7 @@ def test_fetch_contents(mock_guest_and_pm, artifact_provider, tmppath):
     assert len(artifacts) == 0
 
 
-def contribute_to_shared_repository(mock_guest_and_pm, artifact_provider, tmppath):
+def test_contribute_to_shared_repository(mock_guest_and_pm, artifact_provider, tmppath):
     """Test that contribute_to_shared_repository does nothing for repository providers"""
 
     mock_guest, mock_package_manager = mock_guest_and_pm
