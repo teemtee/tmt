@@ -1,0 +1,5 @@
+description: |
+    The :ref:`/plugins/provision/virtual.testcloud` plugin now supports
+    the ``riscv64`` architecture. Use ``--arch riscv64`` to virtualize
+    RISC-V guests. This requires ``testcloud`` version ``0.12.0`` or newer.
+    The ``riscv64`` architecture always uses the ``uefi`` boot method.
