@@ -1,0 +1,3 @@
+description: |
+  Packages required by a test :ref:`check </plugins/test-checks>` are no
+  longer installed when the check is disabled with ``enabled: false``.
