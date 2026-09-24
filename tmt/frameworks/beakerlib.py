@@ -11,7 +11,7 @@ from tmt.frameworks import TestFramework, provides_framework
 from tmt.guest import TransferOptions
 from tmt.result import ResultOutcome, save_failures
 from tmt.utils import GeneralError, Path
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
 
 if TYPE_CHECKING:
     from tmt.base.core import DependencySimple, Test
@@ -100,20 +100,20 @@ class Beakerlib(TestFramework):
 
         return Environment(
             {
-                'BEAKERLIB_DIR': EnvVarValue(invocation.path),
-                'BEAKERLIB_COMMAND_SUBMIT_LOG': EnvVarValue(
+                'BEAKERLIB_DIR': OpenEnvVarValue(invocation.path),
+                'BEAKERLIB_COMMAND_SUBMIT_LOG': OpenEnvVarValue(
                     invocation.guest.scripts_path
                     / tmt.steps.scripts.TMT_FILE_SUBMIT_SCRIPT.source_filename
                 ),
                 # The command in this variable gets called with every
                 # `rlPhaseEnd` call in beakerlib.
-                'BEAKERLIB_COMMAND_REPORT_RESULT': EnvVarValue(
+                'BEAKERLIB_COMMAND_REPORT_RESULT': OpenEnvVarValue(
                     invocation.guest.scripts_path / BEAKERLIB_REPORT_RESULT_COMMAND
                 ),
                 # This variables must be set explicitly, otherwise the beakerlib `rlPhaseEnd` macro
                 # will not call the the command in `BEAKERLIB_COMMAND_REPORT_RESULT`.
                 # - https://github.com/beakerlib/beakerlib/blob/cfa801fb175fef1e47b8552d6cf6efcb51df7227/src/testing.sh#L1074
-                'TESTID': EnvVarValue(str(invocation.test.serial_number)),
+                'TESTID': OpenEnvVarValue(str(invocation.test.serial_number)),
             }
         )
 

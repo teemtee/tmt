@@ -76,7 +76,8 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
+from tmt.utils.environment import EnvVarValue as EnvVarValue
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError
 
@@ -2010,10 +2011,10 @@ class Guest(
         environment = Environment()
 
         if self.plan_environment_path is not None:
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = OpenEnvVarValue(self.plan_environment_path)
 
         if self.plan_source_script_path:
-            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
+            environment['TMT_PLAN_SOURCE_SCRIPT'] = OpenEnvVarValue(self.plan_source_script_path)
 
         return environment
 
@@ -2348,10 +2349,14 @@ class Guest(
             # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
             # for more.
             if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+                environment['TMT_PLAN_ENVIRONMENT_FILE'] = OpenEnvVarValue(
+                    self.plan_environment_path
+                )
 
             if self.plan_source_script_path:
-                environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
+                environment['TMT_PLAN_SOURCE_SCRIPT'] = OpenEnvVarValue(
+                    self.plan_source_script_path
+                )
 
         else:
             # Create a copy of given environment - this prevents any

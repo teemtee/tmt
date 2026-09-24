@@ -15,7 +15,7 @@ from tmt.container import container, simple_field
 from tmt.convert import write
 from tmt.steps.discover import Discover
 from tmt.utils import Command, Path
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
 
 from . import Library, LibraryError
 
@@ -365,7 +365,7 @@ class BeakerLibFromUrl(BeakerLib):
             self.parent.debug(f"Cloning '{self.identifier}' for '{self}'.", level=3)
 
             environment = Environment.from_environ()
-            environment["GIT_ASKPASS"] = EnvVarValue("echo")
+            environment["GIT_ASKPASS"] = OpenEnvVarValue("echo")
 
             tmt.utils.git.git_clone(
                 url=self.url,
