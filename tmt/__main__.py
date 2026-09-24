@@ -1,37 +1,17 @@
 import traceback
+from importlib.metadata import entry_points
 
 #: An entry point to which subcommands should be attached.
 ENTRY_POINT_NAME = 'tmt.subcommand'
 
 
-def import_cli_commands() -> None:
+def _import_cli_commands() -> None:
     """
-    Import CLI commands from their packages
+    Import CLI commands from their packages.
     """
-
-    # TODO: the whole import compat needs some type annotation polishing,
-    # the amount of waivers needed below is stunning.
-
-    # Cannot import on module-level - early import might trigger various
-    # side-effects, raise exceptions, and that must happen under the
-    # tight control of whoever invoked this function.
-    from tmt._compat.importlib.metadata import (
-        entry_points,  # type: ignore[reportUnknownVariableType,unused-ignore]
-    )
 
     try:
-        eps = entry_points()
-
-        if hasattr(eps, "select"):
-            entry_point_group = eps.select(  # type: ignore[reportUnknownVariable,unused-ignore]
-                group=ENTRY_POINT_NAME
-            )
-
-        else:
-            entry_point_group = eps[ENTRY_POINT_NAME]  # type: ignore[assignment]
-
-        for found in entry_point_group:  # type: ignore[reportUnkownVariable,unused-ignore]
-            found.load()
+        map(lambda ep: ep.load(), entry_points(group=ENTRY_POINT_NAME))  # noqa: C417
 
     except Exception as exc:
         raise Exception('Failed to discover and import tmt subcommands.') from exc
@@ -52,7 +32,7 @@ def run_cli() -> None:
     try:
         import tmt.utils  # noqa: F401,I001,RUF100
 
-        import_cli_commands()
+        _import_cli_commands()
 
         import tmt.cli._root
         import tmt.utils.signals

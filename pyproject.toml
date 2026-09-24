@@ -153,7 +153,6 @@ main = "tmt.cli._root:main"
 about = "tmt.cli.about:about"
 init = "tmt.cli.init:init"
 lint = "tmt.cli.lint:lint"
-run = "tmt.cli.run:run"
 status = "tmt.cli.status:status"
 trying = "tmt.cli.trying:try_command"
 
