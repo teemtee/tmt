@@ -1,7 +1,6 @@
 import enum
 import re
 import textwrap
-import time
 from re import Pattern
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -21,6 +20,7 @@ from tmt.utils import (
     render_command_report,
     safe_call,
 )
+from tmt.utils._time import sleep
 from tmt.utils.environment import Environment
 from tmt.utils.hints import hints_as_notes
 
@@ -171,7 +171,7 @@ def create_ausearch_mark(
     # Wait one second before storing the mark because ausearch
     # could catch denials from the previous test if they are executed
     # during the same second
-    time.sleep(check.delay_before_report)
+    sleep(check.delay_before_report)
 
     report: list[str] = []
 
@@ -224,7 +224,7 @@ def create_final_report(
     # Wait one second before storing the mark because ausearch
     # could catch denials from the previous test if they are executed
     # during the same second
-    time.sleep(check.delay_before_report)
+    sleep(check.delay_before_report)
 
     # Collect all report components
     report: list[str] = []
