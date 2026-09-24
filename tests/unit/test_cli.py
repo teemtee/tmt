@@ -266,3 +266,44 @@ def test_decide_colorization(
     monkeypatch.setattr(sys.stderr, 'isatty', lambda: testcase.simulate_tty)
 
     assert tmt.log.decide_colorization(no_color, force_color) == testcase.expected
+
+
+@pytest.mark.parametrize(
+    'step_args',
+    [
+        pytest.param(
+            ['execute', '--interactive', '--how', 'tmt'],
+            id='long-option-before-long-how',
+        ),
+        pytest.param(
+            ['execute', '--interactive', '-h', 'tmt'],
+            id='long-option-before-short-how',
+        ),
+        pytest.param(
+            ['execute', '-h', 'tmt', '--interactive'],
+            id='long-option-after-how',
+        ),
+    ],
+)
+def test_plugin_option_before_how(
+    run_tmt: 'RunTmt',
+    step_args: list[str],
+) -> None:
+    """Plugin-specific flag option works regardless of position relative to --how"""
+
+    tmp = tempfile.mkdtemp()
+    try:
+        result = run_tmt(
+            '--root',
+            example('local'),
+            'run',
+            '-i',
+            tmp,
+            *step_args,
+        )
+
+        # The command should not fail with "No such option"
+        if result.exit_code != 0:
+            assert 'No such option' not in result.output
+    finally:
+        shutil.rmtree(tmp)
