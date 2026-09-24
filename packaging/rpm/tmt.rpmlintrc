@@ -1,5 +1,11 @@
-# The detach runner is intentionally not executable
-addFilter("python3-tmt.noarch: E: non-executable-script")
+# Jinja2 templates contain shebangs but are not meant to be executed
+addFilter("tmt.noarch: E: non-executable-script")
+
+# "provisioner" is intentional terminology in the Summary fields
+addFilter("[WE]: spelling-error.*provisioner")
+
+# Metapackages contain only dependencies, no documentation
+addFilter("tmt\+.*: W: no-documentation")
 
 # Examples have .fmf used to mark metadata root
 addFilter("tmt.noarch: W: hidden-file-or-dir")
