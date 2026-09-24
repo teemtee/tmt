@@ -234,6 +234,7 @@ python_version = "3.9"
 files = [
     "tmt/",
     "tests/core/about/",
+    "tests/plan/select/",
 ]
 
 [[tool.mypy.overrides]]
@@ -255,7 +256,8 @@ ignore_missing_imports = true
 [tool.pyright]
 include = [
     "tmt/**/*.py",
-    "tests/core/about/*.py"
+    "tests/core/about/*.py",
+    "tests/plan/select/*.py",
 ]
 ignore = [
     "docs/**",
@@ -511,6 +513,7 @@ known-first-party = ["tmt"]
 [tool.pytest.ini_options]
 markers = [
     "containers: tests which need to spawn containers",
+    "nonunit: tests that are discoverable by pytest but are not unit tests",
     "web: tests which need to access the web"
     ]
 
