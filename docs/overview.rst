@@ -669,6 +669,11 @@ TMT_STATE_FORMAT
         story metadata in fmf files, as well as various exports and
         conversions. It merely affects files tmt uses for its own needs.
 
+TMT_MAX_QUEUE_WORKER_COUNT
+    The maximal number of queue pool workers. The default is left undefined
+    on purpose, that leaves the decision to the queue executor and its
+    heuristics based on CPU count.
+
 .. _step-variables:
 
 Step Variables
