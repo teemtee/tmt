@@ -206,7 +206,7 @@ def find_jira_issues(
     # words only, but keeping intra-word apostrophes (e.g. `doesn't`) which
     # Jira treats as part of the word. The exact match is then confirmed
     # via the upstream remote link below.
-    title = " ".join(re.findall(r"\w+(?:'\w+)*", github_item.title))
+    title = " ".join(re.findall(r"\w+(?:['@]\w+)*", github_item.title))
     query = f'project = "{JIRA_PROJECT}" AND summary ~ "{title}"'
     candidates = jira.search_issues(query, maxResults=False, json_result=False)
     assert isinstance(candidates, list)
