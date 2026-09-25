@@ -70,7 +70,7 @@ def report_progress(
         ``report`` lines are written into it.
     """
 
-    timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+    timestamp = format_timestamp(datetime.datetime.now(datetime.UTC))
 
     with open(log, mode='a') as f:
         f.write(f'# {check_name} reported at {timestamp}\n')
@@ -307,8 +307,10 @@ class WatchdogCheck(Check):
                 'ssh-ping',
                 [
                     '# unknown error',
-                    f'# failed {guest_context.ssh_ping_failures}'
-                    f' of {self.ssh_ping_threshold} allowed',
+                    (
+                        f'# failed {guest_context.ssh_ping_failures}'
+                        f' of {self.ssh_ping_threshold} allowed'
+                    ),
                 ],
                 command_output=ncat_output,
             )
@@ -327,8 +329,10 @@ class WatchdogCheck(Check):
                 'ssh-ping',
                 [
                     '# connection refused',
-                    f'# failed {guest_context.ssh_ping_failures}'
-                    f' of {self.ssh_ping_threshold} allowed',
+                    (
+                        f'# failed {guest_context.ssh_ping_failures}'
+                        f' of {self.ssh_ping_threshold} allowed'
+                    ),
                 ],
                 command_output=ncat_output,
             )

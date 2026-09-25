@@ -73,7 +73,7 @@ def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.
     )
 
     for (expected_name, expected_value), (actual_name, actual_value) in zip(
-        expected_attributes, actual_attributes
+        expected_attributes, actual_attributes, strict=True
     ):
         assert expected_name == actual_name, (
             f'Attribute mismatch at {tree_path_joined}: '
@@ -108,7 +108,9 @@ def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.
 
     return all(
         _compare_xml_node([*tree_path, expected_child.nodeName], expected_child, actual_child)
-        for expected_child, actual_child in zip(expected.childNodes, actual.childNodes)
+        for expected_child, actual_child in zip(
+            expected.childNodes, actual.childNodes, strict=True
+        )
     )
 
 

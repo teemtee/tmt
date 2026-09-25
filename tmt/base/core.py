@@ -20,6 +20,7 @@ from typing import (
     ClassVar,
     Literal,
     Optional,
+    Self,
     TypedDict,
     TypeVar,
     Union,
@@ -52,7 +53,6 @@ import tmt.utils
 import tmt.utils.feeling_safe
 import tmt.utils.git
 import tmt.utils.jira
-from tmt._compat.typing import Self
 from tmt.checks import Check
 from tmt.container import (
     SerializableContainer,
@@ -3203,7 +3203,7 @@ class Clean(tmt.utils.Common):
                 success, size = self._clean_workdir(workdir)
                 if not success:
                     successful = False
-                total_size += size  # type: ignore[misc]
+                total_size += size
 
         self.info(
             f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "

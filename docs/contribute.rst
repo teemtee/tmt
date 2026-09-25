@@ -218,7 +218,7 @@ versions. For example:
 
 .. code-block:: shell
 
-    dnf install python3.9 python3.11
+    dnf install python3.12 python3.13 python3
 
 .. note::
 

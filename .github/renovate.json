@@ -17,7 +17,7 @@
       "matchManagers": ["github-actions"]
     },
     {
-      "description": "Python upgrade is a false-positive. We have to pull in both 3.x and 3.9 for pre-commit.",
+      "description": "Python upgrade is a false-positive. We have to pull in both 3.x and 3.12 for pre-commit.",
       "matchManagers": ["github-actions"],
       "matchDepNames": ["python"],
       "matchFileNames": ["pre-commit.yml"],

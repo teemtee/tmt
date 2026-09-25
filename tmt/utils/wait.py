@@ -1,10 +1,9 @@
 import datetime
 import time
 from functools import cached_property
-from typing import Callable, TypeVar
+from typing import Callable, Self, TypeVar
 
 import tmt.log
-from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.utils import GeneralError
 
@@ -115,7 +114,7 @@ class Deadline:
         Date and time when this deadline runs out.
         """
 
-        return datetime.datetime.fromtimestamp(self._real_world_deadline, tz=datetime.timezone.utc)
+        return datetime.datetime.fromtimestamp(self._real_world_deadline, tz=datetime.UTC)
 
     @property
     def is_due(self) -> bool:

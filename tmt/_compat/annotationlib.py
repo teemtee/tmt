@@ -1,9 +1,11 @@
+import inspect
 import sys
 
 if sys.version_info >= (3, 14):
     from annotationlib import Format, get_annotations
 else:
     import enum
+    import inspect
     from collections.abc import Mapping
     from typing import Any, Optional
 
@@ -25,10 +27,7 @@ else:
             raise NotImplementedError("Format other than Format.STRING is not backported.")
         if globals or locals or eval_str:
             raise NotImplementedError("Other input variables are not implemented.")
-        # Technically we should raise if obj does not have annotations,
-        # but if there are any issues with this it would be caught in the CI
-        ann: dict[str, str] = obj.__dict__.get("__annotations__", {})
-        return ann
+        return inspect.get_annotations(obj, globals=globals, locals=locals, eval_str=eval_str)
 
 
 __all__ = [

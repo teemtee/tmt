@@ -314,7 +314,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 + '_'
                 +
                 # Polarion server running with UTC timezone
-                datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S"),
+                datetime.datetime.now(tz=datetime.UTC).strftime("%Y%m%d%H%M%S"),
             )
 
         title = title.replace('-', '_')

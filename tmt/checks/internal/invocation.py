@@ -62,9 +62,11 @@ class Invocation(CheckPlugin[InvocationCheck]):
                     name=CHECK_NAME,
                     result=ResultOutcome.FAIL,
                     note=[
-                        'Test reached maximum restart attempts '
-                        f'({invocation.test.restart_max_count}). '
-                        'You may want to set restart-max-count larger.'
+                        (
+                            'Test reached maximum restart attempts '
+                            f'({invocation.test.restart_max_count}). '
+                            'You may want to set restart-max-count larger.'
+                        )
                     ],
                 )
             ]
