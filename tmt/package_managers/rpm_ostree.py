@@ -155,7 +155,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
 
         results: dict[Installable, bool] = {}
 
-        for line, installable in zip(stdout.strip().splitlines(), installables):
+        for line, installable in zip(stdout.strip().splitlines(), installables, strict=True):
             match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
             if match is not None:
                 results[installable] = False
