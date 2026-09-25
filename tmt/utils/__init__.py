@@ -6131,12 +6131,12 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
 
     def __enter__(self) -> Self:
         if not self.started:
-            self.start_time = datetime.datetime.now(datetime.timezone.utc)
+            self.start_time = datetime.datetime.now(datetime.UTC)
 
         return self
 
     def __exit__(self, *args: object) -> None:
-        self.end_time = datetime.datetime.now(datetime.timezone.utc)
+        self.end_time = datetime.datetime.now(datetime.UTC)
 
     @property
     def started(self) -> bool:

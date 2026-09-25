@@ -70,7 +70,7 @@ def report_progress(
         ``report`` lines are written into it.
     """
 
-    timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+    timestamp = format_timestamp(datetime.datetime.now(datetime.UTC))
 
     with open(log, mode='a') as f:
         f.write(f'# {check_name} reported at {timestamp}\n')

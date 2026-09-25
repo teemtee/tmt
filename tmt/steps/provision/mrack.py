@@ -1493,7 +1493,7 @@ class GuestBeaker(tmt.guest.GuestSsh):
         """
 
         def _construct_api() -> tuple[BeakerAPI, datetime.datetime]:
-            return BeakerAPI(self), datetime.datetime.now(datetime.timezone.utc)
+            return BeakerAPI(self), datetime.datetime.now(datetime.UTC)
 
         if self._api is None:
             self._api, self._api_timestamp = _construct_api()
@@ -1501,7 +1501,7 @@ class GuestBeaker(tmt.guest.GuestSsh):
         else:
             assert self._api_timestamp is not None
 
-            delta = datetime.datetime.now(datetime.timezone.utc) - self._api_timestamp
+            delta = datetime.datetime.now(datetime.UTC) - self._api_timestamp
 
             if delta.total_seconds() >= self.api_session_refresh_tick:
                 self.debug(f'Refresh Beaker API client as it is too old, {delta}.')
