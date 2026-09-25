@@ -63,6 +63,9 @@ _:
     job: tests
     trigger: pull_request
     tf_extra_params:
+      settings:
+        pipeline:
+          type: tmt-multihost
       environments:
         - &copr-teemtee-stable
           artifacts:
@@ -85,6 +88,9 @@ _:
     targets:
       - fedora-latest-stable
     tf_extra_params:
+      settings:
+        pipeline:
+          type: tmt-multihost
       environments:
         - &tmt-cloud-resources
           <<: *copr-teemtee-stable
