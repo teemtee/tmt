@@ -570,12 +570,12 @@ class Constraint(BaseConstraint, abc.ABC):
             # Number-like raw_value, without units, get converted into
             # pure `int` or `float`. Force `Quantity` for quantities by
             # explicitly wrapping built-in types with `Quantity`.
-            if not isinstance(value, pint.Quantity):
+            if not isinstance(value, pint.Quantity):  # pyright: ignore[reportUnnecessaryIsInstance]
                 value = pint.Quantity(value, default_unit)
 
             # Make sure the value has appropriate units if it was not provided
             if value.unitless and default_unit:
-                value *= UNITS(default_unit)
+                value *= UNITS(default_unit)  # pyright: ignore[reportUnknownVariableType]
 
         elif as_cast is not None:
             # Type depends on the `as_cast` function; subclasses handle the specific type.

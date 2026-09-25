@@ -3203,7 +3203,7 @@ class Clean(tmt.utils.Common):
                 success, size = self._clean_workdir(workdir)
                 if not success:
                     successful = False
-                total_size += size  # type: ignore[misc]
+                total_size += size
 
         self.info(
             f"Summary: {'Would free' if self.is_dry_run else 'Freed'} "

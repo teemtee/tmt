@@ -52,7 +52,8 @@ class Deprecated:
         return f'{message}.'
 
 
-class Path(click.ParamType):
+# Note: click 8.5.0 changed the generic typing of ParamType
+class Path(click.ParamType[Optional[tmt.utils.Path]]):
     name = 'path'
 
     def convert(  # noqa: RET503
@@ -133,7 +134,7 @@ def option(
     is_flag: bool = False,
     multiple: bool = False,
     count: bool = False,
-    type: Optional[Union[click.Choice, Any]] = None,  # noqa: A002  `type` is shadowing a Python builtin
+    type: Optional[Union[click.Choice[str], Any]] = None,  # noqa: A002  `type` is shadowing a Python builtin
     help: Optional[str] = None,
     required: bool = False,
     default: Optional[Any] = None,
@@ -176,7 +177,7 @@ def option(
 
     # Add a metavar listing choices unless an explicit metavar has been provided
     if isinstance(type, click.Choice) and metavar is None:
-        metavar = '|'.join(type.choices)
+        metavar = '|'.join(type.choices)  # pyright: ignore[reportUnknownArgumentType]
 
     # Instead of repeating all keyword parameters, use locals(), they are all there
     # already, and it's a dictionary - just don't forget to remove names that are
