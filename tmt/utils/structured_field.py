@@ -222,7 +222,7 @@ class StructuredField:
         # Convert to dictionary and save the order
         keys = parts[1:-2:2]
         values = parts[2:-2:2]
-        for key, value in zip(keys, values):
+        for key, value in zip(keys, values, strict=True):
             self.set(key, value)
 
     def _load(self, text: str) -> None:
@@ -265,7 +265,7 @@ class StructuredField:
         keys = parts[1::2]
         escape = re.compile(r"^\[structured-field-escape\]", re.MULTILINE)
         values = [escape.sub("", value) for value in parts[2::2]]
-        for key, value in zip(keys, values):
+        for key, value in zip(keys, values, strict=True):
             self.set(key, value)
         log.debug(f"Parsed sections:\n{format_value(self._sections)}")
 
