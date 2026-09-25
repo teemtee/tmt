@@ -186,21 +186,13 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.discover')
 
-    #: Whether to extract tests later in the prepare step
-    #: when ``dist-git-source`` is used.
-    _distgit_extract_tests_later: bool = False
-
     @property
     def defer_library_install(self) -> bool:
         """
         Install libraries in :py:meth:`post_dist_git` after DistGit extraction.
         """
 
-        return (
-            self.data.dist_git_source
-            and not self.data.dist_git_download_only
-            and self._distgit_extract_tests_later
-        )
+        return False
 
     @property
     def test_dir(self) -> Path:
@@ -213,9 +205,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     def process_distgit_source(self) -> None:
         """
         Download DistGit sources and schedule extraction in the prepare step.
-
-        Tests from extracted sources are discovered later in
-        :py:meth:`post_dist_git` unless they were already provided by the recipe.
         """
 
         if not self.data.dist_git_source or self.is_dry_run:
@@ -253,11 +242,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                     discover_plugin=self,
                     sourcedir=self.source_dir,
                 )
-
-            if self._distgit_extract_tests_later:
-                self.step.plan.discover.extract_tests_later = True
-                if not self.step.plan.discover.loaded_from_recipe:
-                    self.info("Tests will be discovered after dist-git patching in prepare.")
         except Exception as error:
             raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
 
