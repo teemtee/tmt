@@ -1623,7 +1623,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             formatted_size = tmt.hardware.format_compact(size)
             if dry:
                 clean.verbose(f"Would remove '{image}' ({formatted_size}).", shift=2)
-                total_size += size  # type: ignore[misc]
+                total_size += size
             else:
                 clean.verbose(f"Removing '{image}' ({formatted_size}).", shift=2)
                 try:
@@ -1632,7 +1632,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False
                 else:
-                    total_size += size  # type: ignore[misc]
+                    total_size += size
         clean.info(
             f"Summary: {'Would free' if dry else 'Freed'} "
             f"{tmt.hardware.format_compact(total_size)} "
