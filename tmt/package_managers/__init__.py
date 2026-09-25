@@ -210,7 +210,7 @@ class Repository:
         return f"{tmt.utils.sanitize_name(self.name, allow_slash=False)}.repo"
 
 
-class SpecialPackageOrigin(str, enum.Enum):
+class SpecialPackageOrigin(enum.StrEnum):
     """
     Sentinel values used in place of an actual repository name to convey
     special package states returned by :py:meth:`PackageManager.get_package_origin`.
