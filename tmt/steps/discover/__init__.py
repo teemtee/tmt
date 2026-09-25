@@ -187,12 +187,63 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.discover')
 
     @property
+    def defer_library_install(self) -> bool:
+        """
+        Install libraries in :py:meth:`post_dist_git` after DistGit extraction.
+        """
+
+        return False
+
+    @property
     def test_dir(self) -> Path:
         return self.phase_workdir / 'tests'
 
     @property
     def source_dir(self) -> Path:
         return self.phase_workdir / 'source'
+
+    def process_distgit_source(self) -> None:
+        """
+        Download DistGit sources and schedule extraction in the prepare step.
+        """
+
+        if not self.data.dist_git_source or self.is_dry_run:
+            return
+
+        from tmt.steps.prepare.distgit import insert_to_prepare_step
+
+        try:
+            distgit_dir = tmt.utils.git.git_root(fmf_root=self.test_dir, logger=self._logger)
+            if distgit_dir is None:
+                raise tmt.utils.DiscoverError(
+                    f"Directory '{self.test_dir}' is not a git repository."
+                )
+
+            self.download_distgit_source(
+                distgit_dir=distgit_dir,
+                target_dir=self.source_dir,
+                handler_name=self.data.dist_git_type,
+            )
+
+            # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
+            tmt.utils.filesystem.copy_tree(
+                distgit_dir,
+                self.source_dir,
+                self._logger,
+            )
+
+            # Patching and rediscovery happen later in the prepare step
+            if self.data.dist_git_download_only:
+                self.debug("Do not extract sources as 'dist-git-download-only' is set.")
+            else:
+                if not self.step.plan.prepare.enabled:
+                    self.warn("Sources will not be extracted, prepare step is not enabled.")
+                insert_to_prepare_step(
+                    discover_plugin=self,
+                    sourcedir=self.source_dir,
+                )
+        except Exception as error:
+            raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -581,6 +632,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                     f"Test '{test.safe_name}' has path outside of test directory."
                 )
 
+            # Do not recreate path if dist-git source is used
+            # as it will be created in the prepare step
+            if self.data.dist_git_source:
+                continue
+
             if not path.exists():
                 path.mkdir(parents=True, exist_ok=True)
 
@@ -676,12 +732,17 @@ class Discover(tmt.steps.Step):
         else:
             phase.go(path=path, logger=logger)
 
-        if phase.get('prune', False):
-            clone_dir = phase.clone_dirpath / 'tests'
-            phase.install_libraries(phase.test_dir, clone_dir)
-            phase.prune_tree(clone_dir, path)
-        else:
-            phase.install_libraries(phase.test_dir, phase.test_dir)
+        # DistGit download and prepare-phase insertion must run even when
+        # tests are loaded from a recipe, otherwise sources are never extracted.
+        phase.process_distgit_source()
+
+        if not phase.defer_library_install:
+            if phase.get('prune', False):
+                clone_dir = phase.clone_dirpath / 'tests'
+                phase.install_libraries(phase.test_dir, clone_dir)
+                phase.prune_tree(clone_dir, path)
+            else:
+                phase.install_libraries(phase.test_dir, phase.test_dir)
 
         if not self.loaded_from_recipe:
             phase.adjust_test_attributes(path)
