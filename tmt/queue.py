@@ -8,11 +8,20 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar
 
 from tmt._compat.typing import ParamSpec
 from tmt.log import Logger
-from tmt.utils import GeneralError
+from tmt.utils import GeneralError, configure_optional_constant
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Self
     from tmt.guest import Guest
+
+
+#: The maximal number of queue pool workers. The default is left undefined
+#: on purpose, that leaves the decision to the queue executor and its
+#: heuristics based on CPU count. Environment variable is available
+#: for override.
+MAX_QUEUE_WORKER_COUNT: Optional[int] = configure_optional_constant(
+    None, 'TMT_MAX_QUEUE_WORKER_COUNT'
+)
 
 
 T = TypeVar('T')
@@ -160,6 +169,7 @@ class Task(abc.ABC, Generic[TaskResultT]):
         inject_logger: Callable[['Self', T, Logger], None],
         submit: Callable[['Self', T, Logger, ThreadPoolExecutor], Future[TaskResultT]],
         on_complete: Optional[Callable[['Self', T], 'Self']] = None,
+        max_workers: Optional[int] = MAX_QUEUE_WORKER_COUNT,
         logger: Logger,
     ) -> Iterator['Self']:
         """
@@ -187,6 +197,8 @@ class Task(abc.ABC, Generic[TaskResultT]):
             instance it receives from the executor.
         :param on_complete: if set, it will be called once the task
             completes for the given unit.
+        :param max_workers: the maximal number of workers to spawn. See
+            :py:data:`MAX_QUEUE_WORKER_COUNT` for more details.
         :param logger: used for logging.
         """
 
@@ -195,7 +207,7 @@ class Task(abc.ABC, Generic[TaskResultT]):
         new_loggers = prepare_loggers(logger, [get_label(self, unit) for unit in units])
         old_loggers: dict[str, Logger] = {}
 
-        with ThreadPoolExecutor(max_workers=len(units)) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures: dict[Future[TaskResultT], T] = {}
 
             for unit in units:
@@ -384,6 +396,12 @@ class MultiGuestTask(Task[TaskResultT]):
         yield from self._invoke_in_pool(
             # Run across all guests known to this task.
             units=self.guests,
+            # We cannot use fewer workers than we have tasks: tasks running
+            # on different guests might interact, they might depend on each
+            # other; tmt guarantees these tasks would run at the same time.
+            # If we let the queue to use fewer workers, some guests might
+            # be blocked till a worker finishes its first task.
+            max_workers=len(self.guests),
             # Unit ID here is guest's multihost name
             get_label=lambda task, guest: guest.multihost_name,
             extract_logger=lambda task, guest: guest._logger,
