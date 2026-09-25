@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 from collections.abc import Iterator
@@ -105,12 +106,28 @@ def test_reordering(root_logger: Logger, caplog) -> None:
     assert [task.name for task in queue] == expected_order
 
 
+# This is the current expression the `ThreadExecutor` uses to find the
+# best number of workers available. Using it an upper bound in our test,
+# because a constant wouldn't work as the test may land on various machines.
+_THREAD_EXECUTOR_WORKER_GUESSTIMATE = min(32, (os.process_cpu_count() or 1) + 4)
+
+
 @pytest.mark.parametrize(
     ('max_workers', 'task_count', 'expected_worker_count'),
     [
         # `unlimited` *by us* - executor can still apply its own limits.
-        pytest.param(None, 8, 8, id='unlimited'),
-        pytest.param(2, 8, 2, id='limited'),
+        pytest.param(
+            None,
+            _THREAD_EXECUTOR_WORKER_GUESSTIMATE,
+            _THREAD_EXECUTOR_WORKER_GUESSTIMATE,
+            id='unlimited',
+        ),
+        pytest.param(
+            2,
+            8,
+            2,
+            id='limited',
+        ),
     ],
 )
 def test_max_workers(
