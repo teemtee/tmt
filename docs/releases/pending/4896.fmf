@@ -1,0 +1,4 @@
+description: |
+  The ``tmt lint`` command no longer reports schema validation
+  warnings from ``oneOf`` alternatives that do not match the
+  selected ``how`` value.
