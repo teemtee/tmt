@@ -308,10 +308,12 @@ RLP = render_labels(["foo", "bar"]) + '   '
             2,
             ['foo', 'bar'],
             0,
-            f'{RL}         dummy-key\033[0m:\n'
-            f'{RL}             dummy\n'
-            f'{RL}             multiline\n'
-            f'{RL}             value',
+            (
+                f'{RL}         dummy-key\033[0m:\n'
+                f'{RL}             dummy\n'
+                f'{RL}             multiline\n'
+                f'{RL}             value'
+            ),
         ),
         (
             'dummy-key',
@@ -321,10 +323,12 @@ RLP = render_labels(["foo", "bar"]) + '   '
             ['foo', 'bar'],
             # Pad labels to occupy their actual length plus 3 more characters
             len(RL) + 3,
-            f'{RLP}         dummy-key\033[0m:\n'
-            f'{RLP}             dummy\n'
-            f'{RLP}             multiline\n'
-            f'{RLP}             value',
+            (
+                f'{RLP}         dummy-key\033[0m:\n'
+                f'{RLP}             dummy\n'
+                f'{RLP}             multiline\n'
+                f'{RLP}             value'
+            ),
         ),
     ],
     ids=[
