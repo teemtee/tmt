@@ -569,7 +569,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     """
 
     _data_class = DiscoverFmfStepData
-    _distgit_extract_tests_later = True
 
     # Options which require .git to be present for their functionality
     _REQUIRES_GIT = {
@@ -590,6 +589,27 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if self.data.fmf_id:
             return True
         return super().is_in_standalone_mode
+
+    @property
+    def defer_library_install(self) -> bool:
+        return self.data.dist_git_source and not self.data.dist_git_download_only
+
+    def process_distgit_source(self) -> None:
+        """
+        Download DistGit sources and schedule extraction in the prepare step.
+
+        Tests from extracted sources are discovered later in
+        :py:meth:`post_dist_git` unless they were already provided by the recipe.
+        """
+
+        super().process_distgit_source()
+
+        if not self.data.dist_git_source or self.is_dry_run:
+            return
+
+        self.step.plan.discover.extract_tests_later = True
+        if not self.step.plan.discover.loaded_from_recipe:
+            self.info("Tests will be discovered after dist-git patching in prepare.")
 
     def _fetch_remote_source(self, url: str) -> Optional[Path]:
         super()._fetch_remote_source(url)
