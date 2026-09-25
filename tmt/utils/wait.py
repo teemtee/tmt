@@ -114,7 +114,7 @@ class Deadline:
         Date and time when this deadline runs out.
         """
 
-        return datetime.datetime.fromtimestamp(self._real_world_deadline, tz=datetime.timezone.utc)
+        return datetime.datetime.fromtimestamp(self._real_world_deadline, tz=datetime.UTC)
 
     @property
     def is_due(self) -> bool:
