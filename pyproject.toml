@@ -413,6 +413,7 @@ ignore = [
     "D203",  # 1 blank line required before class docstring
     # TODO: the temporary list - some of these will be enabled in their
     # own patches
+    "UP045", "UP007", "UP035", "UP046", "UP047", "RUF036", "UP040",  # Leftover from python3.12 transition
     "D100",  # Missing docstring in public module
     "D101",  # Missing docstring in public class
     "D102",  # Missing docstring in public method
