@@ -191,6 +191,18 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     _distgit_extract_tests_later: bool = False
 
     @property
+    def defer_library_install(self) -> bool:
+        """
+        Install libraries in :py:meth:`post_dist_git` after DistGit extraction.
+        """
+
+        return (
+            self.data.dist_git_source
+            and not self.data.dist_git_download_only
+            and self._distgit_extract_tests_later
+        )
+
+    @property
     def test_dir(self) -> Path:
         return self.phase_workdir / 'tests'
 
@@ -740,14 +752,7 @@ class Discover(tmt.steps.Step):
         # tests are loaded from a recipe, otherwise sources are never extracted.
         phase.process_distgit_source()
 
-        # Libraries from extracted DistGit sources are installed in post_dist_git()
-        defer_library_install = (
-            phase.data.dist_git_source
-            and not phase.data.dist_git_download_only
-            and phase._distgit_extract_tests_later
-        )
-
-        if not defer_library_install:
+        if not phase.defer_library_install:
             if phase.get('prune', False):
                 clone_dir = phase.clone_dirpath / 'tests'
                 phase.install_libraries(phase.test_dir, clone_dir)
