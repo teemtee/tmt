@@ -1,0 +1,4 @@
+description: |
+  Fixed a bug with the ``modified-ref`` in :ref:`/plugins/discover/fmf`
+  discover plugin where changing a file in the top-level folder were not being
+  picked up.
