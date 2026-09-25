@@ -296,7 +296,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
                 # Then, have the provider contribute to the shared repository
                 if provider.downloads_artifacts:
-                    provider.contribute_to_shared_repo(
+                    provider.contribute_to_shared_repository(
                         guest=guest,
                         source_path=download_path,
                         shared_repo_dir=shared_repo_dir,

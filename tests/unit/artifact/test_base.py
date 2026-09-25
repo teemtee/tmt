@@ -30,7 +30,7 @@ class MockProvider(ArtifactProvider):
     def _download_artifact(self, artifact, guest, destination):
         destination.write_text("ok")
 
-    def contribute_to_shared_repo(
+    def contribute_to_shared_repository(
         self, guest, source_path, shared_repo_dir, exclude_patterns=None
     ):
         pass
