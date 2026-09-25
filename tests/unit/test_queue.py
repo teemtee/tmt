@@ -109,7 +109,10 @@ def test_reordering(root_logger: Logger, caplog) -> None:
 # This is the current expression the `ThreadExecutor` uses to find the
 # best number of workers available. Using it an upper bound in our test,
 # because a constant wouldn't work as the test may land on various machines.
-_THREAD_EXECUTOR_WORKER_GUESSTIMATE = min(32, (os.process_cpu_count() or 1) + 4)
+if hasattr(os, 'process_cpu_count'):
+    _THREAD_EXECUTOR_WORKER_GUESSTIMATE = min(32, (os.process_cpu_count() or 1) + 4)
+else:
+    _THREAD_EXECUTOR_WORKER_GUESSTIMATE = min(32, (os.cpu_count() or 1) + 4)
 
 
 @pytest.mark.parametrize(
