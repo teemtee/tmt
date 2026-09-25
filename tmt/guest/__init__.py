@@ -266,6 +266,24 @@ UNSAFE_SSH_OPTIONS: frozenset[str] = frozenset(
     }
 )
 
+
+#: Extra SSH options to pass to Ansible, on top of the options configured
+#: for SSH connections.
+#:
+#: .. note::
+#:
+#:    Some of these options may already be among the default SSH options
+#:    used by Ansible; let's make sure we get the expected behavior even
+#:    if Ansible changes their setup.
+EXTRA_ANSIBLE_SSH_OPTIONS = Command(
+    # `-o ControlMaster=auto` should let Ansible use SSH multiplexing,
+    # but it will have to spawn its own master process. We cannot let it
+    # mess with our sockets.
+    '-oControlMaster=auto',
+    '-oControlPersist=60s',
+)
+
+
 #: SSH master socket path is limited to this many characters.
 #:
 #: * UNIX socket path is limited to either 108 or 104 characters, depending
@@ -3729,12 +3747,7 @@ class GuestSsh(Guest, CommandCollector):
         with self.ssh_multiplexing_disabled():
             ansible_command += Command(
                 '--ssh-common-args',
-                (
-                    # `-Sauto` should let Ansible use SSH multiplexing,
-                    # but it will have to spawn its own master process.
-                    # We cannot let it mess ours.
-                    self._ssh_options + Command('-Sauto')
-                ).to_element(),
+                (self._ssh_options + EXTRA_ANSIBLE_SSH_OPTIONS).to_element(),
                 '-i',
                 str(inventory_path),
                 '--limit',
