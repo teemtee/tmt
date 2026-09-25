@@ -307,8 +307,10 @@ class WatchdogCheck(Check):
                 'ssh-ping',
                 [
                     '# unknown error',
-                    f'# failed {guest_context.ssh_ping_failures}'
-                    f' of {self.ssh_ping_threshold} allowed',
+                    (
+                        f'# failed {guest_context.ssh_ping_failures}'
+                        f' of {self.ssh_ping_threshold} allowed'
+                    ),
                 ],
                 command_output=ncat_output,
             )
@@ -327,8 +329,10 @@ class WatchdogCheck(Check):
                 'ssh-ping',
                 [
                     '# connection refused',
-                    f'# failed {guest_context.ssh_ping_failures}'
-                    f' of {self.ssh_ping_threshold} allowed',
+                    (
+                        f'# failed {guest_context.ssh_ping_failures}'
+                        f' of {self.ssh_ping_threshold} allowed'
+                    ),
                 ],
                 command_output=ncat_output,
             )

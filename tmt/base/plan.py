@@ -1139,22 +1139,29 @@ class Plan(
                     if guest_names and guest_roles:
                         yield (
                             LinterOutcome.FAIL,
-                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}',"
-                            f" guests {names_formatted} and roles {roles_formatted} were found",
+                            (
+                                f"{step} phase '{phase.get('name')}' needs guest or role "
+                                f"'{where}', guests {names_formatted} and roles {roles_formatted} "
+                                f"were found"
+                            ),
                         )
 
                     elif guest_names:
                         yield (
                             LinterOutcome.FAIL,
-                            f"{step} phase '{phase.get('name')}' needs guest or role "
-                            f"'{where}', guests {names_formatted} and no roles were found",
+                            (
+                                f"{step} phase '{phase.get('name')}' needs guest or role "
+                                f"'{where}', guests {names_formatted} and no roles were found"
+                            ),
                         )
 
                     else:
                         yield (
                             LinterOutcome.FAIL,
-                            f"{step} phase '{phase.get('name')}' needs guest or role "
-                            f"'{where}', roles {roles_formatted} and no guests were found",
+                            (
+                                f"{step} phase '{phase.get('name')}' needs guest or role "
+                                f"'{where}', roles {roles_formatted} and no guests were found"
+                            ),
                         )
 
         yield from _lint_step('prepare')
