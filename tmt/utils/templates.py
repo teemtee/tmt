@@ -21,6 +21,7 @@ import fmf.utils
 import jinja2
 import jinja2.exceptions
 import jinja2.sandbox
+from pint import Quantity
 
 from tmt.utils import GeneralError, Path, to_yaml
 from tmt.utils.git import web_git_url
@@ -437,8 +438,6 @@ def _template_test_unit(value: Any) -> bool:  # type: ignore[reportUnusedFunctio
             Value is a Pint's ``Quantity`` instance.
         {% endif %}
     """
-
-    from pint import Quantity
 
     return isinstance(value, Quantity)
 

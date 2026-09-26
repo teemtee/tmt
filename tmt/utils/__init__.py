@@ -62,6 +62,7 @@ import urllib3._collections
 import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, wrap_text
+from pint import Quantity
 from ruamel.yaml import YAML
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
@@ -5645,8 +5646,6 @@ def normalize_data_amount(
     raw_value: Any,
     logger: tmt.log.Logger,
 ) -> 'Size':
-    from pint import Quantity
-
     if isinstance(raw_value, Quantity):
         # Validate existing quantity can be converted to bytes
         try:
@@ -5684,8 +5683,6 @@ def normalize_duration(
     Accepts values like ``7d``, ``72h``, ``3600s``. Plain integers
     are treated as days for backward compatibility.
     """
-
-    from pint import Quantity
 
     import tmt.hardware
 
