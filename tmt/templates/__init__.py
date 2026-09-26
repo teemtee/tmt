@@ -40,7 +40,7 @@ def _get_template_file_paths(path: Union[Path, MultiplexedPath]) -> dict[str, Pa
 
     templates: dict[str, Path] = {}
     file: Union[Path, MultiplexedPath]
-    for file in path.iterdir():  # pyright: ignore[reportAssignmentType, reportUnknownVariableType]
+    for file in path.iterdir():  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType, reportUnknownVariableType]
         if not file.is_file():
             continue
         assert isinstance(file, Path)  # Narrow type

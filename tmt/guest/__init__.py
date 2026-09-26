@@ -24,6 +24,7 @@ from typing import (
     Literal,
     NewType,
     Optional,
+    Self,
     TypeVar,
     Union,
     cast,
@@ -45,7 +46,6 @@ import tmt.utils
 import tmt.utils.environment
 import tmt.utils.feeling_safe
 import tmt.utils.wait
-from tmt._compat.typing import Self
 from tmt.ansible import (
     GuestAnsible,
     normalize_guest_ansible,
@@ -81,8 +81,9 @@ from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     import tmt.base.core
-    from tmt._compat.typing import TypeAlias
     from tmt.steps.provision import Provision, ProvisionPlugin, ProvisionStepDataT
 
 
