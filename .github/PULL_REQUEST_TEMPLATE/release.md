@@ -13,6 +13,11 @@
 
 - [ ] Make sure you have the release commit: `git checkout main && git pull`
 - [ ] Tag the commit with `x.y.z`, push tags using `git push --tags`
+- [ ] Review the "lint: ..." project tabs, and fix remaining inconsistencies
+  - [ ] [lint | done but no milestone](https://github.com/orgs/teemtee/projects/1/views/16)
+  - [ ] [lint | done but no sprint](https://github.com/orgs/teemtee/projects/1/views/30)
+  - [ ] [lint | in sprint but no size](https://github.com/orgs/teemtee/projects/1/views/26)
+  - [ ] [lint | in sprint but not priority](https://github.com/orgs/teemtee/projects/1/views/27)
 - [ ] Create a new [github release](https://github.com/teemtee/tmt/releases/) based on the tag above
 - [ ] Mention the most important changes in the release name, do not include version
 - [ ] Push the “Generate release notes” button to create the content, publish the release
