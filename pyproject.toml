@@ -75,8 +75,8 @@ provision-mock = [
     # mockbuild
     ]
 provision-virtual = [
-    "testcloud>=0.11.7",
     "requests_cache>=0.5",
+    "testcloud>=0.12.0",
     ]
 provision-container = []
 provision-bootc = [
