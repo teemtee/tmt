@@ -24,10 +24,9 @@ from sphinx.util.docutils import SphinxDirective, switch_source_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Generator
+    from typing import Self
 
     from docutils.nodes import Node
-
-    from tmt._compat.typing import Self
 
 RST_DIRECTIVE_INDENT = 3
 LIST_INDENT = 2

@@ -3,11 +3,10 @@ Utility functions for filesystem operations.
 """
 
 import shutil
-from typing import Callable
+from typing import Callable, TypeAlias
 
 import tmt.log
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import TypeAlias
 from tmt.utils import Command, GeneralError, RunError, show_exception_as_warning
 from tmt.utils.environment import Environment
 

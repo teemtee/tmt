@@ -29,7 +29,7 @@ class MultiplexedPath(_MultiplexedPath):
         return Path(paths[0])  # type:ignore[arg-type]
 
     def __init__(self, *paths: typing.Union[Path, "MultiplexedPath", Traversable]) -> None:
-        super().__init__(*paths)  # type:ignore[no-untyped-call]
+        super().__init__(*paths)
         # Make sure we are using tmt compat Path.
         # Other methods should preserve the type of the children Paths
         original_paths = self._paths.copy()
@@ -41,7 +41,7 @@ class MultiplexedPath(_MultiplexedPath):
             # know how to generally support those cases yet.
             if isinstance(p, _MultiplexedPath):
                 # Flatten the MultiplexedPaths and make sure the paths are recast to tmt Path
-                self._paths.extend(MultiplexedPath(*p._paths)._paths)  # pyright:ignore[reportArgumentType]
+                self._paths.extend(MultiplexedPath(*p._paths)._paths)  # pyright:ignore[reportArgumentType, reportUnknownArgumentType, reportAttributeAccessIssue]
             elif isinstance(p, pathlib.Path):  # pyright:ignore[reportUnnecessaryIsInstance]
                 self._paths.append(Path(p))
             else:
@@ -59,7 +59,7 @@ class MultiplexedPath(_MultiplexedPath):
     def joinpath(
         self, *descendants: typing.Union[str, os.PathLike[str]]
     ) -> typing.Union[Path, "MultiplexedPath"]:
-        new_path = super().joinpath(*descendants)  # type: ignore[no-untyped-call]
+        new_path = super().joinpath(*(os.fspath(descendant) for descendant in descendants))
         assert isinstance(new_path, (Path, MultiplexedPath))
         return new_path
 

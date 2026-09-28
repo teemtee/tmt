@@ -8,12 +8,11 @@ import pkgutil
 import sys
 from collections.abc import Iterator
 from types import ModuleType
-from typing import Any, Callable, Generic, Optional, TypeVar, cast
+from typing import Any, Callable, Concatenate, Generic, Optional, ParamSpec, TypeVar, cast
 
 import tmt
 import tmt.utils
 from tmt._compat.importlib.metadata import entry_points
-from tmt._compat.typing import Concatenate, ParamSpec
 from tmt.log import Logger
 from tmt.utils import GeneralError, Path
 

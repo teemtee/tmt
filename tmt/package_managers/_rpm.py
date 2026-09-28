@@ -3,9 +3,8 @@ RPM-specific version type shared across package managers and artifact providers.
 """
 
 import re
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
-from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.package_managers import Version
 
