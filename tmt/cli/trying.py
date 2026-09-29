@@ -11,7 +11,7 @@ import tmt.steps.provision
 import tmt.trying
 from tmt.cli import Context, pass_context
 from tmt.cli._root import environment_options, force_dry_options, main, verbosity_options
-from tmt.options import option
+from tmt.options import option  # pyright: ignore[reportUnknownVariableType]
 
 
 @main.command(name="try")
