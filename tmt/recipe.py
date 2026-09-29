@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast
 
 import fmf
 
@@ -9,8 +9,6 @@ from tmt.container import (
     SpecBasedContainer,
     container,
     field,
-    key_to_option,
-    option_to_key,
 )
 from tmt.log import Logger
 from tmt.result import ResultInterpret
@@ -214,35 +212,6 @@ class _RecipeTest(
             serial_number=test_origin.test.serial_number,
         )
 
-    def to_minimal_spec(self) -> _RawRecipeTest:
-        spec = {
-            key_to_option(key): value for key, value in self.items() if value not in (None, [], {})
-        }
-
-        field_map: dict[str, Callable[[Any], Any]] = {
-            'test': lambda test: str(test) if test is not None else None,
-            'path': lambda path: str(path) if path is not None else None,
-            'link': lambda link: cast('_RawLinks', link.to_spec()) if link else None,
-            'require': lambda requires: [require.to_minimal_spec() for require in requires],
-            'recommend': lambda recommends: [
-                recommend.to_minimal_spec() for recommend in recommends
-            ],
-            'environment': lambda environment: environment.to_fmf_spec(),
-            'result': lambda result: result.value,
-            'check': lambda checks: [check.to_spec() for check in checks],
-        }
-
-        for key, transform in field_map.items():
-            value = getattr(self, option_to_key(key), None)
-            if value is not None:
-                value = transform(value)
-            if value in (None, [], {}):
-                spec.pop(key, None)
-            else:
-                spec[key] = value
-
-        return cast(_RawRecipeTest, spec)
-
     def to_test(self, logger: Logger) -> 'Test':
         """
         Convert the recipe test to a :py:class:`tmt.base.core.Test` instance.
@@ -293,9 +262,6 @@ class _RecipeStep(SpecBasedContainer[_RawRecipeStep, _RawRecipeStep], Serializab
             phases=spec.get('phases', []),
         )
 
-    def to_spec(self) -> _RawRecipeStep:
-        return _RawRecipeStep(enabled=self.enabled, phases=self.phases)
-
     def to_fmf_spec(self) -> list[_RawStepData]:
         """Convert step phases into a list of fmf-compatible specifications."""
         return cast(
@@ -345,16 +311,6 @@ class _RecipeDiscoverStep(_RecipeStep):
 @container
 class _RecipeExecuteStep(_RecipeStep):
     results_path: Optional[Path]
-
-    def to_spec(self) -> _RawRecipeStep:
-        spec = _RawRecipeStep(
-            enabled=self.enabled,
-            phases=self.phases,
-        )
-        spec['results-path'] = (  # type: ignore[typeddict-unknown-key]
-            str(self.results_path) if isinstance(self.results_path, Path) else None
-        )
-        return spec
 
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
@@ -438,7 +394,7 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
             tier=spec.get('tier'),
             adjust=spec.get('adjust'),
             link=_normalize_link(cast('_RawLinks', spec.get('link'))),
-            environment=Environment.from_fmf_spec(spec.get('environment', {})),
+            environment=Environment.from_spec(spec.get('environment', {})),
             context=FmfContext.from_serialized(spec.get('context', {})),
             discover=_RecipeDiscoverStep.from_spec(spec.get('discover', {}), logger),
             provision=_RecipeStep.from_spec(spec.get('provision', {}), logger),
@@ -475,35 +431,6 @@ class _RecipePlan(SpecBasedContainer[_RawRecipePlan, _RawRecipePlan], Serializab
             cleanup=_RecipeStep.from_step(plan.cleanup, logger),
         )
 
-    def to_minimal_spec(self) -> _RawRecipePlan:
-        spec = {
-            key_to_option(key): value for key, value in self.items() if value not in (None, [], {})
-        }
-
-        field_map: dict[str, Callable[[Any], Any]] = {
-            'link': lambda link: cast('_RawLinks', link.to_spec()) if link else None,
-            'environment': lambda environment: environment.to_fmf_spec(),
-            'context': lambda context: context.to_spec(),
-            'discover': lambda step: step.to_spec(),
-            'provision': lambda step: step.to_spec(),
-            'prepare': lambda step: step.to_spec(),
-            'execute': lambda step: step.to_spec(),
-            'report': lambda step: step.to_spec(),
-            'finish': lambda step: step.to_spec(),
-            'cleanup': lambda step: step.to_spec(),
-        }
-
-        for key, transform in field_map.items():
-            value = getattr(self, option_to_key(key), None)
-            if value is not None:
-                value = transform(value)
-            if value in (None, [], {}):
-                spec.pop(key, None)
-            else:
-                spec[key] = value
-
-        return cast(_RawRecipePlan, spec)
-
     def to_fmf_spec(self) -> dict[str, Any]:
         """Convert the plan into a specification suitable for an fmf tree node."""
         spec = cast(dict[str, Any], self.to_minimal_spec())
@@ -534,20 +461,12 @@ class _RecipeRun(SpecBasedContainer[_RawRecipeRun, _RawRecipeRun], SerializableC
     environment: Environment
     context: FmfContext
 
-    def to_spec(self) -> _RawRecipeRun:
-        return {
-            'root': self.root,
-            'remove': self.remove,
-            'environment': self.environment.to_fmf_spec(),
-            'context': self.context.to_spec(),
-        }
-
     @classmethod
     def from_spec(cls, spec: _RawRecipeRun) -> '_RecipeRun':
         return _RecipeRun(
             root=spec.get('root'),
             remove=bool(spec.get('remove', False)),
-            environment=Environment.from_fmf_spec(spec.get('environment', {})),
+            environment=Environment.from_spec(spec.get('environment', {})),
             context=FmfContext.from_serialized(spec.get('context', {})),
         )
 
@@ -564,12 +483,6 @@ class Recipe(SpecBasedContainer[_RawRecipe, _RawRecipe], SerializableContainer):
             run=_RecipeRun.from_spec(spec.get('run', {})),
             plans=[_RecipePlan.from_spec(plan, logger) for plan in spec.get('plans', [])],
         )
-
-    def to_spec(self) -> _RawRecipe:
-        return {
-            'run': self.run.to_spec(),
-            'plans': [plan.to_minimal_spec() for plan in self.plans],
-        }
 
 
 class RecipeManager(Common):
@@ -599,7 +512,7 @@ class RecipeManager(Common):
             ),
             plans=[_RecipePlan.from_plan(plan, self._logger) for plan in run.plans],
         )
-        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_spec()))
+        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_minimal_spec()))
 
     def tests(self, recipe: Recipe, plan_name: str) -> list[TestOrigin]:
         """

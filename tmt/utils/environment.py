@@ -519,7 +519,7 @@ class Environment(dict[str, EnvVarValue]):
         )
 
     @classmethod
-    def from_fmf_spec(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
+    def from_spec(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
         """
         Create environment from an fmf specification
         """
@@ -529,7 +529,7 @@ class Environment(dict[str, EnvVarValue]):
 
         return Environment({key: EnvVarValue(str(value)) for key, value in data.items()})
 
-    def to_fmf_spec(self) -> dict[str, str]:
+    def to_spec(self) -> dict[str, str]:
         """
         Convert to an fmf specification
         """

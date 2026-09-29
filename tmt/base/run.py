@@ -74,8 +74,8 @@ class RunData(SerializableContainer):
     #: invocations are added into this set.
     environment: Environment = field(
         default_factory=Environment,
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
+        serialize=lambda environment: environment.to_spec(),
+        unserialize=lambda serialized: Environment.from_spec(serialized),
     )
 
     context: FmfContext = field(
