@@ -16,6 +16,13 @@ from .junit import ResultsContext, make_junit_xml
 DEFAULT_FILENAME = 'xunit.xml'
 
 
+# TID251: generally direct access to `os.environ` shall be banned,
+# but the `polarion` plugin does some weird stuff that rooting
+# it out takes more time than expected. Ruff reports are therefore
+# silenced in this file, but that will go away Soon(TM). See
+# https://github.com/teemtee/tmt/issues/2609 for more details.
+
+
 @container
 class ReportPolarionData(tmt.steps.report.ReportStepData):
     file: Optional[Path] = field(
@@ -308,7 +315,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         title = self.data.title
         if not title:
-            title = os.getenv(
+            title = os.getenv(  # noqa: TID251
                 'TMT_PLUGIN_REPORT_POLARION_TITLE',
                 self.step.plan.name.rsplit('/', 1)[1]
                 + '_'
@@ -318,8 +325,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             )
 
         title = title.replace('-', '_')
-        template = self.data.template or os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE')
-        project_id = self.data.project_id or os.getenv(
+        template = self.data.template or os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE')  # noqa: TID251
+        project_id = self.data.project_id or os.getenv(  # noqa: TID251
             'TMT_PLUGIN_REPORT_POLARION_PROJECT_ID', PolarionWorkItem._session.default_project
         )
 
@@ -333,8 +340,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         # TODO: try use self.data instead - but these fields are not optional, they do have
         # default values, do envvars even have any effect at all??
-        upload = self.get('upload', os.getenv('TMT_PLUGIN_REPORT_POLARION_UPLOAD'))
-        use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
+        upload = self.get('upload', os.getenv('TMT_PLUGIN_REPORT_POLARION_UPLOAD'))  # noqa: TID251
+        use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))  # noqa: TID251
 
         # Mapping from field names to Polarion API field names
         polarion_field_mapping = {
@@ -358,7 +365,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         testsuites_properties: dict[str, Optional[str]] = {}
 
         for tr_field in other_testrun_fields:
-            param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))
+            param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))  # noqa: TID251
             # TODO: remove the os.getenv when envvars in click work with steps in plans as well
             # as with steps on cmdline
             if param:
@@ -388,7 +395,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         if template:
             testsuites_properties['polarion-testrun-template-id'] = template
 
-        logs = os.getenv('TMT_REPORT_ARTIFACTS_URL')
+        logs = os.getenv('TMT_REPORT_ARTIFACTS_URL')  # noqa: TID251
         if logs and 'polarion-custom-logs' not in testsuites_properties:
             testsuites_properties['polarion-custom-logs'] = logs
 
