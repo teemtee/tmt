@@ -53,6 +53,7 @@ import click
 import fmf
 import fmf.utils
 import jsonschema
+import pint
 import requests
 import requests.adapters
 import ruamel.yaml.reader
@@ -62,7 +63,6 @@ import urllib3._collections
 import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, wrap_text
-import pint
 from ruamel.yaml import YAML
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
