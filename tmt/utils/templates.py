@@ -21,7 +21,7 @@ import fmf.utils
 import jinja2
 import jinja2.exceptions
 import jinja2.sandbox
-from pint import Quantity
+import pint
 
 from tmt.utils import GeneralError, Path, to_yaml
 from tmt.utils.git import web_git_url
@@ -439,7 +439,7 @@ def _template_test_unit(value: Any) -> bool:  # type: ignore[reportUnusedFunctio
         {% endif %}
     """
 
-    return isinstance(value, Quantity)
+    return isinstance(value, pint.Quantity)
 
 
 TEMPLATE_TESTS: dict[str, Callable[..., Any]] = {
