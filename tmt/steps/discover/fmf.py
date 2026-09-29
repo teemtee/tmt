@@ -610,7 +610,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if fmf_root is None:
             raise tmt.utils.DiscoverError("No metadata found in the current directory.")
         # Check git repository root (use fmf root if not found)
-        git_root = tmt.utils.git.git_root(fmf_root=fmf_root, logger=self._logger)
+        git_root = real_git_root = tmt.utils.git.git_root(fmf_root=fmf_root, logger=self._logger)
         if not git_root:
             self.debug(f"Git root not found, using '{fmf_root}.'")
             git_root = fmf_root
@@ -626,8 +626,23 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             assert fmf_root is not None  # narrow type
             directory = fmf_root
         self.info('directory', directory, 'green')
-        self.debug(f"Copy '{directory}' to '{self.test_dir}'.")
-        tmt.utils.filesystem.copy_tree(src=directory, dst=self.test_dir, logger=self._logger)
+
+        if real_git_root is not None:
+            tmt.utils.filesystem.copy_tree(
+                src=directory,
+                dst=self.test_dir,
+                tmpdir_creator=self.tmpdir,
+                exclude_git=False,
+                exclude_gitignore=True,
+                git_root=real_git_root,
+                logger=self._logger,
+            )
+
+        else:
+            tmt.utils.filesystem.copy_tree(
+                src=directory, dst=self.test_dir, tmpdir_creator=self.tmpdir, logger=self._logger
+            )
+
         return path
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
@@ -901,7 +916,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                         raise tmt.utils.DiscoverError(
                             f"Directory '{self.step.plan.node.root}' is not in a git repository."
                         ) from error
-                    self.debug(f"Copy '{git_root}' to '{self.test_dir}'.")
+
                     tmt.utils.filesystem.copy_tree(
                         src=git_root, dst=self.test_dir, logger=self._logger
                     )
