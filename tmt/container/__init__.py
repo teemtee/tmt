@@ -224,7 +224,7 @@ class FieldMetadata(Generic[T]):
     @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
         if self._option is None and self.cli_option:
-            from tmt.options import option
+            from tmt.options import option  # pyright: ignore[reportUnknownVariableType]
 
             self._option_args = (
                 (self.cli_option,) if isinstance(self.cli_option, str) else self.cli_option

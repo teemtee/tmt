@@ -22,7 +22,7 @@ class MaxTestsPlanShaper(PlanShaper):
 
     @classmethod
     def run_options(cls) -> list['ClickOptionDecoratorType']:
-        from tmt.options import Deprecated, option
+        from tmt.options import Deprecated, option  # pyright: ignore[reportUnknownVariableType]
 
         return [
             option(

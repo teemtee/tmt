@@ -9,7 +9,7 @@ import click
 import tmt.templates
 from tmt.cli import Context, pass_context
 from tmt.cli._root import force_dry_options, main, verbosity_options
-from tmt.options import option
+from tmt.options import option  # pyright: ignore[reportUnknownVariableType]
 from tmt.utils import Path
 
 

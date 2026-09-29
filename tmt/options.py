@@ -136,7 +136,8 @@ def option(
     multiple: bool = False,
     count: bool = False,
     # Note: click 8.2.0 made Choice a generic, but on epel10 click 8.1.7 is used
-    #  type-ignore the generic for now
+    #  type-ignore the generic for now. This cascades into reportUnknownVariableType issues
+    #  for pyright
     type: Optional[Union[click.Choice, Any]] = None,  # type: ignore[type-arg] # noqa: A002  `type` is shadowing a Python builtin
     help: Optional[str] = None,
     required: bool = False,
