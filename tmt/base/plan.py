@@ -54,10 +54,11 @@ from tmt.utils import (
     HasPlanWorkdir,
     HasRunWorkdir,
     HasUserAnchorPath,
+    OpenEnvVarValue,
     style,
     to_yaml,
 )
-from tmt.utils.environment import Environment, EnvVarValue, HasEnvironment, HasIntrinsicEnvironment
+from tmt.utils.environment import Environment, HasEnvironment, HasIntrinsicEnvironment
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -460,15 +461,15 @@ class Plan(
     def intrinsic_environment(self) -> Environment:
         environment = Environment(
             {
-                'TMT_VERSION': EnvVarValue(tmt.__version__),
+                'TMT_VERSION': OpenEnvVarValue(tmt.__version__),
             }
         )
 
         if self.worktree:
-            environment['TMT_TREE'] = EnvVarValue(self.worktree)
+            environment['TMT_TREE'] = OpenEnvVarValue(self.worktree)
 
         if self.my_run:
-            environment['TMT_PLAN_DATA'] = EnvVarValue(self.data_directory)
+            environment['TMT_PLAN_DATA'] = OpenEnvVarValue(self.data_directory)
 
         return environment
 

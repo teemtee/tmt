@@ -29,7 +29,7 @@ import tmt.utils.url
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 from tmt.utils import Command, GeneralError, Path
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
 
 
 def normalize_ref(
@@ -287,7 +287,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             self.debug(f"Clone '{url}' to '{self.test_dir}'.")
 
             environment = Environment.from_environ()
-            environment["GIT_ASKPASS"] = EnvVarValue("echo")
+            environment["GIT_ASKPASS"] = OpenEnvVarValue("echo")
 
             tmt.utils.git.git_clone(
                 url=url,

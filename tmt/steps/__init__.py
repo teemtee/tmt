@@ -71,7 +71,7 @@ from tmt.utils import (
     ShellScript,
     Stopwatch,
 )
-from tmt.utils.environment import Environment, EnvVarName, EnvVarValue
+from tmt.utils.environment import Environment, EnvVarName, EnvVarValue, OpenEnvVarValue
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -3542,10 +3542,10 @@ class Topology(SerializableContainer):
             )
 
             if filepath.suffix == '.sh':
-                environment['TMT_TOPOLOGY_BASH'] = EnvVarValue(filepath)
+                environment['TMT_TOPOLOGY_BASH'] = OpenEnvVarValue(filepath)
 
             elif filepath.suffix == '.yaml':
-                environment['TMT_TOPOLOGY_YAML'] = EnvVarValue(filepath)
+                environment['TMT_TOPOLOGY_YAML'] = OpenEnvVarValue(filepath)
 
             else:
                 raise tmt.utils.GeneralError(f"Unhandled topology file '{filepath}'.")
