@@ -38,14 +38,6 @@
       "description": "Python dependencies with lockfile",
       "groupName": "Locked dependencies",
       "matchManagers": ["pep621"]
-    },
-    {
-      "description": "Group documentation dependencies together",
-      "groupName": "Documentation Dependencies",
-      "matchManagers": ["pep621"],
-      "matchDepTypes": ["project.optional-dependencies"],
-      "enabled": true,
-      "matchJsonata": ["managerData.depGroup = 'docs'"]
     }
   ],
   "lockFileMaintenance": {
