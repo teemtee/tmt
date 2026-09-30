@@ -51,5 +51,8 @@
   "lockFileMaintenance": {
     "enabled": true,
     "groupName": "Locked dependencies"
+  },
+  "vulnerabilityAlerts": {
+    "groupName": "Security updates"
   }
 }
