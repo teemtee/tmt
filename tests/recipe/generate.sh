@@ -47,6 +47,12 @@ rlJournalStart
         compare_recipe rerun.yaml
     rlPhaseEnd
 
+    rlPhaseStartTest "Test recipe generation with distgit"
+        rlRun -s "tmt -vv run --scratch --id $run plan -n /plans/distgit"
+        rlAssertExists "$recipe" "Recipe file exists"
+        compare_recipe distgit.yaml
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -rf $run" 0 "Remove run directory"

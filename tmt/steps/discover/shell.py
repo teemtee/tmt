@@ -23,7 +23,6 @@ from tmt.container import (
     option_to_key,
 )
 from tmt.steps import _RawStepData
-from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
     Command,
     Path,
@@ -422,41 +421,6 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 if key != 'name' and (key == 'duration' or value != data.default(key))
             }
             tests.child(data.name, test_fmf_keys)
-
-        if self.data.dist_git_source:
-            assert self.step.plan.my_run is not None  # narrow type
-            assert self.step.plan.my_run.tree is not None  # narrow type
-            assert self.step.plan.my_run.tree.root is not None  # narrow type
-            fmf_root = self.test_dir if self.data.url else self.step.plan.my_run.tree.root
-            git_root = tmt.utils.git.git_root(
-                fmf_root=fmf_root,
-                logger=self._logger,
-            )
-            if not git_root:
-                raise tmt.utils.DiscoverError(f"Directory '{fmf_root}' is not a git repository.")
-            try:
-                self.download_distgit_source(
-                    distgit_dir=git_root,
-                    target_dir=self.source_dir,
-                    handler_name=self.data.dist_git_type,
-                )
-                # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
-                # FIXME 'worktree' could be used as source_dir when 'url' is not set
-                shutil.copytree(git_root, self.source_dir, symlinks=True, dirs_exist_ok=True)
-
-                if self.data.dist_git_download_only:
-                    self.debug("Do not extract sources as 'download_only' is set.")
-                else:
-                    # Check if prepare is enabled, warn user if not
-                    if not self.step.plan.prepare.enabled:
-                        self.warn("Sources will not be extracted, prepare step is not enabled.")
-                    insert_to_prepare_step(
-                        discover_plugin=self,
-                        sourcedir=self.source_dir,
-                    )
-
-            except Exception as error:
-                raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
 
         # Use a tmt.Tree to apply possible command line filters
         self._tests = tmt.Tree(logger=self._logger, tree=tests).tests(
