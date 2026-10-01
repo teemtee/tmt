@@ -18,7 +18,7 @@ class RepeatPlanShaper(PlanShaper):
 
     @classmethod
     def run_options(cls) -> list['ClickOptionDecoratorType']:
-        from tmt.options import option
+        from tmt.options import option  # pyright: ignore[reportUnknownVariableType]
 
         return [
             option('--repeat', metavar='N', help='Repeat a plan N times.', type=int, default=-1)

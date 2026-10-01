@@ -4,14 +4,14 @@ import functools
 import threading
 from collections.abc import Iterable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, ParamSpec, TypeVar
 
-from tmt._compat.typing import ParamSpec
 from tmt.log import Logger
 from tmt.utils import GeneralError
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import Self
+    from typing import Self
+
     from tmt.guest import Guest
 
 

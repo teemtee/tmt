@@ -52,7 +52,9 @@ class Deprecated:
         return f'{message}.'
 
 
-class Path(click.ParamType):
+# Note: click 8.5.0 changed the generic typing of ParamType
+# Also older python complain about import errors
+class Path(click.ParamType):  # type: ignore[type-arg]
     name = 'path'
 
     def convert(  # noqa: RET503
@@ -133,7 +135,10 @@ def option(
     is_flag: bool = False,
     multiple: bool = False,
     count: bool = False,
-    type: Optional[Union[click.Choice, Any]] = None,  # noqa: A002  `type` is shadowing a Python builtin
+    # Note: click 8.2.0 made Choice a generic, but on epel10 click 8.1.7 is used
+    #  type-ignore the generic for now. This cascades into reportUnknownVariableType issues
+    #  for pyright
+    type: Optional[Union[click.Choice, Any]] = None,  # type: ignore[type-arg] # noqa: A002  `type` is shadowing a Python builtin
     help: Optional[str] = None,
     required: bool = False,
     default: Optional[Any] = None,
@@ -176,7 +181,7 @@ def option(
 
     # Add a metavar listing choices unless an explicit metavar has been provided
     if isinstance(type, click.Choice) and metavar is None:
-        metavar = '|'.join(type.choices)
+        metavar = '|'.join(type.choices)  # pyright: ignore[reportUnknownArgumentType]
 
     # Instead of repeating all keyword parameters, use locals(), they are all there
     # already, and it's a dictionary - just don't forget to remove names that are

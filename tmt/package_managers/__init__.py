@@ -27,7 +27,8 @@ from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
+
     from tmt.base.core import DependencySimple
     from tmt.guest import Guest
     from tmt.package_managers._rpm import RpmVersion
@@ -209,7 +210,7 @@ class Repository:
         return f"{tmt.utils.sanitize_name(self.name, allow_slash=False)}.repo"
 
 
-class SpecialPackageOrigin(str, enum.Enum):
+class SpecialPackageOrigin(enum.StrEnum):
     """
     Sentinel values used in place of an actual repository name to convey
     special package states returned by :py:meth:`PackageManager.get_package_origin`.

@@ -9,6 +9,7 @@ import dataclasses
 import datetime
 import enum
 import functools
+import importlib
 import io
 import json
 import os
@@ -42,6 +43,8 @@ from typing import (
     Generic,
     Literal,
     Optional,
+    ParamSpec,
+    Self,
     TextIO,
     TypeVar,
     Union,
@@ -68,11 +71,9 @@ from ruamel.yaml.representer import Representer
 from urllib3.response import HTTPResponse
 
 import tmt.log
-from tmt._compat import importlib
 from tmt._compat.annotationlib import Format, get_annotations
 from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
 from tmt.log import DebugLevel, LoggableValue, VerbosityLevel
 from tmt.utils.environment import Environment
@@ -6130,12 +6131,12 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
 
     def __enter__(self) -> Self:
         if not self.started:
-            self.start_time = datetime.datetime.now(datetime.timezone.utc)
+            self.start_time = datetime.datetime.now(datetime.UTC)
 
         return self
 
     def __exit__(self, *args: object) -> None:
-        self.end_time = datetime.datetime.now(datetime.timezone.utc)
+        self.end_time = datetime.datetime.now(datetime.UTC)
 
     @property
     def started(self) -> bool:

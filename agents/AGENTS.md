@@ -214,7 +214,7 @@ tmt heavily uses the Flexible Metadata Format (fmf) for:
 
 ### Code Standards
 
-- **Target Python 3.9+:** Use syntax compatible with Python 3.9 and newer.
+- **Target Python 3.12+:** Use syntax compatible with Python 3.12 and newer.
 - **Use strict type hints:** Fully type all values, including function signatures, class attributes,
   and module-level constants. tmt code must pass validation by `mypy` and `pyright` linters.
 - **Adhere to `ruff`:** Format and lint code strictly according to `pyproject.toml`.
