@@ -38,9 +38,7 @@ dependencies = [
     "jinja2>=2.11.3",
     "packaging>=20.9",
     "pint>=0.16.1",
-    "pydantic>=1.10.14",
-    # Missing python3.14 pre-compiled wheels among other issues
-    "pydantic>=2.12.0a1; python_version >= '3.14'",
+    "pydantic>=2.9.2",
     "pygments>=2.7.4",
     "requests>=2.25.1",
     "ruamel.yaml>=0.16.6",
@@ -256,7 +254,6 @@ ignore = [
     "docs/**",
     "examples/**",
     "tests/**",
-    "tmt/_compat/pydantic.py",
     "tmt/export/*.py",
     "tmt/plugins/*.py",
     "tmt/steps/*.py",
@@ -475,7 +472,6 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "typing.TypeIs".msg = "Not present in centos-stream-10"
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
-"pydantic".msg = "Use tmt._compat.pydantic instead."
 "warnings.deprecated".msg = "Use tmt._compat.warnings.deprecated instead."
 "os.path".msg = "Use tmt._compat.pathlib.Path and pathlib instead."
 # Banning builtins is not yet supported: https://github.com/astral-sh/ruff/issues/10079
