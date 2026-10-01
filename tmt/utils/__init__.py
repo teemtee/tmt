@@ -53,6 +53,7 @@ import click
 import fmf
 import fmf.utils
 import jsonschema
+import pint
 import requests
 import requests.adapters
 import ruamel.yaml.reader
@@ -5645,9 +5646,7 @@ def normalize_data_amount(
     raw_value: Any,
     logger: tmt.log.Logger,
 ) -> 'Size':
-    from pint import Quantity
-
-    if isinstance(raw_value, Quantity):
+    if isinstance(raw_value, pint.Quantity):
         # Validate existing quantity can be converted to bytes
         try:
             raw_value.to('bytes')
@@ -5685,11 +5684,9 @@ def normalize_duration(
     are treated as days for backward compatibility.
     """
 
-    from pint import Quantity
-
     import tmt.hardware
 
-    if isinstance(value, Quantity):
+    if isinstance(value, pint.Quantity):
         try:
             value.to('day')
             return value
