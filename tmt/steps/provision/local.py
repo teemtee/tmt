@@ -190,6 +190,10 @@ class GuestLocal(tmt.Guest):
             friendly_command=friendly_command or str(command),
             silent=silent,
             cwd=cwd,
+            # Do not use any defaults: tmt environment and command environment
+            # have been already joined in `_prepare_command_environment`, let
+            # `_run_guest_command` to not mess it up.
+            environment=Environment(),
             interactive=interactive,
             on_process_start=on_process_start,
             on_process_end=on_process_end,
