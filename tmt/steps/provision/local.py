@@ -58,14 +58,11 @@ class GuestLocal(tmt.Guest):
 
         return True
 
-    # TODO: the existence of this method is very questionable, it may
-    # go away while works on https://github.com/teemtee/tmt/pull/4364
-    # continue.
-    #
     # `local` plugin has its own implementation as it needs to populate
     # the environment with the tmt process environment, since the guest
-    # is the same as the runner.
-    def _prepare_command_environment(
+    # is the same as the runner and "remote command" is also a "local
+    # command".
+    def _build_remote_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
         if environment is None:
@@ -82,7 +79,7 @@ class GuestLocal(tmt.Guest):
 
             return environment
 
-        return super()._prepare_command_environment(environment=environment)
+        return super()._build_remote_command_environment(environment=environment)
 
     def _run_ansible(
         self,
@@ -128,7 +125,7 @@ class GuestLocal(tmt.Guest):
                     '-i', 'localhost,',
                     playbook,
                 ),
-                environment=self._prepare_ansible_command_environment(),
+                environment=self._build_ansible_command_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
@@ -171,7 +168,7 @@ class GuestLocal(tmt.Guest):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to a shell executed on the local host.
         script = ShellScript.from_scripts(
-            self._prepare_command_environment(environment=environment).to_shell_exports()
+            self._build_remote_command_environment(environment=environment).to_shell_exports()
         )
 
         for file in reversed(sourced_files or []):
@@ -191,8 +188,8 @@ class GuestLocal(tmt.Guest):
             silent=silent,
             cwd=cwd,
             # Do not use any defaults: tmt environment and command environment
-            # have been already joined in `_prepare_command_environment`, let
-            # `_run_guest_command` to not mess it up.
+            # have been already joined in `_build_remote_command_environment`,
+            # let `_run_guest_command` to not mess it up.
             environment=Environment(),
             interactive=interactive,
             on_process_start=on_process_start,
