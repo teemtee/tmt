@@ -5,11 +5,11 @@ from typing import Optional, TypeVar, cast
 
 import fmf
 import fmf.utils
+from pydantic import ValidationError
 
 import tmt.log
 import tmt.utils
 from tmt._compat.pathlib import Path
-from tmt._compat.pydantic import ValidationError
 from tmt.config.models.hardware import HardwareConfig
 from tmt.config.models.link import LinkConfig
 from tmt.config.models.themes import Theme, ThemeConfig
