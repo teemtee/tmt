@@ -464,7 +464,7 @@ class GuestContainer(tmt.Guest):
             return self._run_guest_command(
                 podman_command,
                 cwd=self.parent.plan.worktree,
-                environment=self._prepare_ansible_command_environment(),
+                environment=self._build_ansible_command_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
@@ -538,7 +538,7 @@ class GuestContainer(tmt.Guest):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to a shell executed inside the container.
         script = ShellScript.from_scripts(
-            self._prepare_command_environment(environment).to_shell_exports()
+            self._build_remote_command_environment(environment).to_shell_exports()
         )
 
         # Change to given directory on guest if cwd provided
