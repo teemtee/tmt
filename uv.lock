@@ -1570,7 +1570,7 @@ wheels = [
 
 [[package]]
 name = "mrack"
-version = "1.28.0"
+version = "1.25.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1582,12 +1582,11 @@ dependencies = [
     { name = "click" },
     { name = "os-client-config" },
     { name = "pyyaml" },
-    { name = "setuptools" },
     { name = "testcloud" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7e/ba/1c04d0f85e3ed6738e83e2ea10a0b4bbe369cd43e050295af7859d532830/mrack-1.28.0.tar.gz", hash = "sha256:a122ab22c08e11fb19c2b2c8465f55a7a719c89249f4e5a4c92e28986a762085", size = 129282, upload-time = "2026-06-23T10:40:28.733Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/a3/88d39dae7c6eb306c042df3dee0164740f9e242629c697579c698fd1f78f/mrack-1.25.0.tar.gz", hash = "sha256:e3d3cb90f35f6cf9afa9bc850334687170255bd273a8cd21c0e7b0bb26d2ecfc", size = 128093, upload-time = "2025-10-21T09:46:52.65Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/31/6d945b038a3ae688ef9f758ecef67ca130d0a78d4e494d1850a8e5b8e77b/mrack-1.28.0-py3-none-any.whl", hash = "sha256:a04b024393603c2823895c53ef1ccbc35475a061b2d5a2faf10a37b8541010fc", size = 103824, upload-time = "2026-06-23T10:40:27.399Z" },
+    { url = "https://files.pythonhosted.org/packages/66/b6/82ece4d518eadfa11e6d1891be9b377984b47676f96a37002bc898e9dfb0/mrack-1.25.0-py3-none-any.whl", hash = "sha256:4d1afe06ea68b5e2e56401c48095d3118fb81757c0bbb072a9c3e5afaad483f9", size = 102734, upload-time = "2025-10-21T09:46:51.369Z" },
 ]
 
 [[package]]
@@ -2802,11 +2801,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "81.0.0"
+version = "83.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0d/1c/73e719955c59b8e424d015ab450f51c0af856ae46ea2da83eba51cc88de1/setuptools-81.0.0.tar.gz", hash = "sha256:487b53915f52501f0a79ccfd0c02c165ffe06631443a886740b91af4b7a5845a", size = 1198299, upload-time = "2026-02-06T21:10:39.601Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/26/f5d29e25ffdb535afef2d35cdb55b325298f96debd670da4c325e08d70f4/setuptools-83.0.0.tar.gz", hash = "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef", size = 1154254, upload-time = "2026-07-04T15:31:22.699Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/e3/c164c88b2e5ce7b24d667b9bd83589cf4f3520d97cad01534cd3c4f55fdb/setuptools-81.0.0-py3-none-any.whl", hash = "sha256:fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6", size = 1062021, upload-time = "2026-02-06T21:10:37.175Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/40/e1e72872c6354b306daef1703549e8e83b4d43cfea356311bf722a043752/setuptools-83.0.0-py3-none-any.whl", hash = "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3", size = 1008090, upload-time = "2026-07-04T15:31:20.885Z" },
 ]
 
 [[package]]
