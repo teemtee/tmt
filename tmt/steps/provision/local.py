@@ -61,13 +61,13 @@ class GuestLocal(tmt.Guest):
     # TODO: the existence of this method is very questionable, it may
     # go away while works on https://github.com/teemtee/tmt/pull/4364
     # continue.
-    #
-    # `local` plugin has its own implementation as it needs to populate
-    # the environment with the tmt process environment, since the guest
-    # is the same as the runner.
     def _prepare_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
+        # `local` plugin exposes the tmt environment to commands that
+        # do not provide their own environment, but it is not expected
+        # to expose this environment to user-provided code: tests,
+        # `prepare` scripts, etc.
         if environment is None:
             environment = Environment.from_environ()
 
@@ -190,6 +190,9 @@ class GuestLocal(tmt.Guest):
             friendly_command=friendly_command or str(command),
             silent=silent,
             cwd=cwd,
+            # Do not add tmt environment by default: if necessary, it has been
+            # already baked into the `script` in `_prepare_command_environment`.
+            environment=Environment(),
             interactive=interactive,
             on_process_start=on_process_start,
             on_process_end=on_process_end,
