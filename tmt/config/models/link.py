@@ -1,6 +1,7 @@
 from enum import StrEnum
 
-from tmt._compat.pydantic import HttpUrl
+from pydantic import HttpUrl
+
 from tmt.container import MetadataContainer
 
 

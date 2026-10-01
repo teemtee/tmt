@@ -10,7 +10,6 @@ import pytest
 
 import tmt.config
 import tmt.utils
-from tmt._compat.pydantic import PYDANTIC_V1
 from tmt.log import Logger
 from tmt.utils import Path
 
@@ -99,20 +98,12 @@ def test_link_config_invalid(config_path: Path, root_logger: Logger):
 
     cause = str(error.value.__cause__)
     assert '6 validation errors for LinkConfig' in cause
-    if PYDANTIC_V1:
-        assert re.search(r'type\s*value is not a valid enumeration member', cause)
-        assert re.search(r'url\s*invalid or missing URL scheme', cause)
-        assert re.search(r'tmt-web-url\s*URL host invalid', cause)
-        assert re.search(r'unknown\s*extra fields not permitted', cause)
-        assert re.search(r'token\s*field required', cause)
-        assert re.search(r'additional_key\s*extra fields not permitted', cause)
-    else:
-        assert re.search(r'type\s*Input should be \'\w+\' \[type=enum', cause)
-        assert re.search(r'url\s*Input should be a valid URL, relative URL without a base', cause)
-        assert re.search(r'tmt-web-url\s*Input should be a valid URL, empty host', cause)
-        assert re.search(r'token\s*Field required', cause)
-        assert re.search(r'unknown\s*Extra inputs are not permitted', cause)
-        assert re.search(r'additional_key\s*Extra inputs are not permitted', cause)
+    assert re.search(r'type\s*Input should be \'\w+\' \[type=enum', cause)
+    assert re.search(r'url\s*Input should be a valid URL, relative URL without a base', cause)
+    assert re.search(r'tmt-web-url\s*Input should be a valid URL, empty host', cause)
+    assert re.search(r'token\s*Field required', cause)
+    assert re.search(r'unknown\s*Extra inputs are not permitted', cause)
+    assert re.search(r'additional_key\s*Extra inputs are not permitted', cause)
 
 
 def test_link_config_valid(config_path: Path, root_logger: Logger):
@@ -151,7 +142,4 @@ def test_link_config_empty(config_path: Path, root_logger: Logger):
 
     cause = str(error.value.__cause__)
     assert '1 validation error for LinkConfig' in cause
-    if PYDANTIC_V1:
-        assert re.search(r'issue-tracker\s*field required', cause)
-    else:
-        assert re.search(r'issue-tracker\s*Field required', cause)
+    assert re.search(r'issue-tracker\s*Field required', cause)
