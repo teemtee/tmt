@@ -10,25 +10,24 @@ Exposed by tmt
 
 The following sections describe various sets of environment variables
 exposed by tmt to various user-provided actions - scripts and commands
-provided by the user via plan and test metadata keys, from
+defined by users via plan and test metadata keys or command-line, from
 ``prepare/shell`` scripts to individual tests. Sets of environment
 variables are listed in their order of precedence from least to greatest:
 the last listed variables override variables from previous set.
 
-1. User-provided test environment
-:::::::::::::::::::::::::::::::::
+1. Test environment
+:::::::::::::::::::
 
 As set via :tmt:story:`environment </spec/tests/environment>` key of
 individual tests.
 
-2. User-provided plan environment
-:::::::::::::::::::::::::::::::::
+2. Plan environment
+:::::::::::::::::::
 
 2.1. ``environment-file`` plan key
 ----------------------------------
 
 Environment variables loaded from files listed in the
-
 :tmt:story:`environment-file </spec/plans/environment-file>` plan key.
 
 
@@ -77,8 +76,8 @@ This set is the recursive aspect of the inherited environment:
 The chain of importing plans is followed to its end, until there is no
 importing plan to inherit from.
 
-4. User-provided guest environment
-::::::::::::::::::::::::::::::::::
+4. Guest environment
+::::::::::::::::::::
 
 As set via :ref:`environment </plugins/provision/common-keys>` key of
 individual ``provision`` phases. Applies to user commands executed on
@@ -90,8 +89,8 @@ the given guest.
 Environment variables loaded from a file the ``TMT_PLAN_ENVIRONMENT_FILE``
 environment variable points at.
 
-6. User-provided environment from command-line
-::::::::::::::::::::::::::::::::::::::::::::::
+6. Environment from command-line
+::::::::::::::::::::::::::::::::
 
 6.1 ``tmt run`` command-line
 ----------------------------
