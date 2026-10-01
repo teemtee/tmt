@@ -264,6 +264,10 @@ UNSAFE_SSH_OPTIONS: frozenset[str] = frozenset(
         'dynamicforward',
         # Executes a command on the local machine to retrieve known host keys.
         'knownhostscommand',
+        # Sends local environment variable to remote box. If we let user control
+        # which variables are sent, they may leak variables supposedly
+        # exposed to tmt process only.
+        'sendenv',
     }
 )
 
@@ -2388,10 +2392,10 @@ class Guest(
         """
         Prepare environment for an ``ansible-playbook`` command.
 
-        Unlike commands running on the guest, ``ansible-playbook`` runs on the
-        control node and therefore inherits the tmt (parent) process
-        environment, extended with the command environment prepared for the
-        guest.
+        Unlike commands running on the guest, ``ansible-playbook`` runs
+        on the runner and therefore inherits the tmt (parent) process
+        environment by default, but we also need to include the
+        test/plan/guest environment variables.
 
         :param environment: if set, it is passed to
             :py:meth:`_prepare_command_environment` as the desired command
@@ -2419,12 +2423,15 @@ class Guest(
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
-        Run a command, local or remote, related to the guest.
+        Run a **local** command related to the guest.
+
+        The command may eventually run on the guest, e.g. ``ssh`` runs
+        locally but executes more commands on the guest - this helper
+        exists to invoke said ``ssh``, not the remote commands.
 
         A rather thin wrapper of :py:meth:`run` whose purpose is to be a single
         point through all commands related to a guest must go through. We expect
-        consistent logging from such commands, be it an ``ansible-playbook``
-        running on the control host or a test script on the guest.
+        consistent logging from such commands.
 
         :param command: a command to execute.
         :param friendly_command: if set, it would be logged instead of the
@@ -2433,8 +2440,9 @@ class Guest(
             reduced.
         :param cwd: if set, command would be executed in the given directory,
             otherwise the current working directory is used.
-        :param environment: environment variables to combine with the current environment
-            before running the command.
+        :param environment: if set, this environment would be used when
+            running the command. Otherwise, the tmt process environment
+            would be used.
         :param interactive: if set, the command would be executed in an interactive
             manner, i.e. with stdout and stdout connected to terminal for live
             interaction with user.
@@ -2445,6 +2453,8 @@ class Guest(
 
         if friendly_command is None:
             friendly_command = str(command)
+
+        environment = environment if environment is not None else Environment.from_environ()
 
         return self.run(
             command,
@@ -3670,7 +3680,6 @@ class GuestSsh(Guest, CommandCollector):
                             'check',
                             'unused-hostname',
                         ),
-                        environment=Environment.from_environ(),
                         silent=True,
                     )
 
