@@ -1,7 +1,6 @@
 from typing import Optional, TypeVar, Union, cast
 
 import tmt.log
-import tmt.result
 import tmt.steps
 from tmt.container import container
 from tmt.plugins import PluginRegistry
@@ -79,7 +78,7 @@ class Report(tmt.steps.Step):
         Give a concise report summary
         """
 
-        summary = tmt.result.Result.summary(self.plan.execute.results())
+        summary = self.plan.execute.results().summary()
         self.info('summary', summary, 'green', shift=1)
 
     def go(self, force: bool = False) -> None:
