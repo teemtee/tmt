@@ -58,7 +58,7 @@ rlJournalStart
     # 2 - (negative) format testing
     rlPhaseStartTest "Invalid format"
         rlRun -s "tmt tests export --how weird" 2
-        rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'json', 'nitrate', 'polarion', 'template', 'yaml'." $rlRun_LOG
+        rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'json', 'jira', 'nitrate', 'polarion', 'template', 'yaml'." $rlRun_LOG
     rlPhaseEnd
 
     # 3 - fmf-id testing
