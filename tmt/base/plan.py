@@ -538,6 +538,10 @@ class Plan(
             {
                 **self._environment_from_fmf,
                 **self._environment_from_importing,
+                # TODO: this should not be included here: `tmt run` has
+                # been polished, and delivers its environment correctly.
+                # This line serves for commands like `tmt plan` that do
+                # not have any other storage for envvars.
                 **self._environment_from_cli,
             }
         )
