@@ -50,7 +50,7 @@ Environment variables set via
 ---------------------------------------------------
 
 Environment variables loaded from files listed in the
-importing plan's :tmt:story:`environment </spec/plans/environment-file>`
+importing plan's :tmt:story:`environment-file </spec/plans/environment-file>`
 plan key.
 
 3.2. Importing plan's ``environment`` plan key
@@ -152,7 +152,6 @@ limitations.
     * ``RSTRNT_REBOOTCOUNT``
     * ``TMT_TEST_PIDFILE``
     * ``TMT_TEST_PIDFILE_LOCK``
-    * ``TMT_TEST_PIDFILE_ROOT``
     * ``TMT_PLAN_DATA``
     * ``TMT_PLAN_ENVIRONMENT_FILE``
     * ``TMT_PLAN_SOURCE_SCRIPT``
@@ -163,7 +162,6 @@ limitations.
          Only to the ``prepare/shell`` phases.
     * ``TMT_REBOOT_REQUEST``
     * ``TMT_REBOOT_COUNT``
-    * ``TMT_TEST_RESTART_COUNT``
     * ``TMT_TOPOLOGY_BASH``
     * ``TMT_TOPOLOGY_YAML``
     * ``TMT_TREE``
@@ -190,6 +188,7 @@ limitations.
       .. note::
 
         To the ``execute/upgrade`` phases only.
+    * ``REBOOTCOUNT``
     * ``RSTRNT_REBOOTCOUNT``
     * ``RSTRNT_TASKNAME``
     * ``TESTID``
@@ -199,7 +198,6 @@ limitations.
          Only when a test with the ``beakerlib`` framework runs.
     * ``TMT_TEST_PIDFILE``
     * ``TMT_TEST_PIDFILE_LOCK``
-    * ``TMT_TEST_PIDFILE_ROOT``
     * ``TMT_PLAN_DATA``
     * ``TMT_PLAN_ENVIRONMENT_FILE``
     * ``TMT_PLAN_SOURCE_SCRIPT``
@@ -225,18 +223,16 @@ limitations.
     * ``RSTRNT_REBOOTCOUNT``
     * ``TMT_TEST_PIDFILE``
     * ``TMT_TEST_PIDFILE_LOCK``
-    * ``TMT_TEST_PIDFILE_ROOT``
     * ``TMT_PLAN_DATA``
     * ``TMT_PLAN_ENVIRONMENT_FILE``
     * ``TMT_PLAN_SOURCE_SCRIPT``
-    * ``TMT_PREPARE_SHELL_URL_REPOSITORY``
+    * ``TMT_FINISH_SHELL_URL_REPOSITORY``
 
       .. note::
 
          Only to the ``finish/shell`` phases.
     * ``TMT_REBOOT_REQUEST``
     * ``TMT_REBOOT_COUNT``
-    * ``TMT_TEST_RESTART_COUNT``
     * ``TMT_TOPOLOGY_BASH``
     * ``TMT_TOPOLOGY_YAML``
     * ``TMT_TREE``
@@ -252,6 +248,7 @@ Consumed by tmt itself
     process itself, and never propagated to user environment.
 
 * ``NO_COLOR``
+* ``TMT_ALLOW_UNSAFE_BEHAVIOR``
 * ``TMT_BOOT_TIMEOUT``
 * ``TMT_CONNECT_TIMEOUT``
 * ``TMT_CONFIG_DIR``
@@ -266,8 +263,10 @@ Consumed by tmt itself
 * ``TMT_GIT_CLONE_TIMEOUT``
 * ``TMT_GIT_CREDENTIALS_URL_<suffix>``
 * ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
+* ``TMT_IMPORT_BEFORE_NAME_FILTER``
 * ``TMT_NO_COLOR``
 * ``TMT_OUTPUT_WIDTH``
+* ``TMT_TEST_PIDFILE_ROOT``
 * ``TMT_PLUGIN_${STEP}_${PLUGIN}_${OPTION}``
 * ``TMT_PLUGINS``
 * ``TMT_POLICY_FILE``
@@ -278,6 +277,7 @@ Consumed by tmt itself
 * ``TMT_RETRY_SESSION_BACKOFF_FACTOR``
 * ``TMT_RETRY_SESSION_BACKOFF_MAX``
 * ``TMT_RETRY_SESSION_RETRIES``
+* ``TMT_RUN_MAX_TESTS_PER_PLAN``
 * ``TMT_SCRIPTS_DIR``
 * ``TMT_SHOW_TRACEBACK``
 * ``TMT_SSH_*``
