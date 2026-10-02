@@ -36,11 +36,10 @@ class JiraExporter(tmt.export.ExportPlugin):
     ``--link-jira`` to write the Jira issue URL back into the fmf
     metadata as an ``implements`` link for future lookups.
 
-    Polarion test case links present in ``implements`` fmf links or
-    found via a live Polarion API lookup are preserved in the
-    ``External issue URL`` custom field. ``verifies`` fmf links are
-    recreated as Jira issue links (``tests`` type for issues on the
-    same instance, remote links for Bugzilla URLs).
+    Use ``--bugzilla`` to recreate Bugzilla ``verifies`` links as
+    remote links on the Jira ``Test Case``. Use ``--polarion`` to
+    populate the ``External issue URL`` custom field with the test's
+    Polarion test case link.
 
     .. code-block:: shell
 
@@ -89,7 +88,7 @@ class JiraExporter(tmt.export.ExportPlugin):
         components: list[str],
         labels: list[str],
         contact_account_id: Optional[str],
-        script_url: Optional[str],
+        test_url: Optional[str],
         polarion_case_url: Optional[str],
         field_ids: dict[str, str],
         issue_type_id: Optional[str] = None,
@@ -118,9 +117,9 @@ class JiraExporter(tmt.export.ExportPlugin):
             fields['labels'] = labels
         if contact_account_id:
             fields['assignee'] = {'accountId': contact_account_id}
-        if script_url:
-            fields[field_ids['url']] = script_url
-        if polarion_case_url:
+        if test_url:
+            fields[field_ids['url']] = test_url
+        if polarion_case_url and 'external_issue_url' in field_ids:
             fields[field_ids['external_issue_url']] = polarion_case_url
         return fields
 
@@ -218,19 +217,6 @@ class JiraExporter(tmt.export.ExportPlugin):
         return None
 
     @staticmethod
-    def _find_script_url(test: tmt.base.core.Test) -> Optional[str]:
-        """Find the test script URL from test-script links, extra-task, or git repo URL."""
-        if test.link:
-            for link in test.link.get(relation='test-script'):
-                if isinstance(link.target, str):
-                    return link.target
-        if test.node.get('extra-task'):
-            return str(test.node.get('extra-task'))
-        if not test.opt('ignore_git_validation') and test.fmf_id.url:
-            return test.fmf_id.url
-        return None
-
-    @staticmethod
     def _resolve_contact(test: tmt.base.core.Test, jira_instance: JiraInstance) -> Optional[str]:
         """Resolve contact from fmf metadata to Jira accountId."""
         if not test.contact:
@@ -322,9 +308,11 @@ class JiraExporter(tmt.export.ExportPlugin):
                     test._logger.warning(f"Could not link to '{req_key}': {err}")
                 continue
 
-            # Bugzilla — create a remote link
+            # Bugzilla — create a remote link if --bugzilla is requested
             bz_match = RE_BUGZILLA_ID.search(target)
             if bz_match:
+                if not test.opt('bugzilla'):
+                    continue
                 bz_id = bz_match.group(1)
                 if target in linked_remote_urls:
                     test._logger.info('verifies (BZ)', f'{bz_id} (already linked)', 'green')
@@ -341,11 +329,9 @@ class JiraExporter(tmt.export.ExportPlugin):
             test._logger.warning(f"Skipping unrecognised verifies link: {target}")
 
     @staticmethod
-    def _transition_case(
-        test: tmt.base.core.Test, jira_instance: JiraInstance, key: str, enabled: bool
-    ) -> None:
-        """Transition a TestCase to Active or Retired, skipping if already there."""
-        target = 'Active' if enabled else 'Retired'
+    def _transition_case(test: tmt.base.core.Test, jira_instance: JiraInstance, key: str) -> None:
+        """Transition a TestCase to Active, skipping if already there."""
+        target = 'Active'
         current_status = jira_instance.jira.issue(key, fields='status').fields.status.name
         if current_status == target:
             return
@@ -370,12 +356,12 @@ class JiraExporter(tmt.export.ExportPlugin):
         summary: str,
         uuid: str,
         labels: list[str],
-        polarion_case_url: Optional[str],
+        polarion_case_url: Optional[str] = None,
     ) -> None:
         """Log exported test case metadata."""
         if polarion_case_url:
             test._logger.info('polarion', polarion_case_url, 'green')
-        elif not test.is_dry_run:
+        elif test.opt('polarion') and not test.is_dry_run:
             test._logger.info('polarion', 'not found', 'yellow')
 
         test._logger.info('summary', summary, 'green')
@@ -416,7 +402,7 @@ class JiraExporter(tmt.export.ExportPlugin):
         else:
             test._logger.print(f"Test case '{case_key}' would be updated.", color='blue')
 
-        cls._log_metadata(test, summary, uuid, labels, polarion_case_url=None)
+        cls._log_metadata(test, summary, uuid, labels)
         test._logger.print(
             f"Test case '{summary}' successfully exported to Jira.", color='magenta'
         )
@@ -436,14 +422,16 @@ class JiraExporter(tmt.export.ExportPlugin):
     ) -> None:
         """Perform live Jira issue creation or update and update fmf metadata."""
         contact_account_id = cls._resolve_contact(test, jira_instance)
-        script_url = cls._find_script_url(test)
-        polarion_case_url = cls._find_polarion_case_url(test)
+        test_url = test.web_link() if not test.opt('ignore_git_validation') else None
+        polarion_case_url = cls._find_polarion_case_url(test) if test.opt('polarion') else None
 
         field_ids = {
             'tmt_id': field_tmt_id,
             'url': jira_instance.resolve_field_id('URL'),
-            'external_issue_url': jira_instance.resolve_field_id('External issue URL'),
         }
+        if test.opt('polarion'):
+            field_ids['external_issue_url'] = jira_instance.resolve_field_id('External issue URL')
+
         issue_type_id = (
             jira_instance.resolve_issue_type_id(project_id, 'Test Case')
             if case_key is None
@@ -457,7 +445,7 @@ class JiraExporter(tmt.export.ExportPlugin):
             components=test.component,
             labels=labels,
             contact_account_id=contact_account_id,
-            script_url=script_url,
+            test_url=test_url,
             polarion_case_url=polarion_case_url,
             field_ids=field_ids,
             issue_type_id=issue_type_id,
@@ -472,7 +460,7 @@ class JiraExporter(tmt.export.ExportPlugin):
 
         cls._log_metadata(test, summary, uuid, labels, polarion_case_url)
 
-        cls._transition_case(test, jira_instance, case_key, test.enabled)
+        cls._transition_case(test, jira_instance, case_key)
         cls._create_issue_links(test, case_key, jira_instance, url)
         if test.opt('link_jira'):
             cls._link_jira_to_fmf(test, url, case_key)
