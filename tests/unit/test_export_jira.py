@@ -245,7 +245,7 @@ class TestBuildFields:
             components=[],
             labels=[],
             contact_account_id=None,
-            script_url=None,
+            test_url=None,
             polarion_case_url=None,
             field_ids=FIELD_IDS,
         )
@@ -260,7 +260,7 @@ class TestBuildFields:
             components=['kernel'],
             labels=['Tier1'],
             contact_account_id='712020:abc-123',
-            script_url='https://example.com/test.sh',
+            test_url='https://example.com/test.sh',
             polarion_case_url='https://polarion.example.com/case/1',
             field_ids=FIELD_IDS,
             issue_type_id='10239',
@@ -638,13 +638,14 @@ class TestExportToJira:
             '--how',
             'jira',
             '--create',
+            '--bugzilla',
             *CREDENTIALS,
             '.',
         )
         assert output.exit_code == 0, output.output
         # Already linked -- must not be recreated.
         assert not fake_jira.created_issue_links
-        # Not yet linked -- must be created exactly once.
+        # Not yet linked -- must be created exactly once when --bugzilla is passed.
         assert fake_jira.created_remote_links == [
             (
                 'RHELTEST-100',
@@ -661,3 +662,81 @@ class TestExportToJira:
                 },
             ),
         ]
+
+    def test_verifies_links_bugzilla_ignored_without_flag(
+        self, fmf_root: Any, fake_jira: FakeJiraClient
+    ) -> None:
+        node = find_test_node(fmf_root)
+        with node as data:
+            data['link'] = [
+                {'verifies': 'https://bugzilla.redhat.com/show_bug.cgi?id=123'},
+            ]
+
+        output = CliRunner().invoke(
+            'tests',
+            'export',
+            '--how',
+            'jira',
+            '--create',
+            *CREDENTIALS,
+            '.',
+        )
+        assert output.exit_code == 0, output.output
+        assert not fake_jira.created_remote_links
+
+    def test_polarion_link_exported_when_flag_provided(
+        self, fmf_root: Any, fake_jira: FakeJiraClient
+    ) -> None:
+        node = find_test_node(fmf_root)
+        with node as data:
+            data['link'] = [
+                {'implements': 'https://polarion.example.com/polarion/#/project/RH/workitem?id=1'}
+            ]
+
+        with unittest.mock.patch.object(JiraExporter, '_find_polarion_case_url') as mock_find:
+            mock_find.return_value = (
+                'https://polarion.example.com/polarion/#/project/RH/workitem?id=1'
+            )
+            output = CliRunner().invoke(
+                'tests',
+                'export',
+                '--how',
+                'jira',
+                '--create',
+                '--polarion',
+                *CREDENTIALS,
+                '.',
+            )
+            assert output.exit_code == 0, output.output
+            assert fake_jira.created_issues
+            assert (
+                fake_jira.created_issues[0]['customfield_10766']
+                == 'https://polarion.example.com/polarion/#/project/RH/workitem?id=1'
+            )
+
+    def test_polarion_link_ignored_without_flag(
+        self, fmf_root: Any, fake_jira: FakeJiraClient
+    ) -> None:
+        node = find_test_node(fmf_root)
+        with node as data:
+            data['link'] = [
+                {'implements': 'https://polarion.example.com/polarion/#/project/RH/workitem?id=1'}
+            ]
+
+        with unittest.mock.patch.object(JiraExporter, '_find_polarion_case_url') as mock_find:
+            mock_find.return_value = (
+                'https://polarion.example.com/polarion/#/project/RH/workitem?id=1'
+            )
+            output = CliRunner().invoke(
+                'tests',
+                'export',
+                '--how',
+                'jira',
+                '--create',
+                *CREDENTIALS,
+                '.',
+            )
+            assert output.exit_code == 0, output.output
+            assert fake_jira.created_issues
+            assert 'customfield_10766' not in fake_jira.created_issues[0]
+            mock_find.assert_not_called()

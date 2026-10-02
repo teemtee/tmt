@@ -898,6 +898,11 @@ _test_export_default = 'yaml'
     help='Add Jira link to fmf testcase metadata as an implements relation.',
 )
 @option(
+    '--polarion',
+    is_flag=True,
+    help='Link to Polarion test case in Jira export.',
+)
+@option(
     '--link-polarion / --no-link-polarion',
     default=False,
     is_flag=True,
@@ -907,7 +912,7 @@ _test_export_default = 'yaml'
     '--bugzilla',
     is_flag=True,
     help="""
-         Link Nitrate case to Bugzilla specified in the 'link' attribute with the relation
+         Link case to Bugzilla specified in the 'link' attribute with the relation
          'verifies'.
          """,
 )
@@ -1018,9 +1023,10 @@ def tests_export(
         how = format
 
     # TODO: move this "requires bugzilla" flag to export plugin level.
-    if bugzilla and how not in ('nitrate', 'polarion'):
+    if bugzilla and how not in ('nitrate', 'polarion', 'jira'):
         raise tmt.utils.GeneralError(
-            "The --bugzilla option is supported only with --nitrate or --polarion for now."
+            "The --bugzilla option is supported only with "
+            "--nitrate, --polarion, or --jira for now."
         )
 
     if kwargs.get('fmf_id'):

@@ -145,22 +145,31 @@ story: 'As a user I want to comfortably work with tests'
             The following ``fmf`` attributes are exported to the
             corresponding Jira ``Test Case`` fields:
 
-            * ``summary`` — summary
-            * ``description`` — description
-            * ``id`` — ``ID`` custom field used for future lookup
-            * ``component`` — components
-            * ``tag`` + ``Tier{N}`` — labels
-            * ``contact`` — assignee (resolved to a Jira Cloud
-              ``accountId`` via the user search API)
-            * ``enabled`` — status (``Active`` or ``Retired``)
-            * ``link[test-script]`` or ``extra-task`` or repo URL
-              — ``URL`` custom field
-            * ``link[implements]`` matching the Polarion URL
-              — ``External issue URL`` custom field
+            +-------------------------------------------+-------------------------------------------------+
+            | fmf attribute                             | Jira field                                      |
+            +===========================================+=================================================+
+            | ``summary``                               | summary                                         |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``description``                           | description                                     |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``id``                                    | ``ID`` custom field used for future lookup      |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``component``                             | components                                      |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``tag``                                   | labels                                          |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``contact``                               | assignee (resolved to a Jira Cloud              |
+            |                                           | ``accountId`` via user search API)              |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``enabled``                               | status (always ``Active`` in Jira)              |
+            +-------------------------------------------+-------------------------------------------------+
 
-            ``verifies`` links are recreated as Jira issue links:
-            links to issues on the same instance become ``tests``
-            issue links; Bugzilla links become remote links.
+            The web link to the test file in the git repository is
+            stored in the ``URL`` custom field.
+
+            ``verifies`` links to issues on the same Jira instance become
+            ``tests`` issue links. When ``--bugzilla`` is enabled, Bugzilla
+            links become remote links.
 
             After a successful export, add ``--link-jira`` to
             write an ``implements`` link back to the fmf metadata
@@ -168,6 +177,7 @@ story: 'As a user I want to comfortably work with tests'
             Jira ``Test Case`` without a UUID search.
         link:
           - implemented-by: /tmt/export/jira.py
+          - documented-by: /docs/examples.rst#jira-project-configuration
 
 /filter:
     story: 'Filter available tests'
