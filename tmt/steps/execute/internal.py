@@ -364,14 +364,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             WITH_INTERACTIVE=self.data.interactive,
         )
 
-        # Create topology files
-        topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
-        topology.guest = tmt.steps.GuestTopology(guest)
-
-        invocation.environment.update(
-            topology.push(dirpath=invocation.path, guest=guest, logger=logger)
-        )
-
         # Prepare the actual remote command
         remote_command: ShellScript
         if guest.become and not guest.facts.is_superuser:
