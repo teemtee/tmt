@@ -1,0 +1,11 @@
+description: |
+  The :ref:`connect</plugins/provision/connect>` provision method now
+  works with macOS guests: workdir transfers work with Apple's
+  ``openrsync``, and :ref:`prepare/install</plugins/prepare/install>`
+  installs packages with the new ``homebrew`` package manager. Log in
+  as a regular user with passwordless ``sudo`` and set ``become``: the
+  essential requirements, ``flock`` among them, come from Homebrew,
+  which refuses to run as ``root`` and has to live under ``/opt/homebrew``
+  or ``/usr/local``. With ``become``, the workdir is shared through an
+  inherited ACL that grants everyone read and execute. Reboot handling
+  and hardware requirements are not covered yet.
