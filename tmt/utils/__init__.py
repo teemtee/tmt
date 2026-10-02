@@ -28,7 +28,7 @@ import unicodedata
 import urllib.parse
 import warnings
 from collections import Counter
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from math import ceil
 from re import Pattern
 from threading import RLock, Thread
@@ -331,7 +331,7 @@ def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     return WORKDIR_ROOT
 
 
-class FmfContext(dict[str, list[str]]):
+class FmfContext(Mapping[str, list[str]]):
     """
     Represents an fmf context.
 
@@ -339,8 +339,19 @@ class FmfContext(dict[str, list[str]]):
     and https://fmf.readthedocs.io/en/latest/context.html.
     """
 
-    def __init__(self, data: Optional[dict[str, list[str]]] = None) -> None:
-        super().__init__(data or {})
+    _data: dict[str, list[str]]
+
+    def __init__(self, **kwargs: list[str]) -> None:
+        self._data = kwargs
+
+    def __getitem__(self, key: str) -> list[str]:
+        return self._data[key]
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __iter__(self) -> Iterator[str]:
+        yield from self._data
 
     @classmethod
     def _normalize_command_line(cls, spec: list[str], logger: tmt.log.Logger) -> 'FmfContext':
@@ -361,7 +372,7 @@ class FmfContext(dict[str, list[str]]):
                     f"Use 'KEY=VALUE' format or remove the dimension entirely."
                 )
             raw_fmf_context[key] = value.split(',')
-        return FmfContext(raw_fmf_context)
+        return FmfContext(**raw_fmf_context)
 
     @classmethod
     def _normalize_fmf(
@@ -379,15 +390,14 @@ class FmfContext(dict[str, list[str]]):
                 - ppc64
         """
 
-        normalized: FmfContext = FmfContext()
-
-        for dimension, values in spec.items():
-            if isinstance(values, list):
-                normalized[str(dimension)] = [str(v) for v in values]
-            else:
-                normalized[str(dimension)] = [str(values)]
-
-        return normalized
+        return FmfContext(
+            **{
+                str(dimension): [str(v) for v in values]
+                if isinstance(values, list)
+                else [str(values)]
+                for dimension, values in spec.items()
+            }
+        )
 
     @classmethod
     def from_spec(cls, key_address: str, spec: Any, logger: tmt.log.Logger) -> 'FmfContext':
@@ -424,7 +434,7 @@ class FmfContext(dict[str, list[str]]):
         Convert from a serialized form.
         """
 
-        return FmfContext(serialized)
+        return FmfContext(**serialized)
 
 
 # Workdir argument type, can be True, a string, a path or None
@@ -4020,7 +4030,7 @@ def format_value(
 
 def format(
     key: str,
-    value: Union[None, float, bool, str, list[Any], dict[Any, Any]] = None,
+    value: Union[None, float, bool, str, list[Any], Mapping[Any, Any]] = None,
     indent: int = 24,
     window_size: int = OUTPUT_WIDTH,
     wrap: FormatWrap = 'auto',
