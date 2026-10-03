@@ -527,7 +527,7 @@ class Queue(list[TaskT]):
 
             return current_order != new_order
 
-    def run(self) -> Iterator[TaskT]:
+    def run(self, stop_on_error: bool = True) -> Iterator[TaskT]:
         """
         Start crunching the queued tasks.
 
@@ -576,7 +576,7 @@ class Queue(list[TaskT]):
             # user of the queue, to decide when to stop. To drop it, we
             # will need to review uses of `Queue`, which will happen as
             # part of https://github.com/teemtee/tmt/issues/4668.
-            if failed_tasks:
+            if failed_tasks and stop_on_error:
                 self.is_running = False
 
                 return
