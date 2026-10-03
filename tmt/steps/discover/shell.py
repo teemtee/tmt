@@ -363,7 +363,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                         "used only when fmf root is the same as git root."
                     )
 
-                with self.tmpdir(prefix='rsync-') as rsync_tempdir:
+                with self.runner_tmpdir(prefix='rsync-') as rsync_tempdir:
                     self.run(
                         Command(
                             "rsync",
