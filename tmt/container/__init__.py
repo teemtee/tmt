@@ -80,6 +80,236 @@ ContainerInstance: 'TypeAlias' = 'DataclassInstance'
 Container: 'TypeAlias' = Union[ContainerClass, ContainerInstance]
 
 
+@overload
+def field(
+    *,
+    default: bool,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = True,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    help_example_values: Optional[list[str]] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization - not needed, the field is a boolean
+    # flag.
+    # normalize: Optional[NormalizeCallback[T]] = None
+    # Custom serialization
+    # serialize: Optional[SerializeCallback[bool]] = None,
+    # unserialize: Optional[UnserializeCallback[bool]] = None
+    # Custom exporter
+    # exporter: Optional[FieldExporter[T]] = None
+) -> bool:
+    pass
+
+
+@overload
+def field(
+    *,
+    default: T,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    help_example_values: Optional[list[str]] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> T:
+    pass
+
+
+@overload
+def field(
+    *,
+    default_factory: Callable[[], T],
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    help_example_values: Optional[list[str]] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> T:
+    pass
+
+
+@overload
+def field(
+    *,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    help_example_values: Optional[list[str]] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> T:
+    pass
+
+
+def field(
+    *,
+    default: Any = dataclasses.MISSING,
+    default_factory: Any = None,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    help_example_values: Optional[list[str]] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> Any:
+    """
+    Define a :py:class:`DataContainer` field.
+
+    Effectively a fancy wrapper over :py:func:`dataclasses.field`, tailored for
+    tmt code needs and simplification of various common tasks.
+
+    :param default: if provided, this will be the default value for this field.
+        Passed directly to :py:func:`dataclass.field`.
+        It is an error to specify both ``default`` and ``default_factory``.
+    :param default_factory: if provided, it must be a zero-argument callable
+        that will be called when a default value is needed for this field.
+        Passed directly to :py:func:`dataclass.field`.
+        It is an error to specify both ``default`` and ``default_factory``.
+    :param option: one or more command-line option names.
+        Passed directly to :py:func:`click.option`.
+    :param is_flag: marks this option as a flag.
+        Passed directly to :py:func:`click.option`.
+    :param choices: if provided, the command-line option would accept only
+        the listed input values.
+        Passed to :py:func:`click.option` as a :py:class:`click.Choice` instance.
+    :param multiple: accept multiple arguments of the same name.
+        Passed directly to :py:func:`click.option`.
+    :param metavar: how the input value is represented in the help page.
+        Passed directly to :py:func:`click.option`.
+    :param envvar: environment variable used for this option.
+        Passed directly to :py:func:`click.option`.
+    :param deprecated: mark the option as deprecated
+        Provide an instance of Deprecated() with version in which the
+        option was obsoleted and an optional hint with the recommended
+        alternative. A warning message will be added to the option help.
+    :param help: the help string for the command-line option. Multiline strings
+        can be used, :py:func:`textwrap.dedent` is applied before passing
+        ``help`` to :py:func:`click.option`.
+    :param help_example_values: Specific values that should be shown in
+        the documentation as interesting examples of the field usage.
+    :param show_default: show default value
+        Passed directly to :py:func:`click.option`.
+    :param internal: if set, the field is treated as internal-only, and will not
+        appear when showing objects via ``show()`` method, or in export created
+        by :py:meth:`Core._export`.
+    :param normalize: a callback for normalizing the input value. Consumed by
+        :py:class:`NormalizeKeysMixin`.
+    :param serialize: a callback for custom serialization of the field value.
+        Consumed by :py:class:`SerializableKeysMixin`.
+    :param unserialize: a callback for custom unserialization of the field value.
+        Consumed by :py:class:`SerializableKeysMixin`.
+    :param exporter: a callback for custom export of the field value.
+        Consumed by :py:class:`tmt.export.Exportable`.
+    """
+    import tmt.utils
+
+    if option:
+        if is_flag is False and isinstance(default, bool):
+            raise tmt.utils.GeneralError(
+                "Container field must be a flag to have boolean default value."
+            )
+
+        if is_flag is True and not isinstance(default, bool):
+            raise tmt.utils.GeneralError(
+                "Container field must have a boolean default value when it is a flag."
+            )
+
+    # ignore[arg-type]: returning "wrong" type on purpose. field() must be annotated
+    # as if returning the value of type matching the field declaration, and the original
+    # field() is called with wider argument types than expected, because we use our own
+    # overloading to narrow types *our* custom field() accepts.
+    # ignore[reportArgumentType]: not sure why these pop up, but `bool` keeps appearing
+    # in the type of `default` value, and I was unable to sort things out in a way which
+    # would make the `T` match.
+    return simple_field(
+        default=default,
+        default_factory=default_factory or dataclasses.MISSING,
+        metadata={
+            'tmt': FieldMetadata(
+                internal=internal,
+                help=textwrap.dedent(help).strip() if help else None,
+                help_example_values=help_example_values
+                if help_example_values is not None
+                else list[str](),
+                _metavar=metavar,
+                default=default,
+                default_factory=default_factory,
+                show_default=show_default,
+                is_flag=is_flag,
+                multiple=multiple,
+                _choices=choices,
+                envvar=envvar,
+                deprecated=deprecated,
+                cli_option=option,
+                normalize_callback=normalize,
+                serialize_callback=serialize,  # type: ignore[reportArgumentType,unused-ignore]
+                unserialize_callback=unserialize,
+                export_callback=exporter,  # type: ignore[reportArgumentType,unused-ignore]
+            )
+        },
+    )
+
+
 def key_to_option(key: str) -> str:
     """
     Convert a key name to corresponding option name
@@ -704,236 +934,6 @@ class SerializableContainer(DataContainer):
 
         # Apparently, the issubclass() check above is not good enough for mypy.
         return cast(SerializableContainerDerivedType, klass.from_serialized(serialized))
-
-
-@overload
-def field(
-    *,
-    default: bool,
-    # Options
-    option: Optional[FieldCLIOption] = None,
-    is_flag: bool = True,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-    multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
-    deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
-    show_default: bool = False,
-    internal: bool = False,
-    # Input data normalization - not needed, the field is a boolean
-    # flag.
-    # normalize: Optional[NormalizeCallback[T]] = None
-    # Custom serialization
-    # serialize: Optional[SerializeCallback[bool]] = None,
-    # unserialize: Optional[UnserializeCallback[bool]] = None
-    # Custom exporter
-    # exporter: Optional[FieldExporter[T]] = None
-) -> bool:
-    pass
-
-
-@overload
-def field(
-    *,
-    default: T,
-    # Options
-    option: Optional[FieldCLIOption] = None,
-    is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-    multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
-    deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
-    show_default: bool = False,
-    internal: bool = False,
-    # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
-    # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
-    # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
-) -> T:
-    pass
-
-
-@overload
-def field(
-    *,
-    default_factory: Callable[[], T],
-    # Options
-    option: Optional[FieldCLIOption] = None,
-    is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-    multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
-    deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
-    show_default: bool = False,
-    internal: bool = False,
-    # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
-    # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
-    # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
-) -> T:
-    pass
-
-
-@overload
-def field(
-    *,
-    # Options
-    option: Optional[FieldCLIOption] = None,
-    is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-    multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
-    deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
-    show_default: bool = False,
-    internal: bool = False,
-    # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
-    # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
-    # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
-) -> T:
-    pass
-
-
-def field(
-    *,
-    default: Any = dataclasses.MISSING,
-    default_factory: Any = None,
-    # Options
-    option: Optional[FieldCLIOption] = None,
-    is_flag: bool = False,
-    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-    multiple: bool = False,
-    metavar: Optional[str] = None,
-    envvar: Optional[str] = None,
-    deprecated: Optional['tmt.options.Deprecated'] = None,
-    help: Optional[str] = None,
-    help_example_values: Optional[list[str]] = None,
-    show_default: bool = False,
-    internal: bool = False,
-    # Input data normalization
-    normalize: Optional[NormalizeCallback[T]] = None,
-    # Custom serialization
-    serialize: Optional[SerializeCallback[T]] = None,
-    unserialize: Optional[UnserializeCallback[T]] = None,
-    # Custom exporter
-    exporter: Optional[FieldExporter[T]] = None,
-) -> Any:
-    """
-    Define a :py:class:`DataContainer` field.
-
-    Effectively a fancy wrapper over :py:func:`dataclasses.field`, tailored for
-    tmt code needs and simplification of various common tasks.
-
-    :param default: if provided, this will be the default value for this field.
-        Passed directly to :py:func:`dataclass.field`.
-        It is an error to specify both ``default`` and ``default_factory``.
-    :param default_factory: if provided, it must be a zero-argument callable
-        that will be called when a default value is needed for this field.
-        Passed directly to :py:func:`dataclass.field`.
-        It is an error to specify both ``default`` and ``default_factory``.
-    :param option: one or more command-line option names.
-        Passed directly to :py:func:`click.option`.
-    :param is_flag: marks this option as a flag.
-        Passed directly to :py:func:`click.option`.
-    :param choices: if provided, the command-line option would accept only
-        the listed input values.
-        Passed to :py:func:`click.option` as a :py:class:`click.Choice` instance.
-    :param multiple: accept multiple arguments of the same name.
-        Passed directly to :py:func:`click.option`.
-    :param metavar: how the input value is represented in the help page.
-        Passed directly to :py:func:`click.option`.
-    :param envvar: environment variable used for this option.
-        Passed directly to :py:func:`click.option`.
-    :param deprecated: mark the option as deprecated
-        Provide an instance of Deprecated() with version in which the
-        option was obsoleted and an optional hint with the recommended
-        alternative. A warning message will be added to the option help.
-    :param help: the help string for the command-line option. Multiline strings
-        can be used, :py:func:`textwrap.dedent` is applied before passing
-        ``help`` to :py:func:`click.option`.
-    :param help_example_values: Specific values that should be shown in
-        the documentation as interesting examples of the field usage.
-    :param show_default: show default value
-        Passed directly to :py:func:`click.option`.
-    :param internal: if set, the field is treated as internal-only, and will not
-        appear when showing objects via ``show()`` method, or in export created
-        by :py:meth:`Core._export`.
-    :param normalize: a callback for normalizing the input value. Consumed by
-        :py:class:`NormalizeKeysMixin`.
-    :param serialize: a callback for custom serialization of the field value.
-        Consumed by :py:class:`SerializableKeysMixin`.
-    :param unserialize: a callback for custom unserialization of the field value.
-        Consumed by :py:class:`SerializableKeysMixin`.
-    :param exporter: a callback for custom export of the field value.
-        Consumed by :py:class:`tmt.export.Exportable`.
-    """
-    import tmt.utils
-
-    if option:
-        if is_flag is False and isinstance(default, bool):
-            raise tmt.utils.GeneralError(
-                "Container field must be a flag to have boolean default value."
-            )
-
-        if is_flag is True and not isinstance(default, bool):
-            raise tmt.utils.GeneralError(
-                "Container field must have a boolean default value when it is a flag."
-            )
-
-    # ignore[arg-type]: returning "wrong" type on purpose. field() must be annotated
-    # as if returning the value of type matching the field declaration, and the original
-    # field() is called with wider argument types than expected, because we use our own
-    # overloading to narrow types *our* custom field() accepts.
-    # ignore[reportArgumentType]: not sure why these pop up, but `bool` keeps appearing
-    # in the type of `default` value, and I was unable to sort things out in a way which
-    # would make the `T` match.
-    return simple_field(
-        default=default,
-        default_factory=default_factory or dataclasses.MISSING,
-        metadata={
-            'tmt': FieldMetadata(
-                internal=internal,
-                help=textwrap.dedent(help).strip() if help else None,
-                help_example_values=help_example_values
-                if help_example_values is not None
-                else list[str](),
-                _metavar=metavar,
-                default=default,
-                default_factory=default_factory,
-                show_default=show_default,
-                is_flag=is_flag,
-                multiple=multiple,
-                _choices=choices,
-                envvar=envvar,
-                deprecated=deprecated,
-                cli_option=option,
-                normalize_callback=normalize,
-                serialize_callback=serialize,  # type: ignore[reportArgumentType,unused-ignore]
-                unserialize_callback=unserialize,
-                export_callback=exporter,  # type: ignore[reportArgumentType,unused-ignore]
-            )
-        },
-    )
 
 
 #
