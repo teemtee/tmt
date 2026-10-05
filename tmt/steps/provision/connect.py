@@ -165,7 +165,7 @@ class GuestConnect(tmt.guest.GuestSsh):
         waiting = waiting or tmt.guest.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
-            if self.hard_reboot is None:
+            if not self.hard_reboot:
                 raise tmt.guest.RebootModeNotSupportedError(guest=self, mode=mode)
 
             self.debug(f"Hard reboot using the hard reboot command '{self.hard_reboot}'.")
@@ -185,7 +185,7 @@ class GuestConnect(tmt.guest.GuestSsh):
                 waiting=waiting,
             )
 
-        if mode == RebootMode.SOFT and self.soft_reboot is not None:
+        if mode == RebootMode.SOFT and self.soft_reboot:
             self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
 
             # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
@@ -196,7 +196,7 @@ class GuestConnect(tmt.guest.GuestSsh):
                 waiting,
             )
 
-        if mode == RebootMode.SYSTEMD_SOFT and self.systemd_soft_reboot is not None:
+        if mode == RebootMode.SYSTEMD_SOFT and self.systemd_soft_reboot:
             self.debug(
                 "Systemd soft-reboot using the systemd"
                 f" soft-reboot command '{self.systemd_soft_reboot}'."
