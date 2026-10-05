@@ -18,6 +18,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    dataclass_transform,
     overload,
 )
 
@@ -37,16 +38,7 @@ if TYPE_CHECKING:
 # A stand-in variable for generic use.
 T = TypeVar('T')
 
-# According to [1], this is the easiest way how to notify type checker
-# `container` is an alias for `dataclass`. Assignment is not recognized
-# by neither mypy nor pyright.
-#
-# There is also PEP681 and `dataclass_transform`, see [2], and when we
-# switch to
-#
-# [1] https://github.com/python/mypy/issues/5383#issuecomment-1691288663
-# [2] https://typing.readthedocs.io/en/latest/spec/dataclasses.html#dataclass-transform
-from dataclasses import dataclass as container  # noqa: TID251,E402
+from dataclasses import dataclass as simple_dataclass  # noqa: TID251,E402
 
 # Importing the original dataclass `field` too. Be aware that this is
 # not the end, eventually we will need a field representing metadata key,
@@ -310,6 +302,42 @@ def field(
     )
 
 
+@overload
+@dataclass_transform(field_specifiers=(simple_field, field))
+def container(
+    cls: None = None,
+    /,
+    *,
+    init: bool = True,
+    repr: bool = True,
+    frozen: bool = False,
+) -> Callable[[type[T]], type[T]]: ...
+
+
+@overload
+@dataclass_transform(field_specifiers=(simple_field, field))
+def container(
+    cls: type[T],
+    /,
+    *,
+    init: bool = True,
+    repr: bool = True,
+    frozen: bool = False,
+) -> type[T]: ...
+
+
+@dataclass_transform(field_specifiers=(simple_field, field))
+def container(
+    cls: Optional[type[T]] = None,
+    /,
+    *,
+    init: bool = True,
+    repr: bool = True,  # noqa: A002
+    frozen: bool = False,
+) -> Union[type[T], Callable[[type[T]], type[T]]]:
+    return simple_dataclass(cls, init=init, repr=repr, frozen=frozen, kw_only=True)
+
+
 def key_to_option(key: str) -> str:
     """
     Convert a key name to corresponding option name
@@ -326,7 +354,7 @@ def option_to_key(option: str) -> str:
     return option.replace('-', '_')
 
 
-@container
+@simple_dataclass
 class FieldMetadata(Generic[T]):
     """
     A dataclass metadata container used by our custom dataclass field management.
