@@ -176,19 +176,12 @@ package to have all available plugins ready for testing.
 export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %pyproject_wheel
 
-# Build the man files
-cp docs/header.txt man.rst
-tail -n+8 docs/overview.rst >> man.rst
-# TODO rst2man cannot process this directive, removed for now
-sed '/versionadded::/d' -i man.rst
-rst2man man.rst > tmt.1
-
 %install
 %pyproject_install
 %pyproject_save_files tmt
 
 mkdir -p %{buildroot}%{_mandir}/man1
-install -pm 644 tmt.1 %{buildroot}%{_mandir}/man1
+install -pm 644 docs/tmt.1 %{buildroot}%{_mandir}/man1
 mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
 mkdir -p %{buildroot}/etc/%{name}/
