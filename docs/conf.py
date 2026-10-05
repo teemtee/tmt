@@ -44,7 +44,6 @@ source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
-master_man = 'man.1'
 
 # General information about the project.
 project = 'tmt'
@@ -220,7 +219,9 @@ htmlhelp_basename = 'doc'
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_man, '', 'tmt Documentation', [author], 1)]
+man_pages = [
+    ('overview', 'tmt', 'tmt Documentation', [], 1),
+]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
