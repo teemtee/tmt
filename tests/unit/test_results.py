@@ -385,6 +385,54 @@ def test_result_interpret_edge_cases() -> None:
             ),
             id="pending-respect-pending-respect",
         ),
+        # Test result outcome SKIP:
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.SKIP,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.SKIP,
+                note_contains=[],
+            ),
+            id="skip-respect-pass-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.SKIP,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed",
+                    "original test result: skip",
+                ],
+            ),
+            id="skip-respect-fail-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.SKIP,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.INFO,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.SKIP,
+                note_contains=[],
+            ),
+            id="skip-respect-info-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.SKIP,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.SKIP,
+                note_contains=[],
+            ),
+            id="skip-respect-warn-respect",
+        ),
         pytest.param(
             CheckPhasesCase(
                 result_outcome=ResultOutcome.PASS,
