@@ -509,7 +509,7 @@ class Result(BaseResult):
         Return dictionary with total stats for given results
         """
 
-        stats = dict.fromkeys(RESULT_OUTCOME_COLORS, 0)
+        stats = dict.fromkeys(ResultOutcome, 0)
 
         for result in results:
             stats[result.result] += 1
