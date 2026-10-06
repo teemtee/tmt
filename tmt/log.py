@@ -162,6 +162,34 @@ def _verbosity_level_from_global_envvar() -> Optional[VerbosityLevel]:
     return normalize_verbosity_level(raw_value)
 
 
+def _topics_from_global_envvar() -> set['Topic']:
+    raw_value = os.getenv('TMT_LOG_TOPIC', None)
+
+    if raw_value is None:
+        return set()
+
+    topics: set[Topic] = set()
+
+    for topic_spec in raw_value.split(','):
+        topic_spec = topic_spec.strip()
+
+        if not topic_spec:
+            continue
+
+        try:
+            topics.add(Topic(topic_spec))
+
+        except ValueError as error:
+            import tmt.utils
+
+            raise tmt.utils.GeneralError(
+                f'Logging topic "{topic_spec}" is invalid.'
+                f" Possible choices are {', '.join(topic.value for topic in Topic)}"
+            ) from error
+
+    return topics
+
+
 def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
     """
     Decide whether the output and logging should be colorized.
@@ -913,6 +941,8 @@ class Logger:
 
         if quietness_level is True:
             self.quiet = quietness_level
+
+        self.topics.update(_topics_from_global_envvar())
 
         topic_specs = actual_kwargs.get('log_topic', [])
 
