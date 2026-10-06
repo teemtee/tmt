@@ -15,8 +15,15 @@ execute:
 environment:
   PYTEST: python3 -m pytest -vvv -ra --showlocals
 
-# Install packages in full mode
 adjust:
+    # Enable epel on CentOS Stream
+  - prepare+:
+      - name: enable-epel
+        how: feature
+        epel: enabled
+        order: 10
+    when: distro == centos-stream
+    # Install packages in full mode
   - prepare+:
       - name: tmt
         how: install
