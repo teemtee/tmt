@@ -17,14 +17,33 @@ if TYPE_CHECKING:
     import tmt.steps.execute
 
 
-class ResultOutcome(enum.Enum):
-    PASS = 'pass'
-    FAIL = 'fail'
-    INFO = 'info'
-    WARN = 'warn'
-    ERROR = 'error'
-    SKIP = 'skip'
-    PENDING = 'pending'
+class ResultOutcome(enum.StrEnum):
+    # TODO: The order does not seem right
+    PENDING = enum.auto()
+    SKIP = enum.auto()
+    INFO = enum.auto()
+    PASS = enum.auto()
+    WARN = enum.auto()
+    FAIL = enum.auto()
+    ERROR = enum.auto()
+
+    # Note: we cannot use functools.total_ordering because `str` defines all comparators
+    # Note: _sort_order_ is present, but typing is not aware of it
+    def __gt__(self, other: str) -> bool:
+        other = ResultOutcome(other)
+        return self._sort_order_ > other._sort_order_  # type: ignore[no-any-return,attr-defined]
+
+    def __lt__(self, other: str) -> bool:
+        other = ResultOutcome(other)
+        return self._sort_order_ < other._sort_order_  # type: ignore[no-any-return,attr-defined]
+
+    def __ge__(self, other: str) -> bool:
+        other = ResultOutcome(other)
+        return self._sort_order_ >= other._sort_order_  # type: ignore[no-any-return,attr-defined]
+
+    def __le__(self, other: str) -> bool:
+        other = ResultOutcome(other)
+        return self._sort_order_ <= other._sort_order_  # type: ignore[no-any-return,attr-defined]
 
     @classmethod
     def from_spec(cls, spec: str) -> 'ResultOutcome':
@@ -35,48 +54,22 @@ class ResultOutcome(enum.Enum):
                 f"Invalid partial custom result '{spec}'."
             ) from error
 
-    @staticmethod
-    def reduce(outcomes: list['ResultOutcome']) -> 'ResultOutcome':
-        """
-        Reduce several result outcomes into a single outcome
-
-        Convert multiple outcomes into a single one by picking the
-        worst. This is used when aggregating several test or check
-        results to present a single value to the user.
-        """
-
-        outcomes_by_severity = (
-            ResultOutcome.ERROR,
-            ResultOutcome.FAIL,
-            ResultOutcome.WARN,
-            ResultOutcome.PASS,
-            ResultOutcome.INFO,
-            ResultOutcome.SKIP,
-            ResultOutcome.PENDING,
-        )
-
-        for outcome in outcomes_by_severity:
-            if outcome in outcomes:
-                return outcome
-
-        raise GeneralError("No result outcome found to reduce.")
-
 
 # Cannot subclass enums :/
 # https://docs.python.org/3/library/enum.html#restricted-enum-subclassing
-class ResultInterpret(enum.Enum):
+class ResultInterpret(enum.StrEnum):
     # These are "inherited" from ResultOutcome
-    PASS = 'pass'
-    FAIL = 'fail'
-    INFO = 'info'
-    WARN = 'warn'
-    ERROR = 'error'
+    PASS = enum.auto()
+    FAIL = enum.auto()
+    INFO = enum.auto()
+    WARN = enum.auto()
+    ERROR = enum.auto()
 
     # Special interpret values
-    RESPECT = 'respect'
-    XFAIL = 'xfail'
-    CUSTOM = 'custom'
-    RESTRAINT = 'restraint'
+    RESPECT = enum.auto()
+    XFAIL = enum.auto()
+    CUSTOM = enum.auto()
+    RESTRAINT = enum.auto()
 
     @classmethod
     def is_result_outcome(cls, value: 'ResultInterpret') -> bool:
@@ -413,9 +406,7 @@ class Result(BaseResult):
         """
 
         # Reduce all check outcomes into a single worst outcome
-        reduced_outcome = ResultOutcome.reduce(
-            [check.result for check in self.check if check.name == check_name]
-        )
+        reduced_outcome = max(check.result for check in self.check if check.name == check_name)
 
         # Now let's handle the interpretation
         interpret = interpret_checks[check_name]
@@ -471,7 +462,7 @@ class Result(BaseResult):
         ]
 
         # Aggregate check results with the main test result
-        self.result = ResultOutcome.reduce([self.result, *check_outcomes])
+        self.result = max(self.result, *check_outcomes)
 
         # Override result with result outcome provided by user
         if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
