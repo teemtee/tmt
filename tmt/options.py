@@ -203,19 +203,20 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         default=0,
         help="""
              Make the user-focused output more verbose. Can be used
-             up to three times (``-v`` to ``-vvv``) for increasingly
+             up to three times (``-v`` to ``-vvv``, or
+             ``TMT_VERBOSE=1`` to ``TMT_VERBOSE=3``) for increasingly
              detailed output:
 
-             * ``-v``: Phase inputs and outputs are shown. The essential
-               phase input and output such as discovered test names,
-               required packages or individual test results.
-             * ``-vv``: Investigation details are shown. Details needed
-               when investigating what went wrong such as log paths,
-               remote links, external sources, guest facts, duration
+             * ``-v``/``TMT_VERBOSE=1``: Phase inputs and outputs are shown.
+               The essential phase input and output such as discovered test
+               names, required packages or individual test results.
+             * ``-vv``/``TMT_VERBOSE=2``: Investigation details are shown.
+               Details needed when investigating what went wrong such as log
+               paths, remote links, external sources, guest facts, duration
                deadlines or executed commands.
-             * ``-vvv``: Full output. Command outputs, full test output,
-               rendered script, other constructed input, queued/executed
-               tasks.
+             * ``-vvv``/``TMT_VERBOSE=3``: Full output. Command outputs,
+               full test output, rendered script, other constructed input,
+               queued/executed tasks.
              """,
     ),
     option(

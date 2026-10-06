@@ -17,6 +17,13 @@ rlJournalStart
         rlAssertGrep "Debug level 'weird' is invalid." $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Check the TMT_VERBOSE variable"
+        rlRun -s "TMT_VERBOSE=3 tmt plan show"
+        rlAssertGrep "discover" $rlRun_LOG
+        rlRun -s "TMT_VERBOSE=weird tmt plan show" 2
+        rlAssertGrep "Verbosity level 'weird' is invalid." $rlRun_LOG
+    rlPhaseEnd
+
     for execute in 'tmt'; do
         tmt="tmt run -avvvr execute --how $execute"
 

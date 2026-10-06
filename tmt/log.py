@@ -153,6 +153,15 @@ def _debug_level_from_global_envvar() -> Optional[DebugLevel]:
     return normalize_debug_level(raw_value)
 
 
+def _verbosity_level_from_global_envvar() -> Optional[VerbosityLevel]:
+    raw_value = os.getenv('TMT_VERBOSE', None)
+
+    if raw_value is None:
+        return 0
+
+    return normalize_verbosity_level(raw_value)
+
+
 def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
     """
     Decide whether the output and logging should be colorized.
@@ -295,10 +304,15 @@ def normalize_verbosity_level(raw_value: Any) -> Optional[VerbosityLevel]:
         message = (
             textwrap.dedent(
                 f"""
-            Verbosity level '{raw_value}' is invalid. Supported verbosity levels are
-            {VERBOSITY_LEVELS[1]} (-{'v' * VERBOSITY_LEVELS[1]})
+            Verbosity level '{raw_value}' is invalid.
+            Supported verbosity levels are
+            {VERBOSITY_LEVELS[1]}
+            (-{'v' * VERBOSITY_LEVELS[1]}
+            or TMT_VERBOSE={VERBOSITY_LEVELS[1]})
             to
-            {VERBOSITY_LEVELS[-1]} (-{'v' * VERBOSITY_LEVELS[-1]}).
+            {VERBOSITY_LEVELS[-1]}
+            (-{'v' * VERBOSITY_LEVELS[-1]}
+            or TMT_VERBOSE={VERBOSITY_LEVELS[-1]}).
             """
             )
             .replace('\n', ' ')
@@ -864,13 +878,22 @@ class Logger:
 
         actual_kwargs.update(kwargs)
 
-        verbosity_level = normalize_verbosity_level(actual_kwargs.get('verbose', None))
+        verbosity_level_from_global_envvar = _verbosity_level_from_global_envvar()
 
-        if verbosity_level is None or verbosity_level == 0:
-            pass
+        if (
+            verbosity_level_from_global_envvar is not None
+            and verbosity_level_from_global_envvar != 0
+        ):
+            self.verbosity_level = verbosity_level_from_global_envvar
 
         else:
-            self.verbosity_level = verbosity_level
+            verbosity_level = normalize_verbosity_level(actual_kwargs.get('verbose', None))
+
+            if verbosity_level is None or verbosity_level == 0:
+                pass
+
+            else:
+                self.verbosity_level = verbosity_level
 
         debug_level_from_global_envvar = _debug_level_from_global_envvar()
 
