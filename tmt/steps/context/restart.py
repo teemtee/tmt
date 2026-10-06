@@ -99,16 +99,10 @@ class RestartContext(StepContext):
             raise tmt.utils.RestartMaxAttemptsError("Maximum restart attempts exceeded.")
 
         if reboot:
-            self.logger.debug(
-                f"Restart during {self.owner_label}"
-                f" with reboot count {reboot.reboot_counter}"
-                f" and restart count {self.restart_counter}."
-            )
+            self.logger.debug(f"Restart requested during {self.owner_label} with reboot.")
 
         else:
-            self.logger.debug(
-                f"Restart during {self.owner_label} with restart count {self.restart_counter}."
-            )
+            self.logger.debug(f"Restart requested during {self.owner_label}.")
 
         if self.restart_with_reboot:
             if not reboot:
@@ -132,6 +126,18 @@ class RestartContext(StepContext):
             # alive.
             if not self.guest.reconnect():
                 raise tmt.utils.ReconnectTimeoutError("Reconnect timed out.")
+
+        if reboot:
+            self.logger.debug(
+                f"Restart during {self.owner_label}"
+                f" with reboot count {reboot.reboot_counter}"
+                f" and restart count {self.restart_counter}."
+            )
+
+        else:
+            self.logger.debug(
+                f"Restart during {self.owner_label} with restart count {self.restart_counter}."
+            )
 
         self.guest.push()
 
