@@ -1,0 +1,98 @@
+- name: "breakage"
+  description: >
+    Change will change current behaviour
+  color: "B60205"
+- name: "bug"
+  description: >
+    Something isn't working
+  color: "d73a4a"
+- name: "ci | full test"
+  description: >
+    Pull request is ready for the full test execution
+  color: "0E8A16"
+- name: "ci | skip"
+  description: >
+    Do not run any tests (useful for very early drafts).
+  color: "000000"
+- name: "documentation"
+  description: >
+    Improvements or additions to documentation
+  color: "fbca04"
+- name: "enhancement"
+  description: >
+    null
+  color: "ededed"
+- name: "good first issue"
+  description: >
+    Good for newcomers
+  color: "7057ff"
+- name: "known issue"
+  description: >
+    Known issues which are affecting multiple users
+  color: "D93F0B"
+- name: "packaging"
+  description: >
+    Changes related to the rpm packaging
+  color: "ffe066"
+- name: "release note"
+  description: >
+    Include a short release note, possibly with an example or demo
+  color: "F385D7"
+- name: "renovate"
+  description: null
+  color: "7ae0c8"
+- name: "review | trivial"
+  description: >
+    Very easy for review, even for beginners, so don't be afraid to have a look! :-)
+  color: "0E8A16"
+- name: "security"
+  description: >
+    Security related issues and changes
+  color: "B60205"
+- name: "status | blocked"
+  description: >
+    The merging of PR is blocked on some other issue
+  color: "444444"
+- name: "status | blocking other work"
+  description: >
+    An important pull request, blocking other pull requests or issues
+  color: "190552"
+- name: "status | discuss"
+  description: >
+    Needs more discussion before closing
+  color: "FBCA04"
+- name: "status | failing tests"
+  description: null
+  color: "B60205"
+- name: "status | need docs"
+  description: >
+    Documentation to be added for the affected code
+  color: "FBCA04"
+- name: "status | need help"
+  description: >
+    Extra attention is needed
+  color: "008672"
+- name: "status | need prioritize"
+  description: >
+    Need to pick the most important issues based on user feedback
+  color: "B60205"
+- name: "status | need tests"
+  description: >
+    Test coverage to be added for the affected code
+  color: "D95F0B"
+- name: "status | postponed"
+  description: >
+    Let's postpone for the next sprint
+  color: "98358D"
+- name: "test coverage"
+  description: >
+    Improvements or additions to test coverage of tmt itself
+  color: "6C3D04"
+- name: "usability"
+  description: >
+    Issues and changes related to user comfort
+  color: "5bd300"
+- name: "Waiting contact"
+  description: >
+    No response on github and cannot contact another way
+  color: "cb193b"
