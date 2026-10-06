@@ -1,9 +1,13 @@
+:tocdepth: 1
+
 .. _environment-variables:
 
-:tocdepth: 2
-
-Environment variables
+Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~
+
+.. contents::
+    :local:
+    :depth: 2
 
 Exposed by tmt
 ^^^^^^^^^^^^^^
@@ -18,7 +22,7 @@ the last listed variables override variables from previous set.
 1. Test environment
 :::::::::::::::::::
 
-As set via :tmt:story:`environment </spec/tests/environment>` key of
+As set via the :tmt:story:`environment </spec/tests/environment>` key of
 individual tests.
 
 2. Plan environment
@@ -34,7 +38,7 @@ Environment variables loaded from files listed in the
 2.2. ``environment`` plan key
 -----------------------------
 
-Environment variables set via
+Environment variables set via the
 :tmt:story:`environment </spec/plans/environment>` plan key.
 
 3. Environment inherited from the importing plan
@@ -79,8 +83,8 @@ importing plan to inherit from.
 4. Guest environment
 ::::::::::::::::::::
 
-As set via :ref:`environment </plugins/provision/common-keys>` key of
-individual ``provision`` phases. Applies to user commands executed on
+As set via the :ref:`environment </plugins/provision/common-keys>` key
+of individual ``provision`` phases. Applies to user commands executed on
 the given guest.
 
 5. User-controlled plan environment file
