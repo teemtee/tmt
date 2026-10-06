@@ -1,7 +1,3 @@
-# Run on localhost by default
-provision:
-    how: local
-
 prepare+:
   # Install jq and yq for cleaner tests, and required make
   - how: install
@@ -26,3 +22,11 @@ adjust:
         how: install
         directory: tmp/RPMS/noarch
     when: how == full
+
+    # Use the local provision method when running tests locally
+  - provision:
+        how: local
+    when: initiator is not defined or initiator == human
+    because:
+        explicitly specifying the local provision method is not
+        allowed in the new Testing Farm pipeline
