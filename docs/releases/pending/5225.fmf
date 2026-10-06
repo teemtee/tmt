@@ -1,0 +1,3 @@
+description: |
+  ``SKIP`` and ``PENDING`` test result outcomes are now unchanged when check
+  results are applied, unless any check is ``FAIL`` or ``ERROR``.
