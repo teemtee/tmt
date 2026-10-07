@@ -1,10 +1,12 @@
 prepare+:
-  # Install jq and yq for cleaner tests, and required make
-  - how: install
+  - summary: Packages needed preparation and testing
+    name: essential-packages
+    how: install
     package:
       - jq
       - yq
       - make
+      - podman
       - python3-pip
       - python3-pytest
 
