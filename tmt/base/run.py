@@ -48,6 +48,7 @@ from tmt.utils import (
     StateFormat,
     WorkdirArgumentType,
 )
+from tmt.utils._time import sleep
 from tmt.utils.environment import Environment, HasEnvironment
 from tmt.utils.feeling_safe import log_feeling_safe
 
@@ -628,7 +629,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
                 if line:
                     print(line, end='')
                 else:
-                    time.sleep(0.5)
+                    sleep(0.5)
 
     def show_runner(self, logger: tmt.log.Logger) -> None:
         """
