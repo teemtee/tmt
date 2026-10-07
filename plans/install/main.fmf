@@ -1,9 +1,12 @@
-provision:
-    how: container
-
 # Run only during a full testing
 enabled: false
 adjust:
   - enabled: true
     when: how == full or trigger == commit
     tag+: [additional_coverage]
+
+    # Use the container provision method when running tests locally
+  - provision:
+        how: container
+    when: initiator is not defined or initiator == human
+    because: we want to use the default provision method in Testing Farm
