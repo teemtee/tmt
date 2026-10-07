@@ -5,6 +5,8 @@ Basic classes and code for tmt command line interface
 import collections
 import enum
 import functools
+import os
+import subprocess
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
@@ -23,6 +25,7 @@ from tmt.container import container, simple_field
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Concatenate, ParamSpec
+    from tmt.options import FC
 
     P = ParamSpec('P')
     R = TypeVar('R')
@@ -172,14 +175,61 @@ class CliInvocation:
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#  Custom Group
+#  Custom Group/Class
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class CustomGroup(click.Group):
+def help_option(*param_decls: str, **kwargs: Any) -> "Callable[[FC], FC]":
+    def show_help(ctx: Context, param: click.Parameter, value: bool) -> None:
+        if not value or ctx.resilient_parsing:
+            return
+        # TODO: Backport click.types.BoolParamType.str_to_bool (click-8.2.2)?
+        full_help: bool
+        if hasattr(click.types.BoolParamType, "str_to_bool"):
+            full_help = click.types.BoolParamType.str_to_bool(os.getenv("TMT_FULL_HELP", "false"))  # pyright: ignore[reportUnknownVariableType,reportAttributeAccessIssue]
+        else:
+            env_value = os.getenv("TMT_FULL_HELP", "false").lower()
+            if env_value in ("1", "yes", "true", "y", "t", "on"):
+                full_help = True
+            elif env_value in ("0", "no", "false", "n", "f", "off"):
+                full_help = False
+            else:
+                click.echo(f"{env_value} is not a valid boolean", err=True)
+                full_help = False
+        if full_help:
+            # FIXME: Properly construct the tmt man page to query
+            subprocess.run(["man", "1", "tmt"])
+        else:
+            click.echo(ctx.get_help(), color=ctx.color)
+        ctx.exit()
+
+    kwargs.setdefault("callback", show_help)
+    return click.decorators.help_option(*param_decls, **kwargs)
+
+
+class Command(click.Command):
+    """
+    Custom Click Command
+    """
+
+    def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
+        # Copy upstream implementation because we do not have a place to inject our decorator
+
+        help_option_names = self.get_help_option_names(ctx)
+        if not help_option_names or not self.add_help_option:
+            return None
+        if self._help_option is None:
+            help_option(*help_option_names, "_tmt_default_help")(self)
+            self._help_option = self.params.pop()  # type: ignore[assignment]
+        return self._help_option
+
+
+class CustomGroup(click.Group, Command):
     """
     Custom Click Group
     """
+
+    command_class = Command
 
     # ignore[override]: expected, we want to use more specific `Context`
     # type than the one declared in superclass.
