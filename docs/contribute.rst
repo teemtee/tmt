@@ -619,7 +619,7 @@ desired color:
 .. code-block:: python
 
     self.info(key='status', value='done', color='green')
-    self.info('status', 'done', 'green')
+    self.info('status', 'done', color='green')
 
 They are formatted as ``key: value`` in the output.  The
 ``warning()`` and ``fail()`` methods take a single ``message``

@@ -64,11 +64,11 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, PluginOutcome]):
 
         # Show guest name first in multihost scenarios
         if self.step.plan.provision.is_multihost:
-            logger.info('guest', guest.name, 'green')
+            logger.info('guest', guest.name, color='green')
 
         # Show requested role if defined
         if self.data.where:
-            logger.info('where', fmf.utils.listed(self.data.where), 'green')
+            logger.info('where', fmf.utils.listed(self.data.where), color='green')
 
         return PluginOutcome()
 
@@ -188,7 +188,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
         """
 
         preparations = fmf.utils.listed(self.preparations_applied, 'preparation')
-        self.info('summary', f'{preparations} applied', 'green', shift=1)
+        self.info('summary', f'{preparations} applied', color='green', shift=1)
 
     def go(self, force: bool = False) -> None:
         """
@@ -199,7 +199,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
 
         # Nothing more to do if already done
         if self.status() == 'done':
-            self.info('status', 'done', 'green', shift=1)
+            self.info('status', 'done', color='green', shift=1)
             self.summary()
             self.actions()
             return
