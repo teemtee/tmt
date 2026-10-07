@@ -2,17 +2,20 @@ import contextlib
 import functools
 import importlib.metadata
 import os
-from collections.abc import Generator, Iterator, Mapping
+from collections.abc import Generator, Iterator, Mapping, Sequence
 from typing import IO, Any, Callable, Optional, Protocol, TypeVar, Union
 
 import _pytest.monkeypatch
 import click.core
 import click.testing
+import pytest
 
 import tmt.__main__
 import tmt.cli._root
 from tmt._compat.typing import ParamSpec
-from tmt.utils import Path
+from tmt._compat.typing import TypeAlias as TypeAlias
+from tmt.log import Logger as Logger
+from tmt.utils import Command, Path, RawCommandElement
 
 _CLICK_VERSION = tuple(int(_s) for _s in importlib.metadata.version('click').split('.'))
 
@@ -81,6 +84,33 @@ def with_cwd(path: Path) -> Callable[[Callable[P, T]], Callable[P, T]]:
     return _with_cwd
 
 
+def with_fmf_root(path: Path) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """
+    Decorated test will run its ``tmt`` commands in the given fmf root.
+
+    A mere redress of the actual :py:meth:`pytest.mark.parametrize` decorator
+    with the right parameters, parametrizing the :py:func:`fixture_fmf_root`
+    fixture with the path. The fixture then delivers the path to the
+    :py:func:`fixture_run_tmt` fixture to be included by default in all
+    ``tmt`` calls.
+
+    It is possible to combine this decorator with parametrization of
+    other test inputs - just use both decorators:
+
+    .. code-block:: python
+
+        @with_fmf_root(...)
+        @pytest.mark.parametrize(['foo', 'bar'], ...)
+        def test_baz(foo, bar, fmf_root):
+            ...
+    """
+
+    def _with_fmf_root(fn: Callable[P, T]) -> Callable[P, T]:
+        return pytest.mark.parametrize('fmf_root', [path], indirect=['fmf_root'])(fn)
+
+    return _with_fmf_root
+
+
 @contextlib.contextmanager
 def not_feeling_safe(monkeypatch: _pytest.monkeypatch.MonkeyPatch) -> Generator[None]:
     """
@@ -108,7 +138,7 @@ class RunTmt(Protocol):
 
     def __call__(
         self,
-        *args: Union[str, Path],
+        *args: RawCommandElement,
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
@@ -129,8 +159,9 @@ class CliRunner(click.testing.CliRunner):
 
     def invoke(  # type: ignore[override]
         self,
-        *args: Union[str, Path],
+        *args: RawCommandElement,
         command: Optional[click.BaseCommand] = None,
+        extra_tmt_options: Optional[Sequence[RawCommandElement]] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
         catch_exceptions: bool = True,
@@ -142,10 +173,11 @@ class CliRunner(click.testing.CliRunner):
         tmt.__main__.import_cli_commands()
 
         command = command or tmt.cli._root.main
+        options = Command(*(*(extra_tmt_options or []), *args))
 
         return super().invoke(
             command,
-            args=[str(arg) for arg in args],
+            args=options.to_popen(),
             input=input,
             env=env,
             catch_exceptions=catch_exceptions,
