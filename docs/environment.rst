@@ -1,13 +1,7 @@
-:tocdepth: 1
-
 .. _environment-variables:
 
 Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~
-
-.. contents::
-    :local:
-    :depth: 2
 
 Exposed by tmt
 ^^^^^^^^^^^^^^
@@ -243,8 +237,8 @@ limitations.
     * ``TMT_VERSION``
 
 
-Consumed by tmt itself
-^^^^^^^^^^^^^^^^^^^^^^
+Consumed by tmt
+^^^^^^^^^^^^^^^
 
 .. note::
 
