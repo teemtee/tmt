@@ -253,8 +253,8 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         help="""
              If specified, --debug and --verbose would emit logs also
              for these topics. Can also be set via the ``TMT_LOG_TOPIC``
-             environment variable using a comma-separated list of topics
-             (e.g. ``TMT_LOG_TOPIC=cli-invocations,policy``).
+             environment variable using a space-separated list of topics
+             (e.g. ``TMT_LOG_TOPIC="cli-invocations policy"``).
              """,
     ),
 ]
