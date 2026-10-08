@@ -737,13 +737,13 @@ class guest_fact(Generic[T]):  # noqa: N801
     name: Optional[str]
 
     #: If set, the listed guest facts must be discovered before this one.
-    requires: tuple[str, ...]
+    requires: tuple['guest_fact[Any]', ...]
 
     def __init__(
         self,
         probe: Union[str, Callable[[], str]],
         extract: Callable[[str], T],
-        *requires: str,
+        *requires: 'guest_fact[Any]',
     ) -> None:
         """
         Initialize a fact collector.
@@ -818,9 +818,11 @@ class string_guest_fact(guest_fact[Optional[str]]):  # noqa: N801
     A guest fact whose value is a simple string.
     """
 
-    def __init__(self, probe: str) -> None:
+    def __init__(self, probe: str, *requires: 'guest_fact[Any]') -> None:
         super().__init__(
-            probe, lambda output: output.strip() if output.strip() != 'unknown' else None
+            probe,
+            lambda output: output.strip() if output.strip() != 'unknown' else None,
+            *requires,
         )
 
 
@@ -829,9 +831,11 @@ class int_guest_fact(guest_fact[Optional[int]]):  # noqa: N801
     A guest fact whose value is an integer.
     """
 
-    def __init__(self, probe: str) -> None:
+    def __init__(self, probe: str, *requires: 'guest_fact[Any]') -> None:
         super().__init__(
-            probe, lambda output: int(output.strip()) if output.strip() != 'unknown' else None
+            probe,
+            lambda output: int(output.strip()) if output.strip() != 'unknown' else None,
+            *requires,
         )
 
 
@@ -840,7 +844,7 @@ class flag_guest_fact(guest_fact[Optional[bool]]):  # noqa: N801
     A guest fact whose value is a booleab flag.
     """
 
-    def __init__(self, probe: str, *requires: str) -> None:
+    def __init__(self, probe: str, *requires: 'guest_fact[Any]') -> None:
         super().__init__(
             probe,
             lambda output: output.strip() == 'true' if output.strip() != 'unknown' else None,
@@ -884,7 +888,7 @@ class keyval_guest_fact(guest_fact[dict[str, str]]):  # noqa: N801
 
         return result
 
-    def __init__(self, path: Path, *requires: str) -> None:
+    def __init__(self, path: Path, *requires: 'guest_fact[Any]') -> None:
         super().__init__(f"cat {shlex.quote(str(path))}", keyval_guest_fact._parse, *requires)
 
 
@@ -895,7 +899,7 @@ class package_manager_guest_fact(guest_fact[Optional['tmt.package_managers.Guest
 
     def __init__(
         self,
-        *requires: str,
+        *requires: 'guest_fact[Any]',
         predicate: Optional[
             Callable[[type['tmt.package_managers.PackageManager[Any]']], bool]
         ] = None,
@@ -1017,7 +1021,7 @@ class GuestFacts(SerializableContainer):
             for name, value in self._facts().items()
         ]
 
-    def _create_collection_script(self, *facts: str) -> ShellScript:
+    def _create_collection_script(self, *_facts: str) -> ShellScript:
         """
         Generate a comprehensive shell script to collect all facts.
 
@@ -1030,40 +1034,53 @@ class GuestFacts(SerializableContainer):
         #
         # We just care about adding them to the list of facts to emit;
         # the correct order will be resolved below, when emitting snippets.
+        #
+        # If we were not given a subset of facts, refresh all of them. In
+        # that case, we do not need to worry about requirements, they would
+        # all be included.
+        if not _facts:
+            facts = tuple(self._facts().keys())
 
-        if facts:
+        else:
             # Facts that already have their requirements resolved. Starting
             # as an empty set, and facts - initial and required - will be
             # added as we encounter them.
-            facts_with_resolved_requires = set()
+            facts_with_resolved_requires: set[str] = set()
 
             # Facts with unresolved requirements. All initial facts start
             # here, and all requirements are added as we go, to resolve
             # their requirements as well.
-            facts_with_unresolved_requires = set(facts)
+            facts_with_unresolved_requires = set(_facts)
 
             while facts_with_unresolved_requires:
-                name = facts_with_unresolved_requires.pop()
-                fact = self._facts()[name]
+                unresolved_name = facts_with_unresolved_requires.pop()
+                unresolved_fact = self._facts()[unresolved_name]
 
                 # No requirements? Cool, resolved.
-                if not fact.requires:
-                    facts_with_resolved_requires.add(name)
+                if not unresolved_fact.requires:
+                    facts_with_resolved_requires.add(unresolved_name)
                     continue
 
                 # Let's see which requirements are still pending.
                 pending_requires = {
-                    name for name in fact.requires if name not in facts_with_resolved_requires
+                    required_fact.name
+                    for required_fact in unresolved_fact.requires
+                    if unresolved_name not in facts_with_resolved_requires
+                    and required_fact.name is not None
                 }
 
                 # No pending requirements? Also nice, resolved.
                 if not pending_requires:
-                    facts_with_resolved_requires.add(name)
+                    facts_with_resolved_requires.add(unresolved_name)
                     continue
 
                 # We are left with some pending requirements, add them
-                # to the stack, and resolve their requirements as well.
+                # to the stack, and resolve their requirements later.
                 facts_with_unresolved_requires.update(pending_requires)
+
+                # And now, when the requirements are tracked, we can
+                # consider the original "unresolved fact" resolved.
+                facts_with_resolved_requires.add(unresolved_name)
 
             facts = tuple(facts_with_resolved_requires)
 
@@ -1124,9 +1141,9 @@ class GuestFacts(SerializableContainer):
 
             # Let's see which requirements are still pending.
             pending_requires = {
-                required_fact
+                required_fact.name
                 for required_fact in fact.requires
-                if required_fact not in emitted_facts
+                if required_fact.name not in emitted_facts and required_fact.name is not None
             }
 
             # No pending requirements? Also nice, emit the snippet.
@@ -1402,7 +1419,7 @@ class GuestFacts(SerializableContainer):
             echo 'false'
         fi
         """,
-        'sudo_prefix',
+        sudo_prefix,
     )
 
     #: Whether the guest is a toolbox container
