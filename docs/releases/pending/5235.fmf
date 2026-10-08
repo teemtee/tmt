@@ -1,0 +1,4 @@
+description: |
+  The SSH provision plugin now forwards the control-host
+  environment to the local ``ssh`` subprocess in
+  ``GuestSsh.execute()``.
