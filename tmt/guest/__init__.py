@@ -2045,6 +2045,10 @@ class Guest(
 
     @property
     def topology(self) -> 'Topology':
+        """
+        Guest topology this guest belongs to.
+        """
+
         from tmt.steps import GuestTopology, Topology
 
         if not isinstance(self.parent, tmt.steps.provision.Provision):
@@ -2124,6 +2128,10 @@ class Guest(
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
     def install_topology(self) -> None:
+        """
+        Install guest topology on the guest.
+        """
+
         if not isinstance(self.parent, tmt.steps.provision.Provision):
             return
 
