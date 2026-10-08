@@ -177,6 +177,53 @@ def test_execute_no_connection_closed(
     assert output.stdout == stdout
 
 
+def test_execute_passes_control_host_environment(
+    root_logger: Logger, monkeypatch: _pytest.monkeypatch.MonkeyPatch
+) -> None:
+    """
+    Verify that GuestSsh.execute() forwards the control-host environment
+    to the local ssh subprocess via _run_guest_command().
+
+    See https://github.com/teemtee/tmt/issues/5235
+    """
+
+    step = Provision(
+        plan=MagicMock(name='mock<plan>', is_dry_run=False), raw_data=[{}], logger=root_logger
+    )
+    guest = GuestSsh(
+        logger=root_logger, parent=step, name='foo', data=GuestSshData(primary_address='bar')
+    )
+
+    monkeypatch.setattr(
+        guest,
+        '_prepare_command_environment',
+        MagicMock(return_value=Environment()),
+    )
+
+    mock_run = MagicMock(return_value=CommandOutput(stdout='ok', stderr=None))
+    monkeypatch.setattr(guest, '_run_guest_command', mock_run)
+
+    # Inject a canary variable so we can confirm from_environ() picked it up
+    canary_key = 'TMT_TEST_CANARY_EXECUTE_ENV'
+    canary_value = 'present'
+    monkeypatch.setenv(canary_key, canary_value)
+
+    guest.execute(Command('some-command'))
+
+    mock_run.assert_called_once()
+    _, kwargs = mock_run.call_args
+
+    env = kwargs.get('environment')
+    assert env is not None, (
+        '_run_guest_command() was called without an environment; '
+        'the local ssh process would inherit an empty env'
+    )
+    assert canary_key in env, (
+        f'Expected {canary_key} in the environment passed to _run_guest_command()'
+    )
+    assert str(env[canary_key]) == canary_value
+
+
 @pytest.mark.containers
 @pytest.mark.parametrize(
     ('container',),  # noqa: PT006
