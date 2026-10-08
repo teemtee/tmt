@@ -42,7 +42,7 @@ class RunTmt(Protocol):
     def __call__(
         self,
         *args: str,
-        command: Optional[click.BaseCommand] = None,
+        command: Optional[click.Command] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
         catch_exceptions: bool = True,
@@ -59,7 +59,7 @@ class CliRunner(click.testing.CliRunner):
     def invoke(  # type: ignore[override]
         self,
         *args: str,
-        command: Optional[click.BaseCommand] = None,
+        command: Optional[click.Command] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
         catch_exceptions: bool = True,

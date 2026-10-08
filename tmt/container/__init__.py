@@ -8,19 +8,30 @@ import functools
 import inspect
 import textwrap
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generic,
+    Optional,
+    Self,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 import fmf
 
 from tmt._compat.pydantic import PYDANTIC_V1, BaseModel, ConfigDict, Field, ValidationError
-from tmt._compat.typing import Self
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     from _typeshed import DataclassInstance
 
     import tmt.log
     import tmt.options
-    from tmt._compat.typing import TypeAlias
 
 
 # A stand-in variable for generic use.
@@ -213,7 +224,7 @@ class FieldMetadata(Generic[T]):
     @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
         if self._option is None and self.cli_option:
-            from tmt.options import option
+            from tmt.options import option  # pyright: ignore[reportUnknownVariableType]
 
             self._option_args = (
                 (self.cli_option,) if isinstance(self.cli_option, str) else self.cli_option

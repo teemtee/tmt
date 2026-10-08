@@ -1,7 +1,5 @@
-from tmt._compat.importlib import metadata, readers, resources
+from tmt._compat.importlib import readers
 
 __all__ = [
-    "metadata",
     "readers",
-    "resources",
 ]

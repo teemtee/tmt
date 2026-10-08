@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 
 from tmt._compat.pydantic import HttpUrl
 from tmt.container import MetadataContainer
 
 
-class IssueTrackerType(str, Enum):
+class IssueTrackerType(StrEnum):
     jira = 'jira'
 
 

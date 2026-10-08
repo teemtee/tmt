@@ -183,7 +183,7 @@ class Apk(PackageManager[ApkEngine]):
 
         results: dict[Installable, bool] = {}
 
-        for installable, package in zip(installables, reduced_packages):
+        for installable, package in zip(installables, reduced_packages, strict=True):
             match = re.search(rf'^{re.escape(str(package))}\s', stdout, re.MULTILINE)
 
             if match is not None:

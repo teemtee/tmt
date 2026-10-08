@@ -34,7 +34,11 @@ import tmt.utils
 import tmt.utils.feeling_safe
 import tmt.utils.jira
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
-from tmt.options import Deprecated, create_options_decorator, option
+from tmt.options import (
+    Deprecated,
+    create_options_decorator,
+    option,  # pyright: ignore[reportUnknownVariableType]
+)
 from tmt.utils import Command, GeneralError, Path, effective_workdir_root
 from tmt.utils.environment import Environment
 

@@ -5,7 +5,7 @@ Basic classes and code for tmt command line interface
 import collections
 import enum
 import functools
-from collections.abc import Sequence
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
 import click
@@ -22,7 +22,7 @@ import tmt.utils.rest
 from tmt.container import container, simple_field
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import Concatenate, ParamSpec
+    from typing import Concatenate, ParamSpec
 
     P = ParamSpec('P')
     R = TypeVar('R')
@@ -240,7 +240,7 @@ class HelpFormatter(click.HelpFormatter):
     # Override parent implementation
     def write_dl(
         self,
-        rows: Sequence[tuple[str, str]],
+        rows: Iterable[tuple[str, str]],
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:

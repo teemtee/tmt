@@ -28,7 +28,8 @@ from tmt.utils import (
 )
 
 if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
+    from typing import TypeAlias
+
     from tmt.hardware.constraints import Size
 
 JSON: 'TypeAlias' = Any
@@ -535,7 +536,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     @property
     def datetime(self) -> str:
         # Use the same format of timestramp as tmt does
-        return format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+        return format_timestamp(datetime.datetime.now(datetime.UTC))
 
     @property
     def headers(self) -> dict[str, str]:
