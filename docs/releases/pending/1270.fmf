@@ -1,0 +1,4 @@
+description: |
+  A new :ref:`vision` page has been added to the documentation. It
+  clarifies what ``tmt`` is, the main ideas behind the tool, which
+  features belong to its scope and how it compares to other tools.
