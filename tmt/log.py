@@ -170,12 +170,7 @@ def _topics_from_global_envvar() -> set['Topic']:
 
     topics: set[Topic] = set()
 
-    for topic_spec in raw_value.split(','):
-        topic_spec = topic_spec.strip()
-
-        if not topic_spec:
-            continue
-
+    for topic_spec in raw_value.split():
         try:
             topics.add(Topic(topic_spec))
 
