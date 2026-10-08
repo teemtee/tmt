@@ -3972,6 +3972,7 @@ class GuestSsh(Guest, CommandCollector):
             friendly_command=friendly_command or str(command),
             silent=silent,
             cwd=cwd,
+            environment=Environment.from_environ(),
             interactive=interactive,
             on_process_start=on_process_start,
             on_process_end=on_process_end,
