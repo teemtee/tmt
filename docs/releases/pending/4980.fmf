@@ -1,0 +1,7 @@
+description: |
+  The verbosity level can now be set via the ``TMT_VERBOSE``
+  environment variable, following the same pattern as ``TMT_DEBUG``.
+  The envvar accepts values 1 to 3 and takes precedence over the
+  ``-v`` CLI flag. Logging topics can also be set via the
+  ``TMT_LOG_TOPIC`` environment variable using a space-separated
+  list of topics, taking precedence over the ``--log-topic`` CLI flag.
