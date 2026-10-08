@@ -937,21 +937,25 @@ class Logger:
         if quietness_level is True:
             self.quiet = quietness_level
 
-        self.topics.update(_topics_from_global_envvar())
+        topics_from_global_envvar = _topics_from_global_envvar()
 
-        topic_specs = actual_kwargs.get('log_topic', [])
+        if topics_from_global_envvar:
+            self.topics = topics_from_global_envvar
 
-        for topic_spec in topic_specs:
-            try:
-                self.topics.add(Topic(topic_spec))
+        else:
+            topic_specs = actual_kwargs.get('log_topic', [])
 
-            except Exception as error:
-                import tmt.utils
+            for topic_spec in topic_specs:
+                try:
+                    self.topics.add(Topic(topic_spec))
 
-                raise tmt.utils.GeneralError(
-                    f'Logging topic "{topic_spec}" is invalid.'
-                    f" Possible choices are {', '.join(topic.value for topic in Topic)}"
-                ) from error
+                except Exception as error:
+                    import tmt.utils
+
+                    raise tmt.utils.GeneralError(
+                        f'Logging topic "{topic_spec}" is invalid.'
+                        f" Possible choices are {', '.join(topic.value for topic in Topic)}"
+                    ) from error
 
         return self
 
