@@ -616,6 +616,26 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     def _fetch_local_repository(self) -> Optional[Path]:
         path = Path(self.data.path) if self.data.path else None
+        if path is not None and not path.is_absolute():
+            # Relative paths are relative to user_anchor_path
+            path = self.step.plan.user_anchor_path / path
+            # TODO(deprecate):  Previously these paths were taken as relative to the cwd
+            #  keep accepting these, unless both paths resolve to a valid path, in which
+            #  case take the newer path
+            deprecated_path = path.resolve()
+            if deprecated_path.is_dir() and path.is_dir() and not deprecated_path.samefile(path):
+                self.warn(
+                    f"Path '{self.data.path}' ambiguously resolves to either '{deprecated_path}' "
+                    f"or '{path}'. The latter newer definition is considered canonical resolution."
+                )
+            elif deprecated_path.is_dir() and not path.is_dir():
+                preferred_path = deprecated_path.relative_to(self.step.plan.user_anchor_path)
+                self.warn(
+                    f"Path '{self.data.path}' resolves to '{deprecated_path}' which is a "
+                    f"deprecated handling. Switch it to '{preferred_path}' instead."
+                )
+                path = deprecated_path
+
         if path is not None:
             fmf_root: Optional[Path] = path
         else:
