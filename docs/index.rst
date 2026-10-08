@@ -44,6 +44,7 @@ Table of Contents
     :caption: Reference
 
     Specification <spec>
+    Environment Variables <environment>
     Plugins <plugins/index>
     glossary
 

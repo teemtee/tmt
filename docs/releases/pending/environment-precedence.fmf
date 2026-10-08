@@ -1,0 +1,10 @@
+description: |
+    The precedence of various sources of environment variables has
+    been documented. See :ref:`environment-variables` for the details.
+
+    .. important::
+
+        Breaking change: the order of :tmt:story:`test </spec/tests/environment>`
+        and :ref:`guest </plugins/provision/common-keys>` environment
+        has been changed: the test is now the lower priority one, and
+        guest environment overrides it.
