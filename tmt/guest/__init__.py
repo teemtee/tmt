@@ -2343,19 +2343,22 @@ class Guest(
 
         raise GeneralError(f"Unknown Ansible object type, '{type(playbook)}'.")
 
-    # TODO: the existence of this method is very questionable, it may
-    # go away while works on https://github.com/teemtee/tmt/pull/4364
-    # continue.
-    def _prepare_command_environment(
+    def _build_remote_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
         """
-        Prepare meaningful environment for a command.
+        Build environment for a remote command.
+
+        Serves as a helper for "unifying" provided environment:
+
+        * Callers that do need to include more inputs in the environment
+          would build their own, and it would be used as provided.
+        * Callers with no special needs would get a sane default.
 
         :param environment: if set, it is considered the desired command
             environment, and used without modification.
         :returns: either a copy of ``environment``, or a new environment
-            constructed from guest and plan environments
+            built by :py:meth:`Environment.build_environment`.
         """
 
         if environment is None:
@@ -2366,16 +2369,6 @@ class Guest(
                 logger=self._logger,
             )
 
-            # TODO: these are owned by plan, but at wrong position, and
-            # they will be owned by plan again once the dust of environment
-            # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
-            # for more.
-            if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
-
-            if self.plan_source_script_path:
-                environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
-
         else:
             # Create a copy of given environment - this prevents any
             # accidental modification of the given environment.
@@ -2383,14 +2376,11 @@ class Guest(
 
         return environment
 
-    # TODO: the existence of this method is very questionable, it may
-    # go away while works on https://github.com/teemtee/tmt/pull/4364
-    # continue.
-    def _prepare_ansible_command_environment(
+    def _build_ansible_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
         """
-        Prepare environment for an ``ansible-playbook`` command.
+        Build environment for a local ``ansible-playbook`` command.
 
         Unlike commands running on the guest, ``ansible-playbook`` runs
         on the runner and therefore inherits the tmt (parent) process
@@ -2398,16 +2388,16 @@ class Guest(
         test/plan/guest environment variables.
 
         :param environment: if set, it is passed to
-            :py:meth:`_prepare_command_environment` as the desired command
-            environment.
-        :returns: the tmt process environment merged with the prepared command
-            environment.
+            :py:meth:`_build_remote_command_environment` as the desired
+            command environment.
+        :returns: the tmt process environment merged with the prepared
+            command environment.
         """
 
         return Environment(
             {
                 **Environment.from_environ(),
-                **self._prepare_command_environment(environment),
+                **self._build_remote_command_environment(environment),
             }
         )
 
@@ -3242,7 +3232,7 @@ class GuestSsh(Guest, CommandCollector):
         # Build the command script using the same approach as execute()
         # Start with environment exports
         collected_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_command_environment(environment).to_shell_exports()
+            self._build_remote_command_environment(environment).to_shell_exports()
         )
 
         # Add working directory change (properly quoted like in execute())
@@ -3771,7 +3761,7 @@ class GuestSsh(Guest, CommandCollector):
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
-                environment=self._prepare_ansible_command_environment(),
+                environment=self._build_ansible_command_environment(),
                 log=log,
             )
         except tmt.utils.RunError as exc:
@@ -3954,7 +3944,7 @@ class GuestSsh(Guest, CommandCollector):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to SSH to execute on the remote machine.
         remote_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_command_environment(environment).to_shell_exports()
+            self._build_remote_command_environment(environment).to_shell_exports()
         )
 
         # Change to given directory on guest if cwd provided
