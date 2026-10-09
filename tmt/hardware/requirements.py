@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from typing import Any, Callable, Generic, Optional, Protocol, TypeVar, Union, cast
 
 import tmt.log
-from tmt.container import SpecBasedContainer, container, simple_field
+from tmt.container import SpecBasedContainer, container, simple_dataclass, simple_field
 from tmt.hardware.constraints import (
     FLAG_CONSTRAINT_FACTORY,
     INTEGER_CONSTRAINT_FACTORY,
@@ -61,7 +61,7 @@ def flatten(fn: Callable[[Spec], BaseConstraint]) -> Callable[[Spec], BaseConstr
     return wrapper
 
 
-@container
+@simple_dataclass
 class _Parser(Generic[BaseConstraintT]):
     """
     Base class for requirement parser description.
@@ -72,7 +72,7 @@ class _Parser(Generic[BaseConstraintT]):
     requirement: str
 
 
-@container
+@simple_dataclass
 class _TrivialParser(_Parser[ConstraintT]):
     """
     Base class for simple parser that can be statically defined.
@@ -88,7 +88,7 @@ class _TrivialParser(_Parser[ConstraintT]):
     kwargs: dict[str, Any] = simple_field(default_factory=dict[str, Any])
 
 
-@container
+@simple_dataclass
 class SingleLevelParser(_TrivialParser[ConstraintT]):
     """
     A single-level parser for requirements that have no child keys.
@@ -104,7 +104,7 @@ class SingleLevelParser(_TrivialParser[ConstraintT]):
         )
 
 
-@container
+@simple_dataclass
 class DoubleLevelParser(_TrivialParser[ConstraintT]):
     """
     A double-level parser for requirements that do have child keys.
@@ -128,7 +128,7 @@ class DoubleLevelParser(_TrivialParser[ConstraintT]):
         )
 
 
-@container
+@simple_dataclass
 class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
     """
     A double-level parser for requirements that do have child keys and peers.
@@ -147,7 +147,7 @@ class IndexedDoubleLevelParser(DoubleLevelParser[ConstraintT]):
         )
 
 
-@container
+@simple_dataclass
 class CustomParser(_Parser[BaseConstraintT]):
     """
     A parser with custom code that cannot be statically defined.

@@ -3328,8 +3328,8 @@ class StateFormat:
 #: items, a file suffix for files holding the state, and Python-to-format
 #: and format-to-Python converters.
 _SUPPORTED_STATE_FORMATS: dict[str, StateFormat] = {
-    'json': StateFormat('json', '.json', to_json, from_json),
-    'yaml': StateFormat('yaml', '.yaml', to_yaml, from_yaml),
+    'json': StateFormat(name='json', suffix='.json', to_state=to_json, from_state=from_json),
+    'yaml': StateFormat(name='yaml', suffix='.yaml', to_state=to_yaml, from_state=from_yaml),
 }
 
 
