@@ -102,6 +102,19 @@ class Topic(enum.Enum):
     #: Policy rule evaluation and application.
     POLICY = 'policy'
 
+    @classmethod
+    def from_spec(cls, spec: str) -> 'Topic':
+        try:
+            return cls(spec)
+
+        except ValueError as error:
+            import tmt.utils
+
+            raise tmt.utils.GeneralError(
+                f'Logging topic "{spec}" is invalid.'
+                f" Possible choices are {', '.join(topic.value for topic in cls)}"
+            ) from error
+
 
 DEFAULT_TOPICS: set[Topic] = set()
 
@@ -171,16 +184,7 @@ def _topics_from_global_envvar() -> set['Topic']:
     topics: set[Topic] = set()
 
     for topic_spec in raw_value.strip().split():
-        try:
-            topics.add(Topic(topic_spec))
-
-        except ValueError as error:
-            import tmt.utils
-
-            raise tmt.utils.GeneralError(
-                f'Logging topic "{topic_spec}" is invalid.'
-                f" Possible choices are {', '.join(topic.value for topic in Topic)}"
-            ) from error
+        topics.add(Topic.from_spec(topic_spec))
 
     return topics
 
@@ -946,16 +950,7 @@ class Logger:
             topic_specs = actual_kwargs.get('log_topic', [])
 
             for topic_spec in topic_specs:
-                try:
-                    self.topics.add(Topic(topic_spec))
-
-                except Exception as error:
-                    import tmt.utils
-
-                    raise tmt.utils.GeneralError(
-                        f'Logging topic "{topic_spec}" is invalid.'
-                        f" Possible choices are {', '.join(topic.value for topic in Topic)}"
-                    ) from error
+                self.topics.add(Topic.from_spec(topic_spec))
 
         return self
 
