@@ -54,6 +54,17 @@ class ResultOutcome(enum.StrEnum):
                 f"Invalid partial custom result '{spec}'."
             ) from error
 
+    def merge_check_results(self, *check_results: "ResultOutcome") -> "ResultOutcome":
+        # Special case if test did not run
+        if self in (ResultOutcome.PENDING, ResultOutcome.SKIP):
+            # A check failure is a failure
+            if any(check >= ResultOutcome.FAIL for check in check_results):
+                return max(check_results)
+            # Otherwise keep the state in pending or skip
+            return self
+        # Otherwise the normal logic of highest result is reported
+        return max(self, *check_results)
+
 
 # Cannot subclass enums :/
 # https://docs.python.org/3/library/enum.html#restricted-enum-subclassing
@@ -462,7 +473,7 @@ class Result(BaseResult):
         ]
 
         # Aggregate check results with the main test result
-        self.result = max(self.result, *check_outcomes)
+        self.result = self.result.merge_check_results(*check_outcomes)
 
         # Override result with result outcome provided by user
         if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
