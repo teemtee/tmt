@@ -173,6 +173,14 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         * Cannot install new version of already installed local rpm.
         * No support for installing debuginfo packages at this time.
+
+    .. note::
+
+        On macOS guests tmt installs packages with Homebrew, which has to
+        live under ``/opt/homebrew`` or ``/usr/local``. Only formulae are
+        supported, and Homebrew refuses to run as ``root``, so log in to
+        the guest as a regular user and use ``become`` where root is
+        needed.
     """
 
     _data_class = PrepareInstallData

@@ -70,7 +70,7 @@ from tmt.utils.themes import style
 #
 # The ssh client always allocates a tty, so test timeout handling
 # works (#1387). Because the allocated tty is generally not suitable
-# for test execution, the wrapper uses `|& cat` to emulate execution
+# for test execution, the wrapper uses `2>&1 | cat` to emulate execution
 # without a tty. In certain cases, where test execution with available
 # tty is required (#2381), the tty can be kept on request with
 # the `tty: true` test attribute.
@@ -81,7 +81,7 @@ from tmt.utils.themes import style
 #   user interacts with the executed command.
 #
 # * In non-interactive mode without a tty, stdin is fed with /dev/null (EOF)
-#   and `|& cat` is used to simulate no tty available for script output.
+#   and `2>&1 | cat` is used to simulate no tty available for script output.
 #
 # * In non-interactive mode with a tty, stdin is available to the tests
 #   and simulation of tty not available for output is not run.
@@ -446,11 +446,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation.path / TEST_OUTPUT_FILENAME, output.stdout or '', mode='a', debug_level=3
         )
 
-        # Reset `has-rsync` fact: tmt is expected to install rsync if it
+        # Reset the rsync facts: tmt is expected to install rsync if it
         # is missing after a test. To achieve that, pretend we don't
         # know whether rsync is installed, and let any attempt to use
         # rsync answer and react before calling the command.
         guest.facts.has_rsync = None
+        guest.facts.has_openrsync = None
 
         pull_options = test.test_framework.get_pull_options(
             invocation, DEFAULT_PULL_OPTIONS, logger
