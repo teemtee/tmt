@@ -196,6 +196,34 @@ default-1:html:never"
         rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test --update-missing skips incompatible keys"
+        rlRun -s "$run plan -n /with-incompatible-keys \
+            report --update-missing -h junit"
+
+        # `how` must remain untouched, and `file` must remain untouched - CLI invocation is not
+        # compatible with `html`, proper application would leave out `file` key as it's not part
+        # of the shared base.
+        rlAssertGrep "output: junit.xml" $rlRun_LOG
+
+        check "with-incompatible-keys" "One 'html' phase shall exist" "default-0:html:50"
+
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-incompatible-keys/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test --update-missing reports incompatible keys"
+        rlRun -s "$run plan -n /with-report \
+            report --update-missing -h junit --file foo.xml"
+
+        rlAssertGrep "warn: Cannot fully update report phase 'default-0' with 'file' key from command line. Key is recognized by plugin 'junit' but not by plugin 'html'." $rlRun_LOG
+        rlAssertGrep "output: $rundir/plans/with-report/report/default-0/index.html" $rlRun_LOG
+
+        check "with-report" "One 'html' phase shall exist" "default-0:html:50"
+
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
+    rlPhaseEnd
+
     rlPhaseStartTest "Test /with-order"
         rlRun -s "$run plan -n /with-order"
 
