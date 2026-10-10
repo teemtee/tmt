@@ -56,6 +56,21 @@ rlJournalStart
         rlAssertGrep /tests/smoke output
     rlPhaseEnd
 
+    plan=fmf/nourl/ref/path
+    rlPhaseStartTest $plan
+        # Same as previous but we keep the relative path to make sure it resolves relative
+        # to the plan's user_anchor_path
+        rlRun 'popd'
+        rlRun 'tmt -r data run -dddvr discover --how fmf --path ../../../examples/together \
+            plan --name $plan finish 2>&1 >/dev/null | tee output'
+        rlAssertNotGrep 'Cloning into' output
+        rlAssertGrep 'Checkout ref.*eae4d52' output
+        rlAssertGrep '2 tests selected' output
+        rlAssertGrep /tests/full output
+        rlAssertGrep /tests/smoke output
+        rlRun 'pushd data'
+    rlPhaseEnd
+
     plan=fmf/url/noref/nopath
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'

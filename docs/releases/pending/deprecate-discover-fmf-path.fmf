@@ -1,0 +1,6 @@
+description: |
+  The ``path`` in the discover :ref:`/plugins/discover/fmf` plugin now resolve
+  relative to the user anchor path of the plan. Previously it resolved to an
+  ill-defined path depending on the tmt execution. This resolution is still
+  used if the new one is not available for backwards compatibility, but user
+  must switch to the new one as soon as possible.
