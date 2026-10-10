@@ -1,0 +1,6 @@
+description: |
+    Added documentation warning that ``TMT_TREE`` should not be used
+    for storing persistent data between steps. The :ref:`step-variables`
+    section now clearly guides users to use ``TMT_PLAN_DATA`` for data
+    that needs to persist across steps, and ``TMT_TEST_DATA`` for
+    test-specific artifacts.
