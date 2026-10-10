@@ -95,13 +95,14 @@ PLAN_ENVIRONMENT_FILENAME = 'variables.env'
 #: Name of the :ref:`plan source script <step-variables>`.
 PLAN_SOURCE_SCRIPT_FILENAME: str = "plan-source-script.sh"
 
-#: How many seconds to wait for a connection to succeed after guest boot.
-#: This is the default value tmt would use unless told otherwise.
+#: How many seconds to wait for a connection to succeed after guest boots
+#: for the first time. This is the default value tmt would use unless
+#: told otherwise.
 DEFAULT_CONNECT_TIMEOUT = 2 * 60
 
-#: How many seconds to wait for a connection to succeed after guest boot.
-#: This is the effective value, combining the default and optional envvar,
-#: ``TMT_CONNECT_TIMEOUT``.
+#: How many seconds to wait for a connection to succeed after guest boots
+#: for the first time. This is the effective value, combining the default
+#: and optional envvar, ``TMT_CONNECT_TIMEOUT``.
 CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_TIMEOUT')
 
 # When waiting for guest to connect, try re-connecting every
@@ -112,7 +113,7 @@ CONNECT_WAIT_TICK_INCREASE = 1.0
 
 def default_connect_waiting() -> Waiting:
     """
-    Create default waiting context for connecting to the guest.
+    Create default waiting context for connecting to the guest after it starts.
     """
 
     return Waiting(

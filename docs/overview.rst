@@ -554,7 +554,7 @@ TMT_BOOT_TIMEOUT
 
 TMT_CONNECT_TIMEOUT
     How many seconds to wait for a connection to succeed after guest
-    boot. By default, it is 2 minutes.
+    boots for the first time. By default, it is 2 minutes.
 
     .. versionadded:: 1.32
 
