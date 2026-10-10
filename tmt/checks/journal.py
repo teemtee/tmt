@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Path, ShellScript, Stopwatch
@@ -75,22 +75,6 @@ class JournalCheck(Check):
     priority: Optional[str] = field(
         default=None, help='Filter by priority (e.g. ``err``, ``warning``).'
     )
-
-    # TODO: fix `to_spec` of `Check` to support nested serializables
-    def to_spec(self) -> _RawCheck:
-        spec = super().to_spec()
-
-        spec['failure-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-            pattern.pattern for pattern in self.failure_pattern
-        ]
-        spec['ignore-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-            pattern.pattern for pattern in self.ignore_pattern
-        ]
-
-        return spec
-
-    def to_minimal_spec(self) -> _RawCheck:
-        return self.to_spec()
 
     def _extract_failures(self, text: str) -> list[str]:
         return [

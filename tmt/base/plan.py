@@ -152,30 +152,6 @@ class RemotePlanReference(  # pyright: ignore[reportGeneralTypeIssues]
 
         return cast(_RemotePlanReference, super().to_minimal_dict())
 
-    def to_spec(self) -> _RemotePlanReference:
-        """
-        Convert to a form suitable for saving in a specification file
-        """
-
-        spec = self.to_dict()
-
-        spec['importing'] = self.importing.value
-        spec['scope'] = self.scope.value
-
-        return spec
-
-    def to_minimal_spec(self) -> _RemotePlanReference:
-        """
-        Convert to specification, skip default values
-        """
-
-        spec = self.to_minimal_dict()
-
-        spec['importing'] = self.importing.value
-        spec['scope'] = self.scope.value
-
-        return spec
-
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
     @classmethod

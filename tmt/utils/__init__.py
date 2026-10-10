@@ -2998,7 +2998,7 @@ _YAML_REPRESENTERS: dict[Any, Callable[[Representer, Any], Any]] = {
     # Environment representation, which is basically nothing but
     # a key:value mapping.
     Environment: lambda representer, environment: representer.represent_mapping(
-        'tag:yaml.org,2002:map', environment.to_fmf_spec()
+        'tag:yaml.org,2002:map', environment.to_spec()
     ),
 }
 
@@ -3011,7 +3011,7 @@ _JSON_REPRESENTERS: dict[Any, Callable[[Any], Any]] = {
     Path: _json_represent_path,
     # Environment representation, which is basically nothing but
     # a key:value mapping.
-    Environment: lambda environment: environment.to_fmf_spec(),
+    Environment: lambda environment: environment.to_spec(),
 }
 
 
