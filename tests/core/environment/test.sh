@@ -24,6 +24,11 @@ rlJournalStart
         rlAssertGrep "Verbosity level 'weird' is invalid." $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Check the TMT_LOG_TOPIC variable"
+        rlRun -s "TMT_LOG_TOPIC=weird tmt plan show" 2
+        rlAssertGrep 'Logging topic "weird" is invalid.' $rlRun_LOG
+    rlPhaseEnd
+
     for execute in 'tmt'; do
         tmt="tmt run -avvvr execute --how $execute"
 
