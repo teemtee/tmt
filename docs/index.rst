@@ -28,6 +28,7 @@ Table of Contents
     :caption: About
 
     Overview <overview>
+    Vision <vision>
     Releases <releases/index>
     Repository <https://github.com/teemtee/tmt>
 
