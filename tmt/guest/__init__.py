@@ -318,12 +318,22 @@ SSH_MASTER_START_TIMEOUT: int = configure_constant(
 )
 
 
+# When waiting for ssh master to start, try re-connecting every
+# this many seconds.
+SSH_MASTER_START_WAIT_TICK = 1
+SSH_MASTER_START_WAIT_TICK_INCREASE = 1.0
+
+
 def default_ssh_master_start_waiting() -> Waiting:
     """
     Create default waiting context for the ``ssh`` master start.
     """
 
-    return Waiting(deadline=Deadline.from_seconds(SSH_MASTER_START_TIMEOUT))
+    return Waiting(
+        deadline=Deadline.from_seconds(SSH_MASTER_START_TIMEOUT),
+        tick=SSH_MASTER_START_WAIT_TICK,
+        tick_increase=SSH_MASTER_START_WAIT_TICK_INCREASE,
+    )
 
 
 #: Default username to use in SSH connections.
