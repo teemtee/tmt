@@ -119,4 +119,5 @@ Sections with only one item can be merged into a related section or into "Other"
 - Be concise — one or two sentences per item
 - State what changed and why it matters, not how it was implemented
 - Use backticks for code, commands, environment variables, file paths, and key names
+- Always use backticks when naming a specific step, e.g. the `finish` step
 - Don't use praise, enthusiasm, or exclamation points
