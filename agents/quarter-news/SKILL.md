@@ -1,3 +1,14 @@
+---
+name: quarter-news
+description:
+    Generate a high-level quarterly summary of user-facing tmt changes for the
+    docs/news/ directory. Use when asked to write, create, or update a quarter
+    news overview (e.g. "2026 Q2") covering a range of tmt releases,
+    summarizing new features, enhancements, and user-visible fixes for tmt
+    users.
+license: MIT
+---
+
 # Quarter News Generation
 
 Generate a high-level quarterly summary of tmt changes for the `docs/news/` directory.
