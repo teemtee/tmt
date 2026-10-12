@@ -241,6 +241,8 @@ linkcheck_ignore = [
     r'https://www.cpu-world.com.*',
     # Stack Overflow uses captcha and these links are not essential
     r'https://stackoverflow.com.*',
+    # Deepwiki probably enforces some scraping protecion (HTTP 429)
+    r'https://deepwiki.com.*',
 ]
 linkcheck_request_headers = {
     "*": {
