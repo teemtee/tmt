@@ -134,47 +134,37 @@ story: 'As a user I want to comfortably work with tests'
     /jira:
         story: 'I want to export test metadata into Jira.'
         example:
-            - tmt test export --how jira --create --link-jira --jira-url https://issues.redhat.com --jira-user me@example.com --jira-token <token> --project-id RHELTEST
+            - tmt test export --how jira --create --jira-url https://example.atlassian.net --jira-user me@example.com --jira-token <token> --project-id TESTS --jira-uuid-field 'tmt UUID'
         description: |
-            Export test metadata to a Jira project as ``Test Case``
-            work items. Authentication uses a Jira API token with
-            HTTP Basic Auth. Provide credentials and target project
-            via the ``--jira-url``, ``--jira-user``, ``--jira-token``,
-            and ``--project-id`` options.
+            Export resolved local test metadata into Jira Cloud issues. Configure
+            the target project, issue type, UUID field, automation URL destination,
+            title format, optional status and fmf relationship mappings through
+            CLI options, layered ``--jira-profile`` YAML files or the
+            ``/export/jira`` node of the tmt configuration tree. Credentials
+            can come from environment variables or existing user connection settings.
 
-            The following ``fmf`` attributes are exported to the
-            corresponding Jira ``Test Case`` fields:
+            Existing UUIDs are preserved and searched independently of components.
+            Ambiguous matches and collection identity collisions fail explicitly.
+            Resolve identities, fields, relationships and transitions for the entire
+            collection before starting writes. Dry run displays this prepared plan.
+            ``--create`` permits new issues.
+            ``--link-jira`` optionally writes metadata backlinks and is disabled
+            by default. Git validation covers the collection before exporter
+            writes. ``--ignore-git-validation`` still constructs automation URLs.
 
-            +-------------------------------------------+-------------------------------------------------+
-            | fmf attribute                             | Jira field                                      |
-            +===========================================+=================================================+
-            | ``summary``                               | summary                                         |
-            +-------------------------------------------+-------------------------------------------------+
-            | ``description``                           | description                                     |
-            +-------------------------------------------+-------------------------------------------------+
-            | ``id``                                    | ``ID`` custom field used for future lookup      |
-            +-------------------------------------------+-------------------------------------------------+
-            | ``component``                             | components                                      |
-            +-------------------------------------------+-------------------------------------------------+
-            | ``tag``                                   | labels                                          |
-            +-------------------------------------------+-------------------------------------------------+
-            | ``contact``                               | assignee (resolved to a Jira Cloud              |
-            |                                           | ``accountId`` via user search API)              |
-            +-------------------------------------------+-------------------------------------------------+
-            | ``enabled``                               | status (always ``Active`` in Jira)              |
-            +-------------------------------------------+-------------------------------------------------+
-
-            The web link to the test file in the git repository is
-            stored in the ``URL`` custom field.
-
-            ``verifies`` links to issues on the same Jira instance become
-            ``tests`` issue links. When ``--bugzilla`` is enabled, Bugzilla
-            links become remote links.
-
-            After a successful export, add ``--link-jira`` to
-            write an ``implements`` link back to the fmf metadata
-            so that subsequent exports and reports can locate the
-            Jira ``Test Case`` without a UUID search.
+            By default, the resolved fmf summary maps to Jira Summary and the resolved
+            fmf description maps to Jira Description. The title format customizes Summary
+            independently. Components, tags, contact, UUID and automation URL can be exported.
+            Configure ordinary field ownership with ``managed-fields`` to preserve
+            Jira-maintained fields. Owned fields are cleared when their local source is
+            empty, with the default Summary falling back to the fmf name. An unresolved
+            or ambiguous nonempty contact preserves the existing assignee with a warning.
+            Relationships are additive. Typed scalar mappings support text and
+            single-select fields. Public payload enrichment and post-export hooks
+            allow external integrations to reuse discovery, UUID identity and CRUD.
+            The default path communicates only with Jira and uses local metadata.
+            Shared UUID lookup can support a future report step; export hooks do not
+            handle execution results.
         link:
           - implemented-by: /tmt/export/jira.py
           - documented-by: /docs/examples.rst#jira-project-configuration

@@ -1,18 +1,14 @@
 description: |
-    New ``jira`` export plugin allows synchronizing test metadata
-    with a Jira instance.
+    The new ``jira`` exporter creates and updates Jira Cloud issues from resolved
+    tmt metadata. Configure the project, issue type, UUID field, automation URL,
+    title, optional workflow status and relationship mappings through CLI options
+    or ``/export/jira`` in the tmt configuration tree. Typed additional field
+    mappings and public enrichment/action hooks support site-specific integrations.
+    Layer shareable YAML profiles with ``--jira-profile`` and select ordinary field
+    ownership with ``managed-fields``. Credentials can come from environment variables
+    or existing Jira connection settings. The exporter prepares and validates the whole
+    collection before writes; dry-run output displays planned fields and operations.
 
-    Use ``tmt tests export --how jira`` to create or update
-    ``Test Case`` work items in a Jira project from fmf metadata.
-    Credentials and target project are provided via ``--jira-url``,
-    ``--jira-user``, ``--jira-token`` and ``--project-id`` options.
-    Use ``--create`` to create new test cases and ``--link-jira`` to
-    write the Jira issue URL back into the fmf ``link`` section
-    as an ``implements`` relation for future lookups.
-
-    .. code-block:: shell
-
-        tmt tests export --how jira --create --link-jira \
-            --jira-url https://issues.redhat.com \
-            --jira-user me@example.com --jira-token TOKEN \
-            --project-id RHELTEST
+    Use ``--create`` to allow creation and ``--dry`` to preview without writes.
+    Metadata backlinks require ``--link-jira``. See :ref:`jira-project-configuration`
+    for authentication, schema requirements, field ownership and extension examples.
