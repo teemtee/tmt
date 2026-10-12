@@ -77,7 +77,8 @@ class JiraInstance:
         token: str,
         logger: tmt.log.Logger,
         tmt_web_url: Optional[str] = None,
-    ):
+        cloud: bool = False,
+    ) -> None:
         """
         Initialize a Jira instance from raw connection details.
 
@@ -85,6 +86,9 @@ class JiraInstance:
         callers that only export/report test data can leave it unset.
         Use :py:meth:`from_issue_tracker` to construct one from a
         configured issue tracker instead.
+
+        ``cloud`` opts into REST v3 and Cloud routing for exporters using
+        ADF. Other consumers retain SDK deployment detection and defaults.
         """
 
         self.url = url
@@ -95,34 +99,23 @@ class JiraInstance:
         self.logger = logger
         jira_module = import_jira(logger)
 
-        # ignore[attr-defined]: it is defined, but mypy seems to fail
-        # detecting it correctly.
-        #
-        # get_server_info=False: skips an extra server-info request and,
-        # with it, the library's own PyPI update check, neither of which
-        # tmt needs. That request is also how the SDK detects Cloud vs
-        # Server/Data Center (self.jira.deploymentType), which several
-        # SDK methods use to decide which API to call -- e.g. search_issues
-        # falls back to the removed /rest/api/2/search on non-Cloud. Since
-        # this is always Jira Cloud here, set it directly instead.
-        #
-        # options={'rest_api_version': '3'}: the SDK defaults to the v2 API
-        # for everything except search (which it special-cases to v3 for
-        # Cloud). v2 doesn't understand Atlassian Document Format, which
-        # this module relies on for descriptions and comments, and its
-        # search endpoint has since been removed by Atlassian.
+        client_options: dict[str, Any] = {}
+        if cloud:
+            client_options = {'get_server_info': False, 'options': {'rest_api_version': '3'}}
+
         self.jira = jira_module.JIRA(  # type: ignore[attr-defined]
             server=self.url,
             basic_auth=(self.email, self.token),
-            get_server_info=False,
-            options={'rest_api_version': '3'},
+            **client_options,
         )
-        self.jira.deploymentType = 'Cloud'
+        if cloud:
+            self.jira.deploymentType = 'Cloud'
 
         # Caches for schema resolution (issue type IDs and custom field IDs).
         # Populated on first lookup to minimize network requests.
-        self._issue_types: Optional[dict[str, str]] = None
+        self._issue_types: dict[str, list[tuple[str, str]]] = {}
         self._fields_by_name: Optional[dict[str, list[str]]] = None
+        self._field_ids: set[str] = set()
 
     @classmethod
     def from_issue_tracker(
@@ -216,24 +209,33 @@ class JiraInstance:
 
     def resolve_issue_type_id(self, project_id: str, name: str) -> str:
         """
-        Resolve an issue type name (e.g. ``Test Case``) to its ID within a project.
+        Resolve an issue type ID or name within a project.
 
         Issue type IDs are project-specific, so this cannot be a fixed
         constant shared across Jira instances or projects.
         """
-        if self._issue_types is None:
-            self._issue_types = {
-                issue_type.name: str(issue_type.id)
+        if project_id not in self._issue_types:
+            self._issue_types[project_id] = [
+                (str(issue_type.id), str(issue_type.name))
                 for issue_type in self.jira.issue_types_for_project(project_id)
-            }
+            ]
 
-        if name not in self._issue_types:
+        issue_types = self._issue_types[project_id]
+        if any(type_id == name for type_id, _ in issue_types):
+            return name
+        matches = [type_id for type_id, type_name in issue_types if type_name == name]
+        if not matches:
             raise tmt.utils.ExportError(f"No '{name}' issue type found in project '{project_id}'.")
-        return self._issue_types[name]
+        if len(matches) > 1:
+            raise tmt.utils.ExportError(
+                f"Multiple issue types named '{name}' in project '{project_id}': {matches}. "
+                "Configure an issue type ID."
+            )
+        return matches[0]
 
     def resolve_field_id(self, name: str) -> str:
         """
-        Resolve a custom field's display name (e.g. ``External issue URL``) to its field ID.
+        Resolve a field ID or a unique display name to its field ID.
 
         Field IDs are assigned per Jira instance and are not guaranteed to
         be the same across different instances or projects.
@@ -241,16 +243,19 @@ class JiraInstance:
         if self._fields_by_name is None:
             self._fields_by_name = {}
             for field in self.jira.fields():
+                self._field_ids.add(str(field['id']))
                 field_name = field.get('name')
                 if field_name:
                     self._fields_by_name.setdefault(field_name, []).append(str(field['id']))
 
+        if name in self._field_ids:
+            return name
         matches = self._fields_by_name.get(name, [])
         if not matches:
             raise tmt.utils.ExportError(f"No '{name}' custom field found in Jira.")
         if len(matches) > 1:
             raise tmt.utils.ExportError(
-                f"Multiple fields named '{name}' found in Jira: {matches}."
+                f"Multiple fields named '{name}' found in Jira: {matches}. Configure a field ID."
             )
         return matches[0]
 
@@ -261,9 +266,17 @@ class JiraInstance:
         Transition IDs are defined by the issue's workflow, which can
         differ between issue types, projects and Jira instances.
         """
-        for transition in self.jira.transitions(issue_key):
-            if transition.get('to', {}).get('name') == target_status_name:
-                return str(transition['id'])
+        matches = [
+            str(transition['id'])
+            for transition in self.jira.transitions(issue_key)
+            if transition.get('to', {}).get('name') == target_status_name
+        ]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise tmt.utils.ExportError(
+                f"Multiple transitions to status '{target_status_name}' for '{issue_key}'."
+            )
         raise tmt.utils.ExportError(
             f"No transition to status '{target_status_name}' available for '{issue_key}'."
         )
