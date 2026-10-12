@@ -1599,7 +1599,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                 )
 
         # Create a new GuestTestcloud instance and start it
-        self._guest = GuestTestcloud(
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,
