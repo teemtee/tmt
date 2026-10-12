@@ -1,541 +1,832 @@
-"""
-Export tmt test cases to Jira as TestCase work items.
-"""
+"""Export resolved local tmt tests to a configurable Jira Cloud schema."""
 
 import email.utils
 import re
-from typing import Any, Optional
+import string
+from copy import deepcopy
+from typing import Any, Literal, Optional, cast
 
 import tmt.base.core
+import tmt.base.links
+import tmt.config
 import tmt.convert
 import tmt.export
 import tmt.log
 import tmt.utils.git
-from tmt.identifier import ID_KEY, add_uuid_if_not_defined
-from tmt.utils import ExportError
+from tmt.config.models.jira import JiraExportConfig
+from tmt.config.models.link import IssueTrackerType
+from tmt.container import container, simple_field
+from tmt.identifier import ID_KEY, generate_uuid
+from tmt.utils import ExportError, Path
 from tmt.utils.jira import JiraInstance
 
-# Issue link type for test case → requirement relationship
-LINK_TYPE_TESTS = 'pair'  # outward="tests", inward="is tested by"
 
-RE_BUGZILLA_ID = re.compile(r'show_bug\.cgi\?(?:.*&)?id=(\d+)')
+@container
+class JiraExportContext:
+    """
+    Context passed to both extension hooks for one resolved test.
+
+    ``issue_key`` is populated before enrichment for updates, and after
+    creation for new issues. It is None for a dry run of a new issue.
+    ``fields`` maps configured field identifiers to resolved Jira IDs.
+    Extensions must honor ``dry_run`` for all external and local writes.
+    """
+
+    jira: JiraInstance
+    config: JiraExportConfig
+    project: str
+    issue_type_id: str
+    uuid_field: str
+    fields: dict[str, str]
+    dry_run: bool
+    issue_key: Optional[str] = None
+    uuid: Optional[str] = None
+    automation_url: Optional[str] = None
+
+
+@container
+class JiraIssueLinkOperation:
+    """A validated, directed relationship to create during application."""
+
+    type: str
+    target: str
+    direction: Literal['outward', 'inward']
+
+
+@container
+class JiraRemoteLinkOperation:
+    """A remote link to add/update or an owned automation link to remove."""
+
+    action: Literal['add', 'remove']
+    url: Optional[str] = None
+    title: str = 'tmt automation'
+    global_id: Optional[str] = None
+
+
+@container
+class JiraTransitionOperation:
+    """A validated target status and, for existing issues, its transition ID."""
+
+    status: str
+    id: Optional[str] = None
+
+
+@container
+class JiraExportPlan:
+    """Prepared fields and operations for one resolved test, without source writes."""
+
+    test: tmt.base.core.Test
+    context: JiraExportContext
+    payload: dict[str, Any]
+    action: Literal['create', 'update']
+    persist_uuid: bool
+    backlink: bool
+    issue_links: list[JiraIssueLinkOperation] = simple_field(default_factory=list)
+    remote_links: list[JiraRemoteLinkOperation] = simple_field(default_factory=list)
+    transition: Optional[JiraTransitionOperation] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a credential-free representation suitable for YAML/JSON inspection."""
+        return {
+            'test': self.test.name,
+            'action': self.action,
+            'issue': self.context.issue_key,
+            'uuid': self.context.uuid,
+            'destinations': dict(self.context.fields),
+            'fields': deepcopy(self.payload),
+            'issue-links': [
+                {'type': link.type, 'target': link.target, 'direction': link.direction}
+                for link in self.issue_links
+            ],
+            'remote-links': [
+                {
+                    'action': link.action,
+                    'url': link.url,
+                    'title': link.title,
+                    'global-id': link.global_id,
+                }
+                for link in self.remote_links
+            ],
+            'transition': {
+                'status': self.transition.status,
+                'id': self.transition.id,
+                'resolve-after-create': self.transition.id is None,
+            }
+            if self.transition
+            else None,
+            'metadata': {'persist-uuid': self.persist_uuid, 'backlink': self.backlink},
+        }
 
 
 @tmt.base.core.Test.provides_export('jira')
 class JiraExporter(tmt.export.ExportPlugin):
     """
-    Export test metadata to Jira as ``Test Case`` work items.
+    Export tests to Jira Cloud using local metadata and a configured schema.
 
-    The ``--jira-url``, ``--jira-user``, ``--jira-token`` and
-    ``--project-id`` options are required.
+    Supply authentication with ``--jira-url``, ``--jira-user`` and
+    ``--jira-token``. Configure a project and a custom UUID field with
+    ``--project-id`` and ``--jira-uuid-field`` or the ``/export/jira`` node
+    in the tmt configuration tree. Issue type defaults to ``Task``;
+    automation URLs use remote web links by default. Status transitions
+    and fmf relationship mappings are opt-in.
 
-    Existing ``Test Case`` issues are located first by an ``implements``
-    link in the fmf metadata pointing to the configured Jira instance,
-    then by the tmt UUID stored in the ``ID`` custom field. Use
-    ``--create`` to create a new ``Test Case`` when none is found, and
-    ``--link-jira`` to write the Jira issue URL back into the fmf
-    metadata as an ``implements`` link for future lookups.
+    Repeated ``--jira-profile`` files layer over user defaults; explicit schema
+    options take precedence. Credentials also accept ``TMT_JIRA_URL``,
+    ``TMT_JIRA_USER`` and ``TMT_JIRA_TOKEN`` or existing user Jira connections.
+    ``managed-fields`` controls ownership of ordinary Jira fields.
+    Jira Summary defaults to the resolved fmf summary, falling back to the
+    fmf name, and Jira Description uses the resolved fmf description.
+    The ``title`` format customizes Summary independently of Description.
 
-    Use ``--bugzilla`` to recreate Bugzilla ``verifies`` links as
-    remote links on the Jira ``Test Case``. Use ``--polarion`` to
-    populate the ``External issue URL`` custom field with the test's
-    Polarion test case link.
+    Use ``--create`` to allow creation, ``--dry`` to preview the same
+    payload without writes, and ``--link-jira`` to opt into metadata
+    backlinks. Existing UUIDs are preserved and looked up independently
+    of components. Subclasses can override :py:meth:`enrich_payload` and
+    :py:meth:`post_export` without replacing discovery, identity or CRUD.
+    The entire collection is prepared before any writes, and normal dry-run
+    output displays its fields, clears, URLs, links and transition operations.
 
-    .. code-block:: shell
-
-        tmt tests export --how jira --create --link-jira \\
-            --jira-url https://issues.redhat.com \\
-            --jira-user me@example.com --jira-token TOKEN \\
-            --project-id RHELTEST
+    This exporter uses Cloud REST v3 and ADF descriptions. Existing Jira
+    linking utilities retain Server/Data Center support.
     """
 
     _logger: tmt.log.Logger = tmt.log.Logger.get_bootstrap_logger()
 
+    @classmethod
+    def enrich_payload(
+        cls, test: tmt.base.core.Test, context: JiraExportContext, fields: dict[str, Any]
+    ) -> None:
+        """
+        Enrich a create/update payload in place, also called during dry runs.
+
+        This is a preparation hook: do not perform local or external writes,
+        even for live exports. Identity and create routing fields must remain
+        intact. Use the resolved test and context for enrichment or validation.
+        """
+
+    @classmethod
+    def post_export(cls, test: tmt.base.core.Test, context: JiraExportContext) -> None:
+        """
+        Perform optional actions after CRUD, links, transitions and backlinks.
+
+        Called for dry runs too; a new issue has no key in that case. Hooks
+        doing writes must check ``context.dry_run``. Exceptions propagate;
+        completed Jira writes cannot be rolled back by the exporter.
+        """
+
     @staticmethod
     def _text_to_adf(text: str) -> dict[str, Any]:
-        """
-        Convert plain text into Atlassian Document Format (ADF).
-
-        Jira Cloud REST API v3 requires rich-text fields (such as
-        ``description`` and comments) to be structured as an Atlassian
-        Document Format (ADF) document tree rather than plain strings or
-        legacy wiki markup. Passing a plain string causes the API to reject
-        the request with a 400 Bad Request error.
-
-        See: https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/
-        """
-        paragraphs = [
-            {
-                'type': 'paragraph',
-                'content': [{'type': 'text', 'text': line}],
-            }
-            for line in text.splitlines()
-            if line.strip()
-        ]
+        """Encode text for Jira Cloud REST v3 rich-text fields."""
         return {
             'type': 'doc',
             'version': 1,
-            'content': paragraphs or [{'type': 'paragraph', 'content': []}],
+            'content': [
+                {'type': 'paragraph', 'content': [{'type': 'text', 'text': line}]}
+                for line in text.splitlines()
+                if line.strip()
+            ]
+            or [{'type': 'paragraph', 'content': []}],
         }
 
     @classmethod
-    def _build_fields(
-        cls,
-        project_id: str,
-        summary: str,
-        description: Optional[str],
-        uuid: str,
-        components: list[str],
-        labels: list[str],
-        contact_account_id: Optional[str],
-        test_url: Optional[str],
-        polarion_case_url: Optional[str],
-        field_ids: dict[str, str],
-        issue_type_id: Optional[str] = None,
-    ) -> dict[str, Any]:
-        """
-        Assemble Jira field dict for create or update.
-
-        :param field_ids: resolved custom field IDs, keyed by ``'tmt_id'``,
-            ``'url'`` and ``'external_issue_url'`` (see
-            :py:meth:`JiraInstance.resolve_field_id`).
-        :param issue_type_id: resolved ``Test Case`` issue type ID, only needed
-            when creating a new issue.
-        """
-        fields: dict[str, Any] = {
-            'summary': summary,
-            field_ids['tmt_id']: uuid,
+    def _configuration(cls) -> JiraExportConfig:
+        """Layer user defaults, selected YAML profiles in order, and CLI overrides."""
+        config = tmt.config.Config(cls._logger).jira_export or JiraExportConfig()
+        data = config.model_dump(by_alias=True)
+        for profile in tmt.base.core.Test._opt('jira_profile') or []:
+            path = Path(profile)
+            try:
+                overlay = tmt.utils.yaml_to_dict(path.read_text())
+            except (OSError, tmt.utils.GeneralError) as error:
+                raise ExportError(f"Unable to read Jira profile '{path}': {error}.") from error
+            # Mapping entries merge so a repository can change one select option
+            # or link setting. An explicitly empty mapping clears inherited entries.
+            cls._merge_profile(data, overlay)
+        config = JiraExportConfig.from_yaml(tmt.utils.to_yaml(data))
+        overrides = {
+            'project_id': 'project',
+            'jira_issue_type': 'issue_type',
+            'jira_uuid_field': 'uuid_field',
+            'jira_automation_url': 'automation_url',
+            'jira_title': 'title',
+            'jira_status': 'status',
         }
-        if issue_type_id:
-            fields['project'] = {'key': project_id}
-            fields['issuetype'] = {'id': issue_type_id}
-        if description:
-            fields['description'] = cls._text_to_adf(description)
-        if components:
-            fields['components'] = [{'name': c} for c in components]
-        if labels:
-            fields['labels'] = labels
-        if contact_account_id:
-            fields['assignee'] = {'accountId': contact_account_id}
-        if test_url:
-            fields[field_ids['url']] = test_url
-        if polarion_case_url and 'external_issue_url' in field_ids:
-            fields[field_ids['external_issue_url']] = polarion_case_url
-        return fields
+        for option, attribute in overrides.items():
+            value = tmt.base.core.Test._opt(option)
+            if value is not None:
+                setattr(config, attribute, value)
+        if config.automation_url == 'none':
+            config.automation_url = None
+        if config.status == 'none':
+            config.status = None
+        cls._validate_title_format(config.title)
+        return config
+
+    @classmethod
+    def _merge_profile(cls, data: dict[str, Any], overlay: dict[str, Any]) -> None:
+        """Merge bounded nested schema mappings while replacing scalar/list values."""
+        for key, value in overlay.items():
+            if isinstance(value, dict) and value and isinstance(data.get(key), dict):
+                cls._merge_profile(data[key], value)
+            else:
+                data[key] = value
 
     @staticmethod
-    def _find_case_key(
-        test: tmt.base.core.Test,
-        jira_instance: JiraInstance,
-        project_id: str,
-        url: str,
-        field_tmt_id: str,
-    ) -> Optional[str]:
-        """
-        Find an existing Jira TestCase key for the given test.
-
-        Lookup order:
-
-        1. An 'implements' link in fmf pointing to this Jira instance (verified for
-           existence and Test Case type).
-        2. tmt UUID stored in ``field_tmt_id`` (the ``ID`` field).
-        """
-        import jira as jira_module
-
-        if test.link:
-            for link in test.link.get('implements'):
-                if isinstance(link.target, tmt.base.core.FmfId):
-                    continue
-                target = str(link.target)
-                prefix = f'{url}/browse/'
-                if target.startswith(prefix):
-                    key = target[len(prefix) :].strip()
-                    try:
-                        issue = jira_instance.jira.issue(key, fields='issuetype')
-                    except jira_module.JIRAError:
-                        test._logger.warning(
-                            f"Jira issue '{key}' from implements link not found in Jira."
-                        )
-                        continue
-                    issue_type_obj = getattr(getattr(issue, 'fields', None), 'issuetype', None)
-                    type_name = getattr(issue_type_obj, 'name', '')
-                    if type_name != 'Test Case':
-                        test._logger.warning(
-                            f"Jira issue '{key}' from implements link is not a "
-                            f"'Test Case' (type: '{type_name}')."
-                        )
-                        continue
-                    test._logger.print(f"Found via implements link: '{key}'.", color='blue')
-                    return key
-
-        uuid = test.node.get(ID_KEY)
-        if uuid:
-            field_jql = JiraInstance.field_jql_id(field_tmt_id)
-            issues = jira_instance.search_issues(
-                f'project="{project_id}" AND issuetype="Test Case" AND cf[{field_jql}]="{uuid}"',
-                max_results=1,
-                fields=[],
-            )
-            if issues:
-                key = str(issues[0]['key'])
-                test._logger.print(f"Found via UUID: '{key}'.", color='blue')
-                return key
-
-        return None
-
-    @staticmethod
-    def _find_polarion_case_url(test: tmt.base.core.Test) -> Optional[str]:
-        """
-        Find the Polarion test case URL for this test.
-
-        Checks 'implements' links in fmf first (written by a prior Polarion export),
-        then falls back to a live Polarion API lookup when pylero is available.
-        """
-        if test.link:
-            for link in test.link.get('implements'):
-                if isinstance(link.target, tmt.base.core.FmfId):
-                    continue
-                target = str(link.target)
-                if 'polarion' in target.lower():
-                    return target
-
+    def _validate_title_format(title: str) -> None:
+        """Reject unsupported or malformed title formats before identity generation."""
         try:
-            from tmt.export.polarion import (
-                PolarionWorkItem,
-                find_polarion_case_ids,
-                import_polarion,
-            )
-
-            import_polarion()
-            case_id, pol_project_id = find_polarion_case_ids(test.node)
-            if case_id and pol_project_id:
-                server_url = str(PolarionWorkItem._session._server.url).rstrip('/')
-                return f'{server_url}/#/project/{pol_project_id}/workitem?id={case_id}'
-        except Exception as error:
-            test._logger.debug(f"Live Polarion lookup failed: {error}")
-
-        return None
-
-    @staticmethod
-    def _resolve_contact(test: tmt.base.core.Test, jira_instance: JiraInstance) -> Optional[str]:
-        """Resolve contact from fmf metadata to Jira accountId."""
-        if not test.contact:
-            return None
-        contact_str = test.contact[0]
-        contact_id = email.utils.parseaddr(contact_str)[1] or contact_str.strip()
-        if not contact_id:
-            return None
-        account_id = jira_instance.resolve_account_id(contact_id)
-        if not account_id:
-            test._logger.warning(f"Could not resolve Jira account for '{contact_id}'.")
-        return account_id
-
-    @staticmethod
-    def _resolve_uuid(
-        test: tmt.base.core.Test,
-        jira_instance: JiraInstance,
-        case_key: Optional[str],
-        field_tmt_id: str,
-    ) -> str:
-        """Ensure UUID exists in fmf data and Jira, syncing or generating as needed."""
-        uuid: Optional[str] = test.node.get(ID_KEY)
-        if uuid:
-            return uuid
-
-        if case_key is not None:
-            jira_issue = jira_instance.jira.issue(case_key)
-            jira_uuid = getattr(jira_issue.fields, field_tmt_id, None)
-            if not jira_uuid and hasattr(jira_issue, 'raw'):
-                jira_uuid = jira_issue.raw.get('fields', {}).get(field_tmt_id)
-            if jira_uuid:
-                uuid = str(jira_uuid)
-                if not test.is_dry_run:
-                    with test.node as data:
-                        data[ID_KEY] = uuid
-                return uuid
-
-        uuid = add_uuid_if_not_defined(test.node, test.is_dry_run, test._logger)
-        assert uuid is not None
-        return uuid
-
-    @staticmethod
-    def _create_issue_links(
-        test: tmt.base.core.Test,
-        case_key: str,
-        jira_instance: JiraInstance,
-        url: str,
-    ) -> None:
-        """
-        Recreate fmf 'verifies' links as Jira issue links or remote links.
-
-        - Links to issues on the same Jira instance become issue links of type 'pair'
-          (RHELTEST tests RHEL-XXXX).
-        - Links to Bugzilla become remote links on the TestCase.
-
-        Existing links are checked first so repeated exports of the same
-        test don't keep adding duplicates.
-        """
-        if not test.link:
-            return
-
-        verifies_targets = [
-            str(link.target)
-            for link in test.link.get('verifies')
-            if not isinstance(link.target, tmt.base.core.FmfId)
-        ]
-        if not verifies_targets:
-            return
-
-        import jira as jira_module
-
-        browse_prefix = f'{url}/browse/'
-        linked_keys = jira_instance.get_linked_issue_keys(case_key)
-        linked_remote_urls = jira_instance.get_linked_remote_urls(case_key)
-
-        for target in verifies_targets:
-            # Same Jira instance — create a proper issue link
-            if target.startswith(browse_prefix):
-                req_key = target[len(browse_prefix) :]
-                if req_key in linked_keys:
-                    test._logger.info('verifies', f'{req_key} (already linked)', 'green')
-                    continue
-                try:
-                    jira_instance.jira.create_issue_link(
-                        type=LINK_TYPE_TESTS, inwardIssue=req_key, outwardIssue=case_key
-                    )
-                    test._logger.info('verifies', req_key, 'green')
-                except jira_module.JIRAError as err:
-                    test._logger.warning(f"Could not link to '{req_key}': {err}")
-                continue
-
-            # Bugzilla — create a remote link if --bugzilla is requested
-            bz_match = RE_BUGZILLA_ID.search(target)
-            if bz_match:
-                if not test.opt('bugzilla'):
-                    continue
-                bz_id = bz_match.group(1)
-                if target in linked_remote_urls:
-                    test._logger.info('verifies (BZ)', f'{bz_id} (already linked)', 'green')
-                    continue
-                try:
-                    jira_instance.jira.add_remote_link(
-                        case_key, destination={'url': target, 'title': f'BZ#{bz_id}'}
-                    )
-                    test._logger.info('verifies (BZ)', bz_id, 'green')
-                except jira_module.JIRAError as err:
-                    test._logger.warning(f"Could not add BZ remote link '{bz_id}': {err}")
-                continue
-
-            test._logger.warning(f"Skipping unrecognised verifies link: {target}")
-
-    @staticmethod
-    def _transition_case(test: tmt.base.core.Test, jira_instance: JiraInstance, key: str) -> None:
-        """Transition a TestCase to Active, skipping if already there."""
-        target = 'Active'
-        current_status = jira_instance.jira.issue(key, fields='status').fields.status.name
-        if current_status == target:
-            return
-        jira_instance.transition_issue(key, target)
-        test._logger.info('status', target, 'green')
-
-    @staticmethod
-    def _link_jira_to_fmf(test: tmt.base.core.Test, url: str, case_key: str) -> None:
-        """Write Jira implements link back to fmf metadata."""
-        with test.node as data:
-            tmt.convert.add_link(
-                f'{url}/browse/{case_key}',
-                data,
-                system=tmt.convert.SYSTEM_OTHER,
-                type_='implements',
-            )
-        test._logger.info('implements', f'{url}/browse/{case_key}', 'green')
-
-    @staticmethod
-    def _log_metadata(
-        test: tmt.base.core.Test,
-        summary: str,
-        uuid: str,
-        labels: list[str],
-        polarion_case_url: Optional[str] = None,
-    ) -> None:
-        """Log exported test case metadata."""
-        if polarion_case_url:
-            test._logger.info('polarion', polarion_case_url, 'green')
-        elif test.opt('polarion') and not test.is_dry_run:
-            test._logger.info('polarion', 'not found', 'yellow')
-
-        test._logger.info('summary', summary, 'green')
-        test._logger.info('uuid', uuid, 'green')
-        test._logger.info('labels', ' '.join(labels), 'green')
-        test._logger.info('components', ' '.join(test.component), 'green')
-        test._logger.info('enabled', str(test.enabled), 'green')
+            for _, field_name, spec, conversion in string.Formatter().parse(title):
+                if field_name is not None and (
+                    field_name not in ('name', 'summary') or spec or conversion
+                ):
+                    raise ValueError('Only {name} and {summary} placeholders are supported')
+        except ValueError as error:
+            raise ExportError(f"Invalid Jira title format '{title}': {error}.") from error
 
     @classmethod
     def _create_jira_instance(cls) -> JiraInstance:
-        """Validate options and initialize JiraInstance."""
-        required = ['jira_url', 'jira_token', 'jira_user', 'project_id']
-        missing = [
-            f"--{opt.replace('_', '-')}" for opt in required if not tmt.base.core.Test._opt(opt)
-        ]
+        """Validate credentials and initialize a Cloud-only export client."""
+        required = ['jira_url', 'jira_token', 'jira_user']
+        values = {option: tmt.base.core.Test._opt(option) for option in required}
+        if not all(values.values()):
+            link_config = tmt.config.Config(cls._logger).link
+            if link_config:
+                trackers = [
+                    tracker
+                    for tracker in link_config.issue_tracker
+                    if tracker.type == IssueTrackerType.jira
+                    and (
+                        not values['jira_url']
+                        or str(tracker.url).rstrip('/') == str(values['jira_url']).rstrip('/')
+                    )
+                ]
+                if len(trackers) > 1:
+                    raise ExportError(
+                        'Multiple Jira connections configured; '
+                        'select one with --jira-url or TMT_JIRA_URL.'
+                    )
+                if trackers:
+                    tracker = trackers[0]
+                    values = {
+                        'jira_url': values['jira_url'] or str(tracker.url),
+                        'jira_user': values['jira_user'] or tracker.email,
+                        'jira_token': values['jira_token'] or tracker.token,
+                    }
+        missing = [f"--{option.replace('_', '-')}" for option in required if not values[option]]
         if missing:
             raise ExportError(f"Missing required Jira options: {', '.join(missing)}.")
-
         return JiraInstance(
-            url=str(tmt.base.core.Test._opt('jira_url')).rstrip('/'),
-            email=tmt.base.core.Test._opt('jira_user'),
-            token=tmt.base.core.Test._opt('jira_token'),
+            url=str(values['jira_url']).rstrip('/'),
+            email=values['jira_user'],
+            token=values['jira_token'],
             logger=cls._logger,
+            cloud=True,
         )
 
-    @classmethod
-    def _export_test_dry(
-        cls,
-        test: tmt.base.core.Test,
-        summary: str,
-        uuid: str,
-        labels: list[str],
-        case_key: Optional[str],
-    ) -> None:
-        """Handle dry-run reporting without modifying Jira or fmf data."""
-        if case_key is None:
-            test._logger.print(f"Test case '{summary}' would be created.", color='blue')
-        else:
-            test._logger.print(f"Test case '{case_key}' would be updated.", color='blue')
-
-        cls._log_metadata(test, summary, uuid, labels)
-        test._logger.print(
-            f"Test case '{summary}' successfully exported to Jira.", color='magenta'
-        )
-
-    @classmethod
-    def _export_test_live(
-        cls,
-        test: tmt.base.core.Test,
-        jira_instance: JiraInstance,
-        project_id: str,
-        url: str,
-        field_tmt_id: str,
-        summary: str,
-        uuid: str,
-        labels: list[str],
-        case_key: Optional[str],
-    ) -> None:
-        """Perform live Jira issue creation or update and update fmf metadata."""
-        contact_account_id = cls._resolve_contact(test, jira_instance)
-        test_url = test.web_link() if not test.opt('ignore_git_validation') else None
-        polarion_case_url = cls._find_polarion_case_url(test) if test.opt('polarion') else None
-
-        field_ids = {
-            'tmt_id': field_tmt_id,
-            'url': jira_instance.resolve_field_id('URL'),
+    @staticmethod
+    def _resolve_schema(jira: JiraInstance, config: JiraExportConfig) -> dict[str, str]:
+        """Resolve configured fields and reject overlapping managed destinations."""
+        if not config.project or not config.uuid_field:
+            raise ExportError(
+                'Configure a Jira project and UUID field in /export/jira or with '
+                '--project-id and --jira-uuid-field.'
+            )
+        identifiers = [config.uuid_field, *config.fields]
+        if config.automation_url is not None and config.automation_url != 'remote-link':
+            identifiers.append(config.automation_url)
+        resolved = {identifier: jira.resolve_field_id(identifier) for identifier in identifiers}
+        if not re.fullmatch(r'customfield_\d+', resolved[config.uuid_field]):
+            raise ExportError('The Jira UUID destination must be a custom field.')
+        reserved = {
+            'summary',
+            'description',
+            'components',
+            'labels',
+            'assignee',
+            'project',
+            'issuetype',
         }
-        if test.opt('polarion'):
-            field_ids['external_issue_url'] = jira_instance.resolve_field_id('External issue URL')
+        if reserved.intersection(resolved.values()) or len(set(resolved.values())) != len(
+            identifiers
+        ):
+            raise ExportError('Configured Jira fields overlap managed destinations.')
+        for relation, mapping in config.links.items():
+            if relation not in tmt.base.links.Links._relations:
+                raise ExportError(f"Unknown fmf link relation '{relation}'.")
+            if not mapping.issue_type and not mapping.remote:
+                raise ExportError(f"Link mapping '{relation}' has no destination.")
+            if mapping.issue_type:
+                jira.validate_link_type(mapping.issue_type)
+        return resolved
 
-        issue_type_id = (
-            jira_instance.resolve_issue_type_id(project_id, 'Test Case')
-            if case_key is None
-            else None
-        )
-        fields = cls._build_fields(
-            project_id=project_id,
-            summary=summary,
-            description=test.description,
-            uuid=uuid,
-            components=test.component,
-            labels=labels,
-            contact_account_id=contact_account_id,
-            test_url=test_url,
-            polarion_case_url=polarion_case_url,
-            field_ids=field_ids,
-            issue_type_id=issue_type_id,
+    @staticmethod
+    def _validate_test(test: tmt.base.core.Test) -> None:
+        """Validate source metadata before any exporter-owned writes."""
+        valid, message = tmt.utils.git.validate_git_status(test)
+        if valid:
+            return
+        if test.opt('ignore_git_validation'):
+            test._logger.warning(f"Exporting regardless: '{message}'.")
+            return
+        raise ExportError(
+            f"Can't export due to '{message}'.\nUse --ignore-git-validation to export regardless."
         )
 
-        if case_key is None:
-            case_key = str(jira_instance.jira.create_issue(fields=fields).key)
-            test._logger.print(f"Test case '{case_key}' created.", color='blue')
+    @staticmethod
+    def _find_case_key(test: tmt.base.core.Test, context: JiraExportContext) -> Optional[str]:
+        """Lookup UUID independently of components, then check local backlinks."""
+        import jira as jira_module
+
+        candidates: set[str] = set()
+        uuid = test.node.get(ID_KEY)
+        if uuid:
+            key = context.jira.find_issue_by_uuid(
+                str(uuid),
+                project_id=context.project,
+                issue_type=context.issue_type_id,
+                uuid_field=context.uuid_field,
+            )
+            if key:
+                candidates.add(key)
+
+        prefix = f'{context.jira.url}/browse/'
+        for link in test.link.get('implements') if test.link else []:
+            if not isinstance(link.target, str) or not link.target.startswith(prefix):
+                continue
+            key = link.target[len(prefix) :]
+            try:
+                issue = context.jira.jira.issue(
+                    key, fields=f'project,issuetype,{context.uuid_field}'
+                )
+            except jira_module.JIRAError as error:
+                if error.status_code != 404:
+                    raise
+                test._logger.warning(f"Jira issue '{key}' from implements link not found in Jira.")
+                continue
+            if (
+                str(issue.fields.issuetype.id) != context.issue_type_id
+                or str(issue.fields.project.key) != context.project
+            ):
+                test._logger.warning(
+                    f"Ignoring Jira backlink '{key}' outside configured project/type."
+                )
+                continue
+            jira_uuid = getattr(issue.fields, context.uuid_field, None)
+            if uuid and jira_uuid and str(uuid) != str(jira_uuid):
+                raise ExportError(
+                    f"Jira backlink '{key}' has a different UUID from '{test.name}'."
+                )
+            candidates.add(key)
+
+        if len(candidates) > 1:
+            raise ExportError(f"Ambiguous Jira identity for '{test.name}': {sorted(candidates)}.")
+        if not candidates:
+            return None
+        key = candidates.pop()
+        test._logger.print(f"Found Jira issue: '{key}'.", color='blue')
+        return key
+
+    @staticmethod
+    def _resolve_uuid(test: tmt.base.core.Test, context: JiraExportContext) -> str:
+        """Resolve or generate identity in memory, leaving metadata untouched."""
+        uuid = cast(Optional[str], test.node.get(ID_KEY))
+        if uuid:
+            return uuid
+        if context.issue_key:
+            issue = context.jira.jira.issue(context.issue_key, fields=context.uuid_field)
+            jira_uuid = getattr(issue.fields, context.uuid_field, None)
+            if jira_uuid:
+                return str(jira_uuid)
+        return generate_uuid()
+
+    @staticmethod
+    def _resolve_contact(test: tmt.base.core.Test, jira: JiraInstance) -> Optional[str]:
+        """Preserve display names and parse only actual email address forms."""
+        if not test.contact:
+            return None
+        contact = test.contact[0].strip()
+        if '@' in contact:
+            contact = email.utils.parseaddr(contact)[1] or contact
+        account_id = jira.resolve_account_id(contact) if contact else None
+        if contact and not account_id:
+            test._logger.warning(f"Could not resolve Jira account for '{contact}'.")
+        return account_id
+
+    @classmethod
+    def _build_fields(cls, test: tmt.base.core.Test, context: JiraExportContext) -> dict[str, Any]:
+        """Build owned fields, including explicit clears for empty source metadata."""
+        config = context.config
+        title = config.title.format(name=test.name, summary=test.summary or test.name)
+        if not title.strip():
+            raise ExportError('Jira title must not be empty.')
+        description = test.description
+        ordinary_fields: dict[str, Any] = {
+            'summary': title,
+            'description': cls._text_to_adf(description) if description else None,
+            'components': [{'name': component} for component in test.component],
+            'labels': list(test.tag),
+        }
+        fields: dict[str, Any] = {context.uuid_field: context.uuid}
+        fields.update(
+            {key: value for key, value in ordinary_fields.items() if key in config.managed_fields}
+        )
+        if context.issue_key is None:
+            # Jira requires a title on creation, even when Jira owns later edits.
+            fields['summary'] = title
+            fields.update(
+                project={'key': context.project}, issuetype={'id': context.issue_type_id}
+            )
+        if 'assignee' in config.managed_fields:
+            account_id = cls._resolve_contact(test, context.jira)
+            if account_id:
+                fields['assignee'] = {'accountId': account_id}
+            elif not test.contact:
+                fields['assignee'] = None
+        # An unresolved nonempty contact leaves the assignee unchanged, with a warning.
+        if config.automation_url is not None and config.automation_url != 'remote-link':
+            fields[context.fields[config.automation_url]] = context.automation_url
+        for destination, mapping in config.fields.items():
+            value = getattr(test, mapping.source)
+            if value is None or value == '':
+                fields[context.fields[destination]] = None
+                continue
+            text = str(value)
+            if mapping.values is not None:
+                if text not in mapping.values:
+                    raise ExportError(f"No configured value for '{mapping.source}={text}'.")
+                text = mapping.values[text]
+            fields[context.fields[destination]] = (
+                {'value': text} if mapping.type == 'single-select' else text
+            )
+        return fields
+
+    @staticmethod
+    def _choice_tokens(choice: Any, field_id: str) -> set[tuple[str, str]]:
+        """Normalize scalar choices and object IDs/names without conflating IDs and values."""
+        scalar_types = (str, int, float, bool)
+        if isinstance(choice, dict):
+            tokens: set[tuple[str, str]] = set()
+            for key in ('id', 'value', 'name'):
+                value = choice.get(key)
+                if value is None:
+                    continue
+                if not isinstance(value, scalar_types):
+                    break
+                tokens.add(('id' if key == 'id' else 'value', str(value)))
+            else:
+                if tokens:
+                    return tokens
+        elif isinstance(choice, scalar_types):
+            return {('value', str(choice))}
+        raise ExportError(
+            f"Unsupported choice for Jira field '{field_id}': expected a scalar or "
+            'an object with scalar id/value/name attributes.'
+        )
+
+    @staticmethod
+    def _validate_payload(plan: JiraExportPlan) -> None:
+        """Check field availability, required values and exposed Jira select options."""
+        context = plan.context
+        metadata = context.jira.field_metadata(
+            context.project, context.issue_type_id, context.issue_key
+        )
+        for field_id, value in plan.payload.items():
+            if field_id in ('project', 'issuetype'):
+                continue
+            if field_id not in metadata:
+                raise ExportError(
+                    f"Jira field '{field_id}' is not available for '{plan.test.name}'."
+                )
+            field = metadata[field_id]
+            if field.get('required') and value in (None, '', []):
+                raise ExportError(f"Required Jira field '{field_id}' cannot be cleared.")
+            if 'allowedValues' not in field or value in (None, []):
+                continue
+            options = field['allowedValues']
+            if not isinstance(options, list):
+                raise ExportError(
+                    f"Unsupported allowedValues for Jira field '{field_id}': expected a list."
+                )
+            allowed: list[set[tuple[str, str]]] = []
+            allowed_tokens: set[tuple[str, str]] = set()
+            for option in options:
+                if isinstance(option, dict) and option.get('disabled'):
+                    continue
+                tokens = JiraExporter._choice_tokens(option, field_id)
+                allowed.append(tokens)
+                allowed_tokens.update(tokens)
+            for item in value if isinstance(value, list) else [value]:
+                if isinstance(item, dict) and not {'id', 'value', 'name'}.intersection(item):
+                    continue
+                tokens = JiraExporter._choice_tokens(item, field_id)
+                valid = (
+                    tokens.issubset(allowed_tokens)
+                    if len(tokens) == 1
+                    else any(tokens.issubset(option) for option in allowed)
+                )
+                if not valid:
+                    raise ExportError(
+                        f"Value '{item}' is not allowed for Jira field '{field_id}'."
+                    )
+        if context.issue_key is None:
+            for field_id, field in metadata.items():
+                if (
+                    field.get('required')
+                    and not field.get('hasDefaultValue')
+                    and field_id not in plan.payload
+                ):
+                    raise ExportError(
+                        f"Missing required Jira field '{field_id}' for '{plan.test.name}'."
+                    )
+        for destination, mapping in context.config.fields.items():
+            field_id = context.fields[destination]
+            if (
+                field_id in plan.payload
+                and mapping.type == 'single-select'
+                and metadata[field_id].get('schema', {}).get('type') != 'option'
+            ):
+                raise ExportError(f"Jira field '{field_id}' is not a single-select field.")
+
+    @staticmethod
+    def _prepare_links(plan: JiraExportPlan) -> None:
+        """Validate targets and enumerate all link additions, updates and removals."""
+        test, context = plan.test, plan.context
+        jira = context.jira.jira
+        remote_urls: set[str] = set()
+        remote_links = []
+        if context.issue_key and (
+            context.config.links or context.config.automation_url == 'remote-link'
+        ):
+            remote_links = jira.remote_links(context.issue_key)
+            remote_urls = {str(link.object.url) for link in remote_links}
+        if context.config.automation_url == 'remote-link':
+            global_id = f'tmt:uuid:{context.uuid}'
+            if context.automation_url:
+                plan.remote_links.append(
+                    JiraRemoteLinkOperation(
+                        action='add', url=context.automation_url, global_id=global_id
+                    )
+                )
+                remote_urls.add(context.automation_url)
+            elif any(getattr(link, 'globalId', None) == global_id for link in remote_links):
+                plan.remote_links.append(
+                    JiraRemoteLinkOperation(action='remove', global_id=global_id)
+                )
+        if not context.config.links or not test.link:
+            return
+        existing: set[tuple[str, str, str]] = set()
+        if context.issue_key:
+            links = jira.issue(context.issue_key, fields='issuelinks').fields.issuelinks
+            for link in links:
+                for direction, endpoint in [
+                    ('outward', 'outwardIssue'),
+                    ('inward', 'inwardIssue'),
+                ]:
+                    target = getattr(link, endpoint, None)
+                    if target:
+                        existing.add((str(link.type.name), direction, str(target.key)))
+        prefix = f'{context.jira.url}/browse/'
+        for relation, mapping in context.config.links.items():
+            for link in test.link.get(cast(tmt.base.links._RawLinkRelationName, relation)):
+                if not isinstance(link.target, str):
+                    continue
+                target = link.target
+                if target.startswith(prefix) and mapping.issue_type:
+                    key = target[len(prefix) :]
+                    identity = (mapping.issue_type, mapping.direction, key)
+                    if identity in existing:
+                        continue
+                    if key == context.issue_key:
+                        raise ExportError(f"Jira issue '{key}' cannot link to itself.")
+                    jira.issue(key, fields='summary')
+                    plan.issue_links.append(
+                        JiraIssueLinkOperation(
+                            type=mapping.issue_type, target=key, direction=mapping.direction
+                        )
+                    )
+                    existing.add(identity)
+                elif (
+                    mapping.remote
+                    and re.match(r'^https?://', target)
+                    and target not in remote_urls
+                ):
+                    plan.remote_links.append(
+                        JiraRemoteLinkOperation(action='add', url=target, title=relation)
+                    )
+                    remote_urls.add(target)
+
+    @staticmethod
+    def _prepare_transition(plan: JiraExportPlan) -> None:
+        """Resolve existing transitions and validate the workflow status for new issues."""
+        context = plan.context
+        status = context.config.status
+        if not status:
+            return
+        context.jira.validate_status(context.project, context.issue_type_id, status)
+        if context.issue_key:
+            current = context.jira.jira.issue(
+                context.issue_key, fields='status'
+            ).fields.status.name
+            if current == status:
+                return
+            transition_id = context.jira.resolve_transition_id(context.issue_key, status)
         else:
-            jira_instance.jira.issue(case_key).update(fields=fields)
-            test._logger.print(f"Test case '{case_key}' updated.", color='blue')
+            # Jira cannot expose transitions for an issue which does not exist yet.
+            transition_id = None
+        plan.transition = JiraTransitionOperation(status=status, id=transition_id)
 
-        cls._log_metadata(test, summary, uuid, labels, polarion_case_url)
-
-        cls._transition_case(test, jira_instance, case_key)
-        cls._create_issue_links(test, case_key, jira_instance, url)
-        if test.opt('link_jira'):
-            cls._link_jira_to_fmf(test, url, case_key)
-
-        test._logger.print(
-            f"Test case '{summary}' successfully exported to Jira.", color='magenta'
+    @classmethod
+    def _prepare_payload(
+        cls, test: tmt.base.core.Test, context: JiraExportContext
+    ) -> JiraExportPlan:
+        """Build and enrich one payload, then validate its fields and operations."""
+        context.automation_url = test.web_link() if context.config.automation_url else None
+        fields = cls._build_fields(test, context)
+        identity = deepcopy(
+            {
+                key: fields[key]
+                for key in (context.uuid_field, 'project', 'issuetype')
+                if key in fields
+            }
         )
+        context_identity = (
+            context.uuid,
+            context.issue_key,
+            context.uuid_field,
+            context.project,
+            context.issue_type_id,
+        )
+        cls.enrich_payload(test, context, fields)
+        if any(
+            fields.get(key) != value for key, value in identity.items()
+        ) or context_identity != (
+            context.uuid,
+            context.issue_key,
+            context.uuid_field,
+            context.project,
+            context.issue_type_id,
+        ):
+            raise ExportError('Jira payload enrichment must preserve identity and create routing.')
+        plan = JiraExportPlan(
+            test=test,
+            context=context,
+            payload=fields,
+            action='update' if context.issue_key else 'create',
+            persist_uuid=test.node.get(ID_KEY) != context.uuid,
+            backlink=bool(test.opt('link_jira')),
+        )
+        cls._validate_payload(plan)
+        cls._prepare_links(plan)
+        cls._prepare_transition(plan)
+        return plan
+
+    @classmethod
+    def _apply_plan(cls, plan: JiraExportPlan) -> None:
+        """Apply a fully prepared test's Jira and local metadata operations."""
+        test, context = plan.test, plan.context
+        jira = context.jira.jira
+        if plan.persist_uuid:
+            with test.node as data:  # type: ignore[reportUnknownVariableType,unused-ignore]
+                cast(dict[str, Any], data)[ID_KEY] = context.uuid
+        if context.issue_key is None:
+            context.issue_key = str(jira.create_issue(fields=plan.payload).key)
+            test._logger.print(f"Test case '{context.issue_key}' created.", color='blue')
+        else:
+            jira.issue(context.issue_key).update(fields=plan.payload)
+            test._logger.print(f"Test case '{context.issue_key}' updated.", color='blue')
+        if plan.transition:
+            transition_id = plan.transition.id
+            if transition_id is None:
+                current = jira.issue(context.issue_key, fields='status').fields.status.name
+                if current != plan.transition.status:
+                    transition_id = context.jira.resolve_transition_id(
+                        context.issue_key, plan.transition.status
+                    )
+            if transition_id:
+                jira.transition_issue(context.issue_key, transition_id)
+        for link in plan.issue_links:
+            source, destination = (
+                (context.issue_key, link.target)
+                if link.direction == 'outward'
+                else (link.target, context.issue_key)
+            )
+            jira.create_issue_link(type=link.type, inwardIssue=source, outwardIssue=destination)
+        for remote in plan.remote_links:
+            if remote.action == 'remove':
+                jira.delete_remote_link(context.issue_key, global_id=remote.global_id)
+            else:
+                assert remote.url is not None
+                jira.add_remote_link(
+                    context.issue_key,
+                    destination={'url': remote.url, 'title': remote.title},
+                    globalId=remote.global_id,
+                )
+        if plan.backlink:
+            with test.node as data:  # type: ignore[reportUnknownVariableType,unused-ignore]
+                tmt.convert.add_link(
+                    f'{context.jira.url}/browse/{context.issue_key}',
+                    cast(dict[str, Any], data),
+                    system=tmt.convert.SYSTEM_OTHER,
+                    type_='implements',
+                )
+
+    @classmethod
+    def prepare_test_collection(
+        cls,
+        tests: list[tmt.base.core.Test],
+        *,
+        jira_instance: Optional[JiraInstance] = None,
+        config: Optional[JiraExportConfig] = None,
+    ) -> list[JiraExportPlan]:
+        """
+        Prepare a whole collection without Jira or metadata writes.
+
+        Resolve identities before payload enrichment and reject duplicate UUIDs
+        and target issue keys, including identities restored from backlinks.
+        Enrichment hooks must be side-effect free during this phase. Plans can
+        be inspected through ``to_dict()`` before :py:meth:`apply_test_collection`.
+        """
+        if not tests:
+            return []
+        for test in tests:
+            cls._validate_test(test)
+            if test.opt('duplicate'):
+                raise ExportError(
+                    'Jira export requires unique UUIDs; --duplicate is not supported.'
+                )
+        config = config or cls._configuration()
+        cls._validate_title_format(config.title)
+        jira = jira_instance or cls._create_jira_instance()
+        fields = cls._resolve_schema(jira, config)
+        assert config.project
+        assert config.uuid_field
+        issue_type_id = jira.resolve_issue_type_id(config.project, config.issue_type)
+        contexts: list[JiraExportContext] = []
+        uuids: set[str] = set()
+        issue_keys: set[str] = set()
+        for test in tests:
+            context = JiraExportContext(
+                jira=jira,
+                config=config,
+                project=config.project,
+                issue_type_id=issue_type_id,
+                uuid_field=fields[config.uuid_field],
+                fields=fields,
+                dry_run=test.is_dry_run,
+            )
+            context.issue_key = cls._find_case_key(test, context)
+            if context.issue_key is None and not test.opt('create'):
+                raise ExportError(
+                    f"Jira issue not found for '{test.name}'. "
+                    "Use --create to create a new test case."
+                )
+            context.uuid = cls._resolve_uuid(test, context)
+            if context.uuid in uuids:
+                raise ExportError(f"Multiple selected tests share UUID '{context.uuid}'.")
+            if context.issue_key and context.issue_key in issue_keys:
+                raise ExportError(
+                    f"Multiple selected tests target Jira issue '{context.issue_key}'."
+                )
+            uuids.add(context.uuid)
+            if context.issue_key:
+                issue_keys.add(context.issue_key)
+            contexts.append(context)
+        return [cls._prepare_payload(test, context) for test, context in zip(tests, contexts)]
+
+    @classmethod
+    def apply_test_collection(cls, plans: list[JiraExportPlan]) -> None:
+        """Apply validated plans, or display them in ordinary dry-run output."""
+        completed: list[str] = []
+        for plan in plans:
+            test, context = plan.test, plan.context
+            if context.dry_run:
+                action = 'updated' if context.issue_key else 'created'
+                test._logger.print(
+                    f"Test case '{context.issue_key or test.name}' would be {action}."
+                )
+                test._logger.print(tmt.utils.to_yaml(plan.to_dict()))
+                cls.post_export(test, context)
+                continue
+            try:
+                cls._apply_plan(plan)
+                cls.post_export(test, context)
+            except Exception as error:
+                raise ExportError(
+                    f"Jira export failed for '{test.name}': {error}. "
+                    f"Completed tests: {completed}. Current test may have partial writes."
+                ) from error
+            completed.append(test.name)
+            test._logger.debug('Jira export plan', plan.to_dict())
 
     @classmethod
     def export_test(cls, test: tmt.base.core.Test, jira_instance: JiraInstance) -> None:
-        """
-        Export a single tmt test to a Jira TestCase.
-
-        :param jira_instance: connection to reuse across tests.
-        """
-        url = jira_instance.url
-        project_id = str(test.opt('project_id'))
-
-        valid, error_msg = tmt.utils.git.validate_git_status(test)
-        if not valid:
-            if test.opt('ignore_git_validation'):
-                test._logger.print(f"Exporting regardless: '{error_msg}'.", color='red')
-            else:
-                raise ExportError(
-                    f"Can't export due to '{error_msg}'.\n"
-                    "Use --ignore-git-validation to export regardless."
-                )
-
-        field_tmt_id = jira_instance.resolve_field_id('ID')
-        summary = test.summary or test.name
-        labels = list(test.tag)
-        if test.tier is not None:
-            labels.append(f'Tier{test.tier}')
-
-        case_key = (
-            None
-            if test.opt('duplicate')
-            else cls._find_case_key(test, jira_instance, project_id, url, field_tmt_id)
-        )
-
-        if case_key is None and not test.opt('create'):
-            raise ExportError(
-                f"Jira TestCase not found for '{test}'. Use --create to create a new test case."
-            )
-
-        uuid = cls._resolve_uuid(test, jira_instance, case_key, field_tmt_id)
-
-        if test.is_dry_run:
-            cls._export_test_dry(test, summary, uuid, labels, case_key)
-            return
-
-        cls._export_test_live(
-            test=test,
-            jira_instance=jira_instance,
-            project_id=project_id,
-            url=url,
-            field_tmt_id=field_tmt_id,
-            summary=summary,
-            uuid=uuid,
-            labels=labels,
-            case_key=case_key,
-        )
+        """Prepare and apply one test with the same validation and hooks as a collection."""
+        cls.apply_test_collection(cls.prepare_test_collection([test], jira_instance=jira_instance))
 
     @classmethod
     def export_test_collection(
-        cls,
-        tests: list[tmt.base.core.Test],
-        keys: Optional[list[str]] = None,
-        **kwargs: Any,
+        cls, tests: list[tmt.base.core.Test], keys: Optional[list[str]] = None, **kwargs: Any
     ) -> str:
-        """Export a collection of tests to Jira."""
-        if not tests:
-            return ''
-
-        jira_instance = cls._create_jira_instance()
-        for test in tests:
-            cls.export_test(test, jira_instance=jira_instance)
+        """Prepare the entire selected collection before beginning any writes."""
+        cls.apply_test_collection(cls.prepare_test_collection(tests))
         return ''

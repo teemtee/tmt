@@ -11,6 +11,7 @@ import tmt.utils
 from tmt._compat.pathlib import Path
 from tmt._compat.pydantic import ValidationError
 from tmt.config.models.hardware import HardwareConfig
+from tmt.config.models.jira import JiraExportConfig
 from tmt.config.models.link import LinkConfig
 from tmt.config.models.themes import Theme, ThemeConfig
 from tmt.container import MetadataContainer
@@ -118,6 +119,11 @@ class Config:
             raise tmt.utils.SpecificationError(
                 f"Invalid configuration in '{subtree.name}'."
             ) from error
+
+    @functools.cached_property
+    def jira_export(self) -> Optional[JiraExportConfig]:
+        """Return the optional Jira export schema profile."""
+        return self._parse_config_subtree('/export/jira', JiraExportConfig)
 
     @functools.cached_property
     def link(self) -> Optional[LinkConfig]:
