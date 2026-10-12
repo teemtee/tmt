@@ -1816,7 +1816,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         super().wake(data=data)
 
         if data:
-            self._guest = GuestBeaker(
+            self._guest = self._guest_class(
                 data=data,
                 name=self.name,
                 parent=self.step,
@@ -1891,7 +1891,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        self._guest = GuestBeaker(
+        self._guest = self._guest_class(
             data=data,
             name=self.name,
             parent=self.step,
