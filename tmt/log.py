@@ -102,6 +102,19 @@ class Topic(enum.Enum):
     #: Policy rule evaluation and application.
     POLICY = 'policy'
 
+    @classmethod
+    def from_spec(cls, spec: str) -> 'Topic':
+        try:
+            return cls(spec)
+
+        except ValueError as error:
+            import tmt.utils
+
+            raise tmt.utils.GeneralError(
+                f'Logging topic "{spec}" is invalid.'
+                f" Possible choices are {', '.join(topic.value for topic in cls)}"
+            ) from error
+
 
 DEFAULT_TOPICS: set[Topic] = set()
 
@@ -160,6 +173,20 @@ def _verbosity_level_from_global_envvar() -> Optional[VerbosityLevel]:
         return 0
 
     return normalize_verbosity_level(raw_value)
+
+
+def _topics_from_global_envvar() -> set['Topic']:
+    raw_value = os.getenv('TMT_LOG_TOPIC', None)
+
+    if raw_value is None:
+        return set()
+
+    topics: set[Topic] = set()
+
+    for topic_spec in raw_value.strip().split():
+        topics.add(Topic.from_spec(topic_spec))
+
+    return topics
 
 
 def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
@@ -914,19 +941,16 @@ class Logger:
         if quietness_level is True:
             self.quiet = quietness_level
 
-        topic_specs = actual_kwargs.get('log_topic', [])
+        topics_from_global_envvar = _topics_from_global_envvar()
 
-        for topic_spec in topic_specs:
-            try:
-                self.topics.add(Topic(topic_spec))
+        if topics_from_global_envvar:
+            self.topics = topics_from_global_envvar
 
-            except Exception as error:
-                import tmt.utils
+        else:
+            topic_specs = actual_kwargs.get('log_topic', [])
 
-                raise tmt.utils.GeneralError(
-                    f'Logging topic "{topic_spec}" is invalid.'
-                    f" Possible choices are {', '.join(topic.value for topic in Topic)}"
-                ) from error
+            for topic_spec in topic_specs:
+                self.topics.add(Topic.from_spec(topic_spec))
 
         return self
 
