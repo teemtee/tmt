@@ -537,3 +537,5 @@ definitions:
       - "$ref": "#/definitions/block"
       - "$ref": "#/definitions/and"
       - "$ref": "#/definitions/or"
+      - "$ref": "/schemas/common#/definitions/url"
+      - "$ref": "/schemas/common#/definitions/filepath_reference"
