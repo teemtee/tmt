@@ -2415,7 +2415,7 @@ class Guest(
         test/plan/guest environment variables.
 
         :param environment: if set, it is passed to
-            :py:meth:`_build_remote_command_environment` as the desired
+            :py:meth:`_build_guest_command_environment` as the desired
             command environment.
         :returns: the tmt process environment merged with the prepared
             command environment.
