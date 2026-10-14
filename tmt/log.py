@@ -168,7 +168,9 @@ def _debug_level_from_global_envvar() -> Optional[DebugLevel]:
 
 
 def _verbosity_level_from_global_envvar() -> Optional[VerbosityLevel]:
-    raw_value = os.getenv('TMT_VERBOSE', None)
+    import tmt.utils
+
+    raw_value = tmt.utils.Environment.from_environ().get('TMT_VERBOSE', None)
 
     if raw_value is None:
         return 0
@@ -177,7 +179,9 @@ def _verbosity_level_from_global_envvar() -> Optional[VerbosityLevel]:
 
 
 def _topics_from_global_envvar() -> set['Topic']:
-    raw_value = os.getenv('TMT_LOG_TOPIC', None)
+    import tmt.utils
+
+    raw_value = tmt.utils.Environment.from_environ().get('TMT_LOG_TOPIC', None)
 
     if raw_value is None:
         return set()
