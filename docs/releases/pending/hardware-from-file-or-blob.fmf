@@ -1,0 +1,39 @@
+description: |
+    Values accepted by the ``hardware`` key of
+    :tmt:story:`/spec/plans/provision` plugins change:
+
+    * The ``hardware`` key in plan metadata still accepts the
+      :tmt:story:`hardware requirement specification</spec/hardware>`,
+      that does not change:
+
+      .. code-block:: yaml
+
+         provision:
+           hardware:
+             cpu:
+               model: 79
+
+    * Individual ``key=value`` snippets passed via command-line
+      are no longer allowed: ``--hardware cpu.mnodel=79`` will not
+      work anymore.
+
+    * The ``hardware`` key now accepts also JSON or YAML file references
+      using the ``@<filepath>`` notation:
+
+      .. code-block:: yaml
+
+         provision:
+           hardware: "@hw.yaml"
+
+    * Command-line now accepts both full JSON blobs,
+      ``--hardware '{"cpu": {"model": 79}}'`` or JSON and YAML file
+      references using the ``@<filepath>`` notation,
+      ``--hardware @hw.json``.
+
+      .. note::
+
+         Since plan metadata are written using FMF, which is a YAML
+         extension, and YAML can be rewritten as JSON, ``hardware`` key
+         can be seen as accepting "JSON blob" too, which effectively
+         aligns ``--hardware`` CLI option with ``hardware`` key in terms
+         of supported input types.
