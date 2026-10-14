@@ -2354,11 +2354,11 @@ class Guest(
 
         raise GeneralError(f"Unknown Ansible object type, '{type(playbook)}'.")
 
-    def _build_remote_command_environment(
+    def _build_guest_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
         """
-        Build environment for a remote command.
+        Build environment for the "on guest" part of a command.
 
         Serves as a helper for "unifying" provided environment:
 
@@ -2373,19 +2373,35 @@ class Guest(
         """
 
         if environment is None:
-            environment = Environment.build_environment(
+            return Environment.build_environment(
                 plan=self.parent.plan if isinstance(self.parent, tmt.steps.Step) else None,
                 run=self.parent.plan.my_run if isinstance(self.parent, tmt.steps.Step) else None,
                 guest=self,
                 logger=self._logger,
             )
 
-        else:
-            # Create a copy of given environment - this prevents any
-            # accidental modification of the given environment.
-            environment = environment.copy()
+        # Create a copy of given environment - this prevents any
+        # accidental modification of the given environment.
+        return environment.copy()
 
-        return environment
+    def _build_runner_command_environment(
+        self, environment: Optional[Environment] = None
+    ) -> Environment:
+        """
+        Build environment for the "on runner" part of a command.
+
+        :param environment: if set, it is considered the desired command
+            environment, and used without modification.
+        :returns: either a copy of ``environment``, or a new environment
+            built by :py:meth:`Environment.from_environ`.
+        """
+
+        if environment is None:
+            return Environment.from_environ()
+
+        # Create a copy of given environment - this prevents any
+        # accidental modification of the given environment.
+        return environment.copy()
 
     def _build_ansible_command_environment(
         self, environment: Optional[Environment] = None
@@ -2407,8 +2423,8 @@ class Guest(
 
         return Environment(
             {
-                **Environment.from_environ(),
-                **self._build_remote_command_environment(environment),
+                **self._build_runner_command_environment(),
+                **self._build_guest_command_environment(environment),
             }
         )
 
@@ -2455,7 +2471,7 @@ class Guest(
         if friendly_command is None:
             friendly_command = str(command)
 
-        environment = environment if environment is not None else Environment.from_environ()
+        environment = self._build_runner_command_environment(environment=environment)
 
         return self.run(
             command,
@@ -3243,7 +3259,7 @@ class GuestSsh(Guest, CommandCollector):
         # Build the command script using the same approach as execute()
         # Start with environment exports
         collected_commands: ShellScript = ShellScript.from_scripts(
-            self._build_remote_command_environment(environment).to_shell_exports()
+            self._build_guest_command_environment(environment).to_shell_exports()
         )
 
         # Add working directory change (properly quoted like in execute())
@@ -3955,7 +3971,7 @@ class GuestSsh(Guest, CommandCollector):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to SSH to execute on the remote machine.
         remote_commands: ShellScript = ShellScript.from_scripts(
-            self._build_remote_command_environment(environment).to_shell_exports()
+            self._build_guest_command_environment(environment).to_shell_exports()
         )
 
         # Change to given directory on guest if cwd provided
