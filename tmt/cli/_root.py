@@ -881,26 +881,38 @@ _test_export_default = 'yaml'
 )
 @option(
     '--jira-url',
+    envvar='TMT_JIRA_URL',
     help='Jira instance base URL, e.g. ``https://issues.redhat.com``.',
 )
 @option(
     '--jira-token',
+    envvar='TMT_JIRA_TOKEN',
     help='Jira API token for authentication.',
 )
 @option(
     '--jira-user',
+    envvar='TMT_JIRA_USER',
     help='Jira user email for authentication.',
+)
+@option('--jira-issue-type', help='Jira issue type ID or name (default: Task).')
+@option('--jira-uuid-field', help='Jira custom field ID or unique name for the tmt UUID.')
+@option(
+    '--jira-automation-url',
+    help='Jira URL field ID/name, remote-link (default), or none to disable URL export.',
+)
+@option('--jira-title', help='Jira title format using {name} and {summary}.')
+@option('--jira-status', help='Optional Jira target status; no transition by default.')
+@option(
+    '--jira-profile',
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
+    multiple=True,
+    help='Shareable Jira YAML profile. Repeat to layer repository overrides over a team profile.',
 )
 @option(
     '--link-jira / --no-link-jira',
     default=False,
     is_flag=True,
     help='Add Jira link to fmf testcase metadata as an implements relation.',
-)
-@option(
-    '--polarion',
-    is_flag=True,
-    help='Link to Polarion test case in Jira export.',
 )
 @option(
     '--link-polarion / --no-link-polarion',
@@ -920,8 +932,8 @@ _test_export_default = 'yaml'
     '--ignore-git-validation',
     is_flag=True,
     help="""
-         Ignore unpublished git changes and export to Nitrate. The case might not be able to be
-         scheduled!
+         Ignore unpublished git changes during export. Automation URLs may refer to unpublished
+         metadata.
          """,
 )
 @option(
@@ -936,7 +948,7 @@ _test_export_default = 'yaml'
 @option(
     '--create',
     is_flag=True,
-    help="Create test cases in nitrate if they don't exist.",
+    help="Create test cases if they don't exist.",
 )
 @option(
     '--general / --no-general',
@@ -1023,10 +1035,10 @@ def tests_export(
         how = format
 
     # TODO: move this "requires bugzilla" flag to export plugin level.
-    if bugzilla and how not in ('nitrate', 'polarion', 'jira'):
+    if bugzilla and how not in ('nitrate', 'polarion'):
         raise tmt.utils.GeneralError(
-            "The --bugzilla option is supported only with "
-            "--nitrate, --polarion, or --jira for now."
+            "The --bugzilla option is supported only with --how nitrate or --how polarion. "
+            "For Jira, configure relation mappings in /export/jira."
         )
 
     if kwargs.get('fmf_id'):

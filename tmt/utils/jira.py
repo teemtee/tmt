@@ -1,3 +1,5 @@
+import json
+import re
 import urllib.parse
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
@@ -77,7 +79,8 @@ class JiraInstance:
         token: str,
         logger: tmt.log.Logger,
         tmt_web_url: Optional[str] = None,
-    ):
+        cloud: bool = False,
+    ) -> None:
         """
         Initialize a Jira instance from raw connection details.
 
@@ -85,6 +88,9 @@ class JiraInstance:
         callers that only export/report test data can leave it unset.
         Use :py:meth:`from_issue_tracker` to construct one from a
         configured issue tracker instead.
+
+        ``cloud`` opts into REST v3 and Cloud routing for exporters using
+        ADF. Other consumers retain SDK deployment detection and defaults.
         """
 
         self.url = url
@@ -95,34 +101,27 @@ class JiraInstance:
         self.logger = logger
         jira_module = import_jira(logger)
 
-        # ignore[attr-defined]: it is defined, but mypy seems to fail
-        # detecting it correctly.
-        #
-        # get_server_info=False: skips an extra server-info request and,
-        # with it, the library's own PyPI update check, neither of which
-        # tmt needs. That request is also how the SDK detects Cloud vs
-        # Server/Data Center (self.jira.deploymentType), which several
-        # SDK methods use to decide which API to call -- e.g. search_issues
-        # falls back to the removed /rest/api/2/search on non-Cloud. Since
-        # this is always Jira Cloud here, set it directly instead.
-        #
-        # options={'rest_api_version': '3'}: the SDK defaults to the v2 API
-        # for everything except search (which it special-cases to v3 for
-        # Cloud). v2 doesn't understand Atlassian Document Format, which
-        # this module relies on for descriptions and comments, and its
-        # search endpoint has since been removed by Atlassian.
+        client_options: dict[str, Any] = {}
+        if cloud:
+            client_options = {'get_server_info': False, 'options': {'rest_api_version': '3'}}
+
         self.jira = jira_module.JIRA(  # type: ignore[attr-defined]
             server=self.url,
             basic_auth=(self.email, self.token),
-            get_server_info=False,
-            options={'rest_api_version': '3'},
+            **client_options,
         )
-        self.jira.deploymentType = 'Cloud'
+        if cloud:
+            self.jira.deploymentType = 'Cloud'
 
         # Caches for schema resolution (issue type IDs and custom field IDs).
         # Populated on first lookup to minimize network requests.
-        self._issue_types: Optional[dict[str, str]] = None
+        self._issue_types: dict[str, list[tuple[str, str]]] = {}
         self._fields_by_name: Optional[dict[str, list[str]]] = None
+        self._field_ids: set[str] = set()
+        self._accounts: dict[str, Optional[str]] = {}
+        self._issue_statuses: dict[tuple[str, str], set[str]] = {}
+        self._link_types: Optional[list[str]] = None
+        self._create_fields: dict[tuple[str, str], dict[str, Any]] = {}
 
     @classmethod
     def from_issue_tracker(
@@ -216,24 +215,108 @@ class JiraInstance:
 
     def resolve_issue_type_id(self, project_id: str, name: str) -> str:
         """
-        Resolve an issue type name (e.g. ``Test Case``) to its ID within a project.
+        Resolve an issue type ID or name within a project.
 
         Issue type IDs are project-specific, so this cannot be a fixed
         constant shared across Jira instances or projects.
         """
-        if self._issue_types is None:
-            self._issue_types = {
-                issue_type.name: str(issue_type.id)
-                for issue_type in self.jira.issue_types_for_project(project_id)
-            }
+        if project_id not in self._issue_types:
+            self._issue_types[project_id] = []
+            # This SDK method calls project/{key}/statuses, not createmeta.
+            # Returned issue types include their available workflow statuses.
+            for issue_type in self.jira.issue_types_for_project(project_id):
+                type_id = str(issue_type.id)
+                self._issue_types[project_id].append((type_id, str(issue_type.name)))
+                self._issue_statuses[(project_id, type_id)] = {
+                    str(status.name) for status in getattr(issue_type, 'statuses', [])
+                }
 
-        if name not in self._issue_types:
+        issue_types = self._issue_types[project_id]
+        if any(type_id == name for type_id, _ in issue_types):
+            return name
+        matches = [type_id for type_id, type_name in issue_types if type_name == name]
+        if not matches:
             raise tmt.utils.ExportError(f"No '{name}' issue type found in project '{project_id}'.")
-        return self._issue_types[name]
+        if len(matches) > 1:
+            raise tmt.utils.ExportError(
+                f"Multiple issue types named '{name}' in project '{project_id}': {matches}. "
+                "Configure an issue type ID."
+            )
+        return matches[0]
+
+    def validate_status(self, project_id: str, issue_type: str, status: str) -> None:
+        """Check that a target status belongs to the project's issue type workflow."""
+        type_id = self.resolve_issue_type_id(project_id, issue_type)
+        if status not in self._issue_statuses[(project_id, type_id)]:
+            raise tmt.utils.ExportError(
+                f"Status '{status}' is not available for issue type '{type_id}' "
+                f"in project '{project_id}'."
+            )
+
+    def validate_link_type(self, name: str) -> None:
+        """Validate a configured relationship type name, caching the visible schema."""
+        if self._link_types is None:
+            self._link_types = [str(link_type.name) for link_type in self.jira.issue_link_types()]
+        if self._link_types.count(name) != 1:
+            raise tmt.utils.ExportError(f"Expected one Jira relationship type named '{name}'.")
+
+    def field_metadata(
+        self, project_id: str, issue_type_id: str, issue_key: Optional[str] = None
+    ) -> dict[str, Any]:
+        """Return editable or project/type create fields with required flags and options."""
+        if issue_key:
+            return cast(dict[str, Any], self.jira.editmeta(issue_key)['fields'])
+        cache_key = (project_id, issue_type_id)
+        if cache_key not in self._create_fields:
+            raw_fields: list[dict[str, Any]]
+            if self.jira.deploymentType == 'Cloud':
+                # The SDK's public project_issue_fields wrapper rejects Cloud
+                # and expects the Server/DC response shape. Use its authenticated
+                # transport with the supported Cloud endpoint, not legacy createmeta.
+                path = (
+                    f'issue/createmeta/{urllib.parse.quote(project_id, safe="")}/issuetypes/'
+                    f'{urllib.parse.quote(issue_type_id, safe="")}'
+                )
+                raw_fields = []
+                while True:
+                    page = self.jira._get_json(
+                        path, params={'startAt': len(raw_fields), 'maxResults': 50}
+                    )
+                    values = page['fields']
+                    raw_fields.extend(values)
+                    if len(raw_fields) >= page['total']:
+                        break
+                    if not values:
+                        raise tmt.utils.ExportError(
+                            'Jira create field metadata pagination stalled.'
+                        )
+            elif hasattr(self.jira, 'project_issue_fields'):
+                raw_fields = [
+                    field.raw
+                    for field in self.jira.project_issue_fields(
+                        project_id, issue_type_id, maxResults=0
+                    )
+                ]
+            else:
+                # Jira SDK 3.5 exposes the same paginated API under its old name.
+                raw_fields = []
+                while True:
+                    page = self.jira.createmeta_fieldtypes(
+                        project_id, issue_type_id, startAt=len(raw_fields), maxResults=50
+                    )
+                    values = page.get('values', [])
+                    raw_fields.extend(values)
+                    if not values or len(raw_fields) >= page['total']:
+                        break
+            self._create_fields[cache_key] = {
+                str(field.get('fieldId') or field.get('key') or field['id']): field
+                for field in raw_fields
+            }
+        return self._create_fields[cache_key]
 
     def resolve_field_id(self, name: str) -> str:
         """
-        Resolve a custom field's display name (e.g. ``External issue URL``) to its field ID.
+        Resolve a field ID or a unique display name to its field ID.
 
         Field IDs are assigned per Jira instance and are not guaranteed to
         be the same across different instances or projects.
@@ -241,16 +324,19 @@ class JiraInstance:
         if self._fields_by_name is None:
             self._fields_by_name = {}
             for field in self.jira.fields():
+                self._field_ids.add(str(field['id']))
                 field_name = field.get('name')
                 if field_name:
                     self._fields_by_name.setdefault(field_name, []).append(str(field['id']))
 
+        if name in self._field_ids:
+            return name
         matches = self._fields_by_name.get(name, [])
         if not matches:
             raise tmt.utils.ExportError(f"No '{name}' custom field found in Jira.")
         if len(matches) > 1:
             raise tmt.utils.ExportError(
-                f"Multiple fields named '{name}' found in Jira: {matches}."
+                f"Multiple fields named '{name}' found in Jira: {matches}. Configure a field ID."
             )
         return matches[0]
 
@@ -261,9 +347,17 @@ class JiraInstance:
         Transition IDs are defined by the issue's workflow, which can
         differ between issue types, projects and Jira instances.
         """
-        for transition in self.jira.transitions(issue_key):
-            if transition.get('to', {}).get('name') == target_status_name:
-                return str(transition['id'])
+        matches = [
+            str(transition['id'])
+            for transition in self.jira.transitions(issue_key)
+            if transition.get('to', {}).get('name') == target_status_name
+        ]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise tmt.utils.ExportError(
+                f"Multiple transitions to status '{target_status_name}' for '{issue_key}'."
+            )
         raise tmt.utils.ExportError(
             f"No transition to status '{target_status_name}' available for '{issue_key}'."
         )
@@ -284,21 +378,91 @@ class JiraInstance:
         matches, has been observed to fall back to returning arbitrary
         unrelated users rather than an empty list. A candidate is
         therefore only accepted when its email, display name or username
-        matches (case-insensitively).
+        matches (case-insensitively). Prefer exact email matches, then exact
+        display names or usernames. Ambiguous matches warn and return None;
+        exporters should preserve an existing assignment in this case.
+        All decisions are cached for the lifetime of this connection.
         """
         target = query.strip().lower()
-        for user in self.jira.search_users(query=query):
+        if target in self._accounts:
+            return self._accounts[target]
+        emails: set[str] = set()
+        names: set[str] = set()
+        for user in self.jira.search_users(query=query, maxResults=0):
             user_email = getattr(user, 'emailAddress', '').lower()
             user_display = getattr(user, 'displayName', '').lower()
             user_name = getattr(user, 'name', '').lower()
-            if target in (user_email, user_display, user_name):
-                return str(user.accountId)
-        return None
+            if target == user_email:
+                emails.add(str(user.accountId))
+            elif target in (user_display, user_name):
+                names.add(str(user.accountId))
+        matches = emails or names
+        account_id = next(iter(matches)) if len(matches) == 1 else None
+        if len(matches) > 1:
+            self.logger.warning(
+                f"Ambiguous Jira contact '{query}' matches accounts {sorted(matches)}. "
+                "Preserving the existing assignee."
+            )
+        self._accounts[target] = account_id
+        return account_id
+
+    def find_issue_by_uuid(
+        self, uuid: str, *, project_id: str, issue_type: str, uuid_field: str
+    ) -> Optional[str]:
+        """
+        Find a unique issue by UUID within a configured project and issue type.
+
+        Accept an issue type ID/name and a custom field ID/unique name. This
+        public read-only lookup is shared by metadata export and future result
+        reporting. Component assignments and fmf backlinks do not affect it.
+        Multiple matches fail explicitly; a missing match returns None.
+        """
+        field_id = self.resolve_field_id(uuid_field)
+        if not re.fullmatch(r'customfield_\d+', field_id):
+            raise tmt.utils.ExportError('The Jira UUID destination must be a custom field.')
+        type_id = self.resolve_issue_type_id(project_id, issue_type)
+        issues = self.search_issues(
+            f'project={json.dumps(project_id)} AND issuetype={json.dumps(type_id)} '
+            f'AND cf[{self.field_jql_id(field_id)}]={json.dumps(uuid)}',
+            max_results=2,
+            fields=['key'],
+        )
+        if len(issues) > 1:
+            raise tmt.utils.ExportError(f"Multiple Jira issues match UUID '{uuid}'.")
+        return str(issues[0]['key']) if issues else None
 
     def search_issues(
         self, jql: str, max_results: int = 50, fields: Optional[list[str]] = None
     ) -> list[dict[str, Any]]:
-        """Run a JQL search and return the raw matching issues."""
+        """
+        Run a JQL search and return raw issues up to the requested limit.
+
+        Cloud uses enhanced search through the SDK's authenticated transport,
+        including with Jira SDK 3.5 on Python 3.9. Server/Data Center retains
+        SDK routing. Cloud token pagination is followed when a response page
+        is smaller than the requested limit; nonpositive limits fetch all pages.
+        """
+        if self.jira.deploymentType == 'Cloud':
+            issues: list[dict[str, Any]] = []
+            params: dict[str, Any] = {
+                'jql': jql,
+                'fields': fields if fields is not None else ['summary'],
+            }
+            tokens: set[str] = set()
+            while True:
+                params['maxResults'] = max_results - len(issues) if max_results > 0 else 50
+                page = self.jira._get_json('search/jql', params=dict(params))
+                issues.extend(page['issues'])
+                if max_results > 0 and len(issues) >= max_results:
+                    return issues[:max_results]
+                token = page.get('nextPageToken')
+                if page.get('isLast', not token):
+                    return issues
+                if not isinstance(token, str) or not token or token in tokens:
+                    raise tmt.utils.ExportError('Jira Cloud search pagination did not advance.')
+                tokens.add(token)
+                params['nextPageToken'] = token
+
         result = self.jira.search_issues(
             jql,
             maxResults=max_results,
