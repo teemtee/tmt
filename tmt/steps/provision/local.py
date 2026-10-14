@@ -57,7 +57,7 @@ class GuestLocal(tmt.Guest):
 
         return True
 
-    def _build_remote_command_environment(
+    def _build_guest_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
         # `local` plugin exposes the tmt environment to commands that
@@ -78,7 +78,7 @@ class GuestLocal(tmt.Guest):
 
             return environment
 
-        return super()._build_remote_command_environment(environment=environment)
+        return super()._build_guest_command_environment(environment=environment)
 
     def _run_ansible(
         self,
@@ -167,7 +167,7 @@ class GuestLocal(tmt.Guest):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to a shell executed on the local host.
         script = ShellScript.from_scripts(
-            self._build_remote_command_environment(environment=environment).to_shell_exports()
+            self._build_guest_command_environment(environment=environment).to_shell_exports()
         )
 
         for file in reversed(sourced_files or []):
