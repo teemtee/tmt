@@ -102,18 +102,6 @@ class ResultInterpret(enum.StrEnum):
         )
 
 
-RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
-    ResultOutcome.PASS: 'green',
-    ResultOutcome.FAIL: 'red',
-    ResultOutcome.INFO: 'blue',
-    ResultOutcome.WARN: 'yellow',
-    ResultOutcome.ERROR: 'magenta',
-    # TODO (happz) make sure the color is visible for all terminals
-    ResultOutcome.SKIP: 'bright_black',
-    ResultOutcome.PENDING: 'cyan',
-}
-
-
 #: A type of collection IDs tracked for a single result.
 ResultIds = dict[str, Optional[str]]
 
