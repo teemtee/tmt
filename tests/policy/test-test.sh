@@ -34,8 +34,8 @@ rlJournalStart
         run_test environment.yaml /basic .environment "{\"FOO\":\"xyzzy\"}"
         run_test environment.yaml /full  .environment "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
 
-        run_test check.yaml /basic '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\",\"result\":\"respect\"},{\"how\":\"journal\",\"result\":\"respect\"}]"
-        run_test check.yaml /full  '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"journal\",\"result\":\"respect\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
+        run_test check.yaml /basic '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\"},{\"how\":\"journal\"}]"
+        run_test check.yaml /full  '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"journal\"},{\"how\":\"dmesg\"}]"
 
         # rhel-ci policy turns unset fields into "None" literal string in journal check plugin settings
         # https://issues.redhat.com/browse/TFT-3928

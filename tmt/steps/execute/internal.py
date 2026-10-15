@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import tmt.base.core
 import tmt.log
@@ -203,23 +203,6 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
         is_flag=True,
         help='Disable interactive progress bar showing the current test.',
     )
-
-    # ignore[override] & cast: two base classes define to_spec(), with conflicting
-    # formal types.
-    def to_spec(self) -> dict[str, Any]:  # type: ignore[override]
-        data = cast(dict[str, Any], super().to_spec())
-        data['script'] = [str(script) for script in self.script]
-
-        return data
-
-    # ignore[override] & cast: two base classes define to_spec(), with conflicting
-    # formal types.
-    def to_minimal_spec(self) -> dict[str, Any]:  # type: ignore[override]
-        data = cast(dict[str, Any], super().to_minimal_spec())
-        data.pop('script', None)
-        if self.script:
-            data['script'] = [str(script) for script in self.script]
-        return data
 
 
 @tmt.steps.provides_method('tmt')

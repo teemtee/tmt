@@ -10,7 +10,7 @@ import jinja2
 import tmt.log
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import (
@@ -409,17 +409,6 @@ class AvcCheck(Check):
         serialize=lambda patterns: [pattern.pattern for pattern in patterns],
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
     )
-
-    # TODO: fix `to_spec` of `Check` to support nested serializables
-    def to_spec(self) -> _RawCheck:
-        spec = super().to_spec()
-
-        spec['test-method'] = self.test_method.value  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-        spec['ignore-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-            pattern.pattern for pattern in self.ignore_pattern
-        ]
-
-        return spec
 
 
 @provides_check(

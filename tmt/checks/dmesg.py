@@ -6,7 +6,7 @@ import tmt.guest
 import tmt.log
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import Check, CheckEvent, CheckPlugin, provides_check
 from tmt.container import container, field
 from tmt.guest import GuestCapability
 from tmt.result import CheckResult, ResultOutcome, save_failures
@@ -45,19 +45,6 @@ class DmesgCheck(Check):
         serialize=lambda patterns: [pattern.pattern for pattern in patterns],
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
     )
-
-    # TODO: fix `to_spec` of `Check` to support nested serializables
-    def to_spec(self) -> _RawCheck:
-        spec = super().to_spec()
-
-        spec['failure-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-            pattern.pattern for pattern in self.failure_pattern
-        ]
-
-        return spec
-
-    def to_minimal_spec(self) -> _RawCheck:
-        return self.to_spec()
 
     def _extract_failures(self, text: str) -> list[str]:
         return [

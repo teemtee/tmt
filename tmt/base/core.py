@@ -61,6 +61,7 @@ from tmt.container import (
     container_field,
     container_fields,
     field,
+    key_to_option,
 )
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import ResultInterpret
@@ -209,7 +210,7 @@ class FmfId(
     def _drop_nonexportable(cls, exported: _RawFmfId) -> _RawFmfId:
         # ignore[misc]: since `exported` is a typed dict, only literals can be used as keys
         for key in cls.NONEXPORTABLE_KEYS:
-            exported.pop(key, None)  # type: ignore[misc]
+            exported.pop(key_to_option(key), None)  # type: ignore[misc]
 
         return exported
 
@@ -218,24 +219,14 @@ class FmfId(
         Convert to a form suitable for saving in a specification file
         """
 
-        spec = self.to_dict()
-
-        if self.path is not None:
-            spec['path'] = str(self.path)
-
-        return self._drop_nonexportable(spec)
+        return self._drop_nonexportable(super().to_spec())
 
     def to_minimal_spec(self) -> _RawFmfId:
         """
         Convert to specification, skip default values
         """
 
-        spec = super().to_minimal_spec()
-
-        if self.path is not None:
-            spec['path'] = str(self.path)
-
-        return self._drop_nonexportable(spec)
+        return self._drop_nonexportable(super().to_minimal_spec())
 
     @classmethod
     def from_spec(cls, raw: _RawFmfId) -> 'FmfId':
@@ -1228,9 +1219,9 @@ class Test(
     environment: Environment = field(
         default_factory=Environment,
         normalize=Environment.normalize,
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
-        exporter=lambda environment: environment.to_fmf_spec(),
+        serialize=lambda environment: environment.to_spec(),
+        unserialize=lambda serialized: Environment.from_spec(serialized),
+        exporter=lambda environment: environment.to_spec(),
     )
 
     duration: str = DEFAULT_TEST_DURATION_L1
