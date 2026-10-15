@@ -1,7 +1,7 @@
 import glob
 import re
 import shutil
-from typing import Any, Optional, Self, TypedDict, Union, cast
+from typing import Any, Optional, Self, Union, cast
 
 import fmf
 
@@ -20,8 +20,13 @@ from tmt.container import SerializableContainer, SpecBasedContainer, container, 
 from tmt.utils import Command, NormalizationError, Path
 
 
-class _RawTestsWithAdjusts(TypedDict, total=False):
+class _RawTestsWithAdjusts(_RawAdjustRule, total=False):
     name: str
+
+
+class _RawDiscoverFmfData(tmt.steps._RawStepData, total=False):
+    url: Optional[str]
+    path: Optional[str]
 
 
 @container
@@ -40,13 +45,13 @@ class TestsWithAdjusts(
             return cls(name=spec)
         spec_copy = spec.copy()
         name = spec_copy.pop("name")
-        return cls(name=name, adjust_rule=cast(_RawAdjustRule, spec_copy))
+        return cls(name=name, adjust_rule=spec_copy or None)
 
     def to_spec(self) -> Union[str, _RawTestsWithAdjusts]:
         if self.adjust_rule:
             return _RawTestsWithAdjusts(
                 name=self.name,
-                **self.adjust_rule,  # type: ignore[typeddict-unknown-key]
+                **self.adjust_rule,
             )
         return self.name
 
@@ -74,7 +79,7 @@ def normalize_tests_with_adjusts(
                 raise NormalizationError(
                     problem_address, raw_item, "a string or a dict with a key 'name'"
                 ) from err
-            return TestsWithAdjusts(name=name, adjust_rule=cast(_RawAdjustRule, raw_item))
+            return TestsWithAdjusts(name=name, adjust_rule=cast(_RawAdjustRule, raw_item) or None)
         raise NormalizationError(problem_address, raw_item, "a string or a dict with a key 'name'")
 
     if value is None:
