@@ -31,9 +31,16 @@ srpm_build_deps:
 actions: &base-actions
   create-archive:
     - hatch build -t sdist
-    - bash -c "echo dist/tmt-$PACKIT_PROJECT_VERSION.tar.gz"
+    # hatch names the sdist with the PEP 440 version (e.g. 1.80.0.dev28+g...).
+    # get-current-version rewrites .dev -> ~dev for the RPM Version, so the
+    # archive name must be computed from hatch directly, not from the (tilde)
+    # PACKIT_PROJECT_VERSION.
+    - bash -c "echo dist/tmt-$(hatch version).tar.gz"
   get-current-version:
-    - hatch version
+    # Convert the PEP 440 dev version (1.80.0.dev28+g...) to an RPM-sortable
+    # pre-release version (1.80.0~dev28+g...), so snapshots sort *below* the
+    # eventual release (1.80.0) instead of above it.
+    - bash -c "hatch version | sed 's/[.]dev/~dev/'"
 
 targets: &all-targets
   - fedora-all
