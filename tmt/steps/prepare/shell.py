@@ -1,5 +1,5 @@
 import threading
-from typing import Any, ClassVar, Optional, cast
+from typing import ClassVar, Optional
 
 import fmf.utils
 
@@ -52,24 +52,6 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
             cloned when ``url`` is specified.
             """,
     )
-
-    # ignore[override] & cast: two base classes define to_spec(), with conflicting
-    # formal types.
-    def to_spec(self) -> dict[str, Any]:  # type: ignore[override]
-        data = cast(dict[str, Any], super().to_spec())
-        data['script'] = [str(script) for script in self.script]
-
-        return data
-
-    # ignore[override] & cast: two base classes define to_spec(), with conflicting
-    # formal types.
-    def to_minimal_spec(self) -> dict[str, Any]:  # type: ignore[override]
-        data = cast(dict[str, Any], super().to_minimal_spec())
-        data.pop('script', None)
-        if self.script:
-            data['script'] = [str(script) for script in self.script]
-
-        return data
 
 
 @tmt.steps.provides_method('shell')

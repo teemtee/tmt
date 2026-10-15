@@ -238,6 +238,9 @@ class Link(SpecBasedContainer[Any, _RawLinkRelation]):
 
         return spec
 
+    def to_minimal_spec(self) -> _RawLinkRelation:
+        return self.to_spec()
+
 
 class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
     """
@@ -311,6 +314,9 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
         """
 
         return [link.to_spec() for link in self._links]
+
+    def to_minimal_spec(self) -> list[_RawLinkRelation]:
+        return [link.to_minimal_spec() for link in self._links]
 
     def get(self, relation: Optional[_RawLinkRelationName] = None) -> list[Link]:
         """
