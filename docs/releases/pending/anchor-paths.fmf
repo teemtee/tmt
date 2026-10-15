@@ -1,0 +1,6 @@
+description: |
+    The handling of relative paths has been documented. See :ref:`paths`
+    for the difference between the :term:`base anchor path` and the
+    :term:`node anchor path` and their intended usage. The :term:`import
+    tree` created for imported remote plans is now described in
+    :ref:`trees` as well.
