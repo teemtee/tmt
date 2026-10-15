@@ -86,3 +86,36 @@ like this:
     │   │   └── tests -> ../../tree
     │   ├── step.yaml
     │   └── tests.yaml
+
+
+.. _import-tree:
+
+Import Tree
+------------------------------------------------------------------
+
+When a plan imports a remote plan using ``plan.import``, the
+referenced git repository is cloned into the :term:`run workdir`
+under the ``import`` folder, keyed by the importing plan name. The
+resulting ``fmf`` tree is called :term:`import tree` and it is the
+tree from which the imported plan metadata is loaded. For example:
+
+.. code-block::
+
+    /var/tmp/tmt/run-123/import/plan
+
+A run directory with an imported plan can look like this:
+
+.. code-block::
+
+    ├── import
+    │   └── plan
+    ├── log.txt
+    ├── plan
+    │   ├── cleanup
+    │   ├── data
+    │   ├── discover
+    │   ├── execute
+    │   ├── finish
+    │   ├── prepare
+    │   ├── provision
+    │   └── report
