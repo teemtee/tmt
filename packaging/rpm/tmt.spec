@@ -5,7 +5,11 @@ Summary:        Test Management Tool
 
 License:        MIT
 URL:            https://github.com/teemtee/tmt
-Source0:        %{pypi_source tmt}
+# Version may carry a ~ pre-release marker (e.g. 1.80.0~dev28+g...) for correct
+# RPM ordering; the sdist hatch builds uses the PEP 440 form (1.80.0.dev28+g...).
+# src_version maps the Version back to that form for the archive name and %setup.
+%global src_version %(echo %{version} | sed 's/~/./g')
+Source0:        %{pypi_source tmt %{src_version}}
 
 BuildArch:      noarch
 BuildRequires:  python3-devel
@@ -168,7 +172,7 @@ All extra dependencies of the Test Management Tool. Install this
 package to have all available plugins ready for testing.
 
 %prep
-%autosetup -p1 -n tmt-%{version}
+%autosetup -p1 -n tmt-%{src_version}
 
 %generate_buildrequires
 %pyproject_buildrequires
