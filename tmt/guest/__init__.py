@@ -13,6 +13,7 @@ import shutil
 import signal as _signal
 import string
 import subprocess
+import tempfile
 import threading
 from collections.abc import Iterable, Iterator, Sequence
 from re import Pattern
@@ -286,7 +287,7 @@ EXTRA_ANSIBLE_SSH_OPTIONS = Command(
 )
 
 
-#: SSH master socket path is limited to this many characters.
+#: SSH master socket path is limited to this many encoded bytes.
 #:
 #: * UNIX socket path is limited to either 108 or 104 characters, depending
 #:   on the platform. See `man 7 unix` and/or kernel sources, for example.
@@ -380,7 +381,7 @@ def _socket_path_trivial(
     if not limit_size:
         return socket_path
 
-    return socket_path if len(str(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT else None
+    return socket_path if len(os.fsencode(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT else None
 
 
 def _socket_path_hash(
@@ -422,7 +423,7 @@ def _socket_path_hash(
 
         logger.debug(f"Possible SSH master socket path '{socket_path}' (hash method).", level=3)
 
-        if limit_size and len(str(socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
+        if limit_size and len(os.fsencode(socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
             return None
 
         # O_CREAT | O_EXCL means "atomic create-and-fail-if-exists".
@@ -3200,6 +3201,9 @@ class GuestSsh(Guest, CommandCollector):
     _ssh_master_process_stdout_logger: Optional[StreamLogger] = None
     _ssh_master_process_stderr_logger: Optional[StreamLogger] = None
 
+    #: Private socket directory used when the run workdir is too long.
+    _ssh_master_socket_directory: Optional['tempfile.TemporaryDirectory[str]'] = None
+
     #: If set, SSH multiplexing will be considered disabled no matter
     #: other conditions. Useful for temporarily disabling the multiplexing.
     _ssh_multiplexing_disabled: bool = False
@@ -3326,10 +3330,11 @@ class GuestSsh(Guest, CommandCollector):
         Whether the SSH master socket path we create is acceptable by SSH
         """
 
-        if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
+        if len(os.fsencode(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
             self.warn(
                 "SSH multiplexing will not be used because the SSH master socket path "
-                f"'{self._ssh_master_socket_path}' is too long."
+                f"'{self._ssh_master_socket_path}' is too long. "
+                "No usable temporary SSH socket directory could be created."
             )
             return False
 
@@ -3439,9 +3444,35 @@ class GuestSsh(Guest, CommandCollector):
 
             return socket_path
 
-        # Not even the hashing function and short substrings helped.
-        # Return the most readable one, and let caller decide whether
-        # they use it or not. We run out of options.
+        # A shorter basename cannot help when the workdir itself is too
+        # long. Use a private directory for this guest instead. Explicit
+        # roots avoid a long TMPDIR, possibly inside the run workdir.
+        # TemporaryDirectory creates it atomically with mode 0700 and
+        # also removes it on normal interpreter exit.
+        for socket_root in ('/tmp', '/var/tmp'):  # noqa: S108
+            try:
+                socket_directory = tempfile.TemporaryDirectory(prefix='tmt-ssh-', dir=socket_root)
+
+            except OSError as error:
+                self.debug(
+                    f"Failed to create SSH socket directory in '{socket_root}': {error}", level=3
+                )
+                continue
+
+            socket_path = Path(socket_directory.name) / 'master.socket'
+
+            if len(os.fsencode(socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
+                socket_directory.cleanup()
+                continue
+
+            self._ssh_master_socket_directory = socket_directory
+            self.debug(
+                f"SSH master socket path will be '{socket_path}' (temporary directory).", level=3
+            )
+
+            return socket_path
+
+        # No short path is available. Let the caller disable multiplexing.
         socket_path = _socket_path_trivial(
             socket_dir=socket_dir, guest_id=guest_id, limit_size=False, logger=self._logger
         )
@@ -3535,11 +3566,16 @@ class GuestSsh(Guest, CommandCollector):
             self._ssh_master_socket_path.unlink(missing_ok=True)
             self._ssh_master_socket_reservation_path.unlink(missing_ok=True)
 
+            if self._ssh_master_socket_directory is not None:
+                self._ssh_master_socket_directory.cleanup()
+                self._ssh_master_socket_directory = None
+
         except OSError as error:
             self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
 
         del self._ssh_master_socket_path
         del self._ssh_master_socket_reservation_path
+        self.__dict__.pop('_is_ssh_master_socket_path_acceptable', None)
 
     def _flush_ssh_master_process(self) -> None:
         """
