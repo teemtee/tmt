@@ -10,7 +10,6 @@ from tmt.container import (
     SpecBasedContainer,
     container,
     field,
-    key_to_option,
 )
 from tmt.plugins import PluginRegistry
 from tmt.utils import NormalizeKeysMixin
@@ -150,14 +149,6 @@ class Check(
             data.result = CheckResultInterpret.from_spec(raw_data["result"])
 
         return data
-
-    def to_spec(self) -> _RawCheck:
-        spec = cast(_RawCheck, {key_to_option(key): value for key, value in self.items()})
-        spec["result"] = self.result.to_spec()
-        return spec
-
-    def to_minimal_spec(self) -> _RawCheck:
-        return self.to_spec()
 
     def go(
         self,
