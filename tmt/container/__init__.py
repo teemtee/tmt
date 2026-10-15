@@ -4,8 +4,11 @@ Container decorators and helpers.
 
 import abc
 import dataclasses
+import enum
 import functools
 import inspect
+import pathlib
+import re
 import textwrap
 from collections.abc import Iterator, Sequence
 from typing import (
@@ -13,6 +16,7 @@ from typing import (
     Any,
     Callable,
     Generic,
+    Mapping,
     Optional,
     Self,
     TypeVar,
@@ -501,25 +505,129 @@ class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer, abc.ABC):  #
         """
         Convert to a form suitable for saving in a specification file
 
+        Nested field values are converted with :py:func:`container_value_to_spec`.
+        Field names are exported as option names, with underscores replaced
+        by dashes.
+
         See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
         for more details.
 
         See :py:meth:`from_spec` for its counterpart.
         """
 
-        return cast(SpecOutT, self.to_dict())
+        return cast(
+            SpecOutT,
+            {key_to_option(key): container_value_to_spec(value) for key, value in self.items()},
+        )
 
     def to_minimal_spec(self) -> SpecOutT:
         """
         Convert to specification, skip default values
 
+        Same conversion as :py:meth:`to_spec`, but keys whose values are
+        equal to the field default are omitted. Nested values that
+        implement :py:meth:`to_minimal_spec` use that method instead of
+        :py:meth:`to_spec`.
+
         See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
         for more details.
 
         See :py:meth:`from_spec` for its counterpart.
         """
 
-        return cast(SpecOutT, self.to_minimal_dict())
+        spec: dict[str, Any] = {}
+
+        for field in container_fields(self):
+            value = getattr(self, field.name)
+
+            if _container_field_is_default(field, value):
+                continue
+
+            spec[key_to_option(field.name)] = container_value_to_spec(value, minimal=True)
+
+        return cast(SpecOutT, spec)
+
+
+def _container_field_is_default(field: dataclasses.Field[Any], value: Any) -> bool:
+    """
+    Return ``True`` when ``value`` equals the field's default value.
+    """
+
+    if field.default_factory is not dataclasses.MISSING:
+        return bool(value == field.default_factory())
+
+    if field.default is not dataclasses.MISSING:
+        return bool(value == field.default)
+
+    if not value:
+        return True
+
+    return False
+
+
+def container_value_to_spec(value: Any, *, minimal: bool = False) -> Any:
+    """
+    Convert a container field value into a specification-friendly form.
+
+    :param value: a field value to convert.
+    :param minimal: when set, prefer :py:meth:`SpecBasedContainer.to_minimal_spec`
+        over :py:meth:`SpecBasedContainer.to_spec` for nested containers.
+    :returns: a value suitable for storing in a specification file.
+    """
+
+    def _get_method(value: Any, name: str) -> Optional[Callable[[], Any]]:
+        method = getattr(value, name, None)
+
+        if inspect.ismethod(method) and method.__self__ is value:
+            return cast(Callable[[], Any], method)
+
+        return None
+
+    if isinstance(value, SpecBasedContainer):
+        value = cast(SpecBasedContainer[Any, Any], value)  # type: ignore[redundant-cast]
+        return value.to_minimal_spec() if minimal else value.to_spec()
+
+    if minimal:
+        to_minimal_spec = _get_method(value, 'to_minimal_spec')
+        if to_minimal_spec is not None:
+            return to_minimal_spec()
+
+    to_spec = _get_method(value, 'to_spec')
+    if to_spec is not None:
+        return to_spec()
+
+    if isinstance(value, Mapping):
+        return {
+            key: container_value_to_spec(item, minimal=minimal)
+            for key, item in cast(Mapping[Any, Any], value).items()  # type: ignore[redundant-cast]
+        }
+
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return [
+            container_value_to_spec(item, minimal=minimal)
+            for item in value  # pyright: ignore[reportUnknownVariableType]
+        ]
+
+    if isinstance(value, enum.Enum):
+        return container_value_to_spec(value.value, minimal=minimal)
+
+    if isinstance(value, pathlib.PurePath):
+        return str(value)
+
+    if isinstance(value, re.Pattern):
+        return container_value_to_spec(value.pattern, minimal=minimal)
+
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode('utf-8')
+
+    if isinstance(value, (type(None), bool, int, float, str)):
+        return value
+
+    to_dict = _get_method(value, 'to_dict')
+    if to_dict is not None:
+        return container_value_to_spec(to_dict(), minimal=minimal)
+
+    return str(value)
 
 
 SerializableContainerDerivedType = TypeVar(
