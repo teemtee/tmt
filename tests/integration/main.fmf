@@ -40,6 +40,7 @@ environment:
 framework: shell
 require:
   - python3-pytest
+  - tmt+all
 tag: [integration]
 tier: null
 link: https://github.com/packit/requre

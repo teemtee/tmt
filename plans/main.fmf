@@ -1,14 +1,12 @@
-# Run on localhost by default
-provision:
-    how: local
-
 prepare+:
-  # Install jq and yq for cleaner tests, and required make
-  - how: install
+  - summary: Packages needed preparation and testing
+    name: essential-packages
+    how: install
     package:
       - jq
       - yq
       - make
+      - podman
       - python3-pip
       - python3-pytest
 
@@ -19,10 +17,25 @@ execute:
 environment:
   PYTEST: python3 -m pytest -vvv -ra --showlocals
 
-# Install packages in full mode
 adjust:
+    # Enable epel on CentOS Stream
+  - prepare+:
+      - name: enable-epel
+        how: feature
+        epel: enabled
+        order: 10
+    when: distro == centos-stream
+    # Install packages in full mode
   - prepare+:
       - name: tmt
         how: install
         directory: tmp/RPMS/noarch
     when: how == full
+
+    # Use the local provision method when running tests locally
+  - provision:
+        how: local
+    when: initiator is not defined or initiator == human
+    because:
+        explicitly specifying the local provision method is not
+        allowed in the new Testing Farm pipeline
