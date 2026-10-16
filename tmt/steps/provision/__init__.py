@@ -73,6 +73,16 @@ class ProvisionStepData(tmt.steps.StepData):
         return spec
 
 
+@container
+class HasImage(tmt.steps._IsStepDataTrait):
+    image: str = field(
+        default='fedora',
+        option=('-i', '--image'),
+        metavar='IMAGE',
+        help='Image to provision.',
+    )
+
+
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
 
