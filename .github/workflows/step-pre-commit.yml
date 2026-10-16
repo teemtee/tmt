@@ -32,3 +32,26 @@ jobs:
           3.13
           3.x
     - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+
+  # TODO: Move this into regular pre-commit once we can use prek and uv.lock
+  generate-man:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.x
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          activate-environment: true
+      - name: Install tmt[docs]
+        run: uv sync --frozen --group docs
+
+      - name: Run scripts/generate-man.py
+        run: |
+          scripts/generate-man.py
+          # Fail and show the diff if anything is changed
+          git diff --exit-code

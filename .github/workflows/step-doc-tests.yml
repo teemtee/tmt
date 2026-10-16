@@ -17,10 +17,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        builder: [ linkcheck, html, lint ]
+        builder: [ linkcheck, html, lint, man ]
         include:
-          # Run default html builder with warnings as error
+          # Run default html and man builder with warnings as error
           - builder: html
+            args: -W
+          - builder: man
             args: -W
           - builder: lint
             sphinx_builder: html
