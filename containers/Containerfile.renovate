@@ -1,4 +1,4 @@
-FROM ghcr.io/renovatebot/renovate:42
+FROM ghcr.io/renovatebot/renovate:44.124.0
 
 # Changing user to root and back to run the apt-get commands
 USER root
