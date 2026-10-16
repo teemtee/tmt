@@ -58,14 +58,17 @@ _:
     preserve_project: true
     owner: "@teemtee"
 
+  # Testing Farm pipeline settings
+  - &pipeline-settings
+    pipeline:
+      type: tmt-multihost
+
   # Test jobs base setup
   - &test-base
     job: tests
     trigger: pull_request
     tf_extra_params:
-      settings:
-        pipeline:
-          type: tmt-multihost
+      settings: *pipeline-settings
       environments:
         - &copr-teemtee-stable
           artifacts:
@@ -88,9 +91,7 @@ _:
     targets:
       - fedora-latest-stable
     tf_extra_params:
-      settings:
-        pipeline:
-          type: tmt-multihost
+      settings: *pipeline-settings
       environments:
         - &tmt-cloud-resources
           <<: *copr-teemtee-stable
@@ -123,6 +124,7 @@ _:
     targets:
       - fedora-latest-stable
     tf_extra_params:
+      settings: *pipeline-settings
       environments:
         - tmt:
             context: &provision-context
@@ -132,6 +134,7 @@ _:
   # Image mode
   - &image-mode
     tf_extra_params:
+      settings: *pipeline-settings
       environments:
         - tmt:
             context:
@@ -218,6 +221,7 @@ jobs:
       - fedora-latest-stable
     identifier: sanity
     tf_extra_params:
+      settings: *pipeline-settings
       test:
         tmt:
           name: /plans/sanity
