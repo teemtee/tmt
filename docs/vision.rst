@@ -4,30 +4,33 @@
     Vision
 ======================
 
-This page captures what ``tmt`` is, the main ideas behind the
-tool, which features belong to its scope and how it compares to
-other tools.
+This page captures what tmt is, the main ideas behind the tool,
+which features belong to its scope and how it compares to other
+tools.
 
 
-Mission
+Why
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``tmt`` is a tool for managing tests and safely executing them
-across different environments such as local, container, virtual or
-CI. It covers test creation, discovery, organization, execution
-and interactive debugging, together with results reporting and
-coverage tracking for features and requirements.
+It is always good to start with the why.
 
-A single, consistent config can be used to enable tests in the
-very same way from upstream projects to downstream distributions.
-Metadata is stored and shared via git using the Flexible Metadata
-Format, kept close to the code and easy to reuse across projects.
+Testing was not a joyful task. Test metadata were stored in an
+ugly format in `Makefiles`_. Execution leaned heavily on a single
+backend such as Beaker. Tests were tightly coupled to the internal
+infrastructure and could not be easily open sourced. Additional
+test metadata lived in one test case management system, then in
+another, then there was a plan for yet another one... Tests were
+run in different ways from project to project, enabled in CI in
+different ways, and when something broke, reproducing and
+debugging the failure locally was hard.
 
-It is a layer that connects the dots between the many tools and
-services involved in testing, from guest provisioning and setup to
-result reporting. Rather than trying to replace them, it reuses
-and integrates them, helping them play nicely together so that
-developers and testers can work with tests easily and efficiently.
+The result was duplicated effort, little sharing between projects
+and a fresh learning curve each time you moved somewhere new. The
+tmt tool and specification grew out of the wish to replace this
+patchwork with a single, consistent way to create, run and debug
+tests, one that behaves the same on your laptop as it does in CI,
+all the way from upstream projects down to the released
+distributions.
 
 
 Concept
@@ -35,6 +38,7 @@ Concept
 
 The concept in just a few words:
 
+* tests liberated, executed early
 * consistent, concise config
 * plain text, versioned under git
 * yaml with inheritance & hierarchy
@@ -44,17 +48,39 @@ We aim to provide a stable, reliable, user-friendly and efficient
 tool.
 
 
+Mission
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+tmt is a tool for managing tests and safely executing them across
+different environments such as local, container, virtual or CI. It
+covers test creation, discovery, organization, execution and
+interactive debugging, together with results reporting and
+coverage tracking for features and requirements.
+
+A single, consistent config can be used to enable tests in the
+very same way from upstream projects to downstream distributions.
+Metadata are stored and shared via git using the `Flexible
+Metadata Format`_, kept close to the code and easy to reuse across
+projects.
+
+It is a layer that connects the dots between the many tools and
+services involved in testing, from guest provisioning and setup to
+result reporting. Rather than trying to replace them, it reuses
+and integrates them, helping them play nicely together so that
+developers and testers can work with tests easily and efficiently.
+
+
 In Scope
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following areas are the core concern of ``tmt``:
+The following areas are the core concern of tmt:
 
 * Test metadata, hierarchical, inheritable and git-native, using
   fmf (core, tests, plans and stories).
 * Test creation, discovery and organization across local and
   remote repositories.
 * A complete, end-to-end workflow covering the discover,
-  provision, prepare, execute, report, finish and cleanup steps.
+  provision, prepare, execute, finish, report and cleanup steps.
 * A provisioner-agnostic environment abstraction together with a
   generic hardware requirements language.
 * Framework-agnostic execution, running tests of any framework as
@@ -66,26 +92,26 @@ The following areas are the core concern of ``tmt``:
 Out of Scope
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``tmt`` deliberately integrates with existing tools rather than
+tmt deliberately integrates with existing tools rather than
 replacing them. It is **not**:
 
-* a test framework, it does not define how individual tests are
-  written. There is no single way to test, for example, a
-  graphical application, so writing the test itself is up to the
-  test author and the chosen framework. ``tmt`` wraps around
-  frameworks and executes tests of any of them.
-* a CI, gating or build system, it runs inside them
-* a service, it is a command-line tool and a library
-* a provisioning or virtualization tool, it uses libvirt, Podman
-  and cloud APIs through plugins
-* a configuration-management tool, it uses Ansible and supports
+* a test framework, tmt does not define how individual tests are
+  written. There is no single way to test and every technology
+  might require a different framework to be used based on the test
+  author's needs. tmt wraps around frameworks and executes tests
+  of any of them.
+* a CI, gating or build system, tmt runs inside them
+* a service, tmt is a command-line tool and a library
+* a provisioning or virtualization tool, but it uses libvirt,
+  Podman and cloud APIs through plugins
+* a infrastructure-management tool, tmt uses Ansible and supports
   custom shell scripts for guest preparation
-* a test-result management system, but it integrates with several
+* a test-result management system, but tmt integrates with several
   of them
 * tied to any single programming language, framework, operating
-  system, cloud or runtime, and it is not limited to the
+  system, cloud or runtime, and it is also not limited to the
   Fedora/RHEL ecosystem
-* a monolith, it is a plugin architecture where you use only what
+* a monolith, tmt is a plugin architecture where you use only what
   you need
 
 
@@ -93,11 +119,11 @@ Guiding Principles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two main guiding principles for the decision of whether
-a certain functionality belongs to ``tmt`` or not:
+a certain functionality belongs to tmt or not:
 
 Integrate rather than duplicate
     Prefer reusing an existing, mature solution over building the
-    same capability again inside ``tmt``.
+    same capability again inside tmt.
 
 Plugin over core
     Prefer delivering functionality as a plugin, and extend the
@@ -105,7 +131,7 @@ Plugin over core
 
 The principles above become actionable through a short set of
 questions. When a new feature or request is considered, work
-through them in order. First decide whether it belongs in ``tmt``
+through them in order. First decide whether it belongs in tmt
 at all:
 
 Is there an existing solution we can integrate or extend instead?
@@ -114,14 +140,14 @@ Is there an existing solution we can integrate or extend instead?
 
 Can't we do this outside of tmt?
     If users can already achieve it with existing tools or a thin
-    wrapper, it likely does not belong in ``tmt``.
+    wrapper, it likely does not belong in tmt.
 
 Is it hard to achieve outside of tmt?
     The stronger the case that it is genuinely difficult without the
     orchestration and metadata layer, the stronger the case for
     including it.
 
-Then, if it fits, decide how it should live in ``tmt``:
+Then, if it fits, decide how it should live in tmt:
 
 Could it be implemented as a plugin?
     Prefer delivering the feature as a plugin and identify the
@@ -141,16 +167,15 @@ needs.
 Positioning
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``tmt`` occupies a thin but valuable layer: the metadata and
+tmt occupies a thin but valuable layer: the metadata and
 orchestration layer between test frameworks and CI/CD platforms.
 This is the glue that many teams otherwise rebuild ad hoc with
-scripts or CI-specific configuration. Where ``tmt`` is
-distinctive:
+scripts or CI-specific configuration. Where tmt is distinctive:
 
 * fmf, hierarchical and inheritable test metadata stored in git
 * a generic, provisioner-agnostic hardware requirements language
 * one plan running unchanged across container, virtual machine and
-  bare metal
+  bare-metal systems
 * remote test-repository references enabling cross-project sharing
 * story-driven coverage, linking features to code, tests and docs
 * unified upstream and downstream testing, test once and gate
@@ -158,7 +183,7 @@ distinctive:
 * ``tmt try``, an interactive mode which provisions an environment
   and lets you experiment, develop and debug tests right there
 
-``tmt`` is the right choice when you test across multiple CI
+tmt is the right choice when you test across multiple CI
 platforms or environments, need hardware-requirement
 specifications, want test definitions versioned next to the code,
 or need unified upstream and downstream testing.
@@ -167,11 +192,11 @@ or need unified upstream and downstream testing.
 Test Framework
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Because ``tmt`` is sometimes mistaken for a test framework, it is
-worth clarifying the difference. The key is the scope, or altitude,
-at which each of them operates.
+Because tmt is sometimes mistaken for a test framework, it is
+worth clarifying the difference. The key is the scope, or
+altitude, at which each of them operates.
 
-``tmt`` works at the operating system level. It provisions a guest,
+tmt works at the operating system level. It provisions a guest,
 be it a virtual machine, a container or a bare-metal system,
 discovers which tests should run, prepares the whole environment,
 for example by installing packages with the system package manager,
@@ -186,20 +211,20 @@ how. ``pytest`` is a typical example: you write test functions,
 express checks with ``assert`` and share setup through fixtures, and
 ``pytest`` collects and runs them.
 
-For such a case ``tmt`` would provision and prepare the environment,
+For such a case tmt would provision and prepare the environment,
 install ``pytest``, run the suite and report the outcome, while
 ``pytest`` itself decides what each individual test verifies. Think
-of it as a zoom factor. ``tmt`` keeps the wide view, setting up the
+of it as a zoom factor. tmt keeps the wide view, setting up the
 stage and orchestrating the run, while the framework zooms in on
 each test case with fine-grained detail. The two meet at the
-``framework`` key, which tells ``tmt`` only how to interpret a
+``framework`` key, which tells tmt only how to interpret a
 test's result, currently ``shell`` or ``beakerlib``.
 
 
-Corner Stones
+Cornerstones
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-These corner stones explain why the tool is shaped the way it is.
+These cornerstones explain why the tool is shaped the way it is.
 They come from the original vision and remain the reference point
 for decisions.
 
@@ -227,9 +252,9 @@ Developers with testers
 Metadata with source
     Additional information needed for test execution should be
     stored as close to the test source code as possible. This
-    naturally allows efficient maintenance as related data are kept
-    at one place, supports version control and developer/tester
-    collaboration.
+    naturally allows efficient maintenance as related data are
+    kept at one place, supports version control and collaboration
+    between developer and tester.
 
 Shared solution
     Instead of duplicating the same or similar tools in individual
@@ -251,10 +276,13 @@ Always-ready tools
 
 Quality & review
     Quality is everyone's responsibility and review helps a lot.
-    The pull request workflow has proven to provide a very good way
-    to do code review and brings additional advantages such as
-    automated test results and test coverage reports. Devel and
-    tester can collaborate on test coverage including test code
-    review. We should strive to introduce the pull request
+    The pull request workflow has proven to provide a very good
+    way to do code review and brings additional advantages such as
+    automated test results and test coverage reports. Developer
+    and tester can collaborate on test coverage including test
+    code review. We should strive to introduce the pull request
     workflow wherever it makes sense and emphasize review across
     all our workflows.
+
+.. _Makefiles: https://github.com/teemtee/tmt/blob/main/examples/convert/Makefile#L29-L48
+.. _Flexible Metadata Format: https://fmf.readthedocs.io/
