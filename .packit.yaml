@@ -24,16 +24,11 @@ downstream_package_name: tmt
 upstream_project_url: https://github.com/teemtee/tmt
 issue_repository: https://github.com/teemtee/tmt
 
-srpm_build_deps:
-  - hatch
-  - python3-hatch-vcs
-
-actions: &base-actions
-  create-archive:
-    - hatch build -t sdist
-    - bash -c "echo dist/tmt-$PACKIT_PROJECT_VERSION.tar.gz"
-  get-current-version:
-    - hatch version
+# Post release suffix is used here so that any downstream version gets priority as soon as
+# it is released. When a new commit appears after the tag, the copr builds get prioritized
+# again.
+version_suffix: "^{PACKIT_PROJECT_SNAPSHOTID}"
+update_release: false
 
 targets: &all-targets
   - fedora-all
@@ -138,13 +133,13 @@ jobs:
   - <<: *copr-under-teemtee
     trigger: release
     project: stable
+    version_suffix: null
 
   # Build commits merged to main to latest
   - <<: *copr-under-teemtee
     trigger: commit
     branch: main
     project: latest
-    release_suffix: "{PACKIT_PROJECT_BRANCH}"
 
   # Build pull requests
   - <<: *copr-under-packit
