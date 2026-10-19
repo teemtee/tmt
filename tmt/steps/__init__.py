@@ -1460,7 +1460,15 @@ class Step(
                         # Find the plugin class...
                         plugin_class = self._plugin_base_class._find_plugin_by_how(self, how)
 
-                        # ... then take its "step data" class...
+                        # ... and if there's no such class - can happen,
+                        # e.g. when using environment variables - just
+                        # state there are no base classes.
+                        if plugin_class is None:
+                            debug3(f"no plugin class found for '{how}'")
+
+                            return set()
+
+                        # Then get the "step data" class...
                         plugin_data_class = cast(
                             type[BasePlugin[StepData, Any]], plugin_class
                         ).get_data_class()
