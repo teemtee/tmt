@@ -4,9 +4,9 @@
     Vision
 ======================
 
-This page captures what tmt is, the main ideas behind the tool,
-which features belong to its scope and how it compares to other
-tools.
+This page captures what tmt is, the original motivation and main
+ideas behind the tool, which features belong to its scope and
+which do not.
 
 
 Why
@@ -76,17 +76,20 @@ In Scope
 The following areas are the core concern of tmt:
 
 * Test metadata, hierarchical, inheritable and git-native, using
-  fmf (core, tests, plans and stories).
+  fmf (core, tests, plans and stories), linking features to code,
+  tests and docs
 * Test creation, discovery and organization across local and
   remote repositories.
 * A complete, end-to-end workflow covering the discover,
   provision, prepare, execute, finish, report and cleanup steps.
+* An interactive mode which provisions an environment and lets you
+  experiment, develop and debug tests right there
 * A provisioner-agnostic environment abstraction together with a
   generic hardware requirements language.
 * Framework-agnostic execution, running tests of any framework as
   a backend.
-* Context-aware behavior, interactive iteration, metadata linting
-  and result reporting through plugins.
+* Context-aware behavior, metadata linting and result reporting
+  through plugins.
 
 
 Out of Scope
@@ -104,7 +107,7 @@ replacing them. It is **not**:
 * a service, tmt is a command-line tool and a library
 * a provisioning or virtualization tool, but it uses libvirt,
   Podman and cloud APIs through plugins
-* a infrastructure-management tool, tmt uses Ansible and supports
+* an infrastructure-management tool, tmt uses Ansible and supports
   custom shell scripts for guest preparation
 * a test-result management system, but tmt integrates with several
   of them
@@ -162,31 +165,6 @@ Does it have to be implemented in the core?
 In short: integrate before building, build outside the core before
 building inside it, and add to the core only what a plugin genuinely
 needs.
-
-
-Positioning
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-tmt occupies a thin but valuable layer: the metadata and
-orchestration layer between test frameworks and CI/CD platforms.
-This is the glue that many teams otherwise rebuild ad hoc with
-scripts or CI-specific configuration. Where tmt is distinctive:
-
-* fmf, hierarchical and inheritable test metadata stored in git
-* a generic, provisioner-agnostic hardware requirements language
-* one plan running unchanged across container, virtual machine and
-  bare-metal systems
-* remote test-repository references enabling cross-project sharing
-* story-driven coverage, linking features to code, tests and docs
-* unified upstream and downstream testing, test once and gate
-  everywhere
-* ``tmt try``, an interactive mode which provisions an environment
-  and lets you experiment, develop and debug tests right there
-
-tmt is the right choice when you test across multiple CI
-platforms or environments, need hardware-requirement
-specifications, want test definitions versioned next to the code,
-or need unified upstream and downstream testing.
 
 
 Test Framework
