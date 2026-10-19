@@ -35,7 +35,6 @@ _DEPS_CORE_FEDORA := \
     hatch \
     uv \
     python3-devel \
-    python3-hatch-vcs \
     rpm-build \
     clang \
     beakerlib
@@ -55,12 +54,8 @@ _DEPS_DEVELOP_FEDORA := \
     /usr/bin/python3.12 \
     pre-commit
 
-# Note: interestingly, `hatch` is not shipped by Ubuntu, but `hatch` plugins are.
-# Manual `hatch` installation probably does not the packaged plugin, leaving it
-# in for now until we get better coverage.
 _DEPS_CORE_UBUNTU := \
     python3-dev \
-    python3-hatch-vcs \
     clang
 
 _DEPS_DEVELOP_UBUNTU := \
