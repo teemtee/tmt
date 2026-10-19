@@ -206,8 +206,6 @@ jobs:
     <<: *require-full-tests
     identifier: internal-plugins
     fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/tmt.git"
-    # TODO: Remove, just testing...
-    fmf_ref: "psss-provision-local"
 
   # Test internal wow
   - <<: *test-base
@@ -216,8 +214,6 @@ jobs:
     identifier: internal-wow
     fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
     tmt_plan: '/tmt/integration/plan'
-    # TODO: Remove, just testing...
-    fmf_ref: "psss-require-tmt"
 
   # OS-agnostic sanity and coding-standard checks
   - <<: *test-base
