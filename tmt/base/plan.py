@@ -1,5 +1,6 @@
 import enum
 import functools
+import hashlib
 import itertools
 import re
 import shutil
@@ -1358,20 +1359,51 @@ class Plan(
         """
         return bool(self._imported_plan_references)
 
+    @property
+    def import_depth(self) -> int:
+        """
+        How many levels of remote plan imports led to this plan.
+
+        A plan loaded directly from the local tree has depth ``0``. Each
+        time a plan is imported from another (possibly nested) remote
+        plan reference, the depth of the resulting plan grows by one.
+        """
+
+        depth = 0
+        plan: Optional[Plan] = self._original_plan
+        while plan is not None:
+            depth += 1
+            plan = plan._original_plan
+
+        return depth
+
     def _resolve_import_to_nodes(
         self, reference: RemotePlanReference, tree: fmf.Tree
     ) -> Iterator[fmf.Tree]:
         """
         Discover all plan-like fmf nodes in a given tree.
+
+        A plan-like node is either a regular plan, defining an
+        ``execute`` step, or a remote plan reference, defining a ``plan``
+        import. The latter allows imported plans to import yet another
+        plan, i.e. nested plan imports.
         """
 
         self.debug(
             f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}'", level=3
         )
 
-        for node in tree.prune(keys=['execute']):  # pyright: ignore[reportUnknownArgumentType, reportUnknownVariableType]
-            if reference.name_pattern.match(node.name) is not None:  # pyright: ignore[reportUnknownArgumentType]
-                yield node
+        # Collect both regular plans and remote plan references, mirroring
+        # how plans are discovered in the local tree. A valid node defines
+        # only one of the two keys; the deduplication by node name just
+        # guards against a misconfigured node defining both.
+        nodes: dict[str, fmf.Tree] = {}
+        for node in [*tree.prune(keys=['execute']), *tree.prune(keys=['plan'])]:  # pyright: ignore[reportUnknownArgumentType, reportUnknownVariableType]
+            nodes.setdefault(node.name, node)  # pyright: ignore[reportUnknownArgumentType]
+
+        for name in sorted(nodes):
+            if reference.name_pattern.match(name) is not None:
+                yield nodes[name]
 
     def _resolve_import_from_git(self, reference: RemotePlanReference) -> Iterator[fmf.Tree]:
         """
@@ -1385,7 +1417,17 @@ class Plan(
         assert reference.url is not None
         assert reference.name is not None
 
-        destination = self.run_workdir / "import" / self.safe_name.lstrip("/")
+        # The clone destination is keyed by the referenced repository and
+        # ref rather than by the importing plan name. A nested import may
+        # point to a different repository or ref than its parent, and two
+        # plans sharing the same plan name (e.g. after a `replace` import)
+        # must not collide in a single shared clone. Keying by reference
+        # also lets plans importing the same repository reuse the clone.
+        reference_key = f"{reference.url}#{reference.ref or ''}"
+        reference_hash = hashlib.sha256(reference_key.encode()).hexdigest()[:12]
+        repo_basename = reference.url.rstrip("/").rsplit("/", 1)[-1].removesuffix(".git")
+        repo_name = tmt.utils.sanitize_name(repo_basename, allow_slash=False) or "repo"
+        destination = self.run_workdir / "import" / f"{repo_name}-{reference_hash}"
 
         if destination.exists():
             self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
