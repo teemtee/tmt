@@ -17,7 +17,9 @@ discover:
 prepare+:
   - name: required-packages
     how: install
-    package: guestfs-tools
+    package:
+      - guestfs-tools
+      - tmt+provision-virtual
 
   - name: start-libvirtd
     script: |
