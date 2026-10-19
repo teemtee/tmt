@@ -12,6 +12,8 @@ prepare+:
     script: |
         systemctl start libvirtd
         systemctl status libvirtd
+    # Run after required packages are installed
+    order: 80
 
 adjust+:
   - enabled: true

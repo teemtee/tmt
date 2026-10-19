@@ -19,12 +19,13 @@ prepare+:
     how: install
     package:
       - guestfs-tools
-      - tmt+provision-virtual
 
   - name: start-libvirtd
     script: |
         sudo systemctl start libvirtd
         sudo systemctl status libvirtd
+    # Run after required packages are installed
+    order: 80
 
 
 # TODO hotfix disable the image preparation because of weird dns issues
