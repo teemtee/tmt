@@ -3,6 +3,7 @@ prepare+:
     name: essential-packages
     how: install
     package:
+      - git-core
       - jq
       - yq
       - make
@@ -15,7 +16,7 @@ execute:
     how: tmt
 
 environment:
-  PYTEST: python3 -m pytest -vvv -ra --showlocals
+    PYTEST: python3 -m pytest -vvv -ra --showlocals
 
 adjust:
     # Enable epel on CentOS Stream
@@ -25,6 +26,7 @@ adjust:
         epel: enabled
         order: 10
     when: distro == centos-stream
+
     # Install packages in full mode
   - prepare+:
       - name: tmt
