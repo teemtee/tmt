@@ -8,7 +8,6 @@ import collections
 import copy
 import enum
 import functools
-import os
 import re
 import shutil
 from collections.abc import Iterable, Sequence
@@ -1855,32 +1854,14 @@ class LintableCollection(tmt.lint.Lintable['LintableCollection']):
         echo(style("Lint checks on all", fg='red'))
 
 
-_FMF_CONTEXT_VARIABLE_PATTERN = re.compile(r'\$(\w+|\{[^}]*\}?)', re.ASCII)
-
-
-def _expand_fmf_context(value: str, context_environment: Environment) -> str:
-    """Expand fmf context variables without modifying the process environment."""
-
-    def replace(match: re.Match[str]) -> str:
-        variable = match.group(1)
-        if variable.startswith('{'):
-            if not variable.endswith('}'):
-                return match.group(0)
-            variable = variable[1:-1]
-
-        return context_environment.get(variable, match.group(0))
-
-    return _FMF_CONTEXT_VARIABLE_PATTERN.sub(replace, value)
-
-
-def expand_node_data(data: T, fmf_context: FmfContext) -> T:
+def expand_node_data(data: T, environment: Environment, fmf_context: FmfContext) -> T:
     """
     Recursively expand variables in node data
     """
-    return _expand_node_data(data, Environment.from_fmf_context(fmf_context))
+    return _expand_node_data(data, environment, Environment.from_fmf_context(fmf_context))
 
 
-def _expand_node_data(data: T, context_environment: Environment) -> T:
+def _expand_node_data(data: T, environment: Environment, context_environment: Environment) -> T:
     if isinstance(data, str):
         # Expand environment and context variables. This is a bit
         # tricky as we do need to process each type individually and
@@ -1893,23 +1874,14 @@ def _expand_node_data(data: T, context_environment: Environment) -> T:
         # Don't process the first item as that was not a variable.
         first_item = split_data.pop(0)
 
-        # Do the environment variable expansion for items not
-        # starting with @. Each item starting with @ is marked
-        # to be expanded later - we cannot blindly check whether
-        # the item starts with @ to prevent expansion of already
-        # expanded items later. Therefore we store a flag and the
-        # item - if the flag is `True`, item has been expanded
-        # already. We also store the original item - in case we
-        # don't expand it at all, let's put the original value back
-        # into the stream.
+        # Expand environment variables first. Items starting with @ are
+        # deferred to context expansion and must not use the environment.
+        # This preserves the distinction between $VAR and $@VAR.
         # See https://github.com/teemtee/tmt/issues/2654.
-        #
-        # TID251: `pathlib` does not provide `os.patch.expandvars`, its
-        # use is allowed.
         expanded_env: list[tuple[bool, str, str]] = [
             (False, item[1:], item)
             if item.startswith('@')
-            else (True, os.path.expandvars(f'${item}'), item)  # noqa: TID251
+            else (True, environment.expandvars(f'${item}'), item)
             for item in split_data
         ]
 
@@ -1922,7 +1894,7 @@ def _expand_node_data(data: T, context_environment: Environment) -> T:
             if was_expanded:
                 expanded_ctx.append(item)
                 continue
-            expanded = _expand_fmf_context(f'${item}', context_environment)
+            expanded = context_environment.expandvars(f'${item}')
             expanded_ctx.append(f'${original_item}' if expanded.startswith('$') else expanded)
 
         # This cast is tricky: we get a string, and we return a
@@ -1932,10 +1904,10 @@ def _expand_node_data(data: T, context_environment: Environment) -> T:
 
     if isinstance(data, dict):
         for key, value in data.items():
-            data[key] = _expand_node_data(value, context_environment)
+            data[key] = _expand_node_data(value, environment, context_environment)
     elif isinstance(data, list):
         for i, item in enumerate(data):
-            data[i] = _expand_node_data(item, context_environment)
+            data[i] = _expand_node_data(item, environment, context_environment)
     return data
 
 
