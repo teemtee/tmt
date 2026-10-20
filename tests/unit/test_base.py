@@ -301,3 +301,19 @@ def test_expand_node_data(monkeypatch) -> None:
         monkeypatch.setenv(envvar, value)
 
     assert expand_node_data(data, fmf_context) == expected
+
+
+def test_expand_node_data_does_not_replace_environment(monkeypatch) -> None:
+    """
+    Context expansion must not replace the process environment.
+    """
+
+    original_environment = Environment.from_environ()
+
+    def fail_if_called(*args: object, **kwargs: object) -> None:
+        raise AssertionError('Environment.as_environ() must not be called')
+
+    monkeypatch.setattr(Environment, 'as_environ', fail_if_called)
+
+    assert expand_node_data('$@WALDO', {'WALDO': ['plugh']}) == 'plugh'
+    assert Environment.from_environ() == original_environment
