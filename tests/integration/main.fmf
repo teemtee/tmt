@@ -38,9 +38,8 @@ description: |
 environment:
     REQURE_MODE: read
 framework: shell
-require:
+require+:
   - python3-pytest
-  - tmt+all
 tag: [integration]
 tier: null
 link: https://github.com/packit/requre
