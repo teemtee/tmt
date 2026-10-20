@@ -332,10 +332,11 @@ class Plan(
                 self._initialize_worktree()
 
         # Expand all environment and context variables in the node
-        with Environment.build_environment(
-            plan=self, run=self.my_run, logger=self._logger
-        ).as_environ():
-            expand_node_data(node.data, self.fmf_context)  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
+        expand_node_data(
+            node.data,
+            Environment.build_environment(plan=self, run=self.my_run, logger=self._logger),
+            self.fmf_context,
+        )  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
 
         # Initialize test steps
         def _normalize_raw_step_phases(
