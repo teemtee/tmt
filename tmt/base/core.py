@@ -1855,10 +1855,32 @@ class LintableCollection(tmt.lint.Lintable['LintableCollection']):
         echo(style("Lint checks on all", fg='red'))
 
 
+_FMF_CONTEXT_VARIABLE_PATTERN = re.compile(r'\$(\w+|\{[^}]*\}?)', re.ASCII)
+
+
+def _expand_fmf_context(value: str, context_environment: Environment) -> str:
+    """Expand fmf context variables without modifying the process environment."""
+
+    def replace(match: re.Match[str]) -> str:
+        variable = match.group(1)
+        if variable.startswith('{'):
+            if not variable.endswith('}'):
+                return match.group(0)
+            variable = variable[1:-1]
+
+        return context_environment.get(variable, match.group(0))
+
+    return _FMF_CONTEXT_VARIABLE_PATTERN.sub(replace, value)
+
+
 def expand_node_data(data: T, fmf_context: FmfContext) -> T:
     """
     Recursively expand variables in node data
     """
+    return _expand_node_data(data, Environment.from_fmf_context(fmf_context))
+
+
+def _expand_node_data(data: T, context_environment: Environment) -> T:
     if isinstance(data, str):
         # Expand environment and context variables. This is a bit
         # tricky as we do need to process each type individually and
@@ -1896,15 +1918,12 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
         # which are to be referencing fmf dimensions rather than environment
         # variables.
         expanded_ctx = [first_item]
-        with Environment.from_fmf_context(fmf_context).as_environ():
-            for was_expanded, item, original_item in expanded_env:
-                if was_expanded:
-                    expanded_ctx.append(item)
-                    continue
-                # TID251: `pathlib` does not provide `os.patch.expandvars`, its
-                # use is allowed.
-                expanded = os.path.expandvars(f'${item}')  # noqa: TID251
-                expanded_ctx.append(f'${original_item}' if expanded.startswith('$') else expanded)
+        for was_expanded, item, original_item in expanded_env:
+            if was_expanded:
+                expanded_ctx.append(item)
+                continue
+            expanded = _expand_fmf_context(f'${item}', context_environment)
+            expanded_ctx.append(f'${original_item}' if expanded.startswith('$') else expanded)
 
         # This cast is tricky: we get a string, and we return a
         # string, so T -> T hold, yet mypy does not recognize this,
@@ -1913,10 +1932,10 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
 
     if isinstance(data, dict):
         for key, value in data.items():
-            data[key] = expand_node_data(value, fmf_context)
+            data[key] = _expand_node_data(value, context_environment)
     elif isinstance(data, list):
         for i, item in enumerate(data):
-            data[i] = expand_node_data(item, fmf_context)
+            data[i] = _expand_node_data(item, context_environment)
     return data
 
 
