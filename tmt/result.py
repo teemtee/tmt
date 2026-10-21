@@ -58,7 +58,7 @@ class ResultOutcome(enum.StrEnum):
         # Special case if test did not run
         if self in (ResultOutcome.PENDING, ResultOutcome.SKIP):
             # A check failure is a failure
-            if any(check >= ResultOutcome.FAIL for check in check_results):
+            if any(check >= ResultOutcome.WARN for check in check_results):
                 return max(check_results)
             # Otherwise keep the state in pending or skip
             return self
