@@ -163,18 +163,10 @@ dependency-groups = ["dev"]
 features = ["all"]
 
 [tool.hatch.envs.dev.scripts]
-unit = "make images/test && pytest -vvv -ra --showlocals -n 0 tests/unit"
-smoke = "pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py"
-cov = [
-    "coverage run --source=tmt -m pytest -vvv -ra --showlocals -n 0 tests",
-    "coverage report",
-    "coverage annotate",
-    ]
-requre = [
-    "cd {root}/tests/integration",
-    "pytest -vvv -ra --showlocals -n 0",
-    "requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*",
-    ]
+unit = "{root}/scripts/test-unit.py"
+smoke = "{root}/scripts/test-smoke.py"
+cov = "{root}/scripts/test-coverage.py"
+requre = "{root}/scripts/test-requre.py"
 
 [tool.hatch.envs.dev-not-editable]
 template = "dev"
@@ -189,9 +181,7 @@ description = "Test environment"
 dependency-groups = ["docs"]
 
 [tool.hatch.envs.docs.scripts]
-man = [
-    "{root}/scripts/generate-man.py",
-]
+man = "{root}/scripts/generate-man.py"
 
 [dirs.env]
 virtual = ".venv"
@@ -264,7 +254,9 @@ ignore = [
     "tmt/queue.py",
     "tmt/utils/__init__.py",
     "tmt/utils/structured_field.py",
-    "scripts/generate-man.py",  # Requires docs dependencies in pre-commit. Revisit when we switch to prek with uv.lock support
+    # Requires project dependencies in pre-commit. Revisit when we switch to prek with uv.lock support
+    "scripts/generate-man.py",
+    "scripts/test-*.py",
 ]
 
 pythonVersion = "3.12"
