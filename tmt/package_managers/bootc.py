@@ -6,7 +6,7 @@ from typing import Any, Optional
 import fmf.utils
 
 import tmt.utils
-from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer
+from tmt.container import ConfigDict, MetadataContainer
 from tmt.guest import TransferOptions
 from tmt.package_managers import (
     Installable,
@@ -27,13 +27,7 @@ class BootcMetadataContainer(MetadataContainer):
     This is a minimal version only including relevant fields for tmt.
     """
 
-    if PYDANTIC_V1:
-
-        class Config(MetadataContainer.Config):
-            # Allow unknown fields to support schema extensions and newer bootc versions
-            extra = "allow"
-    else:
-        model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")
 
 
 class ImageReference(BootcMetadataContainer):
