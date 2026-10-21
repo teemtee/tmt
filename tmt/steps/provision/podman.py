@@ -810,8 +810,8 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
         for device in data.expose_device:
             self._validate_device_against_allowlist(device)
 
-        # Create a new GuestTestcloud instance and start it
-        self._guest = GuestContainer(
+        # Create a new GuestContainer instance and start it
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,
