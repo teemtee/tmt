@@ -138,7 +138,6 @@ dev = [
     {include-group = "tests"},
     {include-group = "docs"},
     {include-group = "type-check"},
-    "autopep8",  # TODO: Remove together with hatch script as it is not enforced in pre-commit or elsewhere
     "ruff",
     "pre-commit",
     "python-coveralls",
@@ -164,10 +163,6 @@ dependency-groups = ["dev"]
 features = ["all"]
 
 [tool.hatch.envs.dev.scripts]
-lint = ["autopep8 {args:.}", "ruff --fix {args:.}"]
-type = ["mypy {args:tmt}"]
-check = ["lint", "type"]
-
 unit = "make images/test && pytest -vvv -ra --showlocals -n 0 tests/unit"
 smoke = "pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py"
 cov = [
@@ -194,15 +189,6 @@ description = "Test environment"
 dependency-groups = ["docs"]
 
 [tool.hatch.envs.docs.scripts]
-# Note that in RTD there are a few additional flags (from RTD's default build
-# script) e.g. -E, -d, and -D. These should not affect generated documentation
-# files below, but it may be providing additional metadata for RTD to index.
-html = "sphinx-build -b html {root}/docs {root}/docs/_build {args}"
-linkcheck = "sphinx-build -b linkcheck {root}/docs {root}/docs/_build {args}"
-sphinx-rest-linter = [
-    "sphinx-build -b dummy {root}/docs {root}/docs/_build {args}",
-    "sphinx-lint --ignore=.hatch_envs"
-]
 man = [
     "{root}/scripts/generate-man.py",
 ]
