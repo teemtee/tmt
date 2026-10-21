@@ -1490,7 +1490,9 @@ class Step(
                     compatible_keys: set[str] = set()
 
                     for klass_ in shared_key_sources:
-                        compatible_keys.update(container_keys(klass_))
+                        compatible_keys.update(
+                            field_name.replace('_', '-') for field_name in container_keys(klass_)
+                        )
 
                     debug3('compatible keys', ', '.join(compatible_keys))
 
