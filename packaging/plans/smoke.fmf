@@ -1,3 +1,6 @@
 summary: Minimal smoke test
+prepare:
+    how: install
+    package: tmt
 execute:
     script: tmt --help

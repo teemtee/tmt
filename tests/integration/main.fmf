@@ -38,7 +38,7 @@ description: |
 environment:
     REQURE_MODE: read
 framework: shell
-require:
+require+:
   - python3-pytest
 tag: [integration]
 tier: null

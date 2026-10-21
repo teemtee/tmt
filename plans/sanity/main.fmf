@@ -1,18 +1,6 @@
-/:
-  inherit: false
-
-execute:
-  how: tmt
 discover:
   how: fmf
   filter: "tag: sanity"
-
-prepare:
-  - name: Install common base packages
-    how: install
-    package:
-      - python3-pip
-      - git
 
 /without-tmt:
   summary: Run CI tests without tmt installed
