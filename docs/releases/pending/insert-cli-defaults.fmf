@@ -1,0 +1,6 @@
+description: |
+  The ``--insert`` step action no longer copies unused command-line
+  defaults into the new phase. Testing Farm and similar callers of
+  ``discover --insert --how fmf --url ...`` no longer trigger false
+  deprecation warnings for the obsolete ``repository`` and
+  ``revision`` keys.
