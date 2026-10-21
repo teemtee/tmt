@@ -226,7 +226,7 @@ default-1:html:never"
         rlRun -s "$run plan -n /with-report \
             report --update -h junit --file foo.xml --prettify"
 
-        rlAssertNotGrep "warn: Cannot fully update report phase 'default-0'" $rlRun_LOG
+        rlAssertNotGrep "warn: Cannot update report phase 'default-0'" $rlRun_LOG
         rlAssertGrep "output: foo.xml" $rlRun_LOG
 
         check "with-report" "One 'junit' phase shall exist" "default-0:junit:50"
@@ -239,7 +239,7 @@ default-1:html:never"
         rlRun -s "$run plan -n /with-report \
             report --update-missing -h junit --file foo.xml  --prettify"
 
-        rlAssertNotGrep "warn: Cannot fully update report phase 'default-0'" $rlRun_LOG
+        rlAssertNotGrep "warn: Cannot update report phase 'default-0'" $rlRun_LOG
         rlAssertGrep "output: foo.xml" $rlRun_LOG
 
         check "with-report" "One 'html' phase shall exist" "default-0:html:50"
