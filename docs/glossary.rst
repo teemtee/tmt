@@ -4,6 +4,19 @@ Glossary
 
 Here you can find some common terms used throughout the tmt project.
 
+General
+-------
+
+.. glossary::
+
+    test framework
+        A tool for writing and running the logic of individual test
+        cases, providing primitives such as assertions and fixtures,
+        for example ``pytest`` or ``beakerlib``. The way the test
+        framework results should be interpreted is defined by the
+        :tmt:story:`/spec/tests/framework` key. See also the
+        :ref:`test_framework` question for detailed explanation.
+
 Machines
 --------
 
