@@ -29,20 +29,20 @@ class ResultOutcome(enum.StrEnum):
 
     # Note: we cannot use functools.total_ordering because `str` defines all comparators
     # Note: _sort_order_ is present, but typing is not aware of it
-    def __gt__(self, other: str) -> bool:
-        other = ResultOutcome(other)
+    def __gt__(self, other: "ResultOutcome") -> bool:  # type: ignore[override]
+        assert isinstance(other, ResultOutcome)
         return self._sort_order_ > other._sort_order_  # type: ignore[no-any-return,attr-defined]
 
-    def __lt__(self, other: str) -> bool:
-        other = ResultOutcome(other)
+    def __lt__(self, other: "ResultOutcome") -> bool:  # type: ignore[override]
+        assert isinstance(other, ResultOutcome)
         return self._sort_order_ < other._sort_order_  # type: ignore[no-any-return,attr-defined]
 
-    def __ge__(self, other: str) -> bool:
-        other = ResultOutcome(other)
+    def __ge__(self, other: "ResultOutcome") -> bool:  # type: ignore[override]
+        assert isinstance(other, ResultOutcome)
         return self._sort_order_ >= other._sort_order_  # type: ignore[no-any-return,attr-defined]
 
-    def __le__(self, other: str) -> bool:
-        other = ResultOutcome(other)
+    def __le__(self, other: "ResultOutcome") -> bool:  # type: ignore[override]
+        assert isinstance(other, ResultOutcome)
         return self._sort_order_ <= other._sort_order_  # type: ignore[no-any-return,attr-defined]
 
     @classmethod
