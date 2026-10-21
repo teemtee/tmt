@@ -14,14 +14,14 @@ Why
 
 It is always good to start with the why.
 
-Testing was not a joyful task. Test metadata were stored in an
-ugly format in `Makefiles`_. Tests were tightly coupled to the
-internal infrastructure and could not be easily open sourced.
-Additional test metadata lived in test case management system
-where special account was needed. Then there was another system...
-Tests were run in different ways from project to project, enabled
-in CI in different ways, and when something broke, reproducing and
-debugging the failure locally was hard.
+Testing the operating system was not a joyful task. Test metadata
+were stored in an ugly format in `Makefiles`_. Tests were tightly
+coupled to the internal infrastructure and could not be easily
+open sourced.  Additional test metadata lived in test case
+management system where special account was needed. Then there was
+another system...  Tests were run in different ways from project
+to project, enabled in CI in different ways, and when something
+broke, reproducing and debugging the failure locally was hard.
 
 The result was duplicated effort, little sharing between projects
 and a fresh learning curve each time you moved to a new project or
