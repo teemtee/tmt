@@ -450,7 +450,7 @@ class Result(BaseResult):
         ]
 
         # Aggregate check results with the main test result
-        self.result = max(self.result, *check_outcomes)
+        self.result = max([self.result, *check_outcomes])
 
         # Override result with result outcome provided by user
         if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
