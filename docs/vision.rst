@@ -86,8 +86,8 @@ The following areas are the core concern of tmt:
   experiment, develop and debug tests right there
 * A provisioner-agnostic environment abstraction together with a
   generic hardware requirements language.
-* Framework-agnostic execution, running tests of any framework as
-  a backend.
+* Test framework-agnostic execution, running tests of any
+  framework as a backend.
 * Context-aware behavior, metadata linting and result reporting
   through plugins.
 
@@ -98,11 +98,11 @@ Out of Scope
 tmt deliberately integrates with existing tools rather than
 replacing them. It is **not**:
 
-* a test framework, tmt does not define how individual tests are
-  written. There is no single way to test and every technology
-  might require a different framework to be used based on the test
-  author's needs. tmt wraps around frameworks and executes tests
-  of any of them.
+* a :term:`test framework`, tmt does not define how individual
+  tests are written. There is no single way to test and every
+  technology might require a different framework to be used based
+  on the test author's needs. tmt wraps around frameworks and
+  executes tests of any of them.
 * a CI, gating or build system, tmt runs inside them
 * a service, tmt is a command-line tool and a library
 * a provisioning or virtualization tool, but it uses libvirt,
@@ -165,38 +165,6 @@ Does it have to be implemented in the core?
 In short: integrate before building, build outside the core before
 building inside it, and add to the core only what a plugin genuinely
 needs.
-
-
-Test Framework
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Because tmt is sometimes mistaken for a test framework, it is
-worth clarifying the difference. The key is the scope, or
-altitude, at which each of them operates.
-
-tmt works at the operating system level. It provisions a guest,
-be it a virtual machine, a container or a bare-metal system,
-discovers which tests should run, prepares the whole environment,
-for example by installing packages with the system package manager,
-applying Ansible playbooks or even rebooting the machine, then
-executes the tests and interprets and aggregates their results.
-
-A test framework works inside a single process on that prepared
-system, at the level of an individual test case. It provides the
-primitives for writing the test logic itself, such as assertions,
-expectations and in-process fixtures, deciding what to check and
-how. ``pytest`` is a typical example: you write test functions,
-express checks with ``assert`` and share setup through fixtures, and
-``pytest`` collects and runs them.
-
-For such a case tmt would provision and prepare the environment,
-install ``pytest``, run the suite and report the outcome, while
-``pytest`` itself decides what each individual test verifies. Think
-of it as a zoom factor. tmt keeps the wide view, setting up the
-stage and orchestrating the run, while the framework zooms in on
-each test case with fine-grained detail. The two meet at the
-``framework`` key, which tells tmt only how to interpret a
-test's result, currently ``shell`` or ``beakerlib``.
 
 
 Cornerstones
