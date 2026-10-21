@@ -461,12 +461,29 @@ class StepData(
         return data
 
 
+@container
+class _IsStepDataTrait:
+    """
+    A mixin class that marks a class as providing step data fields.
+
+    Usually, step data classes are derived from the :py:class:`StepData`
+    class, and is enough. But some mixin classes just bring additional
+    fields, shared by just some of the step data classes - these mixin
+    classes shall include ``_StepDataTrait`` as one of their base classes.
+
+    Without including this class, the detection of compatible fields in
+    :py:meth:`Step._apply_cli_invocations` would not work correctly.
+    """
+
+    pass
+
+
 class RawWhereableStepData(TypedDict, total=False):
     where: Union[str, list[str]]
 
 
 @container
-class WhereableStepData(SerializableContainer):
+class WhereableStepData(_IsStepDataTrait):
     """
     Keys shared by step data that may be limited to a particular guest.
 
@@ -1228,6 +1245,183 @@ class Step(
 
             self.plan._applied_cli_invocations.append(invocation)
 
+        def _apply_cli_invocation(
+            invocation: tmt.cli.CliInvocation, raw_datum: _RawStepData
+        ) -> _RawStepData:
+            """
+            Apply CLI invocation on the given phase specification.
+
+            Special care is needed when ``how`` changes.
+            """
+
+            how = raw_datum.get('how')
+
+            incoming_raw_datum = _to_raw_step_datum(invocation.options)
+
+            # In the 'tmt try image' command user can specify their
+            # preferred image name without specifying the provision
+            # method, thus the 'how' key can be unset and we respect the
+            # provision method specified in the plan.
+            incoming_how = incoming_raw_datum.get('how')
+
+            # Trying to amend two sides of an equation:
+            #
+            # * on the left, we have an *original* phase and its keys, collected in the
+            #   `raw_datum` container,
+            # * on the right, we have *incoming* options from command-line, wishing to change
+            #   some of the original keys.
+            #
+            # CLI can change original keys, give them new values, including the `how` key which
+            # means the whole phase changes to something driven by different plugin. What to
+            # do about the original keys that are not changed? Updating via command-line does
+            # not necessarily mean user wishes to override all original keys, often they wish
+            # to "inherit" some values: change `how` but keep `image`, or change `image`
+            # but keep `how`.
+            #
+            # Easy: take the original keys, and apply incoming keys on top of them. Incoming
+            # keys overwrite the original ones, and if incoming leaves out some some keys,
+            # those would stay untouched, effectively "inherited". `--how foo` would change
+            # `how` but inherit `image` from the original phase.
+            #
+            # But: does the `image` key of plugin `foo` have the same semantics as the `image`
+            # key of plugin `bar`? Maybe the latter is not a VM image to spawn a VM from, but
+            # a path to a picture of nice, summer meadow.
+            #
+            # Hence the search for *compatible keys*: find base classes shared by both plugins,
+            # and let the incoming plugin inherit only the keys known to have the same
+            # semantics, those both plugins get them from the same base class. `image`
+            # key would be inherited as long as `image` field is defined in a class both plugin
+            # data classes derive from.
+
+            # Incoming comes without `how` - the original `how` survives, other original
+            # keys get replaced with incoming ones. But that is not as bad as it sounds:
+            # without `how`, the only incoming keys command-line can deliver are the really
+            # basic ones: `name`, `order`, and so on. Definitely not the way to change `image`
+            # key.
+            if incoming_how is None:
+                debug3('compatible step data (how-less invocation)')
+
+            # Oncoming comes with `how`, but the original `how` is unknown. Incoming keys
+            # are used, completely overwriting original ones. But then again, without `how`,
+            # the original keys can't contain plugin-specific keys, they would be limited to
+            # keys like `name` or `order`. `image` can't appear here.
+            elif how is None:
+                debug3('compatible step data (how-less original phase')
+
+            # Incoming and original have the same `how` - they are the same plugin, all keys
+            # are compatible. Oh the joy \o/
+            elif how == incoming_how:
+                debug3('compatible step data')
+
+            # Both incoming and original have `how` keys, but they differ. Try to find which
+            # keys they share, and let only those be inherited.
+            else:
+                debug3('incompatible step data')
+
+                def _collect_plugin_key_bases(
+                    how: str,
+                ) -> set[Union[type[StepData], type[_IsStepDataTrait]]]:
+                    # Find the plugin class...
+                    plugin_class = self._plugin_base_class._find_plugin_by_how(self, how)
+
+                    # ... and if there's no such class - can happen,
+                    # e.g. when using environment variables - just
+                    # state there are no base classes.
+                    if plugin_class is None:
+                        debug3(f"no plugin class found for '{how}'")
+
+                        return set()
+
+                    # Then get the "step data" class...
+                    plugin_data_class = cast(
+                        type[BasePlugin[StepData, Any]], plugin_class
+                    ).get_data_class()
+
+                    # ... and, finally, collect its parent classes - but only those that define
+                    # step data keys.
+                    return {
+                        klass_
+                        for klass_ in plugin_data_class.__mro__
+                        if issubclass(klass_, (StepData, _IsStepDataTrait))
+                        and klass_ is not plugin_data_class
+                    }
+
+                original_key_sources = _collect_plugin_key_bases(how)
+                incoming_key_sources = _collect_plugin_key_bases(incoming_how)
+
+                shared_key_sources = original_key_sources & incoming_key_sources
+
+                compatible_keys: set[str] = set()
+
+                for klass_ in shared_key_sources:
+                    compatible_keys.update(
+                        field_name.replace('_', '-') for field_name in container_keys(klass_)
+                    )
+
+                debug3('compatible keys', ', '.join(compatible_keys))
+
+                # Let user know about incompatible keys: we cannot inherit those, make sure
+                # user is aware some keys might not apply after the change.
+                for key in raw_datum:
+                    if key in compatible_keys:
+                        continue
+
+                    self.warn(
+                        f"Cannot update {self.step_name} phase '{raw_datum.get('name')}'"
+                        f" and inherit '{key}' key."
+                        f" This key is recognized by the original plugin '{how}'"
+                        f" but not by the requested plugin '{incoming_how}'."
+                    )
+
+                # Finally, reduce the original keys to only those that can the incoming can
+                # accept, i.e. the compatible ones.
+                raw_datum = cast(
+                    _RawStepData,
+                    {key: value for key, value in raw_datum.items() if key in compatible_keys},
+                )
+
+                debug3('compatible raw step datum', str(raw_datum))
+
+            if invocation.options.get('update_missing'):
+                _patch_raw_datum(raw_datum, incoming_raw_datum, invocation, missing_only=True)
+
+            else:
+                _patch_raw_datum(raw_datum, incoming_raw_datum, invocation)
+
+            return raw_datum
+
+        def _apply_cli_invocation_to_raw_data(
+            invocation: tmt.cli.CliInvocation,
+            raw_data: list[_RawStepData],
+            match_name: bool = False,
+        ) -> list[_RawStepData]:
+            modified_raw_data: list[_RawStepData] = []
+
+            if match_name:
+                found_match: bool = False
+
+                for i, raw_datum in enumerate(raw_data):
+                    debug2(f'raw step datum #{i}', str(raw_datum))
+
+                    if not found_match and raw_datum['name'] == invocation.options.get('name'):
+                        modified_raw_data.append(_apply_cli_invocation(invocation, raw_datum))
+
+                        found_match = True
+
+                    else:
+                        modified_raw_data.append(raw_datum)
+
+                if not found_match:
+                    raise GeneralError(f"Cannot update phase '{needle}', no such name was found.")
+
+            else:
+                for i, raw_datum in enumerate(raw_data):
+                    debug2(f'raw step datum #{i}', str(raw_datum))
+
+                    modified_raw_data.append(_apply_cli_invocation(invocation, raw_datum))
+
+            return modified_raw_data
+
         # A bit of logging before we start messing with step data
         def _log_raw_data(stage: str, raw_data: list[_RawStepData]) -> None:
             debug2(f'stage {stage}')
@@ -1310,20 +1504,9 @@ class Step(
                 needle = invocation.options.get('name')
 
                 if needle:
-                    incoming_raw_datum = _to_raw_step_datum(invocation.options)
-
-                    for raw_datum in raw_data:
-                        if raw_datum['name'] != needle:
-                            continue
-
-                        _patch_raw_datum(raw_datum, incoming_raw_datum, invocation)
-
-                        break
-
-                    else:
-                        raise GeneralError(
-                            f"Cannot update phase '{needle}', no such name was found."
-                        )
+                    raw_data = _apply_cli_invocation_to_raw_data(
+                        invocation, raw_data, match_name=True
+                    )
 
                 else:
                     debug3('needle-less update (postponed)')
@@ -1336,22 +1519,9 @@ class Step(
                 needle = invocation.options.get('name')
 
                 if needle:
-                    incoming_raw_datum = _to_raw_step_datum(invocation.options)
-
-                    for raw_datum in raw_data:
-                        if raw_datum['name'] != needle:
-                            continue
-
-                        _patch_raw_datum(
-                            raw_datum, incoming_raw_datum, invocation, missing_only=True
-                        )
-
-                        break
-
-                    else:
-                        raise GeneralError(
-                            f"Cannot update phase '{needle}', no such name was found."
-                        )
+                    raw_data = _apply_cli_invocation_to_raw_data(
+                        invocation, raw_data, match_name=True
+                    )
 
                 else:
                     debug3('needle-less update (postponed)')
@@ -1369,61 +1539,7 @@ class Step(
         for i, invocation in enumerate(postponed_invocations):
             debug2(f'postponed invocation #{i}', str(invocation.options))
 
-            pruned_raw_data: list[_RawStepData] = []
-            incoming_raw_datum = _to_raw_step_datum(invocation.options)
-
-            # In the 'tmt try image' command user can specify their
-            # preferred image name without specifying the provision
-            # method, thus the 'how' key can be unset and we respect the
-            # provision method specified in the plan.
-            how = cast(Optional[str], invocation.options.get('how'))
-
-            for j, raw_datum in enumerate(raw_data):
-                debug2(f'raw step datum #{j}', str(raw_datum))
-
-                if how is None:
-                    debug3('compatible step data (how-less invocation)')
-
-                elif raw_datum.get('how') is None:
-                    debug3('undefined method, cannot test compatibility')
-
-                elif raw_datum.get('how') == how:
-                    debug3('compatible step data')
-
-                else:
-                    debug3('incompatible step data')
-
-                    data_base = cast(
-                        type[BasePlugin[StepData, Any]], self._plugin_base_class
-                    ).get_data_class()
-
-                    debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
-                    debug3('compatible keys', ', '.join(k for k in data_base.keys()))  # noqa: SIM118
-
-                    # Copy compatible keys only, ignore everything else
-                    # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
-                    # "Type[StepData]" has no attribute "__iter__" (not iterable), and
-                    # even though ruff thinks StepData looks like a dict, it's not one.
-                    # ignore[literal-required]: we do create raw step data, but _RawStepData
-                    # is very minimal.
-                    raw_datum = cast(
-                        _RawStepData,
-                        {
-                            key: raw_datum[key]  # type: ignore[literal-required]
-                            for key in data_base.keys()  # noqa: SIM118
-                            if key in raw_datum
-                        },
-                    )
-
-                if invocation.options.get('update_missing'):
-                    _patch_raw_datum(raw_datum, incoming_raw_datum, invocation, missing_only=True)
-
-                else:
-                    _patch_raw_datum(raw_datum, incoming_raw_datum, invocation)
-
-                pruned_raw_data.append(raw_datum)
-
-            raw_data = pruned_raw_data
+            raw_data = _apply_cli_invocation_to_raw_data(invocation, raw_data)
 
         # And bit of logging after re're done with CLI invocations
         _log_raw_data('after general CLI invocations', raw_data)
@@ -2088,6 +2204,27 @@ class BasePlugin(
         ]
 
     @classmethod
+    def _find_plugin_by_how(cls, step: Step, how: str) -> Optional[PluginClass]:
+        allowed_methods = cls.allowed_methods(step)
+
+        for method in cls.methods():
+            assert method.class_ is not None
+
+            if not method.name.startswith(how):
+                continue
+
+            if method not in allowed_methods:
+                step.warn(
+                    f"Suitable provision method '{method.name}' disallowed by configuration."
+                )
+
+                continue
+
+            return method.class_
+
+        return None
+
+    @classmethod
     def delegate(
         cls,
         step: Step,
@@ -2117,48 +2254,39 @@ class BasePlugin(
         )
 
         # Filter matching methods, pick the one with the lowest order
-        allowed_methods = cls.allowed_methods(step)
+        plugin_class = cls._find_plugin_by_how(step, how)
 
-        for method in cls.methods():
-            assert method.class_ is not None
-            if method.name.startswith(how):
-                if method not in allowed_methods:
-                    step.warn(
-                        f"Suitable provision method '{method.name}' disallowed by configuration."
-                    )
-                    continue
+        if plugin_class:
+            step.debug(
+                f"Using the '{plugin_class.__name__}' plugin for the '{how}' method.", level=2
+            )
 
-                step.debug(
-                    f"Using the '{method.class_.__name__}' plugin for the '{how}' method.", level=2
-                )
+            plugin_data_class = cast(
+                type[BasePlugin[StepDataT, PluginReturnValueT]], plugin_class
+            ).get_data_class()
 
-                plugin_class = method.class_
-                plugin_data_class = cast(
-                    type[BasePlugin[StepDataT, PluginReturnValueT]], plugin_class
-                ).get_data_class()
+            # If we're given raw data, construct a step data instance, applying
+            # normalization in the process.
+            if raw_data is not None:
+                try:
+                    data = plugin_data_class.from_spec(raw_data, step._logger)
 
-                # If we're given raw data, construct a step data instance, applying
-                # normalization in the process.
-                if raw_data is not None:
-                    try:
-                        data = plugin_data_class.from_spec(raw_data, step._logger)
+                except Exception as error:
+                    raise tmt.utils.GeneralError(
+                        f'Failed to load step data for {plugin_data_class.__name__}.'
+                    ) from error
 
-                    except Exception as error:
-                        raise tmt.utils.GeneralError(
-                            f'Failed to load step data for {plugin_data_class.__name__}.'
-                        ) from error
+            assert data is not None
+            assert data.__class__ is plugin_data_class, (
+                f'Data package is instance of {data.__class__.__name__}, '
+                f'plugin {plugin_class.__name__} expects {plugin_data_class.__name__}'
+            )
 
-                assert data is not None
-                assert data.__class__ is plugin_data_class, (
-                    f'Data package is instance of {data.__class__.__name__}, '
-                    f'plugin {plugin_class.__name__} expects {plugin_data_class.__name__}'
-                )
-
-                plugin = plugin_class(
-                    logger=step._logger.descend(logger_name=None), step=step, data=data
-                )
-                assert isinstance(plugin, BasePlugin)
-                return plugin
+            plugin = plugin_class(
+                logger=step._logger.descend(logger_name=None), step=step, data=data
+            )
+            assert isinstance(plugin, BasePlugin)
+            return plugin
 
         from tmt.utils.hints import print_hints
 
