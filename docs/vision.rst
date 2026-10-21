@@ -36,13 +36,13 @@ distributions.
 Concept
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The concept in just a few words:
+The essential tmt features, built on the :ref:`cornerstones`, are:
 
-* tests liberated, executed early
-* consistent, concise config
-* plain text, versioned under git
-* yaml with inheritance & hierarchy
-* distributed design enabling test sharing
+* concise config ... consistent from upstream to downstream
+* plain text, versioned under git ... no accounts necessary
+* yaml with inheritance & hierarchy ... preventing duplication
+* liberated tests ... independent of internal infrastructure
+* distributed metadata design ... enabling easy test sharing
 
 We aim to provide a stable, reliable, user-friendly and efficient
 tool.
@@ -165,70 +165,6 @@ Does it have to be implemented in the core?
 In short: integrate before building, build outside the core before
 building inside it, and add to the core only what a plugin genuinely
 needs.
-
-
-Cornerstones
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These cornerstones explain why the tool is shaped the way it is.
-They come from the original vision and remain the reference point
-for decisions.
-
-Together
---------
-
-Collaboration over silos.
-
-Upstream with downstream
-    Wherever possible, use identical or at least similar
-    approaches, processes and tools across Fedora, CentOS Stream
-    and RHEL. When introducing new concepts and tools, open
-    source them as soon as possible. Ideally keep only internal
-    configuration downstream, everything else should be consistent
-    to minimize maintenance.
-
-Developers with testers
-    Tooling should allow, support and encourage developer and
-    tester collaboration. All important use cases related to
-    developers working together with testers should be prioritized
-    and addressed as soon as possible. There should be a simple
-    way to run tests locally to easily reproduce issues, develop
-    and debug tests.
-
-Metadata with source
-    Additional information needed for test execution should be
-    stored as close to the test source code as possible. This
-    naturally allows efficient maintenance as related data are
-    kept at one place, supports version control and collaboration
-    between developer and tester.
-
-Shared solution
-    Instead of duplicating the same or similar tools in individual
-    silos, rather work together on a common solution and share the
-    benefits.
-
-Well
-----
-
-Do it well.
-
-Always-ready tools
-    Tools support the Always Ready vision. Continuous integration.
-    Release early, release often. Every change tested. No feature
-    without a test. Components constantly kept in a good shape,
-    integrated and stable thanks to extensive test coverage, ready
-    to be released any time. Anything which can be automated is
-    automated. Bots are team members.
-
-Quality & review
-    Quality is everyone's responsibility and review helps a lot.
-    The pull request workflow has proven to provide a very good
-    way to do code review and brings additional advantages such as
-    automated test results and test coverage reports. Developer
-    and tester can collaborate on test coverage including test
-    code review. We should strive to introduce the pull request
-    workflow wherever it makes sense and emphasize review across
-    all our workflows.
 
 .. _Makefiles: https://github.com/teemtee/tmt/blob/main/examples/convert/Makefile#L29-L48
 .. _Flexible Metadata Format: https://fmf.readthedocs.io/
