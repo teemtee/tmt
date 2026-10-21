@@ -77,21 +77,23 @@ In Scope
 
 The following areas are the core concern of tmt:
 
-* Test metadata, hierarchical, inheritable and git-native, using
-  fmf (core, tests, plans and stories), linking features to code,
+* implementing the :ref:`specification` including
+  :tmt:story:`/spec/core` keys, :tmt:story:`/spec/tests`,
+  :tmt:story:`/spec/plans` and :tmt:story:`/spec/stories`
+* adjusting metadata dynamically using :tmt:story:`/spec/context`
+  :tmt:story:`/spec/core/adjust` and :tmt:story:`/spec/policy`
+* managing coverage by linking :tmt:story:`/spec/stories` to code,
   tests and docs
-* Test creation, discovery and organization across local and
-  remote repositories.
-* A complete, end-to-end workflow covering the discover,
-  provision, prepare, execute, finish, report and cleanup steps.
-* An interactive mode which provisions an environment and lets you
-  experiment, develop and debug tests right there
-* A provisioner-agnostic environment abstraction together with a
-  generic hardware requirements language.
-* Test framework-agnostic execution, running tests of any
-  framework as a backend.
-* Context-aware behavior, metadata linting and result reporting
-  through plugins.
+* linting the metadata against the specification
+* discovering tests from local and remote repositories
+* orchestrating guest provisioning, preparation and cleanup
+* abstracting the environment using a generic
+  :tmt:story:`/spec/hardware` requirements language
+* executing tests using the requested test frameworks
+* gathering test :tmt:story:`/spec/results` and forwarding them to
+  reporting tools
+* providing an interactive :tmt:story:`/stories/cli/try` mode
+  for easy test development and debugging
 
 
 Out of Scope
