@@ -113,20 +113,20 @@ build-deps: _build-deps/$(_OS_ID)  ## Install build dependencies
 ## Run the tests
 ##
 test: tmp  ## Run the test suite
-	hatch run test:unit
+	uv run scripts/test-unit.py
 
 smoke: tmp  ## Run the smoke-level part of the test suite
-	hatch run test:smoke
+	uv run scripts/test-smoke.py
 
 coverage: tmp nitrateconf  ## Run the test suite with coverage enabled
-	hatch run test:cov
+	uv run scripts/test-coverage.py
 
 nitrateconf:
 	test -e ~/.nitrate || echo -en '[nitrate]\nurl = https://nitrate.server/xmlrpc/\n' | tee ~/.nitrate
 
 # remove selected/all response files in tests/integration/test_data directory
 requre:  ## Regenerate test data for integration tests
-	hatch run test:requre
+	uv run scripts/test-requre.py
 
 ##
 ## Documentation
@@ -136,7 +136,7 @@ docs: clean  ## Build documentation
 	uv run sphinx-build -E -b html docs docs/_build
 
 man:  ## Build man page
-	hatch run docs:man
+	uv run scripts/generate-man.py
 
 ##
 ## Packaging & Packit

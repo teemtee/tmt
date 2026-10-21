@@ -154,35 +154,6 @@ source = "vcs"
 raw-options.version_scheme = "release-branch-semver"
 raw-options.git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--abbrev=9", "--match", "*[0-9]*"]
 
-[tool.hatch.envs.default]
-platforms = ["linux"]
-
-[tool.hatch.envs.dev]
-description = "Development environment"
-dependency-groups = ["dev"]
-features = ["all"]
-
-[tool.hatch.envs.dev.scripts]
-unit = "{root}/scripts/test-unit.py"
-smoke = "{root}/scripts/test-smoke.py"
-cov = "{root}/scripts/test-coverage.py"
-requre = "{root}/scripts/test-requre.py"
-
-[tool.hatch.envs.dev-not-editable]
-template = "dev"
-description = "Same as 'dev', but not using editable install"
-dev-mode = false
-
-[tool.hatch.envs.test]
-template = "dev"
-description = "Test environment"
-
-[tool.hatch.envs.docs]
-dependency-groups = ["docs"]
-
-[tool.hatch.envs.docs.scripts]
-man = "{root}/scripts/generate-man.py"
-
 [dirs.env]
 virtual = ".venv"
 
