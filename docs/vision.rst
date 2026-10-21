@@ -69,8 +69,11 @@ and integrates them, helping them play nicely together so that
 developers and testers can work with tests easily and efficiently.
 
 
-In Scope
+Scope
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Scope
+------------------------------------------------------------------
 
 The following areas are the core concern of tmt:
 
@@ -92,7 +95,7 @@ The following areas are the core concern of tmt:
 
 
 Out of Scope
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------
 
 tmt deliberately integrates with existing tools rather than
 replacing them. It is **not**:
@@ -118,7 +121,7 @@ replacing them. It is **not**:
 
 
 Guiding Principles
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------
 
 There are two main guiding principles for the decision of whether
 a certain functionality belongs to tmt or not:
