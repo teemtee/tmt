@@ -15,22 +15,21 @@ Why
 It is always good to start with the why.
 
 Testing was not a joyful task. Test metadata were stored in an
-ugly format in `Makefiles`_. Execution leaned heavily on a single
-backend such as Beaker. Tests were tightly coupled to the internal
-infrastructure and could not be easily open sourced. Additional
-test metadata lived in one test case management system, then in
-another, then there was a plan for yet another one... Tests were
-run in different ways from project to project, enabled in CI in
-different ways, and when something broke, reproducing and
+ugly format in `Makefiles`_. Tests were tightly coupled to the
+internal infrastructure and could not be easily open sourced.
+Additional test metadata lived in test case management system
+where special account was needed. Then there was another system...
+Tests were run in different ways from project to project, enabled
+in CI in different ways, and when something broke, reproducing and
 debugging the failure locally was hard.
 
 The result was duplicated effort, little sharing between projects
-and a fresh learning curve each time you moved somewhere new. The
-tmt tool and specification grew out of the wish to replace this
-patchwork with a single, consistent way to create, run and debug
-tests, one that behaves the same on your laptop as it does in CI,
-all the way from upstream projects down to the released
-distributions.
+and a fresh learning curve each time you moved to a new project or
+a new team. The tmt tool and specification grew out of the wish to
+replace this patchwork with a single, consistent way to create,
+run and debug tests, one that behaves the same on your laptop as
+it does in CI, all the way from upstream projects down to the
+released distributions.
 
 
 Concept
@@ -166,5 +165,5 @@ In short: integrate before building, build outside the core before
 building inside it, and add to the core only what a plugin genuinely
 needs.
 
-.. _Makefiles: https://github.com/teemtee/tmt/blob/main/examples/convert/Makefile#L29-L48
+.. _Makefiles: https://github.com/teemtee/tmt/blob/main/examples/convert/Makefile
 .. _Flexible Metadata Format: https://fmf.readthedocs.io/
