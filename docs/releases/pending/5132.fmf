@@ -1,0 +1,18 @@
+description: |
+    New ``jira`` export plugin allows synchronizing test metadata
+    with a Jira instance.
+
+    Use ``tmt tests export --how jira`` to create or update
+    ``Test Case`` work items in a Jira project from fmf metadata.
+    Credentials and target project are provided via ``--jira-url``,
+    ``--jira-user``, ``--jira-token`` and ``--project-id`` options.
+    Use ``--create`` to create new test cases and ``--link-jira`` to
+    write the Jira issue URL back into the fmf ``link`` section
+    as an ``implements`` relation for future lookups.
+
+    .. code-block:: shell
+
+        tmt tests export --how jira --create --link-jira \
+            --jira-url https://issues.redhat.com \
+            --jira-user me@example.com --jira-token TOKEN \
+            --project-id RHELTEST
