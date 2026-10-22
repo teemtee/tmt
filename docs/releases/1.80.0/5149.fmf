@@ -1,0 +1,3 @@
+description: |
+    The word ``failed`` coming from a ``shell`` framework is now recognized
+    as a failure pattern.

@@ -1,0 +1,3 @@
+description: |
+    Reduced SSH connection startup delays by checking SSH master
+    readiness every second.
