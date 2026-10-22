@@ -8,3 +8,5 @@ description: |
         and :ref:`guest </plugins/provision/common-keys>` environment
         has been changed: the test is now the lower priority one, and
         guest environment overrides it.
+
+order: 10

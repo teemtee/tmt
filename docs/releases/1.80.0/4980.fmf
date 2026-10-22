@@ -5,3 +5,5 @@ description: |
   ``-v`` CLI flag. Logging topics can also be set via the
   ``TMT_LOG_TOPIC`` environment variable using a space-separated
   list of topics, taking precedence over the ``--log-topic`` CLI flag.
+
+order: 30

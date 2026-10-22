@@ -1,0 +1,4 @@
+description: |
+    The :ref:`/plugins/provision/connect` plugin now treats empty
+    ``soft-reboot``, ``systemd-soft-reboot`` and ``hard-reboot`` scripts
+    as unset instead of attempting to execute them.
