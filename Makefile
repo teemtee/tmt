@@ -139,10 +139,10 @@ man:  ## Build man page
 build: rpm
 
 rpm: ## Build RPMs
-    packit build in-mock --resultdir $(TMP)
+	packit build in-mock --resultdir $(TMP)
 
 srpm: ## Build SRPM
-    packit srpm
+	packit srpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
 
