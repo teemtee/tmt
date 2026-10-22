@@ -46,6 +46,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 tmt.1
+packaging/rpm/*.tar.gz
+/*.rpm
 
 # Testing
 .mypy_cache
