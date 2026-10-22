@@ -138,7 +138,7 @@ man:  ## Build man page
 ##
 build: rpm
 
-rpm: ## Build RPMs
+rpm: tmp ## Build RPMs
 	packit build in-mock --resultdir $(TMP)
 
 srpm: ## Build SRPM
