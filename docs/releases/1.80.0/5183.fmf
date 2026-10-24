@@ -1,0 +1,3 @@
+description: |
+    Fixed a bug causing Ansible to connect to the wrong guest
+    in multihost plans due to a shared SSH socket.

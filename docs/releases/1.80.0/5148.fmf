@@ -1,0 +1,3 @@
+description: |
+    Fixed downloading and extracting ``dist-git`` sources when running
+    tests from recipes.

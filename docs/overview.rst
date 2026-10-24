@@ -966,8 +966,10 @@ Chris Kyrouac, Xiaofeng Wang, Coiby Xu, Michal Pospíšil, Wayne
 Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell, Mingyu Shi,
 Conor Tull, Athrey Vinay, David Pascual, Vaibhav D. Aren, Qin
 Yuan, Thiébaud Weksteen, Nisha Saini, Yaakov Selkowitz, Petr
-Khartskhaev, Bruno Goncalves, Israel Santana, Jakub Skunda
-and Md Habibur Rahman.
+Khartskhaev, Bruno Goncalves, Israel Santana, Jakub Skunda,
+Md Habibur Rahman, Owen Taylor, Rajesh Kumar Srivastava
+and Daniel Simko.
+
 
 
 Copyright
