@@ -52,7 +52,7 @@ class MockGuestData(tmt.guest.GuestData):
         metavar='ROOT',
         help="""
              Mock chroot configuration file.
-             The `--root` flag to be passed to the mock process.
+             The ``--root`` flag to be passed to the mock process.
              """,
     )
     rootdir: Optional[Path] = field(
