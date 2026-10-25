@@ -1,0 +1,32 @@
+---
+
+#
+# JSON Schema definition for `allure` report plugin
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#allure
+#
+
+$id: /schemas/report/allure
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - allure
+
+  name:
+    type: string
+
+  file:
+    type: string
+
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
+required:
+  - how
