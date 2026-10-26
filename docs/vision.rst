@@ -37,11 +37,16 @@ Concept
 
 The essential tmt features, built on the :ref:`cornerstones`, are:
 
-* concise config ... consistent from upstream to downstream
-* plain text, versioned under git ... no accounts necessary
-* yaml with inheritance & hierarchy ... preventing duplication
-* liberated tests ... independent of internal infrastructure
-* distributed metadata design ... enabling easy test sharing
+* test metadata are efficiently deduplicated thanks to fmf
+  inheritance and hierarchy
+* tests can be fetched from other repositories allowing easy
+  integration testing across projects
+* consistent config can be used to enable tests from upstream
+  to downstream, lowering the learning curve
+* expected test environment and preparations are defined in tmt
+  plans, with support for generic hardware requirements
+* test artifacts installation is handled by tmt automatically
+  based on dependencies specified in test metadata
 
 We aim to provide a stable, reliable, user-friendly and efficient
 tool.
