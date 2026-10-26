@@ -43,6 +43,7 @@ tmt.plugins.explore(logger)
 # Local images created via `make images/test`, reference to local registry
 from . import (  # noqa: E402
     CONTAINER_ALPINE,
+    CONTAINER_CENTOS_6,
     CONTAINER_CENTOS_7,
     CONTAINER_CENTOS_STREAM_9,
     CONTAINER_CENTOS_STREAM_10,
@@ -151,8 +152,10 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_ALPINE, PACKAGE_MANAGER_APK),
 ]
 
-# CentOS 7 is not available for aarch64 architecture,
-# so we add it to CONTAINER_BASE_MATRIX for non-aarch64.
+# CentOS 6 and 7 are not available for aarch64 architecture,
+# so we add them to CONTAINER_BASE_MATRIX for non-aarch64.
+if CONTAINER_CENTOS_6 is not None:
+    CONTAINER_BASE_MATRIX.append((CONTAINER_CENTOS_6, PACKAGE_MANAGER_YUM))
 if CONTAINER_CENTOS_7 is not None:
     CONTAINER_BASE_MATRIX.append((CONTAINER_CENTOS_7, PACKAGE_MANAGER_YUM))
 
@@ -698,7 +701,9 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 )
 
             elif (
-                'centos' in container.url and 'centos/7' not in container.url
+                'centos' in container.url
+                and 'centos/6' not in container.url
+                and 'centos/7' not in container.url
             ) or 'ubi/8' in container.url:
                 yield (
                     container,
@@ -810,7 +815,9 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
                 )
 
             elif (
-                'centos' in container.url and 'centos/7' not in container.url
+                'centos' in container.url
+                and 'centos/6' not in container.url
+                and 'centos/7' not in container.url
             ) or 'ubi/8' in container.url:
                 yield (
                     container,
@@ -1148,7 +1155,7 @@ def _parametrize_test_reinstall() -> Iterator[
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos/7' in container.url:
+            if 'centos/6' in container.url or 'centos/7' in container.url:
                 yield (
                     container,
                     package_manager_class,
@@ -1457,7 +1464,35 @@ def _generate_test_check_presence() -> Iterator[
                 )
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos/7' in container.url or 'ubi/8' in container.url:
+            if 'centos/6' in container.url:
+                yield (
+                    container,
+                    package_manager_class,
+                    Package('coreutils'),
+                    True,
+                    r'rpm -q --whatprovides coreutils >&2 \|\| echo coreutils',
+                    r'\s+stderr:\s+coreutils-',
+                )
+
+                yield (
+                    container,
+                    package_manager_class,
+                    Package('tree-but-spelled-wrong'),
+                    False,
+                    r'rpm -q --whatprovides tree-but-spelled-wrong >&2 \|\| echo tree-but-spelled-wrong',  # noqa: E501
+                    r'\s+stdout:\s+tree-but-spelled-wrong',
+                )
+
+                yield (
+                    container,
+                    package_manager_class,
+                    FileSystemPath('/bin/ls'),
+                    True,
+                    r'rpm -q --whatprovides /bin/ls >&2 \|\| echo /bin/ls',
+                    r'\s+stderr:\s+coreutils-',
+                )
+
+            elif 'centos/7' in container.url or 'ubi/8' in container.url:
                 yield (
                     container,
                     package_manager_class,
@@ -1700,7 +1735,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos/7' in container.url:
+            if 'centos/6' in container.url or 'centos/7' in container.url:
                 yield (
                     container,
                     package_manager_class,
@@ -1798,7 +1833,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 )
 
             elif 'centos' in container.url:
-                # diffutils is pre-installed on centos/7 and centos/stream10;
+                # diffutils is pre-installed on centos/6, centos/7 and centos/stream10;
                 # nano is absent from any CentOS minimal image.
                 yield (
                     container,
@@ -1828,7 +1863,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 )
 
             elif 'centos' in container.url:
-                # diffutils is pre-installed on centos/7 and centos/stream10;
+                # diffutils is pre-installed on centos/6, centos/7 and centos/stream10;
                 # nano is absent from any CentOS minimal image.
                 yield (
                     container,
@@ -1935,7 +1970,7 @@ def _parametrize_test_install_downloaded() -> Iterator[
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos/7' in container.url:
+            if 'centos/6' in container.url or 'centos/7' in container.url:
                 yield pytest.param(
                     container,
                     package_manager_class,
@@ -1943,7 +1978,9 @@ def _parametrize_test_install_downloaded() -> Iterator[
                     ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
                     r"yum install -y --skip-broken /tmp/tree.rpm /tmp/nano.rpm \|\| /bin/true",
                     'Complete!',
-                    marks=pytest.mark.skip(reason="CentOS 7 does not support 'download' command"),
+                    marks=pytest.mark.skip(
+                        reason="CentOS 6 and 7 do not support 'download' command"
+                    ),
                 )
 
             elif 'ubi/8' in container.url:

@@ -37,12 +37,12 @@ xfail_plans_nobest=(
     "^/broken/no-artifacts/obsoletes/basic$"
     "^/broken/no-artifacts/upgrade/with-devel$"
 )
-xfail_centos7=(
+xfail_centos7_centos6=(
     # yum cannot downgrade a pre-installed package
     "/pre-installed/downgrade/with-devel$"
     "^/verified-artifacts/pre-installed/downgrade/only-foo$"
 )
-complicated_centos7=(
+complicated_centos7_centos6=(
     # Obsoletes wins over priority. Some of these tests pass when they should xfail
     # some fail in different ways, it is hard to handle them all consistently, so just skip them.
     "^/verified-artifacts/obsoletes/basic/downgrade$"
@@ -60,7 +60,7 @@ complicated_centos7=(
         fi
 
         extra_env=""
-        if is_centos_7 "$image"; then
+        if is_centos_7 "$image" || is_centos_6 "$image"; then
              extra_env="-e DNF_CMD=yum"
         fi
 
@@ -76,7 +76,7 @@ complicated_centos7=(
                     break
                 fi
             done
-            if is_centos_7 "$image" || is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
+            if is_centos_7 "$image" || is_centos_6 "$image" || is_centos_stream_9 "$image" || is_centos_stream_10 "$image" || is_fedora_eln "$image"; then
                 for check_pattern in ${xfail_plans_nobest[@]}; do
                     if [[ "$plan" =~ $check_pattern ]]; then
                         xfail="(XFAIL)"
@@ -85,8 +85,8 @@ complicated_centos7=(
                     fi
                 done
             fi
-            if is_centos_7 "$image"; then
-                for check_pattern in ${xfail_centos7[@]}; do
+            if is_centos_7 "$image" || is_centos_6 "$image"; then
+                for check_pattern in ${xfail_centos7_centos6[@]}; do
                     if [[ "$plan" =~ $check_pattern ]]; then
                         xfail="(XFAIL)"
                         expected_result=2
@@ -95,7 +95,7 @@ complicated_centos7=(
                 done
                 # Skip too complicated situations altogether
                 unset complicated
-                for check_pattern in ${complicated_centos7[@]}; do
+                for check_pattern in ${complicated_centos7_centos6[@]}; do
                     if [[ "$plan" =~ $check_pattern ]]; then
                         complicated=1
                         break
