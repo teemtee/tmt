@@ -1985,6 +1985,18 @@ class Guest(
         )
 
     @functools.cached_property
+    def guest_data_directory(self) -> Path:
+        """
+        A path to the guest specific-data folder.
+        """
+        directory = self.plan_workdir / "guest-data" / self.pathless_safe_name
+
+        self.debug(f"Create the guest data directory '{directory}'.", level=2)
+        directory.mkdir(exist_ok=True, parents=True)
+
+        return directory
+
+    @functools.cached_property
     def plan_environment_path(self) -> Optional[Path]:
         """
         A path to the :ref:`plan environment file <step-variables>` file.
@@ -1993,7 +2005,7 @@ class Guest(
         if not isinstance(self.parent, tmt.steps.provision.Provision):
             return None
 
-        path = self.parent.plan.data_directory / f'{PLAN_ENVIRONMENT_FILENAME}-{self.safe_name}'
+        path = self.guest_data_directory / PLAN_ENVIRONMENT_FILENAME
         path.touch(exist_ok=True)
 
         self.debug(f"Create the environment file '{path}'.", level=2)
@@ -2009,7 +2021,7 @@ class Guest(
         if not isinstance(self.parent, tmt.steps.provision.Provision):
             return None
 
-        path = self.parent.plan.data_directory / f'{PLAN_SOURCE_SCRIPT_FILENAME}-{self.safe_name}'
+        path = self.guest_data_directory / PLAN_SOURCE_SCRIPT_FILENAME
         path.touch(exist_ok=True)
 
         self.debug(f"Create the plan source script  '{path}'.", level=2)

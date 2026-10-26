@@ -1,0 +1,24 @@
+provision:
+  - name: client1
+    how: virtual
+  - name: server1
+    how: virtual
+
+execute:
+  how: tmt
+
+prepare:
+  - how: shell
+    script: |
+        source "$TMT_TOPOLOGY_BASH"
+        echo "CONST_MESSAGE='Identical content in unique files'" >> "$TMT_PLAN_ENVIRONMENT_FILE"
+        echo "TEST_MESSAGE='I was run on ${TMT_GUEST[name]}'" >> "$TMT_PLAN_ENVIRONMENT_FILE"
+
+discover:
+    how: shell
+    tests:
+      - name: check-env
+        test: |
+          echo "CONST_MESSAGE: '$CONST_MESSAGE'"
+          echo "TEST_MESSAGE: '$TEST_MESSAGE'"
+          echo "TMT_PLAN_ENVIRONMENT_FILE: $TMT_PLAN_ENVIRONMENT_FILE"
