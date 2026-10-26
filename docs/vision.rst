@@ -71,11 +71,11 @@ Scope
 In Scope
 ------------------------------------------------------------------
 
-The following areas are the core concern of tmt:
+tmt implements the :ref:`specification`. Its core concerns are:
 
-* implementing the :ref:`specification` including
-  :tmt:story:`/spec/core` keys, :tmt:story:`/spec/tests`,
-  :tmt:story:`/spec/plans` and :tmt:story:`/spec/stories`
+* implementing :tmt:story:`/spec/tests`, :tmt:story:`/spec/plans`
+  and :tmt:story:`/spec/stories` together with the common
+  :tmt:story:`/spec/core` keys
 * adjusting metadata dynamically using :tmt:story:`/spec/context`
   :tmt:story:`/spec/core/adjust` and :tmt:story:`/spec/policy`
 * managing coverage by linking :tmt:story:`/spec/stories` to code,
