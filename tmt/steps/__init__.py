@@ -23,6 +23,7 @@ from typing import (
     Literal,
     Optional,
     Self,
+    TypeAlias,
     TypedDict,
     TypeGuard,
     TypeVar,
@@ -2625,7 +2626,10 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
 
             # Fetch plan data content as well in order to prevent
             # losing logs if the guest becomes later unresponsive.
-            guest.pull(source=self.step.plan.data_directory)
+            self.step.plan.pull_data_directory(self.step, guests=[guest])
+
+            # Fetch also guest-specific data.
+            self.step.plan.pull_guest_data_directory(self.step, guests=[guest])
 
         # Handle failing to pull artifacts after guest becoming
         # unresponsive. If not handled test would stay in 'pending' state.
@@ -3639,17 +3643,34 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
         return self.enqueue_task(task)
 
 
+GuestToPathCallback: TypeAlias = Callable[['Guest'], tuple[Optional[Path], Optional[Path]]]
+
+
 class PushTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir push to a guest
     """
+
+    mapping: GuestToPathCallback
+
+    def __init__(
+        self, guests: list['Guest'], mapping: GuestToPathCallback, logger: tmt.log.Logger
+    ) -> None:
+        super().__init__(guests, logger)
+
+        self.mapping = mapping
+        """A callback that returns (source, destination) paths for a given guest."""
 
     @property
     def name(self) -> str:
         return f'push to {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        guest.push()
+        source, destination = self.mapping(guest)
+
+        logger.debug(f"Sync to guest '{guest.name}' '{source}' => '{destination}'")
+
+        guest.push(source=source, destination=destination)
 
 
 class PullTask(tmt.queue.MultiGuestTask[None]):
@@ -3657,21 +3678,26 @@ class PullTask(tmt.queue.MultiGuestTask[None]):
     Task performing a workdir pull from a guest
     """
 
-    source: Optional[Path]
+    mapping: GuestToPathCallback
+    """A callback that returns (source, destination) paths for a given guest."""
 
     def __init__(
-        self, guests: list['Guest'], source: Optional[Path], logger: tmt.log.Logger
+        self, guests: list['Guest'], mapping: GuestToPathCallback, logger: tmt.log.Logger
     ) -> None:
         super().__init__(guests, logger)
 
-        self.source = source
+        self.mapping = mapping
 
     @property
     def name(self) -> str:
         return f'pull from {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        guest.pull(source=self.source)
+        source, destination = self.mapping(guest)
+
+        logger.debug(f"Sync from guest '{guest.name}' '{source}' => '{destination}'")
+
+        guest.pull(source=source, destination=destination)
 
 
 GuestSyncTaskT = TypeVar('GuestSyncTaskT', PushTask, PullTask)
