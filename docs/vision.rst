@@ -109,8 +109,9 @@ replacing them. It is **not**:
   Podman and cloud APIs through plugins
 * an infrastructure-management tool, tmt uses Ansible and supports
   custom shell scripts for guest preparation
-* a test-result management system, but tmt integrates with several
-  of them
+* a test-result management system. tmt only gathers the results.
+  Report plugins may be used to forward these to the desired
+  test-result management system
 * tied to any single programming language, framework, operating
   system, cloud or runtime, and it is also not limited to the
   Fedora/RHEL ecosystem
