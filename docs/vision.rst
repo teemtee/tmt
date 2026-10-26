@@ -56,20 +56,11 @@ Mission
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt is a tool for managing tests and safely executing them across
-different environments such as local, container, virtual or CI. It
-covers test creation, discovery, organization, execution and
-interactive debugging, together with results reporting and
-coverage tracking for features and requirements.
+different environments, be it local, container, virtual or CI.
 
-A single, consistent config can be used to enable tests in the
-very same way from upstream projects to downstream distributions.
-Metadata are stored and shared via git using the `Flexible
-Metadata Format`_, kept close to the code and easy to reuse across
-projects.
-
-It is a layer that connects the dots between the many tools and
+Its mission is to connect the dots between the many tools and
 services involved in testing, from guest provisioning and setup to
-result reporting. Rather than trying to replace them, it reuses
+result reporting. Rather than trying to replace them, tmt reuses
 and integrates them, helping them play nicely together so that
 developers and testers can work with tests easily and efficiently.
 
