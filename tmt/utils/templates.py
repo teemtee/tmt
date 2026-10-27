@@ -23,7 +23,7 @@ import jinja2.exceptions
 import jinja2.sandbox
 import pint
 
-from tmt.utils import GeneralError, Path, format_duration, to_yaml
+from tmt.utils import DURATION_NOT_MEASURED, GeneralError, Path, format_duration, to_yaml
 from tmt.utils.git import web_git_url
 
 if TYPE_CHECKING:
@@ -389,7 +389,7 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
     """
 
     if result.duration is None:
-        return '..:..:..'
+        return DURATION_NOT_MEASURED
 
     return format_duration(result.duration)
 
