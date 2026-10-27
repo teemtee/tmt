@@ -70,8 +70,8 @@ from tmt.utils.themes import style
 #
 # The ssh client always allocates a tty, so test timeout handling
 # works (#1387). Because the allocated tty is generally not suitable
-# for test execution, the wrapper uses `|& cat` to emulate execution
-# without a tty. In certain cases, where test execution with available
+# for test execution, the wrapper sends the output to `cat` through a
+# pipe to emulate execution without a tty. In certain cases, where test execution with available
 # tty is required (#2381), the tty can be kept on request with
 # the `tty: true` test attribute.
 #
@@ -81,7 +81,8 @@ from tmt.utils.themes import style
 #   user interacts with the executed command.
 #
 # * In non-interactive mode without a tty, stdin is fed with /dev/null (EOF)
-#   and `|& cat` is used to simulate no tty available for script output.
+#   and the output goes to `cat` through a pipe to simulate no tty
+#   available for script output.
 #
 # * In non-interactive mode with a tty, stdin is available to the tests
 #   and simulation of tty not available for output is not run.
