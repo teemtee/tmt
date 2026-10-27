@@ -1144,7 +1144,7 @@ def test_result_time_parser_rejects_spec_violations() -> None:
 
     stored['start-time'] = '2024-08-15T13:15:06'
     restored = Result.from_serialized(stored)
-    assert restored.start_time == datetime(2024, 8, 15, 13, 15, 6)
+    assert restored.start_time == datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone.utc)
 
     stored['start-time'] = '2024-08-15T13:15:06.556611+00:00'
     stored['duration'] = '00:99:00'
@@ -1155,3 +1155,34 @@ def test_result_time_parser_rejects_spec_violations() -> None:
     stored['start-time'] = 'not-a-time'
     with pytest.raises(tmt.utils.SpecificationError):
         Result.from_serialized(stored)
+
+
+def test_result_timestamp_accepts_isoformat_variants() -> None:
+    """A timestamp without a timezone is read as UTC.
+
+    The compact form and a space separator are accepted too, because
+    ``fromisoformat`` reads them. A bare time is refused.
+    """
+
+    from datetime import UTC, datetime
+
+    expected = datetime(2024, 8, 15, 13, 15, 6, tzinfo=UTC)
+
+    for raw in (
+        '2024-08-15T13:15:06+00:00',
+        '2024-08-15T13:15:06Z',
+    ):
+        restored = Result.from_serialized({'name': '/test/one', 'start-time': raw})
+        assert restored.start_time == expected
+
+    for raw in (
+        '2024-08-15T13:15:06',
+        '2024-08-15 13:15:06',
+        '20240815T131506',
+    ):
+        restored = Result.from_serialized({'name': '/test/one', 'start-time': raw})
+        assert restored.start_time == expected
+
+    for raw in ('131506', '13:15:06'):
+        with pytest.raises(tmt.utils.SpecificationError):
+            Result.from_serialized({'name': '/test/one', 'start-time': raw})

@@ -6219,7 +6219,9 @@ def parse_timestamp(timestamp: str) -> datetime.datetime:
     """
     Read a timestamp stored by :py:func:`format_timestamp`.
 
-    Accepts the forms the result schema allows: a numeric offset or ``Z``.
+    A trailing ``Z`` is read as UTC. A timestamp without a timezone is
+    read as UTC too, so a later comparison never mixes naive and aware
+    values.
     """
 
     if timestamp.endswith('Z'):
@@ -6229,6 +6231,9 @@ def parse_timestamp(timestamp: str) -> datetime.datetime:
         parsed = datetime.datetime.fromisoformat(timestamp)
     except ValueError as exc:
         raise tmt.utils.SpecificationError(f"Malformed timestamp '{timestamp}'.") from exc
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.UTC)
 
     return parsed
 
