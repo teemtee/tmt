@@ -1,0 +1,16 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+/test:
+    summary: Test using remote library with adjust
+    test: /bin/true
+    require:
+      - url: https://github.com/teemtee/tests.git
+        name: /libs/file
+        type: library
+        ref: tcornell-library-adjust
