@@ -562,7 +562,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 self.execute(invocation=invocation, logger=logger)
 
-                duration = style(invocation.stopwatch.duration_formatted, fg='cyan')
+                duration = style(
+                    invocation.stopwatch.duration_formatted
+                    if invocation.stopwatch.started
+                    else '00:00:00',
+                    fg='cyan',
+                )
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle test restart. May include guest reboot too.
