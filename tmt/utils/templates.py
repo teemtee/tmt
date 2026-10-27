@@ -23,7 +23,7 @@ import jinja2.exceptions
 import jinja2.sandbox
 import pint
 
-from tmt.utils import GeneralError, Path, to_yaml
+from tmt.utils import GeneralError, Path, format_duration, to_yaml
 from tmt.utils.git import web_git_url
 
 if TYPE_CHECKING:
@@ -381,14 +381,17 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
 
     .. code-block:: jinja
 
-        # {"duration": None} -> '..:..:..'
-        {{ {"duration": None} | format_duration }}
+        # A result with no duration -> '..:..:..'
+        {{ RESULT | format_duration }}
 
-        # {"duration": "12:34:56"} -> '12:34:56'
-        {{ {"duration": "12:34:56"} | format_duration }}
+        # A result whose duration is 12 hours, 34 minutes, 56 seconds -> '12:34:56'
+        {{ RESULT | format_duration }}
     """
 
-    return result.duration or '..:..:..'
+    if result.duration is None:
+        return '..:..:..'
+
+    return format_duration(result.duration)
 
 
 def _template_filter_to_yaml(  # type: ignore[reportUnusedFunction,unused-ignore]
