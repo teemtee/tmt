@@ -11,7 +11,7 @@
 
     {% block testsuites %}
         {% for result in RESULTS %}
-            {% set main_test_duration = result.duration | duration_to_seconds %}
+            {% set main_test_duration = result.duration | duration_to_seconds | float %}
 
             {#
                 Fix the count of test cases in the testsuite, because one extra
@@ -45,7 +45,7 @@
                     `testcase`.
                 #}
                 <!-- The extra test case representing the parent result. -->
-                <testcase name="{{ result.name | e }}" {% if result.duration %}time="{{ result.duration | duration_to_seconds }}"{% endif %}>
+                <testcase name="{{ result.name | e }}" {% if result.duration is not none %}time="{{ result.duration | duration_to_seconds }}"{% endif %}>
                     {% if result.result.value == 'error' or result.result.value == 'warn' %}
                         <error type="error" message="{{ result.result.value | e }}">{{ result.failure_logs | failures | join("\n") | e }}</error>
                     {% elif result.result.value == 'fail' %}
@@ -61,7 +61,7 @@
                 <!-- End of the extra parent test case. -->
 
                 {% for subresult in result.subresult %}
-                    <testcase name="{{ subresult.name | e }}" {% if subresult.duration %}time="{{ subresult.duration | duration_to_seconds }}"{% endif %}>
+                    <testcase name="{{ subresult.name | e }}" {% if subresult.duration is not none %}time="{{ subresult.duration | duration_to_seconds }}"{% endif %}>
                         {% if subresult.result.value == 'error' or subresult.result.value == 'warn' %}
                             <error type="error" message="{{ subresult.result.value | e }}">{{ subresult.failure_logs | failures | join("\n") | e }}</error>
                         {% elif subresult.result.value == 'fail' %}

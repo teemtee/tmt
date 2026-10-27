@@ -6,7 +6,7 @@
         <result name="{{ result.name | trim | e }}" disabled="0" errors="{{ result.subresult.errored | length }}" failures="{{ result.subresult.failed | length }}" skipped="{{ result.subresult.skipped | length }}" tests="{{ result.subresult | length }}" time="{{ main_test_duration }}" outcome="{{ result.result.value }}" timestamp="{{ result.start_time | format_timestamp }}">
             {% for subresult in result.subresult %}
                 {% set subresult_test_duration = subresult.duration | duration_to_seconds %}
-                <subresult name="{{ subresult.name | e }}" {% if subresult_test_duration %}time="{{ subresult_test_duration }}"{% endif %} outcome="{{ subresult.result.value }}"></subresult>
+                <subresult name="{{ subresult.name | e }}" {% if subresult.duration is not none %}time="{{ subresult_test_duration }}"{% endif %} outcome="{{ subresult.result.value }}"></subresult>
             {% endfor %}
         </result>
     {% endfor %}
