@@ -10,6 +10,7 @@ rlJournalStart
         rlRun "pushd data"
         rlRun "set -o pipefail"
 
+        build_container_image "centos/6/upstream\:latest"
         build_container_image "centos/7/upstream\:latest"
         build_container_image "ubi/8/upstream\:latest"
     rlPhaseEnd
@@ -18,10 +19,12 @@ rlJournalStart
         for test in without defined; do
             # Skip when both/none define required packages
             [[ $plan == $test ]] && continue
-            for image in $TEST_IMAGE_PREFIX/centos/7/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest; do
+            for image in $TEST_IMAGE_PREFIX/centos/6/upstream:latest $TEST_IMAGE_PREFIX/centos/7/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest; do
                 rlPhaseStartTest "Test: Plan $plan, test $test, image $distro"
                     if [ "$image" = "$TEST_IMAGE_PREFIX/centos/7/upstream:latest" ]; then
                         distro="centos-7"
+                    elif [ "$image" = "$TEST_IMAGE_PREFIX/centos/6/upstream:latest" ]; then
+                        distro="centos-6"
                     else
                         distro="centos-stream-8"
                     fi
