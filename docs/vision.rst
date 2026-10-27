@@ -9,7 +9,7 @@ ideas behind the tool, which features belong to its scope and
 which do not.
 
 
-Why
+Motivation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It is always good to start with the why.
