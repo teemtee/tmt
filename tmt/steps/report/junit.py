@@ -2,7 +2,8 @@ import functools
 import re
 import sys
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cast, overload
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cast
 
 from jinja2 import FileSystemLoader, select_autoescape
 
@@ -32,28 +33,15 @@ CUSTOM_FLAVOR_NAME = 'custom'
 DEFAULT_TEMPLATE_RESOURCE = 'steps/report/junit/templates'
 
 
-@overload
-def _duration_to_seconds_filter(duration: str) -> int:
-    pass
-
-
-@overload
-def _duration_to_seconds_filter(duration: None) -> None:
-    pass
-
-
-def _duration_to_seconds_filter(duration: Optional[str]) -> Optional[int]:
+def _duration_to_seconds_filter(duration: Optional[timedelta]) -> Optional[int]:
     """
-    Convert valid duration string in to seconds
+    Convert a duration into whole seconds
     """
 
     if duration is None:
         return None
-    try:
-        h, m, s = duration.split(':')
-        return int(h) * 3600 + int(m) * 60 + int(s)
-    except Exception as error:
-        raise tmt.utils.ReportError(f"Malformed duration '{duration}'.") from error
+
+    return int(duration.total_seconds())
 
 
 def _escape_control_chars_filter(func: Callable[[str], str]) -> Callable[[str], str]:
@@ -334,10 +322,17 @@ def make_junit_xml(
 
         return failures
 
+    def _format_timestamp_filter(value: Optional[datetime]) -> str:
+        if value is None:
+            return ''
+
+        return tmt.utils.format_timestamp(value)
+
     environment.filters.update(
         {
             'read_log': _read_log_filter,
             'duration_to_seconds': _duration_to_seconds_filter,
+            'format_timestamp': _format_timestamp_filter,
             'failures': _failures_filter,
             # Use a wrapper function to also _escape_control_chars.
             'e': _escape_control_chars_filter(environment.filters['e']),

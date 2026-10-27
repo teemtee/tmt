@@ -36,7 +36,7 @@
                 {% set num_of_skipped = num_of_skipped + 1 %}
             {% endif %}
 
-            <testsuite name="{{ result.name | trim | e }}" disabled="0" errors="{{ num_of_errored }}" failures="{{ num_of_failed }}" skipped="{{ num_of_skipped }}" tests="{{ num_of_tests }}" time="{{ main_test_duration }}" timestamp="{{ result.start_time }}">
+            <testsuite name="{{ result.name | trim | e }}" disabled="0" errors="{{ num_of_errored }}" failures="{{ num_of_failed }}" skipped="{{ num_of_skipped }}" tests="{{ num_of_tests }}" time="{{ main_test_duration }}" timestamp="{{ result.start_time | format_timestamp }}">
 
                 {#
                     Always include an extra `testcase` representing the main

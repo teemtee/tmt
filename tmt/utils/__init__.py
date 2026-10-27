@@ -2610,7 +2610,7 @@ def render_report(
     yield (
         f'# Started at {timer.start_time_formatted},'
         f' finished at {timer.end_time_formatted}'
-        f' ({timer.duration})'
+        f' ({timer.duration_formatted})'
     )
 
     if report is not None:
@@ -6193,7 +6193,7 @@ def format_timestamp(timestamp: datetime.datetime) -> str:
     Convert timestamp to a human readable format
     """
 
-    return timestamp.isoformat()
+    return timestamp.isoformat(timespec='microseconds')
 
 
 def format_duration(duration: datetime.timedelta) -> str:
@@ -6208,6 +6208,43 @@ def format_duration(duration: datetime.timedelta) -> str:
     minutes, seconds = divmod(counter, 60)
 
     return f'{hours:02}:{minutes:02}:{seconds:02}'
+
+
+def parse_timestamp(timestamp: str) -> datetime.datetime:
+    """
+    Read a timestamp stored by :py:func:`format_timestamp`.
+
+    Accepts the forms the result schema allows: a numeric offset or ``Z``.
+    """
+
+    if timestamp.endswith('Z'):
+        timestamp = timestamp[:-1] + '+00:00'
+
+    try:
+        parsed = datetime.datetime.fromisoformat(timestamp)
+    except ValueError as exc:
+        raise tmt.utils.GeneralError(f"Malformed timestamp '{timestamp}'.") from exc
+
+    if parsed.tzinfo is None:
+        raise tmt.utils.GeneralError(f"Timestamp '{timestamp}' has no timezone.")
+
+    return parsed
+
+
+def parse_duration(duration: str) -> datetime.timedelta:
+    """
+    Read a duration stored by :py:func:`format_duration`.
+
+    The stored form is ``hh:mm:ss`` with at least two hour digits. Anything
+    else, including a fractional second, is rejected.
+    """
+
+    if not re.fullmatch(r'[0-9]{2,}:[0-5][0-9]:[0-5][0-9]', duration):
+        raise tmt.utils.GeneralError(f"Malformed duration '{duration}'.")
+
+    hours, minutes, seconds = (int(part) for part in duration.split(':'))
+
+    return datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
 
 
 def retry(

@@ -2680,9 +2680,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                 result=ResultOutcome.PASS,
                 log=[log_filepath.relative_to(self.step_workdir)],
                 guest=ResultGuestData.from_guest(guest=guest),
-                start_time=timer.start_time_formatted,
-                end_time=timer.end_time_formatted,
-                duration=timer.duration_formatted,
+                start_time=timer.start_time,
+                end_time=timer.end_time,
+                duration=timer.duration,
             )
         )
 
@@ -2742,9 +2742,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     note=tmt.utils.render_exception_as_notes(exception),
                     log=[log_filepath.relative_to(self.step_workdir)],
                     guest=ResultGuestData.from_guest(guest=guest),
-                    start_time=timer.start_time_formatted,
-                    end_time=timer.end_time_formatted,
-                    duration=timer.duration_formatted,
+                    start_time=timer.start_time,
+                    end_time=timer.end_time,
+                    duration=timer.duration,
                 )
             )
 
@@ -2755,9 +2755,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     result=ResultOutcome.ERROR,
                     note=tmt.utils.render_exception_as_notes(exception),
                     guest=ResultGuestData.from_guest(guest=guest),
-                    start_time=timer.start_time_formatted,
-                    end_time=timer.end_time_formatted,
-                    duration=timer.duration_formatted,
+                    start_time=timer.start_time,
+                    end_time=timer.end_time,
+                    duration=timer.duration,
                 )
             )
 
@@ -2795,9 +2795,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                 result=tmt.steps.ResultOutcome.INFO,
                 note=['Command collected for deferred execution'],
                 guest=ResultGuestData.from_guest(guest=guest),
-                start_time=timer.start_time_formatted,
-                end_time=timer.end_time_formatted,
-                duration=timer.duration_formatted,
+                start_time=timer.start_time,
+                end_time=timer.end_time,
+                duration=timer.duration,
             )
         )
 
@@ -2864,9 +2864,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     result=ResultOutcome.ERROR,
                     note=tmt.utils.render_exception_as_notes(exception),
                     guest=ResultGuestData.from_guest(guest=guest),
-                    start_time=timer.start_time_formatted,
-                    end_time=timer.end_time_formatted,
-                    duration=timer.duration_formatted,
+                    start_time=timer.start_time,
+                    end_time=timer.end_time,
+                    duration=timer.duration,
                 )
             )
 
@@ -2879,9 +2879,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     result=ResultOutcome.ERROR,
                     note=[note],
                     guest=ResultGuestData.from_guest(guest=guest),
-                    start_time=timer.start_time_formatted,
-                    end_time=timer.end_time_formatted,
-                    duration=timer.duration_formatted,
+                    start_time=timer.start_time,
+                    end_time=timer.end_time,
+                    duration=timer.duration,
                 )
             )
 

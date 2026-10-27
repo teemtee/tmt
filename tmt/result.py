@@ -1,4 +1,5 @@
 import enum
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import fmf.utils
@@ -206,9 +207,21 @@ class BaseResult(SerializableContainer):
         unserialize=lambda value: [Path(log) for log in value],
     )
 
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    duration: Optional[str] = None
+    start_time: Optional[datetime] = field(
+        default=None,
+        serialize=lambda value: None if value is None else tmt.utils.format_timestamp(value),
+        unserialize=lambda value: None if value is None else tmt.utils.parse_timestamp(value),
+    )
+    end_time: Optional[datetime] = field(
+        default=None,
+        serialize=lambda value: None if value is None else tmt.utils.format_timestamp(value),
+        unserialize=lambda value: None if value is None else tmt.utils.parse_timestamp(value),
+    )
+    duration: Optional[timedelta] = field(
+        default=None,
+        serialize=lambda value: None if value is None else tmt.utils.format_duration(value),
+        unserialize=lambda value: None if value is None else tmt.utils.parse_duration(value),
+    )
 
     def __post_init__(self) -> None:
         self.original_result = self.result
@@ -384,9 +397,9 @@ class Result(BaseResult):
             context=invocation.phase.step.plan.fmf_context,
             result=result,
             note=note or [],
-            start_time=invocation.stopwatch.start_time_formatted,
-            end_time=invocation.stopwatch.end_time_formatted,
-            duration=invocation.stopwatch.duration_formatted,
+            start_time=invocation.stopwatch.start_time if invocation.stopwatch.started else None,
+            end_time=invocation.stopwatch.end_time if invocation.stopwatch.started else None,
+            duration=invocation.stopwatch.duration if invocation.stopwatch.started else None,
             ids={**invocation.test.ids, **(ids or {})},
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),

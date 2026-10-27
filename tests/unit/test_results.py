@@ -1084,3 +1084,74 @@ def test_result_web_link_missing_in_serialized() -> None:
 
     restored = Result.from_serialized(serialized)
     assert restored.web_link is None
+
+
+def test_result_times_round_trip_as_spec_strings() -> None:
+    """A result keeps real time values but stores the strings the spec requires."""
+
+    from datetime import datetime, timedelta, timezone
+
+    started = datetime(2024, 8, 15, 13, 15, 6, 556611, tzinfo=timezone.utc)
+    finished = started + timedelta(seconds=1, microseconds=200000)
+
+    result = Result(
+        name='/test/one',
+        start_time=started,
+        end_time=finished,
+        duration=finished - started,
+    )
+
+    stored = result.to_serialized()
+
+    assert stored['start-time'] == '2024-08-15T13:15:06.556611+00:00'
+    assert stored['end-time'] == '2024-08-15T13:15:07.756611+00:00'
+    assert stored['duration'] == '00:00:01'
+
+    restored = Result.from_serialized(stored)
+
+    assert restored.start_time == started
+    assert restored.end_time == finished
+    assert restored.duration == timedelta(seconds=1)
+
+
+def test_zero_microseconds_keep_a_fractional_second() -> None:
+    """A whole second still carries a fractional digit, as the schema requires."""
+
+    from datetime import datetime, timedelta, timezone
+
+    started = datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone.utc)
+    behind = datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone(timedelta(hours=-5)))
+
+    result = Result(name='/test/one', start_time=started, end_time=behind)
+
+    stored = result.to_serialized()
+
+    assert stored['start-time'] == '2024-08-15T13:15:06.000000+00:00'
+    assert stored['end-time'] == '2024-08-15T13:15:06.000000-05:00'
+
+
+def test_result_time_parser_rejects_spec_violations() -> None:
+    """A stored time that breaks the result spec is refused, not guessed."""
+
+    from datetime import datetime, timedelta, timezone
+
+    result = Result(
+        name='/test/one',
+        start_time=datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone.utc),
+        duration=timedelta(seconds=1),
+    )
+    stored = result.to_serialized()
+
+    stored['start-time'] = '2024-08-15T13:15:06'
+    with pytest.raises(tmt.utils.GeneralError):
+        Result.from_serialized(stored)
+
+    stored['start-time'] = '2024-08-15T13:15:06.556611+00:00'
+    stored['duration'] = '00:99:00'
+    with pytest.raises(tmt.utils.GeneralError):
+        Result.from_serialized(stored)
+
+    stored['duration'] = '00:00:01'
+    stored['start-time'] = 'not-a-time'
+    with pytest.raises(tmt.utils.GeneralError):
+        Result.from_serialized(stored)

@@ -1,5 +1,6 @@
 import abc
 import copy
+import datetime
 import functools
 import itertools
 import signal as _signal
@@ -421,9 +422,9 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
             for result in results:
                 result.event = event
 
-                result.start_time = timer.start_time_formatted
-                result.end_time = timer.end_time_formatted
-                result.duration = timer.duration_formatted
+                result.start_time = timer.start_time
+                result.end_time = timer.end_time
+                result.duration = timer.duration
 
             return results
 
@@ -886,9 +887,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # For the result representing the test itself, set the important
             # attributes to reflect the reality.
             if partial_result.name == test.name:
-                partial_result.start_time = invocation.stopwatch.start_time_formatted
-                partial_result.end_time = invocation.stopwatch.end_time_formatted
-                partial_result.duration = invocation.stopwatch.duration_formatted
+                partial_result.start_time = invocation.stopwatch.start_time
+                partial_result.end_time = invocation.stopwatch.end_time
+                partial_result.duration = invocation.stopwatch.duration
                 partial_result.context = self.step.plan.fmf_context
 
             custom_results.append(partial_result)
