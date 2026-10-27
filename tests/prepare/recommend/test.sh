@@ -10,6 +10,7 @@ rlJournalStart
         if [ "$PROVISION_HOW" = "container" ]; then
             build_container_image "ubi/8/upstream\:latest"
             build_container_image "centos/7/upstream\:latest"
+            build_container_image "centos/6/upstream\:latest"
             build_container_image "fedora/latest/upstream\:latest"
         fi
 
@@ -34,7 +35,7 @@ rlJournalStart
 
     # Check CentOS images for container provision
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in $TEST_IMAGE_PREFIX/centos/7/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest; do
+        for image in $TEST_IMAGE_PREFIX/centos/6/upstream:latest $TEST_IMAGE_PREFIX/centos/7/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest; do
             rlPhaseStartTest "Test $image ($PROVISION_HOW)"
 	        rlRun -s "$tmt --image $image $basic"
 		rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG

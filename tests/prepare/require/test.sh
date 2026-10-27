@@ -8,6 +8,7 @@ rlJournalStart
     rlPhaseStartSetup
 
         build_container_image "centos/7/upstream\:latest"
+        build_container_image "centos/6/upstream\:latest"
         build_container_image "fedora/latest:\latest"
 
         rlRun "pushd data"
@@ -18,6 +19,7 @@ rlJournalStart
                 forest: required by: /test/missing"
 
     for image in $TEST_IMAGE_PREFIX/fedora/latest:latest \
+                 $TEST_IMAGE_PREFIX/centos/6/upstream:latest \
                  $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
         # Prepare the tmt command and expected error message
         tmt="tmt run -avr provision -h $PROVISION_HOW -i $image"
