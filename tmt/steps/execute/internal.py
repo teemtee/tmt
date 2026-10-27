@@ -19,7 +19,7 @@ from tmt.steps.execute import (
     TestInvocation,
 )
 from tmt.steps.report.display import ResultRenderer
-from tmt.utils import DURATION_NOT_MEASURED, ShellScript
+from tmt.utils import ShellScript
 from tmt.utils.environment import Environment
 from tmt.utils.themes import style
 
@@ -562,12 +562,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 self.execute(invocation=invocation, logger=logger)
 
-                duration = style(
-                    invocation.stopwatch.duration_formatted
-                    if invocation.stopwatch.started
-                    else DURATION_NOT_MEASURED,
-                    fg='cyan',
-                )
+                duration = style(invocation.stopwatch.duration_formatted, fg='cyan')
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle test restart. May include guest reboot too.

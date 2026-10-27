@@ -6228,10 +6228,7 @@ def parse_timestamp(timestamp: str) -> datetime.datetime:
     try:
         parsed = datetime.datetime.fromisoformat(timestamp)
     except ValueError as exc:
-        raise tmt.utils.GeneralError(f"Malformed timestamp '{timestamp}'.") from exc
-
-    if parsed.tzinfo is None:
-        raise tmt.utils.GeneralError(f"Timestamp '{timestamp}' has no timezone.")
+        raise tmt.utils.SpecificationError(f"Malformed timestamp '{timestamp}'.") from exc
 
     return parsed
 
@@ -6245,7 +6242,7 @@ def parse_duration(duration: str) -> datetime.timedelta:
     """
 
     if not re.fullmatch(r'[0-9]{2,}:[0-5][0-9]:[0-5][0-9]', duration):
-        raise tmt.utils.GeneralError(f"Malformed duration '{duration}'.")
+        raise tmt.utils.SpecificationError(f"Malformed duration '{duration}'.")
 
     hours, minutes, seconds = (int(part) for part in duration.split(':'))
 

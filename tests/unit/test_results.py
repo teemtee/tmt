@@ -1143,15 +1143,15 @@ def test_result_time_parser_rejects_spec_violations() -> None:
     stored = result.to_serialized()
 
     stored['start-time'] = '2024-08-15T13:15:06'
-    with pytest.raises(tmt.utils.GeneralError):
-        Result.from_serialized(stored)
+    restored = Result.from_serialized(stored)
+    assert restored.start_time == datetime(2024, 8, 15, 13, 15, 6)
 
     stored['start-time'] = '2024-08-15T13:15:06.556611+00:00'
     stored['duration'] = '00:99:00'
-    with pytest.raises(tmt.utils.GeneralError):
+    with pytest.raises(tmt.utils.SpecificationError):
         Result.from_serialized(stored)
 
     stored['duration'] = '00:00:01'
     stored['start-time'] = 'not-a-time'
-    with pytest.raises(tmt.utils.GeneralError):
+    with pytest.raises(tmt.utils.SpecificationError):
         Result.from_serialized(stored)

@@ -3,7 +3,7 @@ import re
 import sys
 from collections.abc import Iterator
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cast, overload
 
 from jinja2 import FileSystemLoader, select_autoescape
 
@@ -33,7 +33,15 @@ CUSTOM_FLAVOR_NAME = 'custom'
 DEFAULT_TEMPLATE_RESOURCE = 'steps/report/junit/templates'
 
 
-def _duration_to_seconds_filter(duration: Optional[timedelta]) -> Optional[int]:
+@overload
+def _duration_to_seconds_filter(duration: timedelta) -> int: ...
+
+
+@overload
+def _duration_to_seconds_filter(duration: None) -> None: ...
+
+
+def _duration_to_seconds_filter(duration: timedelta | None) -> int | None:
     """
     Convert a duration into whole seconds
     """
