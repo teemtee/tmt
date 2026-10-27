@@ -6188,6 +6188,11 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
             return (*safe_call(fn, *args, **kwargs), self)
 
 
+#: Shown where a duration was never measured. A measured duration of zero
+#: seconds is ``00:00:00`` instead, so the two stay distinguishable.
+DURATION_NOT_MEASURED = '..:..:..'
+
+
 def format_timestamp(timestamp: datetime.datetime) -> str:
     """
     Convert timestamp to a human readable format
