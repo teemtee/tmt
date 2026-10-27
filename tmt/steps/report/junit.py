@@ -34,11 +34,13 @@ DEFAULT_TEMPLATE_RESOURCE = 'steps/report/junit/templates'
 
 
 @overload
-def _duration_to_seconds_filter(duration: timedelta) -> int: ...
+def _duration_to_seconds_filter(duration: timedelta) -> int:
+    pass
 
 
 @overload
-def _duration_to_seconds_filter(duration: None) -> None: ...
+def _duration_to_seconds_filter(duration: None) -> None:
+    pass
 
 
 def _duration_to_seconds_filter(duration: timedelta | None) -> int | None:
