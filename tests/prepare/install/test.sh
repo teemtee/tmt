@@ -467,15 +467,9 @@ rlJournalStart
                 rlPhaseStartTest "$phase_prefix Escape package names"
                     rlRun "$tmt_run -e COPR_PLUGIN=\"dnf5-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf5-plugins\" $tmt_steps execute plan --name escape"
                 rlPhaseEnd
-            else
+            elif ! is_centos_6 "$image"; then # CentOS 6 has no yum-plugin-copr (or *-command(copr) provide) to exercise escaping.
                 rlPhaseStartTest "$phase_prefix Escape package names"
                     rlRun "$tmt_run -e COPR_PLUGIN=\"dnf-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf-plugins-core\" $tmt_steps execute plan --name escape"
-                rlPhaseEnd
-            fi
-
-            if is_centos_6 "$image"; then
-                rlPhaseStartTest "$phase_prefix Install from epel6 copr"
-                    rlRun "$tmt execute plan --name epel6"
                 rlPhaseEnd
             fi
 

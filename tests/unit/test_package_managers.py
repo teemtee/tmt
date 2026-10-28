@@ -31,7 +31,7 @@ from tmt.package_managers import (
 from tmt.steps.provision.podman import GuestContainer
 from tmt.utils import ShellScript
 
-from . import MATCH, SEARCH, assert_log
+from . import MATCH, SEARCH, assert_log, assert_not_log
 
 # We will need a logger...
 logger = tmt.Logger.create()
@@ -483,24 +483,13 @@ def test_refresh_metadata(
 
 
 def _parametrize_test_assert_config_manager() -> Iterator[
-    tuple[Container, PackageManagerClass, Union[str, Exception]]
+    tuple[Container, PackageManagerClass, Union[str, Exception, None]]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos/7' in container.url:
-                # yum-utils ships pre-installed on CentOS 7; check_presence returns
-                # True → install is skipped, only the rpm check appears in logs.
-                yield (
-                    container,
-                    package_manager_class,
-                    r'rpm -q --whatprovides yum-utils >&2 \|\| echo yum-utils',
-                )
-            else:
-                yield (
-                    container,
-                    package_manager_class,
-                    r"yum install -y  yum-utils && rpm -q --whatprovides yum-utils",
-                )
+            # yum-utils is installed via Yum.essential_requires; assert_config_manager
+            # is a no-op and does not run an install command.
+            yield (container, package_manager_class, None)
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield (
@@ -547,7 +536,7 @@ def test_assert_config_manager(
     container_per_test: ContainerData,
     guest_per_test: GuestContainer,
     package_manager_class: PackageManagerClass,
-    expected_command_or_exception: Union[str, Exception],
+    expected_command_or_exception: Union[str, Exception, None],
     root_logger: tmt.log.Logger,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
@@ -555,7 +544,13 @@ def test_assert_config_manager(
         container_per_test, guest_per_test, package_manager_class, root_logger
     )
 
-    if isinstance(expected_command_or_exception, str):
+    if expected_command_or_exception is None:
+        package_manager.assert_config_manager()
+        assert_not_log(
+            caplog,
+            message=MATCH(r"(?sm)Run command:.*yum install -y\s+yum-utils"),
+        )
+    elif isinstance(expected_command_or_exception, str):
         package_manager.assert_config_manager()
         assert_expected_command(caplog, expected_command_or_exception)
     else:

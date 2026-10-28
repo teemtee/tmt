@@ -37,12 +37,17 @@ xfail_plans_nobest=(
     "^/broken/no-artifacts/obsoletes/basic$"
     "^/broken/no-artifacts/upgrade/with-devel$"
 )
-xfail_centos7_centos6=(
+xfail_centos7=(
     # yum cannot downgrade a pre-installed package
     "/pre-installed/downgrade/with-devel$"
     "^/verified-artifacts/pre-installed/downgrade/only-foo$"
 )
-complicated_centos7_centos6=(
+xfail_centos6=(
+    # yum cannot downgrade a pre-installed package
+    "/pre-installed/downgrade/with-devel$"
+    "^/verified-artifacts/pre-installed/downgrade/only-foo$"
+)
+complicated_centos7=(
     # Obsoletes wins over priority. Some of these tests pass when they should xfail
     # some fail in different ways, it is hard to handle them all consistently, so just skip them.
     "^/verified-artifacts/obsoletes/basic/downgrade$"
@@ -50,7 +55,18 @@ complicated_centos7_centos6=(
     "^/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
     "^/broken/available-artifacts/obsoletes/basic/downgrade$"
     "^/broken/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+)
+complicated_centos6=(
+    # Obsoletes wins over priority. Some of these tests pass when they should xfail
+    # some fail in different ways, it is hard to handle them all consistently, so just skip them.
     "^/verified-artifacts/obsoletes/basic/downgrade$"
+    "^/available-artifacts/obsoletes/basic/downgrade$"
+    "^/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    "^/broken/available-artifacts/obsoletes/basic/downgrade$"
+    "^/broken/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
+    # el6 yum promotes local foo-1.4 install to foo-ng via Obsoletes (el7 skips
+    # that for YumLocalPackage), so the expected pre-installed foo-1.4 is never present.
+    "^/no-artifacts/obsoletes/pre-installed/only-foo$"
 )
 
     while IFS= read -r image; do
@@ -85,25 +101,32 @@ complicated_centos7_centos6=(
                     fi
                 done
             fi
-            if is_centos_7 "$image" || is_centos_6 "$image"; then
-                for check_pattern in ${xfail_centos7_centos6[@]}; do
-                    if [[ "$plan" =~ $check_pattern ]]; then
-                        xfail="(XFAIL)"
-                        expected_result=2
-                        break
-                    fi
-                done
-                # Skip too complicated situations altogether
-                unset complicated
-                for check_pattern in ${complicated_centos7_centos6[@]}; do
-                    if [[ "$plan" =~ $check_pattern ]]; then
-                        complicated=1
-                        break
-                    fi
-                done
-                if [[ -n "$complicated" ]]; then
-                    continue
+            xfail_distro=()
+            complicated_distro=()
+            if is_centos_7 "$image"; then
+                xfail_distro=("${xfail_centos7[@]}")
+                complicated_distro=("${complicated_centos7[@]}")
+            elif is_centos_6 "$image"; then
+                xfail_distro=("${xfail_centos6[@]}")
+                complicated_distro=("${complicated_centos6[@]}")
+            fi
+            for check_pattern in ${xfail_distro[@]}; do
+                if [[ "$plan" =~ $check_pattern ]]; then
+                    xfail="(XFAIL)"
+                    expected_result=2
+                    break
                 fi
+            done
+            # Skip too complicated situations altogether
+            unset complicated
+            for check_pattern in ${complicated_distro[@]}; do
+                if [[ "$plan" =~ $check_pattern ]]; then
+                    complicated=1
+                    break
+                fi
+            done
+            if [[ -n "$complicated" ]]; then
+                continue
             fi
             rlPhaseStartTest "$phase_prefix $plan $xfail"
                 rlRun "tmt run $extra_env -i $run --scratch -vvv --all \
