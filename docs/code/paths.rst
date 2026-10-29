@@ -15,10 +15,11 @@ anchor path
 ------------------------------------------------------------------
 
 When a relative path is provided by the user, for example an
-``ansible`` playbook or a local ``rpm`` package to be installed on
-the guest, tmt resolves it against a well-defined directory called
-an :term:`anchor path`. It is the fmf tree root of the node (a
-plan, test or story) the metadata belongs to.
+:ref:`/plugins/prepare/ansible` playbook for preparing the guest
+or a local :ref:`/plugins/prepare/artifact` to be installed on the
+guest, tmt resolves it against a well-defined directory called an
+:term:`anchor path`. It is the fmf tree root of the node (a plan,
+test or story) the metadata belongs to.
 
 For the special case when there is no fmf tree root, for example
 when running commands like ``tmt try fedora`` from your home
