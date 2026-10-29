@@ -1,0 +1,5 @@
+description: |
+    Path handling has been documented. See :ref:`paths` for the
+    definition of the :term:`anchor path`, the :term:`fmf path` and the
+    :term:`test path`. The :term:`import tree` created for imported
+    remote plans is now described in :ref:`trees` as well.
