@@ -412,7 +412,7 @@ def test_plugin_writes_into_its_workdir(report_fix):
 def test_plugin_writes_into_the_given_directory(report_fix, tmppath):
     report, results, tmppath = report_fix
     target = tmppath / 'custom-results'
-    report.data.file = target
+    report.data.directory = target
     results.append(Result(name='t1'))
 
     report.go()
@@ -428,7 +428,7 @@ def test_plugin_keeps_the_default_directory_in_the_workdir(report_fix):
 
 def test_plugin_does_not_keep_a_given_directory(report_fix, tmppath):
     report, _, _ = report_fix
-    report.data.file = tmppath / 'custom-results'
+    report.data.directory = tmppath / 'custom-results'
 
     assert DEFAULT_RESULTS_DIRECTORY not in report._preserved_workdir_members
 

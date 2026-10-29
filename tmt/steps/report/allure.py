@@ -359,11 +359,14 @@ def convert_result(
 
 @container
 class ReportAllureData(tmt.steps.report.ReportStepData):
-    file: Optional[Path] = field(
+    directory: Optional[Path] = field(
         default=None,
-        option='--file',
+        option='--directory',
         metavar='PATH',
-        help='Path to the directory to store Allure results in.',
+        help=(
+            'Directory to write the Allure result files into, created when missing. '
+            'Point allure generate at it.'
+        ),
         normalize=tmt.utils.normalize_path,
     )
 
@@ -378,21 +381,23 @@ class ReportAllure(tmt.steps.report.ReportPlugin[ReportAllureData]):
     becomes one result file, each of its subresults becomes a separate one,
     linked through the parent name.
 
-    When ``file`` is not specified, results are written into a directory named
-    ``allure-results`` located in the step workdir.
+    Results are written into the directory given by ``directory``, which
+    is created when missing. Point ``allure generate`` at that directory.
+    When ``directory`` is not specified, results are written into a
+    directory named ``allure-results`` located in the step workdir.
 
     .. code-block:: yaml
 
         # Enable allure report from the command line
         tmt run --all report --how allure
-        tmt run --all report --how allure --file /tmp/allure-results
+        tmt run --all report --how allure --directory /tmp/allure-results
 
     .. code-block:: yaml
 
         # Use allure as the default report for given plan
         report:
             how: allure
-            file: /tmp/allure-results
+            directory: /tmp/allure-results
 
     Possible test results and their mapping to Allure statuses:
 
@@ -405,7 +410,7 @@ class ReportAllure(tmt.steps.report.ReportPlugin[ReportAllureData]):
     parsed and stored in the ``trace`` field instead, as long as it can be
     read; otherwise it becomes an attachment too.
 
-    This plugin is available since tmt 1.80.
+    This plugin is available since tmt 1.81.
     """
 
     _data_class = ReportAllureData
@@ -418,7 +423,7 @@ class ReportAllure(tmt.steps.report.ReportPlugin[ReportAllureData]):
 
         members = super()._preserved_workdir_members
 
-        if self.data.file is None:
+        if self.data.directory is None:
             members = {*members, DEFAULT_RESULTS_DIRECTORY}
 
         return members
@@ -433,7 +438,7 @@ class ReportAllure(tmt.steps.report.ReportPlugin[ReportAllureData]):
         if self.is_dry_run:
             return
 
-        output_directory = self.data.file or self.phase_workdir / DEFAULT_RESULTS_DIRECTORY
+        output_directory = self.data.directory or self.phase_workdir / DEFAULT_RESULTS_DIRECTORY
 
         try:
             output_directory.mkdir(parents=True, exist_ok=True)
