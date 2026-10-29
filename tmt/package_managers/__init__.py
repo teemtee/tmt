@@ -724,17 +724,22 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             if nevras is None:
                 self.info(f"Nothing provides '{provide}'.")
                 continue
+            # yum repoquery can emit the same NEVRA more than once (seen on el6);
+            # keep unique providers so a single match is not treated as multi-match.
+            seen: set[RpmVersion] = set()
             for resolved_provide in nevras:
                 try:
-                    result[provide].append(
-                        RpmVersion.from_nevra(
-                            resolved_provide['full_nevra'], repo_id=resolved_provide['repoid']
-                        )
+                    pkg = RpmVersion.from_nevra(
+                        resolved_provide['full_nevra'], repo_id=resolved_provide['repoid']
                     )
                 except ValueError as error:
                     raise PrepareError(
                         f"Cannot parse '{resolved_provide}' for provide '{provide}'."
                     ) from error
+                if pkg in seen:
+                    continue
+                seen.add(pkg)
+                result[provide].append(pkg)
 
         return result
 
