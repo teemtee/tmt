@@ -67,6 +67,7 @@ complicated_centos6=(
     # el6 yum promotes local foo-1.4 install to foo-ng via Obsoletes (el7 skips
     # that for YumLocalPackage), so the expected pre-installed foo-1.4 is never present.
     "^/no-artifacts/obsoletes/pre-installed/only-foo$"
+    "^/broken/no-artifacts/obsoletes/pre-installed/only-foo$"
 )
 
     while IFS= read -r image; do
