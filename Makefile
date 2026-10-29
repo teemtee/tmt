@@ -43,6 +43,7 @@ _DEPS_DEVELOP_FEDORA := \
     expect \
     gcc \
     git \
+    packit \
     python3-nitrate \
     libvirt-devel \
     krb5-devel \
