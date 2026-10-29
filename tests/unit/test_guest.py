@@ -1,5 +1,6 @@
 import os
 import re
+import shlex
 from typing import Any, Optional, Union
 from unittest.mock import MagicMock, Mock
 
@@ -15,6 +16,7 @@ from tmt.guest import (
     GuestData,
     GuestSsh,
     GuestSshData,
+    SSHMasterProcessFailedToStartError,
     TransferOptions,
 )
 from tmt.log import Logger, VerboseLoggingFunction
@@ -31,7 +33,7 @@ from tmt.utils import (
     ShellScript,
 )
 from tmt.utils.environment import Environment
-from tmt.utils.wait import Waiting
+from tmt.utils.wait import Deadline, Waiting
 
 from . import TEST_CONTAINERS
 
@@ -387,3 +389,94 @@ def test_unsafe_ssh_option_case_and_separator(
 
     with pytest.raises(GeneralError, match='--feeling-safe'):
         _ = guest._ssh_options
+
+
+def test_ansible_does_not_share_ssh_socket_between_guests(
+    monkeypatch, ssh_test_provision, ssh_test_guests
+) -> None:
+    """Ansible must not receive a shared literal ControlPath for multiple guests."""
+    mock_provision = ssh_test_provision
+    guests = ssh_test_guests
+    mock_mkdir = MagicMock(name='<mock>Path.mkdir')
+    monkeypatch.setattr(Path, 'mkdir', mock_mkdir)
+
+    ansible_inventory = Path('/tmp/inventory.yaml')
+    ansible_worktree = Path('/tmp/plan')
+    ansible_playbook = Path('playbook.yml')
+    mock_plan = MagicMock(name='mock<plan>')
+    mock_plan_provision = MagicMock(name='mock<plan.provision>')
+    mock_plan_provision.ansible_inventory_path = ansible_inventory
+    mock_plan.provision = mock_plan_provision
+    mock_plan.worktree = ansible_worktree
+    mock_provision.plan = mock_plan
+
+    mock_run_guest_command = MagicMock(
+        name='<mock>_run_guest_command',
+        return_value=CommandOutput(stdout='', stderr=None),
+    )
+    mock_sanitize_playbook_path = MagicMock(return_value=ansible_playbook)
+    mock_prepare_command_environment = MagicMock(return_value=Environment())
+
+    monkeypatch.setattr(
+        GuestSsh,
+        '_sanitize_ansible_playbook_path',
+        mock_sanitize_playbook_path,
+    )
+    monkeypatch.setattr(
+        GuestSsh,
+        '_prepare_ansible_command_environment',
+        mock_prepare_command_environment,
+    )
+    monkeypatch.setattr(GuestSsh, '_run_guest_command', mock_run_guest_command)
+
+    for guest in guests.values():
+        guest._run_ansible(ansible_playbook)
+
+    assert mock_run_guest_command.call_count == len(guests)
+
+    ansible_commands = [call.args[0].to_popen() for call in mock_run_guest_command.call_args_list]
+    ansible_limits = [command[command.index('--limit') + 1] for command in ansible_commands]
+    ansible_ssh_options = [
+        shlex.split(command[command.index('--ssh-common-args') + 1])
+        for command in ansible_commands
+    ]
+
+    assert ansible_limits == list(guests)
+    assert all(
+        not any(
+            option.startswith('-S') or option.lower().startswith('-ocontrolpath=')
+            for option in options
+        )
+        for options in ansible_ssh_options
+    )
+    assert all('-oControlMaster=auto' in options for options in ansible_ssh_options)
+    assert all('-oControlPersist=60s' in options for options in ansible_ssh_options)
+
+
+def test_reconnect_retries_after_ssh_master_process_failure(
+    monkeypatch, root_logger: tmt.log.Logger
+) -> None:
+    """Reconnect should retry when starting the SSH master process fails."""
+    mock_provision = MagicMock(spec=Provision)
+    guest = GuestSsh(
+        logger=root_logger,
+        parent=mock_provision,
+        name='guest',
+        data=GuestSshData(primary_address='192.0.2.1'),
+    )
+    ssh_master_start_failure = SSHMasterProcessFailedToStartError()
+    successful_whoami = CommandOutput(stdout='root\n', stderr=None)
+    mock_execute = MagicMock(
+        side_effect=[
+            ssh_master_start_failure,
+            successful_whoami,
+        ]
+    )
+    monkeypatch.setattr(guest, 'execute', mock_execute)
+
+    reconnect_wait = Waiting(Deadline.from_seconds(5), tick=0)
+
+    reconnect_succeeded = guest.reconnect(reconnect_wait)
+
+    assert reconnect_succeeded is True
+    assert mock_execute.call_count == 2
