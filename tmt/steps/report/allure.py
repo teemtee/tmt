@@ -11,6 +11,7 @@ from typing import Optional
 
 import tmt.log
 import tmt.steps
+import tmt.steps.execute
 import tmt.steps.report
 import tmt.utils
 from tmt.container import container, field
@@ -103,9 +104,10 @@ def full_name(
     """
     Build the Allure ``fullName`` of a result.
 
-    Allure groups results with the same ``fullName`` into a single history
-    entry, therefore the name is built from all the parts identifying a test
-    run: the plan, the guest and the test itself.
+    Allure 2 and Allure 3 derive the key they track a test's history under
+    from the ``fullName`` (and the parameters, which are not set), so the
+    name is built from all the parts identifying a test run: the plan, the
+    guest and the test itself. It must stay the same across runs.
     """
 
     parts = ['v1', 'sub' if subresult_name else 'main', plan_name, guest_name, result_name]
@@ -124,11 +126,14 @@ def _guest_labels(guest: Optional[ResultGuestData]) -> list[dict[str, str]]:
     if guest is None:
         return []
 
-    return [
-        {'name': 'guest', 'value': guest.name or ''},
-        {'name': 'guest-role', 'value': guest.role or ''},
-        {'name': 'guest-address', 'value': guest.primary_address or ''},
+    labels = [
+        ('guest', guest.name),
+        ('guest-role', guest.role),
+        ('guest-address', guest.primary_address),
     ]
+
+    # Labels without a value only clutter the report.
+    return [{'name': name, 'value': value} for name, value in labels if value]
 
 
 def _inside(path: Path, root: Path) -> Optional[Path]:
@@ -147,18 +152,21 @@ def _inside(path: Path, root: Path) -> Optional[Path]:
     return candidate
 
 
-def _failure_log_text(path: Path) -> Optional[str]:
+def _read_failure_log(path: Path) -> Optional[list[str]]:
     """
-    Read a failure log and join its entries.
+    Read the entries of a failure log.
 
     A failure log is a YAML list of strings. Anything which cannot be read or
-    parsed is left out, such a log is reported as an attachment instead.
+    parsed is reported as ``None``, an empty file as no entries.
     """
 
     try:
         content = path.read_text(encoding='utf-8')
     except (OSError, UnicodeDecodeError):
         return None
+
+    if not content.strip():
+        return []
 
     try:
         entries = tmt.utils.yaml_to_list(content)
@@ -168,10 +176,39 @@ def _failure_log_text(path: Path) -> Optional[str]:
     if not all(isinstance(entry, str) for entry in entries):
         return None
 
-    if not any(entry != '' for entry in entries):
+    return entries
+
+
+def _failure_log_text(path: Path) -> Optional[str]:
+    """
+    Read a failure log and join its entries.
+
+    A log which cannot be read or parsed, or which records no failure, gives
+    ``None``. An unreadable log is reported as an attachment instead.
+    """
+
+    entries = _read_failure_log(path)
+
+    if entries is None or not any(entry != '' for entry in entries):
         return None
 
     return '\n'.join(entries)
+
+
+def _is_empty_failure_log(path: Path) -> bool:
+    """
+    Check whether a log is a failure log which records no failure.
+
+    tmt saves a failure log for every test, a passing one gets an empty
+    list. Such a log carries nothing worth attaching.
+    """
+
+    if path.name != tmt.steps.execute.TEST_FAILURES_FILENAME:
+        return False
+
+    entries = _read_failure_log(path)
+
+    return entries is not None and not any(entry != '' for entry in entries)
 
 
 def _attachment(path: Path, output_directory: Path) -> Optional[dict[str, str]]:
@@ -227,6 +264,9 @@ def result_payload(
 
     payload: dict[str, object] = {
         'uuid': str(uuid.uuid4()),
+        # Part of the Allure result format. Allure 2 and Allure 3 do not
+        # use it as the history key, they derive one from ``fullName``,
+        # but it is stable across runs as well.
         'historyId': hashlib.sha256(full.encode('utf-8')).hexdigest(),
         'name': f'{parent_name} :: {result.name}' if parent_name else result.name,
         'fullName': full,
@@ -273,6 +313,9 @@ def result_payload(
         path = _inside(log, source_directory)
 
         if path is None or path in consumed or path in seen:
+            continue
+
+        if _is_empty_failure_log(path):
             continue
 
         seen.add(path)

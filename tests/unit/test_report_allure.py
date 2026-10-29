@@ -211,6 +211,33 @@ def test_guest_labels_are_reported():
     ]
 
 
+def test_guest_labels_without_a_value_are_dropped():
+    guest = ResultGuestData(name='default-0', role=None, primary_address='')
+    payload = result_payload(
+        Result(name='t1', guest=guest),
+        plan_name='plan',
+        guest=guest,
+        output_directory=Path('/tmp'),
+        source_directory=Path('/tmp'),
+        now=NOW,
+    )
+
+    assert payload['labels'] == [{'name': 'guest', 'value': 'default-0'}]
+
+
+def test_missing_guest_has_no_labels():
+    payload = result_payload(
+        Result(name='t1'),
+        plan_name='plan',
+        guest=None,
+        output_directory=Path('/tmp'),
+        source_directory=Path('/tmp'),
+        now=NOW,
+    )
+
+    assert payload['labels'] == []
+
+
 def test_note_becomes_the_status_message(output_directory, source_directory):
     payload = result_payload(
         Result(name='t1', note=['first', 'second']),
@@ -274,10 +301,20 @@ def test_unreadable_failure_log_falls_back_to_an_attachment(output_directory, so
     assert (output_directory / payload['attachments'][0]['source']).is_file()
 
 
-def test_empty_failure_log_falls_back_to_an_attachment(output_directory, source_directory):
-    log = _write_log(source_directory, 'failures.yaml', '- ""\n')
+@pytest.mark.parametrize(
+    ('outcome', 'content'),
+    [
+        (ResultOutcome.FAIL, '- ""\n'),
+        (ResultOutcome.FAIL, '[]\n'),
+        (ResultOutcome.PASS, '[]\n'),
+        (ResultOutcome.INFO, ''),
+    ],
+    ids=['empty-entry', 'empty-list-fail', 'empty-list-pass', 'empty-file-info'],
+)
+def test_empty_failure_log_is_not_attached(output_directory, source_directory, outcome, content):
+    log = _write_log(source_directory, 'failures.yaml', content)
     payload = result_payload(
-        Result(name='t1', result=ResultOutcome.FAIL, log=[log]),
+        Result(name='t1', result=outcome, log=[log]),
         plan_name='plan',
         guest=ResultGuestData(),
         output_directory=output_directory,
@@ -286,7 +323,23 @@ def test_empty_failure_log_falls_back_to_an_attachment(output_directory, source_
     )
 
     assert 'statusDetails' not in payload
+    assert 'attachments' not in payload
+    assert list(output_directory.iterdir()) == []
+
+
+def test_empty_regular_log_is_still_attached(output_directory, source_directory):
+    log = _write_log(source_directory, 'output.txt', '')
+    payload = result_payload(
+        Result(name='t1', log=[log]),
+        plan_name='plan',
+        guest=ResultGuestData(),
+        output_directory=output_directory,
+        source_directory=source_directory,
+        now=NOW,
+    )
+
     assert len(payload['attachments']) == 1
+    assert payload['attachments'][0]['name'] == 'output.txt'
 
 
 def test_log_outside_the_source_directory_is_refused(output_directory, source_directory, tmppath):
