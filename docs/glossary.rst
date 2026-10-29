@@ -31,6 +31,12 @@ Directories
 
 .. glossary::
 
+    import tree
+        The ``fmf`` tree cloned into the :term:`run workdir` under the
+        ``import`` folder from where the remote plan is imported, e.g.
+        ``/var/tmp/tmt/run-123/import/plan``. See :ref:`import-tree` for
+        details.
+
     plan workdir
         Directory used for storing temporary files related to particular
         plan, e.g. ``/var/tmp/tmt/run-123/plans/core``.
@@ -52,16 +58,11 @@ Directories
         details.
 
     work tree
-        Copy of the *user tree* stored under ``plan-workdir/tree``. Path
-        to this directory is available in the ``TMT_TREE`` environment
-        variable, e.g. ``/var/tmp/tmt/run-123/plans/core/tree``. See
-        :ref:`work-tree` for details.
-
-    import tree
-        The ``fmf`` tree cloned into the *run workdir* under the
-        ``import`` folder when a remote plan is imported, e.g.
-        ``/var/tmp/tmt/run-123/import/plan``. See :ref:`import-tree` for
-        details.
+        Copy of the :term:`user tree` stored under
+        ``plan-workdir/tree``. Path to this directory is available in
+        the ``TMT_TREE`` environment variable, e.g.
+        ``/var/tmp/tmt/run-123/plans/core/tree``. See :ref:`work-tree`
+        for details.
 
 Paths
 -----
