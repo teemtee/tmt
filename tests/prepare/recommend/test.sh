@@ -48,7 +48,7 @@ rlJournalStart
             fi
 
             rlPhaseStartTest "Test $image ($PROVISION_HOW)"
-                rlRun -s "$tmt $extra_context --image $image $basic"
+                rlRun -s "tmt $extra_context run -vv --all --remove provision --how $PROVISION_HOW --image $image $basic"
                 rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
                 rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
                 rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
