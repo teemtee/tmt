@@ -265,8 +265,6 @@ detailed description of the syntax and available keys.
 Plans
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _parametrize-plans:
-
 Parametrize Plans
 ------------------------------------------------------------------
 
@@ -321,8 +319,6 @@ option and the ``context`` plan attribute:
 
     $ tmt -c branch=tmt run
 
-
-.. _dynamic-ref:
 
 Dynamic ``ref`` Evaluation
 ------------------------------------------------------------------
