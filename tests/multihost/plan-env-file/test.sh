@@ -6,10 +6,11 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
         rlRun "set -o pipefail"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
     rlPhaseEnd
 
     rlPhaseStartTest "Check identity of variables, but uniqueness of env files"
-        rlRun -s "tmt -vvv run --scratch --id $run discover provision execute finish cleanup plan -n plan"
+        rlRun -s "tmt -vvv run --scratch --id $run discover provision --how $PROVISION_HOW execute finish cleanup plan -n plan"
 
         rlAssertEquals "Two different guests reported the TEST_MESSAGE variable" "$(grep 'stdout: TEST_MESSAGE:' $rlRun_LOG | sed 's/.*\[\(.*\)\].*/\1/' | sort -u | wc -l)" "2"
         rlAssertEquals "No empty CONST_MESSAGE values" "$(grep 'stdout: CONST_MESSAGE:' $rlRun_LOG | sed 's/.*stdout: CONST_MESSAGE: //' | grep -c '^$')" "0"
