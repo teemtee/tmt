@@ -15,7 +15,7 @@ the documentation generated from sources linked below.
 
     Class Overview <classes>
     Tree Handling <trees>
-    Anchor Paths <paths>
+    Path Handling <paths>
     Template Extensions <template-extensions>
     Plugin Introduction <plugin-introduction>
     tmt <../z_autodocs/tmt>

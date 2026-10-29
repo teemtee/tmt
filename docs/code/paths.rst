@@ -1,105 +1,82 @@
 .. _paths:
 
 ======================
-    Anchor Paths
+    Path Handling
 ======================
 
-Users can provide paths in the ``fmf`` metadata, for example
-``ansible`` playbooks or local rpm packages to be installed by the
-artifact prepare plugin. When such a path is relative, ``tmt``
-needs a well-defined directory to resolve it against. That
-directory is called an :term:`anchor path`.
-
-There are two anchor paths with distinct purpose. Picking the
-right one matters: the same relative string resolves to different
-places depending on the anchor, and the wrong choice breaks cases
-such as imported plans. The rule of thumb is simple:
-
-* Does the path belong to the **run as a whole**, as something the
-  user points at from the command line context? Use the
-  :term:`base anchor path`.
-* Does the path belong to a **specific node** (a plan, test or
-  story) and travel together with its metadata? Use the
-  :term:`node anchor path`.
+Paths show up in several places of the fmf metadata and in the
+code. Here we give them clear names and describe how they are
+resolved so that we can clearly distinguish them.
 
 
-.. _base-anchor-path:
+.. _anchor-path:
 
-Base Anchor Path
+anchor path
 ------------------------------------------------------------------
 
-The :term:`base anchor path` is the run-wide default. It points to
-the :term:`user tree` root, i.e. the ``fmf`` tree from which the
-``tmt`` command was executed (or, when no tree is used, the
-current working directory). For example:
+When a relative path is provided by the user, for example an
+``ansible`` playbook or a local ``rpm`` package to be installed on
+the guest, tmt resolves it against a well-defined directory called
+an :term:`anchor path`. It is the fmf tree root of the node (a
+plan, test or story) the metadata belongs to.
+
+For the special case when there is no fmf tree root, for example
+when running commands like ``tmt try fedora`` from your home
+directory, the current working directory is used as the anchor.
+
+For a plan defined directly in the :term:`user tree` the anchor
+path is the user tree root:
 
 .. code-block::
 
     /home/user/git/project
 
-It is available in the code as ``plan.user_anchor_path`` and
-should be used for paths that are meaningful relative to where the
-user invoked ``tmt``, not relative to where a particular piece of
-metadata happens to live. Current users are:
-
-* artifact files fetched by the prepare step (e.g. ``rpm``
-  packages or repository files stored locally)
-* the relative ``path`` of the :ref:`/plugins/discover/fmf` plugin
-  when no ``url`` is provided
-
-Because it is derived from the run rather than from any single
-node, the base anchor path is the same for every node in the run.
-
-
-.. _node-anchor-path:
-
-Node Anchor Path
-------------------------------------------------------------------
-
-The :term:`node anchor path` is node-specific. It points to the
-``fmf`` tree root of the node the metadata belongs to (or the
-current working directory when the node has no tree). It is
-available in the code as ``node.anchor_path`` and should be used
-for paths that are authored as part of a given node and are
-expected to be relative to that node's ``fmf`` root. Current users
-are:
-
-* ``ansible`` playbooks in the prepare and finish steps
-* the ``ansible`` inventory layout
-* plan environment files
-* ``fmf_id``, the fmf identifier of the respective node
-
-The crucial property is that the node anchor path follows the
-node, even when the node no longer lives in the :term:`user tree`:
-
-* **Imported plans.** A remote plan is cloned into the
-  :term:`import tree` and its metadata is loaded from there. The
-  node's ``fmf`` root, and therefore its node anchor path, points
-  into the import tree, so playbook paths keep resolving relative
-  to the imported plan and not to the user tree.
-
-* **Plan shaping.** When plans are derived from an existing one,
-  for example by splitting a plan with the
-  ``--max-tests-per-plan`` option, the derived plans inherit the
-  original ``fmf`` root. Their node anchor path stays correct
-  without any extra handling.
-
-
-Relationship
-------------------------------------------------------------------
-
-For a plain local plan the two anchor paths point to the same
-directory, because the node lives directly in the :term:`user
-tree`. They diverge only when the node's tree is not the user
-tree, such as for imported plans. Think of the node anchor path as
-the base anchor path narrowed down to a specific node:
+For an imported plan the anchor path points into the :term:`import
+tree`, so that relative paths resolve correctly the same way as
+when the plan runs in its own repository:
 
 .. code-block::
 
-    base anchor path   ->  user tree root           (per run)
-    node anchor path   ->  node's own fmf root      (per node)
+    /var/tmp/tmt/run-123/import/plan
 
-When in doubt, ask whether the path should still resolve correctly
-if the plan were imported from another repository. If yes, it
-belongs to the node and the :term:`node anchor path` is the right
-choice.
+
+.. _fmf-path:
+
+fmf path
+------------------------------------------------------------------
+
+The :term:`fmf path` is the ``path`` key of the :term:`fmf id`.
+It points to the location of the fmf tree inside its git
+repository, expressed as the relative path from the git repository
+root to the fmf tree root and starting with a slash. It is used
+for example by ``plan.import`` to find a plan stored deeper in the
+repository.
+
+For a tree stored directly in the git repository root the fmf path
+is not needed. When the tree lives deeper, fmf path captures that
+location. For testing we quite often use the ``data`` directories
+with nested fmf trees used for testing specific features:
+
+.. code-block::
+
+    git root: /home/user/git/tmt
+    fmf root: /home/user/git/tmt/tests/feature/data
+    fmf path: /tests/feature/data
+
+
+.. _test-path:
+
+test path
+------------------------------------------------------------------
+
+The :term:`test path` is the :tmt:story:`/spec/tests/path` key of
+a test. It defines the directory to enter before the test is
+executed, expressed as the path from the metadata tree root and
+starting with a slash. When not defined, the directory where the
+test metadata is stored is used.
+
+.. code-block::
+
+    summary: Run the common linter
+    path: /common/scripts
+    test: ./lint --all

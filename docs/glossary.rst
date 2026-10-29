@@ -15,6 +15,17 @@ Machines
    runner
       The machine that is running the ``tmt`` command.
 
+Identifiers
+-----------
+
+.. glossary::
+
+    fmf id
+        An identifier used to uniquely define test, plan or story.
+        Consists of ``name``, ``url``, ``ref`` and ``path``. See the
+        `fmf identifier`_ documentation for detailed description of
+        individual keys.
+
 Directories
 -----------
 
@@ -58,24 +69,19 @@ Paths
 .. glossary::
 
     anchor path
-        A directory against which relative paths provided by the user
-        are resolved. There are two of them, the :term:`base anchor
-        path` and the :term:`node anchor path`. See :ref:`paths` for
-        details.
+        The directory against which relative paths are resolved, the fmf
+        metadata root by default, current working directory when no
+        metadata are detected. See :ref:`anchor-path` for details.
 
-    base anchor path
-        The run-wide default :term:`anchor path`. Defaults to the
-        :term:`user tree` root (or the current working directory when no
-        tree is used). Used for inputs that belong to the run as a whole
-        rather than to a specific node, for example local rpm files to
-        be installed by the artifact prepare plugin. See
-        :ref:`base-anchor-path` for details.
+    fmf path
+        The ``path`` key of the :term:`fmf id`, pointing to the location
+        of the fmf tree inside its git repository, for example
+        ``/tests/feature/data``. See :ref:`fmf-path` for details.
 
-    node anchor path
-        The :term:`anchor path` of a **specific node**. It is the node's
-        own ``fmf`` tree root (or the current working directory when the
-        node has no tree), so it narrows the :term:`base anchor path`
-        down to the plan, test or story the metadata belongs to. Used
-        for paths owned by a particular node, such as ``ansible``
-        playbooks or plan environment files. See :ref:`node-anchor-path`
-        for details.
+    test path
+        The :tmt:story:`/spec/tests/path` key of a test, defining the
+        directory to enter before the test is executed, for example
+        ``/common/scripts``. See :ref:`test-path` for details.
+
+
+.. _fmf identifier: https://fmf.readthedocs.io/en/stable/concept.html#identifiers
