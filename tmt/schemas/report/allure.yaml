@@ -22,7 +22,7 @@ properties:
   name:
     type: string
 
-  file:
+  directory:
     type: string
 
   when:
