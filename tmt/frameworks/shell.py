@@ -88,7 +88,7 @@ class Shell(TestFramework):
 
         if original_outcome is not None:
             for result in results:
-                if result.result != original_outcome.value:
+                if result.result != original_outcome:
                     continue
 
                 if result.log:
