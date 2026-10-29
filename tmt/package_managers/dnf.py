@@ -468,10 +468,12 @@ class YumEngine(DnfEngine):
             nevra_query = Command("repoquery", "--installed")
             if not packages_only:
                 nevra_query += Command("--whatprovides")
+            # in case there are multiple matches;
+            # take the first line so the follow-up query gets one argument.
             return ShellScript(f"""
             for query in {' '.join(package_specs)}; do
                 echo "'$query':"
-                full_nevra=$({nevra_query} "$query")
+                full_nevra=$({nevra_query} "$query" | head -n1)
                 if [ -n "$full_nevra" ]; then
                     {query_command} "$full_nevra"
                 fi
