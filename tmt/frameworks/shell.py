@@ -92,7 +92,7 @@ class Shell(TestFramework):
                     continue
 
                 if result.log:
-                    test_logs.append(invocation.relative_test_data_path / result.log[0])
+                    test_logs.append(result.log[0])
 
                 break
 
