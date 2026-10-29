@@ -6,7 +6,7 @@ import mimetypes
 import shutil
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import tmt.log
@@ -32,42 +32,20 @@ ALLURE_STATUS: dict[ResultOutcome, str] = {
 }
 
 
-def _timestamp_to_millis(timestamp: str) -> int:
+def _to_millis(timestamp: datetime) -> int:
     """
-    Convert a tmt timestamp into the number of milliseconds since the epoch.
-
-    tmt stores timestamps with a timezone, a timestamp without one is taken as UTC.
+    Convert a result timestamp into the number of milliseconds since the epoch.
     """
 
-    try:
-        parsed = datetime.fromisoformat(timestamp)
-    except ValueError as exc:
-        raise tmt.utils.ReportError(f"Malformed timestamp '{timestamp}'.") from exc
-
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-
-    return int(parsed.timestamp() * 1000)
+    return int(timestamp.timestamp() * 1000)
 
 
-def _duration_to_millis(duration: str) -> int:
+def _duration_to_millis(duration: timedelta) -> int:
     """
-    Convert a tmt duration into the number of milliseconds.
-
-    The duration is stored as ``HH:MM:SS``, hours are not limited to two digits.
+    Convert a result duration into the number of milliseconds.
     """
 
-    parts = duration.split(':')
-
-    if len(parts) != 3:
-        raise tmt.utils.ReportError(f"Malformed duration '{duration}'.")
-
-    try:
-        hours, minutes, seconds = (int(part) for part in parts)
-    except ValueError as exc:
-        raise tmt.utils.ReportError(f"Malformed duration '{duration}'.") from exc
-
-    return ((hours * 60 + minutes) * 60 + seconds) * 1000
+    return int(duration.total_seconds() * 1000)
 
 
 def result_times(result: BaseResult, now: datetime) -> tuple[int, int]:
@@ -87,38 +65,28 @@ def result_times(result: BaseResult, now: datetime) -> tuple[int, int]:
     end_time = result.end_time
     duration = result.duration
 
-    if start_time and end_time:
-        start, stop = _timestamp_to_millis(start_time), _timestamp_to_millis(end_time)
-
-        if stop < start:
+    if start_time is not None and end_time is not None:
+        if end_time < start_time:
             raise tmt.utils.ReportError(
-                f"Result '{result.name}' ends before it starts, '{start_time}' and '{end_time}'."
+                f"Result '{result.name}' ends before it starts,"
+                f" '{tmt.utils.format_timestamp(start_time)}'"
+                f" and '{tmt.utils.format_timestamp(end_time)}'."
             )
 
-        return start, stop
+        return _to_millis(start_time), _to_millis(end_time)
 
-    if end_time and duration:
-        stop = _timestamp_to_millis(end_time)
+    if end_time is not None:
+        stop = _to_millis(end_time)
 
-        return stop - _duration_to_millis(duration), stop
+        return (stop if duration is None else stop - _duration_to_millis(duration)), stop
 
-    if end_time:
-        stop = _timestamp_to_millis(end_time)
+    if start_time is not None:
+        start = _to_millis(start_time)
 
-        return stop, stop
+        return start, (start if duration is None else start + _duration_to_millis(duration))
 
-    if start_time and duration:
-        start = _timestamp_to_millis(start_time)
-
-        return start, start + _duration_to_millis(duration)
-
-    if start_time:
-        start = _timestamp_to_millis(start_time)
-
-        return start, start
-
-    if duration:
-        stop = int(now.timestamp() * 1000)
+    if duration is not None:
+        stop = _to_millis(now)
 
         return stop - _duration_to_millis(duration), stop
 

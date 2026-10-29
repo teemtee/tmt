@@ -1,7 +1,7 @@
 """Unit tests for the ``report/allure`` plugin."""
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -97,8 +97,8 @@ def test_every_outcome_has_an_allure_status(outcome, expected):
 def test_times_come_from_start_and_end():
     result = Result(
         name='t1',
-        start_time='2026-10-22T01:00:00+00:00',
-        end_time='2026-10-22T01:00:05+00:00',
+        start_time=datetime(2026, 10, 22, 1, 0, 0, tzinfo=UTC),
+        end_time=datetime(2026, 10, 22, 1, 0, 5, tzinfo=UTC),
     )
 
     assert result_times(result, NOW) == (1792630800000, 1792630805000)
@@ -107,8 +107,8 @@ def test_times_come_from_start_and_end():
 def test_end_and_duration_give_the_start():
     result = Result(
         name='t1',
-        end_time='2026-10-22T01:00:05+00:00',
-        duration='00:00:05',
+        end_time=datetime(2026, 10, 22, 1, 0, 5, tzinfo=UTC),
+        duration=timedelta(seconds=5),
     )
 
     assert result_times(result, NOW) == (1792630800000, 1792630805000)
@@ -117,21 +117,21 @@ def test_end_and_duration_give_the_start():
 def test_start_and_duration_give_the_end():
     result = Result(
         name='t1',
-        start_time='2026-10-22T01:00:00+00:00',
-        duration='00:00:05',
+        start_time=datetime(2026, 10, 22, 1, 0, 0, tzinfo=UTC),
+        duration=timedelta(seconds=5),
     )
 
     assert result_times(result, NOW) == (1792630800000, 1792630805000)
 
 
 def test_duration_alone_is_measured_against_now():
-    result = Result(name='t1', duration='00:00:05')
+    result = Result(name='t1', duration=timedelta(seconds=5))
 
     assert result_times(result, NOW) == (1792630795000, 1792630800000)
 
 
 def test_single_timestamp_is_a_point_in_time():
-    result = Result(name='t1', start_time='2026-10-22T01:00:00+00:00')
+    result = Result(name='t1', start_time=datetime(2026, 10, 22, 1, 0, 0, tzinfo=UTC))
 
     assert result_times(result, NOW) == (1792630800000, 1792630800000)
 
@@ -140,35 +140,29 @@ def test_result_without_timing_starts_at_the_epoch():
     assert result_times(Result(name='t1'), NOW) == (0, 0)
 
 
-def test_naive_timestamp_is_taken_as_utc():
-    result = Result(
-        name='t1',
-        start_time='2026-10-22T01:00:00',
-        end_time='2026-10-22T01:00:05',
+def test_saved_naive_timestamp_is_taken_as_utc():
+    result = Result.from_serialized(
+        {
+            **Result(name='t1').to_serialized(),
+            'start-time': '2026-10-22T01:00:00',
+            'end-time': '2026-10-22T01:00:05',
+        }
     )
 
     assert result_times(result, NOW) == (1792630800000, 1792630805000)
 
 
-def test_malformed_timestamp_is_reported():
-    result = Result(name='t1', start_time='yesterday')
+def test_zero_duration_is_not_missing():
+    result = Result(name='t1', duration=timedelta(0))
 
-    with pytest.raises(tmt.utils.ReportError, match='Malformed timestamp'):
-        result_times(result, NOW)
-
-
-def test_malformed_duration_is_reported():
-    result = Result(name='t1', start_time='2026-10-22T01:00:00+00:00', duration='5s')
-
-    with pytest.raises(tmt.utils.ReportError, match='Malformed duration'):
-        result_times(result, NOW)
+    assert result_times(result, NOW) == (1792630800000, 1792630800000)
 
 
 def test_result_ending_before_it_starts_is_reported():
     result = Result(
         name='t1',
-        start_time='2026-10-22T01:00:05+00:00',
-        end_time='2026-10-22T01:00:00+00:00',
+        start_time=datetime(2026, 10, 22, 1, 0, 5, tzinfo=UTC),
+        end_time=datetime(2026, 10, 22, 1, 0, 0, tzinfo=UTC),
     )
 
     with pytest.raises(tmt.utils.ReportError, match='ends before it starts'):
@@ -176,7 +170,7 @@ def test_result_ending_before_it_starts_is_reported():
 
 
 def test_long_duration_is_accepted():
-    result = Result(name='t1', duration='100:00:00')
+    result = Result(name='t1', duration=timedelta(hours=100))
 
     assert result_times(result, NOW)[1] - result_times(result, NOW)[0] == 360000000
 
@@ -451,7 +445,13 @@ def test_plugin_skips_a_dry_run(report_fix):
 
 def test_plugin_reports_when_a_result_cannot_be_converted(report_fix, monkeypatch):
     report, results, _ = report_fix
-    results.append(Result(name='t1', start_time='yesterday'))
+    results.append(
+        Result(
+            name='t1',
+            start_time=datetime(2026, 10, 22, 1, 0, 5, tzinfo=UTC),
+            end_time=datetime(2026, 10, 22, 1, 0, 0, tzinfo=UTC),
+        )
+    )
 
     report.go()
 
