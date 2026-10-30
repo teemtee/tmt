@@ -37,12 +37,7 @@ xfail_plans_nobest=(
     "^/broken/no-artifacts/obsoletes/basic$"
     "^/broken/no-artifacts/upgrade/with-devel$"
 )
-xfail_centos7=(
-    # yum cannot downgrade a pre-installed package
-    "/pre-installed/downgrade/with-devel$"
-    "^/verified-artifacts/pre-installed/downgrade/only-foo$"
-)
-xfail_centos6=(
+xfail_centos6_centos7=(
     # yum cannot downgrade a pre-installed package
     "/pre-installed/downgrade/with-devel$"
     "^/verified-artifacts/pre-installed/downgrade/only-foo$"
@@ -105,10 +100,10 @@ complicated_centos6=(
             xfail_distro=()
             complicated_distro=()
             if is_centos_7 "$image"; then
-                xfail_distro=("${xfail_centos7[@]}")
+                xfail_distro=("${xfail_centos6_centos7[@]}")
                 complicated_distro=("${complicated_centos7[@]}")
             elif is_centos_6 "$image"; then
-                xfail_distro=("${xfail_centos6[@]}")
+                xfail_distro=("${xfail_centos6_centos7[@]}")
                 complicated_distro=("${complicated_centos6[@]}")
             fi
             for check_pattern in ${xfail_distro[@]}; do
