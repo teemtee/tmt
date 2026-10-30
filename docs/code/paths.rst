@@ -132,8 +132,15 @@ script stored in a different directory, for example like this:
 
 ... you might rather want to provide path to the directory with
 the shared scripts instead of using possibly long relative paths
-like ``../../../common/check.sh`` when the test metadata are buried
-deeper in the directory structure:
+in the :tmt:story:`/spec/tests/test` key when the test metadata
+are buried deeper in the directory structure. Instead of:
+
+.. code-block:: yaml
+
+    summary: Lint the feature
+    test: ../../../common/check.sh --feature
+
+You can use:
 
 .. code-block:: yaml
 
