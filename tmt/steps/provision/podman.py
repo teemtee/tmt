@@ -15,7 +15,7 @@ from tmt.guest import (
     RebootMode,
     TransferOptions,
 )
-from tmt.steps.provision import Provision
+from tmt.steps.provision import HasImage, Provision
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -41,13 +41,15 @@ DEFAULT_STOP_TIME = 1
 
 
 @container
-class PodmanGuestData(tmt.guest.GuestData):
+class PodmanGuestData(HasImage, tmt.guest.GuestData):
+    # Override parent with more fitting help.
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
         metavar='IMAGE',
         help='Select image to use. Short name or complete url.',
     )
+
     # Override parent class with our defaults
     user: str = field(
         default=DEFAULT_USER,
