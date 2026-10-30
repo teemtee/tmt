@@ -559,9 +559,6 @@ def _container_field_is_default(field: dataclasses.Field[Any], value: Any) -> bo
     if field.default is not dataclasses.MISSING:
         return bool(value == field.default)
 
-    if not value:
-        return True
-
     return False
 
 
@@ -596,6 +593,10 @@ def container_value_to_spec(value: Any, *, minimal: bool = False) -> Any:
     if to_spec is not None:
         return to_spec()
 
+    to_dict = _get_method(value, 'to_dict')
+    if to_dict is not None:
+        return container_value_to_spec(to_dict(), minimal=minimal)
+
     if isinstance(value, Mapping):
         return {
             key: container_value_to_spec(item, minimal=minimal)
@@ -620,12 +621,8 @@ def container_value_to_spec(value: Any, *, minimal: bool = False) -> Any:
     if isinstance(value, (bytes, bytearray)):
         return value.decode('utf-8')
 
-    if isinstance(value, (type(None), bool, int, float, str)):
+    if type(value) in (type(None), bool, int, float, str):
         return value
-
-    to_dict = _get_method(value, 'to_dict')
-    if to_dict is not None:
-        return container_value_to_spec(to_dict(), minimal=minimal)
 
     return str(value)
 
