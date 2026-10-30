@@ -111,7 +111,7 @@ does not need to be explicitly specified in test metadata:
 On the other hand, when several tests share the same test
 script stored in a different directory, for example like this:
 
-.. code-block:: yaml
+.. code-block::
 
     tmt
     ├── .fmf    <--- fmf tree root
@@ -127,11 +127,11 @@ script stored in a different directory, for example like this:
 
 ... you might rather want to provide path to the directory with
 the shared scripts instead of using possibly long relative paths
-like ``../../../common/lint.sh`` when the test metadata are buried
+like ``../../../common/check.sh`` when the test metadata are buried
 deeper in the directory structure:
 
 .. code-block:: yaml
 
     summary: Lint the feature
     path: /tests/common
-    test: ./lint.sh --feature
+    test: ./check.sh --feature
