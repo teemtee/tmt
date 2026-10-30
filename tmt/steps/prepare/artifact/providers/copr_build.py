@@ -89,6 +89,8 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             self.chroot = chroot
         except (ValueError, IndexError) as error:
             raise ValueError(f"Invalid provider id '{self.id}'.") from error
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
 
     @cached_property
     def build_info(self) -> Optional["Munch"]:
@@ -170,7 +172,6 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         :returns: list of package dictionaries containing NEVRA info.
         """
         results_url = urljoin(self.result_url + "/", "results.json")
-        self.logger.debug(f"Fetching results.json from '{results_url}'.")
         try:
             with tmt.utils.retry_session(logger=self.logger) as session:
                 response = session.get(results_url)
@@ -208,9 +209,7 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             repo_id=self.parent.data.repository_name,
         )
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
-        self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
+    def _populate_artifacts(self) -> None:
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 
-        return [self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas]
+        self._artifacts.extend([self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas])
