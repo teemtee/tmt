@@ -60,10 +60,13 @@ with nested fmf trees used for testing specific features:
 
 .. code-block::
 
-    tmt                 <--- git root
+    tmt
+    ├── .fmf    <--- main fmf tree
+    ├── .git    <--- git repo root
     └── tests
         └── feature
-            ├── data    <--- nested fmf tree
+            ├── data
+            │   ├── .fmf    <--- nested fmf tree
             │   ├── plan.fmf
             │   └── test.fmf
             ├── main.fmf
@@ -86,17 +89,19 @@ starting with a slash.
 
 When not defined, the directory where the test metadata is stored
 is used. So for the frequent use case when both test metadata
-and test script are stored in the same directory...
+and test script are stored in the same directory, for example:
 
 .. code-block::
 
     tmt
+    ├── .fmf    <--- fmf tree root
     └── tests
         └── feature
             ├── main.fmf
             └── test.sh
 
-... the path does not need to be explicitly specified:
+... the default path is evaluated to ``/tests/feature`` and
+does not need to be explicitly specified in test metadata:
 
 .. code-block:: yaml
 
@@ -104,22 +109,26 @@ and test script are stored in the same directory...
     test: ./test.sh
 
 On the other hand, when several tests share the same test
-script...
+script stored in a different directory, for example like this:
 
 .. code-block:: yaml
 
     tmt
+    ├── .fmf    <--- fmf tree root
     └── tests
-        ├── common
-        │   └── lint.sh
-        └── tool
-            └── area
-                └── feature
-                    └── main.fmf
+        ├── area
+        │   └── feature
+        │       ├── one
+        │       │   └── main.fmf
+        │       └── two
+        │           └── main.fmf
+        └── common
+            └── check.sh    <--- shared test script
 
 ... you might rather want to provide path to the directory with
-scripts instead of possibly long relative paths ``../../..`` when
-the test is buried deeper in the directory structure:
+the shared scripts instead of using possibly long relative paths
+like ``../../../common/lint.sh`` when the test metadata are buried
+deeper in the directory structure:
 
 .. code-block:: yaml
 
