@@ -30,7 +30,7 @@ rlJournalStart
             rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
             rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
             rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-            rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+            rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
         rlPhaseEnd
     fi
 
@@ -41,22 +41,12 @@ rlJournalStart
                 continue
             fi
 
-            extra_context=""
-            if is_centos_6 "$image"; then
-                # Select nano via adjust in data/test.fmf (no dconf on CentOS 6)
-                extra_context="-c distro=centos-6"
-            fi
-
             rlPhaseStartTest "Test $image ($PROVISION_HOW)"
-                rlRun -s "tmt $extra_context run -vv --all --remove provision --how $PROVISION_HOW --image $image $basic"
+                rlRun -s "$tmt --image $image $basic"
                 rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
                 rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
                 rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-                if is_centos_6 "$image"; then
-                    rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
-                else
-                    rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
-                fi
+                rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
             rlPhaseEnd
         done
     fi
@@ -85,7 +75,7 @@ rlJournalStart
                 rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
                 rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
                 rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-                rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+                rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
             rlPhaseEnd
         done <<< "$TEST_IMAGE_MODE_IMAGES"
     fi
@@ -97,7 +87,7 @@ rlJournalStart
             rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
             rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
             rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-            rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+            rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
         rlPhaseEnd
     fi
 
