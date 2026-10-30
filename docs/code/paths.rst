@@ -32,13 +32,18 @@ path is the user tree root:
 
     /home/user/git/project
 
-For an imported plan the anchor path points into the :term:`import
-tree`, so that relative paths resolve correctly the same way as
-when the plan runs in its own repository:
+For an imported plan the anchor path points to the fmf tree root
+under the :term:`import tree`, so that relative paths resolve
+correctly the same way as when the plan runs in its own
+repository:
 
 .. code-block::
 
+    # basic case when git root and fmf root are the same
     /var/tmp/tmt/run-123/import/plan
+
+    # fmf root stored deeper in the git repository
+    /var/tmp/tmt/run-123/import/plan/nested/tree
 
 
 .. _fmf-path:
