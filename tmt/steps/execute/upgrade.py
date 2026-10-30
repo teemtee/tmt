@@ -15,6 +15,7 @@ from tmt.steps.discover.fmf import (
     DiscoverFmf,
     DiscoverFmfStepData,
     TestsWithAdjusts,
+    _RawDiscoverFmfData,
     normalize_tests_with_adjusts,
 )
 from tmt.steps.execute import ExecutePlugin
@@ -401,7 +402,7 @@ class ExecuteUpgrade(ExecuteInternal):
             guest=guest, logger=self._logger
         )
 
-    def _prepare_remote_discover_data(self, plan: tmt.base.plan.Plan) -> tmt.steps._RawStepData:
+    def _prepare_remote_discover_data(self, plan: tmt.base.plan.Plan) -> _RawDiscoverFmfData:
         """
         Merge remote discover data with the local filters
         """
@@ -411,14 +412,14 @@ class ExecuteUpgrade(ExecuteInternal):
 
         data = plan.discover.data[0]
 
-        remote_raw_data: tmt.steps._RawStepData = {
+        remote_raw_data: _RawDiscoverFmfData = {
             # Force name
             'name': 'upgrade-discover-remote',
             'how': 'fmf',
         }
         remote_raw_data.update(
             cast(
-                tmt.steps._RawStepData,
+                _RawDiscoverFmfData,
                 {
                     key_to_option(key): value
                     for key, value in data.items()
@@ -452,10 +453,8 @@ class ExecuteUpgrade(ExecuteInternal):
                 data = self._prepare_remote_discover_data(plan)
                 # Unset `url` because we don't want discover step to perform clone. Instead,
                 # we want it to reuse existing, already cloned path.
-                # ignore[typeddict-unknown-key]: data is _RwStepData, we do not have more detailed
-                # type for raw step data of internal/upgrade plugins, it would be pretty verbose.
-                data['url'] = None  # type: ignore[typeddict-unknown-key]
-                data['path'] = self._discover_upgrade.test_dir  # type:ignore[typeddict-unknown-key]
+                data['url'] = None
+                data['path'] = str(self._discover_upgrade.test_dir)
                 # FIXME: cast() - https://github.com/teemtee/tmt/issues/1599
                 self._discover_upgrade = cast(
                     DiscoverFmf, DiscoverPlugin.delegate(self.step, raw_data=data)

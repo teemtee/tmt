@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast
 import fmf
 
 import tmt.utils
+from tmt.base.core import _RawAdjustRule, _RawDependency
+from tmt.base.links import _RawLinks
 from tmt.checks import Check, _RawCheck, normalize_test_checks
 from tmt.container import (
     SerializableContainer,
@@ -18,13 +20,8 @@ from tmt.utils import Common, FmfContext, NormalizeKeysMixin, Path, ShellScript
 from tmt.utils.environment import Environment
 
 if TYPE_CHECKING:
-    from tmt.base.core import (
-        Dependency,
-        Test,
-        _RawAdjustRule,
-        _RawDependency,
-    )
-    from tmt.base.links import Links, _RawLinks
+    from tmt.base.core import Dependency, Test
+    from tmt.base.links import Links
     from tmt.base.plan import Plan
     from tmt.base.run import Run
 
@@ -50,42 +47,64 @@ def _normalize_require(
     return normalize_require(key_address, raw_require, logger)
 
 
-class _RawRecipeTest(TypedDict, total=False):
-    name: str
-    discover_phase: str
-    summary: Optional[str]
-    description: Optional[str]
-    author: list[str]
-    contact: list[str]
-    enabled: bool
-    order: int
-    id: Optional[str]
-    tag: list[str]
-    tier: Optional[str]
-    adjust: Optional[list['_RawAdjustRule']]
-    component: list[str]
-    framework: str
-    manual: bool
-    tty: bool
-    duration: str
-    where: list[str]
-    restart_on_exit_code: list[int]
-    restart_max_count: int
-    restart_with_reboot: bool
-    serial_number: int
-    link: Optional['_RawLinks']
-    test: Optional[str]
-    path: Optional[str]
-    require: list['_RawDependency']
-    recommend: list['_RawDependency']
-    environment: dict[str, str]
-    result: str
-    check: list[_RawCheck]
+_RawRecipeTest = TypedDict(
+    '_RawRecipeTest',
+    {
+        'name': str,
+        'discover-phase': str,
+        'summary': Optional[str],
+        'description': Optional[str],
+        'author': list[str],
+        'contact': list[str],
+        'enabled': bool,
+        'order': int,
+        'id': Optional[str],
+        'tag': list[str],
+        'tier': Optional[str],
+        'adjust': Optional[list[_RawAdjustRule]],
+        'component': list[str],
+        'framework': str,
+        'manual': bool,
+        'tty': bool,
+        'duration': str,
+        'where': list[str],
+        'restart-on-exit-code': list[int],
+        'restart-max-count': int,
+        'restart-with-reboot': bool,
+        'serial-number': int,
+        'link': Optional[_RawLinks],
+        'test': Optional[str],
+        'path': Optional[str],
+        'require': list[_RawDependency],
+        'recommend': list[_RawDependency],
+        'environment': dict[str, str],
+        'result': str,
+        'check': list[_RawCheck],
+    },
+    total=False,
+)
 
 
 class _RawRecipeStep(TypedDict, total=False):
     enabled: bool
     phases: list[_RawStepData]
+
+
+class _RawRecipeDiscoverStep(_RawRecipeStep, total=False):
+    tests: list[_RawRecipeTest]
+
+
+# ``results-path`` is not a valid class-body name, so this cannot subclass
+# ``_RawRecipeStep`` the way ``_RawRecipeDiscoverStep`` does.
+_RawRecipeExecuteStep = TypedDict(
+    '_RawRecipeExecuteStep',
+    {
+        'enabled': bool,
+        'phases': list[_RawStepData],
+        'results-path': Optional[str],
+    },
+    total=False,
+)
 
 
 class _RawRecipePlan(TypedDict, total=False):
@@ -103,10 +122,10 @@ class _RawRecipePlan(TypedDict, total=False):
     link: Optional['_RawLinks']
     environment: dict[str, str]
     context: dict[str, Any]
-    discover: _RawRecipeStep
+    discover: _RawRecipeDiscoverStep
     provision: _RawRecipeStep
     prepare: _RawRecipeStep
-    execute: _RawRecipeStep
+    execute: _RawRecipeExecuteStep
     report: _RawRecipeStep
     finish: _RawRecipeStep
     cleanup: _RawRecipeStep
@@ -173,7 +192,7 @@ class _RecipeTest(
 
         assert 'name' in spec
         assert 'discover-phase' in spec
-        data = cls(name=spec['name'], discover_phase=spec['discover-phase'])  # type: ignore[typeddict-item]
+        data = cls(name=spec['name'], discover_phase=spec['discover-phase'])
         data._load_keys(cast(dict[str, Any], spec), cls.__name__, logger)
         return data
 
@@ -219,10 +238,10 @@ class _RecipeTest(
         from tmt.base.core import Test
 
         data = self.to_minimal_spec()
-        data.pop('discover-phase')  # type: ignore[typeddict-item]
+        data.pop('discover-phase')
 
         name: str = data.pop('name')
-        serial_number: int = data.pop('serial-number')  # type: ignore[typeddict-item]
+        serial_number: int = data.pop('serial-number')
         where: list[str] = data.pop('where', [])
 
         test = Test.from_dict(mapping=cast(dict[str, Any], data), name=name, logger=logger)
@@ -279,14 +298,11 @@ class _RecipeDiscoverStep(_RecipeStep):
 
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
-    def from_spec(cls, spec: _RawRecipeStep, logger: Logger) -> '_RecipeDiscoverStep':  # type: ignore[override]
+    def from_spec(cls, spec: _RawRecipeDiscoverStep, logger: Logger) -> '_RecipeDiscoverStep':  # type: ignore[override]
         return _RecipeDiscoverStep(
             enabled=bool(spec.get('enabled', False)),
             phases=spec.get('phases', []),
-            tests=[
-                _RecipeTest.from_spec(test, logger)
-                for test in cast(list[_RawRecipeTest], spec.get('tests', []))
-            ],
+            tests=[_RecipeTest.from_spec(test, logger) for test in spec.get('tests', [])],
         )
 
     @classmethod
@@ -307,8 +323,8 @@ class _RecipeExecuteStep(_RecipeStep):
 
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
-    def from_spec(cls, spec: _RawRecipeStep, logger: Logger) -> '_RecipeExecuteStep':  # type: ignore[override]
-        results_path = cast(Optional[str], spec.get('results-path', None))
+    def from_spec(cls, spec: _RawRecipeExecuteStep, logger: Logger) -> '_RecipeExecuteStep':  # type: ignore[override]
+        results_path = spec.get('results-path')
         return _RecipeExecuteStep(
             enabled=bool(spec.get('enabled', False)),
             phases=spec.get('phases', []),

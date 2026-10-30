@@ -22,7 +22,7 @@ class _RawGuestAnsible(TypedDict, total=False):
     """Raw input data for GuestAnsible.from_spec()"""
 
     group: Optional[str]
-    vars: Optional[dict[str, Any]]
+    vars: dict[str, Any]
 
 
 class _RawPlanAnsibleInventory(TypedDict, total=False):
@@ -79,9 +79,8 @@ class GuestAnsible(SerializableContainer):
         default=None,
         help='Assigns the guest to a specific Ansible group.',
     )
-    # TODO Add typing for vars raw input data
-    vars: dict[str, Any] = field(  # pyright: ignore[reportUnknownVariableType]
-        default_factory=dict,
+    vars: dict[str, Any] = field(
+        default_factory=dict[str, Any],
         help=(
             'Defines host-specific Ansible variables to include under that host in the inventory.'
         ),
@@ -95,7 +94,7 @@ class GuestAnsible(SerializableContainer):
         if spec is None:
             return cls()
 
-        return cls(**spec)  # type: ignore[arg-type]
+        return cls(**spec)
 
     def to_spec(self) -> _RawGuestAnsible:
         """
