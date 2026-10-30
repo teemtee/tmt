@@ -88,11 +88,11 @@ class Shell(TestFramework):
 
         if original_outcome is not None:
             for result in results:
-                if result.result != original_outcome.value:
+                if result.result != original_outcome:
                     continue
 
                 if result.log:
-                    test_logs.append(invocation.relative_test_data_path / result.log[0])
+                    test_logs.append(result.log[0])
 
                 break
 
