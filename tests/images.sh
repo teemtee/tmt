@@ -19,6 +19,7 @@ _MAKEFILE_DIR="$(dirname $(readlink -f ${BASH_SOURCE[0]}))/.."
 #
 # It does not contain "unprivileged" images.
 TEST_CONTAINER_IMAGES="${TEST_CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/alpine:latest
+$TEST_IMAGE_PREFIX/centos/6/upstream:latest
 $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
@@ -125,6 +126,13 @@ function is_centos_stream_10 () {
 function is_centos_7 () {
     [[ "$1" =~ ^.*centos/7[:/].* ]] && return 0
     [[ "$1" = "centos-7" ]] && return 0
+
+    return 1
+}
+
+function is_centos_6 () {
+    [[ "$1" =~ ^.*centos/6[:/].* ]] && return 0
+    [[ "$1" = "centos-6" ]] && return 0
 
     return 1
 }

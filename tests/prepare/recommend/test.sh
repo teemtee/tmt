@@ -8,8 +8,10 @@ rlJournalStart
         rlRun "IMAGE_MODE=${IMAGE_MODE:-no}"
 
         if [ "$PROVISION_HOW" = "container" ]; then
+            rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
             build_container_image "ubi/8/upstream\:latest"
             build_container_image "centos/7/upstream\:latest"
+            build_container_image "centos/6/upstream\:latest"
             build_container_image "fedora/latest/upstream\:latest"
         fi
 
@@ -28,19 +30,23 @@ rlJournalStart
             rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
             rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
             rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-            rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+            rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
         rlPhaseEnd
     fi
 
-    # Check CentOS images for container provision
+    # Check CentOS / UBI images for container provision
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in $TEST_IMAGE_PREFIX/centos/7/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest; do
+        for image in $IMAGES; do
+            if ! is_centos_6 "$image" && ! is_centos_7 "$image" && ! is_ubi_8 "$image"; then
+                continue
+            fi
+
             rlPhaseStartTest "Test $image ($PROVISION_HOW)"
-	        rlRun -s "$tmt --image $image $basic"
-		rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
-		rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
-		rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-		rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+                rlRun -s "$tmt --image $image $basic"
+                rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
+                rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
+                rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
+                rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
             rlPhaseEnd
         done
     fi
@@ -48,11 +54,15 @@ rlJournalStart
     # Check debuginfo install (only for supported distros)
     # https://bugzilla.redhat.com/show_bug.cgi?id=1964505
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in $TEST_IMAGE_PREFIX/fedora/latest/upstream:latest $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
+        for image in $TEST_IMAGE_PREFIX/fedora/latest/upstream:latest $IMAGES; do
+            if [[ "$image" != "$TEST_IMAGE_PREFIX/fedora/latest/upstream:latest" ]] \
+                && ! is_centos_7 "$image"; then
+                continue
+            fi
             rlPhaseStartTest "Test $image ($PROVISION_HOW) [debuginfo]"
-	        rlRun -s "$tmt --image $image $debuginfo"
-		rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
-		rlAssertGrep "forest: recommended by: /test/debuginfo" $rlRun_LOG
+                rlRun -s "$tmt --image $image $debuginfo"
+                rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
+                rlAssertGrep "forest: recommended by: /test/debuginfo" $rlRun_LOG
             rlPhaseEnd
         done
     fi
@@ -65,7 +75,7 @@ rlJournalStart
                 rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
                 rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
                 rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-                rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+                rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
             rlPhaseEnd
         done <<< "$TEST_IMAGE_MODE_IMAGES"
     fi
@@ -73,11 +83,11 @@ rlJournalStart
     # Add one extra CoreOS run for virtual provision (not image mode)
     if [[ "$PROVISION_HOW" == "virtual" ]] && [[ "$IMAGE_MODE" != "yes" ]]; then
         rlPhaseStartTest "Test fedora-coreos ($PROVISION_HOW)"
-	    rlRun -s "$tmt --image fedora-coreos $basic"
-	    rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
-	    rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
-	    rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
-	    rlAssertNotGrep "dconf: recommended by: /test/mixed" $rlRun_LOG
+            rlRun -s "$tmt --image fedora-coreos $basic"
+            rlAssertGrep "Recommended packages failed to install, continuing regardless:" $rlRun_LOG
+            rlAssertGrep "forest: recommended by: /test/mixed" $rlRun_LOG
+            rlAssertGrep "weird-package: recommended by: /test/weird" $rlRun_LOG
+            rlAssertNotGrep "nano: recommended by: /test/mixed" $rlRun_LOG
         rlPhaseEnd
     fi
 

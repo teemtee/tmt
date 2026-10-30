@@ -5,7 +5,7 @@
         how: tmt
 
 adjust:
-    - when: distro == centos-7
+    - when: distro == centos-7 or distro == centos-6
       prepare+:
         - name: local-repo
           how: shell
@@ -18,7 +18,7 @@ adjust:
           how: artifact
           provide:
             - repository-file:file://../test-bar-local.repo
-    - when: distro != centos-7
+    - when: distro != centos-7 and distro != centos-6
       prepare+:
         - name: provide-repository-remote
           how: artifact
