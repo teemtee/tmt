@@ -86,22 +86,34 @@ rlJournalStart
                 done
             fi
             if is_centos_7 "$image"; then
-                if [[ "$plan" =~ /pre-installed/downgrade/with-devel$ || "$plan" =~ ^/verified-artifacts/pre-installed/downgrade/only-foo$  ]]; then
+                if [[ "$plan" =~ /pre-installed/downgrade/with-devel$ ]]; then
                     # yum cannot downgrade a pre-installed package
                     xfail=(
                         'fail: Command .* install -y .* returned 1.'
                     )
                 fi
 
-                # Obsoletes wins over priority. Some of these tests pass when they should xfail
-                # some fail in different ways, it is hard to handle them all consistently, so just skip them.
+                if [[ "$plan" =~ ^/broken/verified-artifacts/obsoletes/basic/downgrade$ || \
+                      "$plan" =~ ^/verified-artifacts/obsoletes/pre-installed/downgrade || \
+                      "$plan" =~ ^/verified-artifacts/pre-installed/downgrade/only-foo$ ]]; then
+                    # Does not fail the installation, but verify-artifacts does catch it
+                    xfail=(
+                        'Package source verification failed for:'
+                    )
+                fi
+
                 complicated_centos7=(
+                    # Obsoletes wins over priority. Some of these tests pass when they should xfail
+                    # some fail in different ways, it is hard to handle them all consistently, so just skip them.
                     "^/verified-artifacts/obsoletes/basic/downgrade$"
                     "^/available-artifacts/obsoletes/basic/downgrade$"
                     "^/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
                     "^/broken/available-artifacts/obsoletes/basic/downgrade$"
                     "^/broken/available-artifacts/obsoletes/pre-installed/downgrade/with-devel$"
                     "^/verified-artifacts/obsoletes/basic/downgrade$"
+                    "^/broken/verified-artifacts/obsoletes/pre-installed/downgrade"
+                    # Same as the yum cannot downgrade issue above, but here yum install does not actually fail
+                    "^/broken/verified-artifacts/pre-installed/downgrade/only-foo$"
                 )
                 # Skip too complicated situations altogether
                 unset complicated
