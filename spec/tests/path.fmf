@@ -15,6 +15,8 @@ description: |
     start with a slash. If path is not defined, the directory
     where the test metadata are stored is used as a default.
 
+    See also the :ref:`test-path` section for more details.
+
 example: |
     path: /protocols/https
 
