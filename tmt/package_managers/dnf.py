@@ -626,10 +626,6 @@ class Yum(Dnf):
     ).to_shell_command()
     probe_priority = 40
 
-    def assert_config_manager(self) -> None:
-        # yum-utils is installed via essential_requires
-        self.debug('yum-utils already ensured via essential requires.')
-
     def essential_requires(self) -> list[DependencySimple]:
         return [
             # We need `yum-plugin-priorities` in order to handle repo priorities
