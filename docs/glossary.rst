@@ -71,8 +71,8 @@ Paths
 
     anchor path
         The directory against which relative paths are resolved, the fmf
-        metadata root by default, current working directory when no
-        metadata are detected. See :ref:`anchor-path` for details.
+        metadata root by default or the current working directory when no
+        fmf tree is detected. See :ref:`anchor-path` for details.
 
     fmf path
         The ``path`` key of the :term:`fmf id`, pointing to the location

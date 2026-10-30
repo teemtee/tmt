@@ -60,6 +60,15 @@ with nested fmf trees used for testing specific features:
 
 .. code-block::
 
+    tmt                 <--- git root
+    └── tests
+        └── feature
+            ├── data    <--- nested fmf tree
+            │   ├── plan.fmf
+            │   └── test.fmf
+            ├── main.fmf
+            └── test.sh
+
     git root: /home/user/git/tmt
     fmf root: /home/user/git/tmt/tests/feature/data
     fmf path: /tests/feature/data
@@ -73,11 +82,47 @@ test path
 The :term:`test path` is the :tmt:story:`/spec/tests/path` key of
 a test. It defines the directory to enter before the test is
 executed, expressed as the path from the metadata tree root and
-starting with a slash. When not defined, the directory where the
-test metadata is stored is used.
+starting with a slash.
+
+When not defined, the directory where the test metadata is stored
+is used. So for the frequent use case when both test metadata
+and test script are stored in the same directory...
 
 .. code-block::
 
-    summary: Run the common linter
-    path: /common/scripts
-    test: ./lint --all
+    tmt
+    └── tests
+        └── feature
+            ├── main.fmf
+            └── test.sh
+
+... the path does not need to be explicitly specified:
+
+.. code-block:: yaml
+
+    summary: Test the feature
+    test: ./test.sh
+
+On the other hand, when several tests share the same test
+script...
+
+.. code-block:: yaml
+
+    tmt
+    └── tests
+        ├── common
+        │   └── lint.sh
+        └── tool
+            └── area
+                └── feature
+                    └── main.fmf
+
+... you might rather want to provide path to the directory with
+scripts instead of possibly long relative paths ``../../..`` when
+the test is buried deeper in the directory structure:
+
+.. code-block:: yaml
+
+    summary: Lint the feature
+    path: /tests/common
+    test: ./lint.sh --feature
