@@ -46,6 +46,7 @@ from tmt.base.core import (
 from tmt.base.links import Links, _RawLink
 from tmt.base.run import Run
 from tmt.container import SpecBasedContainer, container, field
+from tmt.guest import Guest
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.utils import (
     Command,
@@ -701,6 +702,111 @@ class Plan(
         data_directory.mkdir(exist_ok=True, parents=True)
 
         return data_directory
+
+    def _resolve_step_guests(
+        self, step: tmt.steps.Step, guests: Optional[list[Guest]]
+    ) -> list[Guest]:
+        """
+        Resolve where guest list comes from, guests -> step -> provision.
+        """
+        if guests is not None:
+            return guests
+
+        if isinstance(step, tmt.steps.StepWithQueue):
+            return step._steppified_ready_guests
+
+        return self.provision.ready_guests
+
+    def push_workdir(self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None) -> None:
+        """
+        Plan pushes the workdir to the guests default destination.
+        """
+        guests = self._resolve_step_guests(step, guests)
+
+        tmt.steps.sync_with_guests(
+            step,
+            'push',
+            tmt.steps.PushTask(guests, lambda guest: (guest.plan_workdir, None), step._logger),
+            step._logger,
+        )
+
+    def pull_workdir(self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None) -> None:
+        """
+        Plan pulls the workdir from the guests to the runner's default destination.
+        """
+        guests = self._resolve_step_guests(step, guests)
+
+        tmt.steps.sync_with_guests(
+            step,
+            'pull',
+            tmt.steps.PullTask(guests, lambda guest: (guest.plan_workdir, None), step._logger),
+            step._logger,
+        )
+
+    def push_data_directory(
+        self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None
+    ) -> None:
+        """
+        Plan pushes the data directory to the guests default destination.
+        """
+        guests = self._resolve_step_guests(step, guests)
+
+        tmt.steps.sync_with_guests(
+            step,
+            'push',
+            tmt.steps.PushTask(guests, lambda guest: (self.data_directory, None), step._logger),
+            step._logger,
+        )
+
+    def pull_data_directory(
+        self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None
+    ) -> None:
+        """
+        Plan pulls the data directory from the guests to the runner's default destination.
+        """
+        guests = self._resolve_step_guests(step, guests)
+
+        tmt.steps.sync_with_guests(
+            step,
+            'pull',
+            tmt.steps.PullTask(guests, lambda guest: (self.data_directory, None), step._logger),
+            step._logger,
+        )
+
+    def push_guest_data_directory(
+        self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None
+    ) -> None:
+        """
+        Plan pushes the guest data directory to the guests default destination.
+        """
+        guests = self._resolve_step_guests(step, guests)
+
+        tmt.steps.sync_with_guests(
+            step,
+            'push',
+            tmt.steps.PushTask(
+                guests, lambda guest: (guest.guest_data_directory, None), step._logger
+            ),
+            step._logger,
+        )
+
+    def pull_guest_data_directory(
+        self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None
+    ) -> None:
+        """
+        Plan pulls the guest data directory from the guests to the runner's default destination.
+        """
+
+        guests = self._resolve_step_guests(step, guests)
+
+        tmt.steps.sync_with_guests(
+            step,
+            'pull',
+            tmt.steps.PullTask(
+                guests, lambda guest: (guest.guest_data_directory, None), step._logger
+            ),
+            step._logger,
+        )
 
     @staticmethod
     def edit_template(raw_content: str) -> str:

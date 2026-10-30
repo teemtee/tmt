@@ -30,7 +30,7 @@ from tmt.container import (
 )
 from tmt.log import Logger
 from tmt.plugins import PluginRegistry
-from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
+from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import Path
 
 if TYPE_CHECKING:
@@ -684,7 +684,7 @@ class Provision(tmt.steps.Step):
         # non-existent plan data directory.
         # TODO simplify as part of the data pulling/pushing cleanup
         # https://github.com/teemtee/tmt/issues/4067
-        sync_with_guests(self, 'push', PushTask(self.guests, self._logger), self._logger)
+        self.plan.push_workdir(self)
 
         # To separate "provision" from the follow-up logging visually
         self.info('')
