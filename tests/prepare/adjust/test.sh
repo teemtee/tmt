@@ -21,16 +21,14 @@ rlJournalStart
             # Skip when both/none define required packages
             [[ $plan == $test ]] && continue
             for image in $IMAGES; do
-                if ! is_centos_6 "$image" && ! is_centos_7 "$image" && ! is_ubi_8 "$image"; then
-                    continue
-                fi
-
                 if is_centos_7 "$image"; then
                     distro="centos-7"
                 elif is_centos_6 "$image"; then
                     distro="centos-6"
                 elif is_ubi_8 "$image"; then
                     distro="centos-stream-8"
+                else
+                    continue
                 fi
 
                 rlPhaseStartTest "Test: Plan $plan, test $test, image $distro"
