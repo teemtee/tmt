@@ -71,7 +71,8 @@ Scope
 In Scope
 ------------------------------------------------------------------
 
-tmt implements the :ref:`specification`. Its core concerns are:
+tmt's scope is generally described in the :ref:`specification`.
+Its core concerns are:
 
 * implementing :tmt:story:`/spec/tests`, :tmt:story:`/spec/plans`
   and :tmt:story:`/spec/stories` together with the common
