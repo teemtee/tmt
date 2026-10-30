@@ -1,0 +1,14 @@
+description: |
+    Some guest-related commands were missing correct environment. The
+    fix changes the following:
+
+    * commands that interact with a guest, invoked by tmt on the runner,
+      including ``ssh`` or custom reboot commands, now inherit their
+      environment from tmt process. This has been true for many of them
+      already, but we identified commands that did not inherit this
+      environment, especially ``ssh`` and custom reboot commands supported
+      by the :ref:`/plugins/provision/connect` plugin.
+    * ``SendEnv`` SSH option can no longer be set by a ``provision``
+      phase unless in the "feeling safe" mode; this prevents users from
+      leaking environment variables exposed to ``ssh`` processes by changing
+      their plans.
