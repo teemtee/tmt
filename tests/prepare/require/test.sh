@@ -20,17 +20,14 @@ rlJournalStart
                 forest: required by: /test/missing"
 
     for image in $TEST_IMAGE_PREFIX/fedora/latest:latest $IMAGES; do
-        if [[ "$image" != "$TEST_IMAGE_PREFIX/fedora/latest:latest" ]] \
-            && ! is_centos_6 "$image" && ! is_centos_7 "$image"; then
-            continue
-        fi
-
         # Prepare the tmt command and expected error message
         tmt="tmt run -avr provision -h $PROVISION_HOW -i $image"
-        if is_fedora "$image"; then
+        if [[ "$image" == "$TEST_IMAGE_PREFIX/fedora/latest:latest" ]]; then
             error='No match for argument: forest'
-        else
+        elif is_centos_6 "$image" || is_centos_7 "$image"; then
             error='No package forest available'
+        else
+            continue
         fi
 
         rlPhaseStartTest "Require an available package ($image)"
