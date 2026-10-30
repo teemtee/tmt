@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Optional, cast
 
 import click
 
-import tmt.guest
 import tmt.hardware
 import tmt.log
 import tmt.steps
@@ -51,23 +50,29 @@ EOF
 """
 
 
-class GuestBootc(GuestTestcloud):
-    containerimage: Optional[str]
-    _rootless: bool
+@container
+class BootcGuestData(tmt.steps.provision.testcloud.TestcloudGuestData):
+    # The container image used to build the bootc disk. Stored as guest data
+    # so that it can be removed when the guest is torn down, including after a
+    # wake up in a separate tmt invocation.
+    containerimage: Optional[str] = field(
+        default=None,
+        internal=True,
+    )
 
-    def __init__(
-        self,
-        *,
-        data: tmt.guest.GuestData,
-        name: Optional[str] = None,
-        parent: Optional[tmt.utils.Common] = None,
-        logger: tmt.log.Logger,
-        containerimage: Optional[str],
-        rootless: bool,
-    ) -> None:
-        super().__init__(data=data, logger=logger, parent=parent, name=name)
-        self.containerimage = containerimage
-        self._rootless = rootless
+    # Whether the podman connection used to build the disk is rootless. Stored
+    # as guest data so that the correct environment is used during cleanup.
+    rootless: bool = field(
+        default=True,
+        internal=True,
+    )
+
+
+class GuestBootc(GuestTestcloud):
+    _data_class = BootcGuestData
+
+    containerimage: Optional[str]
+    rootless: bool
 
     def remove(self) -> None:
         if not self._instance:
@@ -78,7 +83,7 @@ class GuestBootc(GuestTestcloud):
                 cwd=self.guest_workdir,
                 stream_output=True,
                 logger=self._logger,
-                environment=PODMAN_ENV if self._rootless else None,
+                environment=PODMAN_ENV if self.rootless else None,
             )
 
         try:
@@ -94,7 +99,7 @@ class GuestBootc(GuestTestcloud):
 
 
 @container
-class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
+class BootcData(BootcGuestData, tmt.steps.provision.ProvisionStepData):
     container_file: Optional[str] = field(
         default=None,
         option='--container-file',
@@ -220,7 +225,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
     """
 
     _data_class = BootcData
-    _guest_class = GuestTestcloud
+    _guest_class = GuestBootc
     _guest = None
     _rootless = True
 
@@ -440,13 +445,14 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             click.echo(tmt.log.indent(data.image, level=2))
             return
 
-        self._guest = GuestBootc(
+        data.containerimage = containerimage
+        data.rootless = self._rootless
+
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,
             parent=self.step,
-            containerimage=containerimage,
-            rootless=self._rootless,
         )
         self._guest.start()
         self._guest.setup()
