@@ -333,10 +333,10 @@ class Plan(
 
         # Expand all environment and context variables in the node
         expand_node_data(
-            node.data,
+            node.data,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             Environment.build_environment(plan=self, run=self.my_run, logger=self._logger),
             self.fmf_context,
-        )  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
+        )
 
         # Initialize test steps
         def _normalize_raw_step_phases(
