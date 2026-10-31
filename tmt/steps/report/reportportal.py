@@ -534,11 +534,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             )
 
     @property
-    def datetime(self) -> str:
-        # Use the same format of timestramp as tmt does
-        return format_timestamp(datetime.datetime.now(datetime.UTC))
-
-    @property
     def headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self.data.token}",
@@ -753,19 +748,16 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         """
 
         assert self.step.plan.my_run is not None
-        # Use the current datetime as a default, but this is the worst case scenario
+        # Use the current time as a default, but this is the worst case scenario
         # and we should use timestamps from results log as much as possible.
-        launch_start_time = self.datetime
+        launch_start_time = datetime.datetime.now(datetime.timezone.utc)
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
             # Launch time should be the earliest start time of all plans.
-            #
-            # The datetime *strings* are in fact sorted here, but finding the minimum will work,
-            # because the datetime in ISO format is designed to be lexicographically sortable.
             launch_start_time = min(
-                r.start_time or self.datetime for r in self.step.plan.execute.results()
+                r.start_time or launch_start_time for r in self.step.plan.execute.results()
             )
 
         # Create launch, suites (if "--suite_per_plan") and tests;
@@ -840,7 +832,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "name": launch_name,
                         "description": launch_description,
                         "attributes": launch_attributes,
-                        "startTime": launch_start_time,
+                        "startTime": format_timestamp(launch_start_time),
                         "rerun": launch_rerun,
                     },
                 )
@@ -885,7 +877,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "name": suite_name,
                         "description": suite_description,
                         "attributes": attributes,
-                        "startTime": launch_start_time,
+                        "startTime": format_timestamp(launch_start_time),
                         "launchUuid": launch_uuid,
                         "type": "suite",
                     },
@@ -969,7 +961,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             "launchUuid": launch_uuid,
                             "type": "step",
                             "testCaseId": test_id,
-                            "startTime": test_start_time,
+                            "startTime": format_timestamp(test_start_time),
                         },
                     )
 
@@ -997,7 +989,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         session=session,
                         item_uuid=item_uuid,
                         launch_uuid=launch_uuid,
-                        timestamp=test_end_time,
+                        timestamp=format_timestamp(test_end_time),
                         write_out_failures=bool(item_status == "FAILED"),
                     )
 
@@ -1018,7 +1010,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                     "name": subresult.name,
                                     "launchUuid": launch_uuid,
                                     "type": "step",
-                                    "startTime": subresult_start_time,
+                                    "startTime": format_timestamp(subresult_start_time),
                                     "attributes": self.construct_item_attributes(),
                                 },
                             )
@@ -1035,7 +1027,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 session=session,
                                 item_uuid=child_item_uuid,
                                 launch_uuid=launch_uuid,
-                                timestamp=subtest_end_time,
+                                timestamp=format_timestamp(subtest_end_time),
                                 write_out_failures=bool(child_item_status == "FAILED"),
                             )
 
@@ -1046,7 +1038,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 json={
                                     "launchUuid": launch_uuid,
                                     "status": child_item_status,
-                                    "endTime": subtest_end_time,
+                                    "endTime": format_timestamp(subtest_end_time),
                                 },
                             )
 
@@ -1058,7 +1050,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     path=f"item/{item_uuid}",
                     json={
                         "launchUuid": launch_uuid,
-                        "endTime": test_end_time,
+                        "endTime": format_timestamp(test_end_time),
                         "status": item_status,
                         "issue": {"issueType": self.get_defect_type_locator(session, defect_type)},
                     },
@@ -1072,7 +1064,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 response = self.rp_api_put(
                     session=session,
                     path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
-                    json={"launchUuid": launch_uuid, "endTime": launch_end_time},
+                    json={"launchUuid": launch_uuid, "endTime": format_timestamp(launch_end_time)},
                 )
 
             is_the_last_plan = self.step.plan == self.step.plan.my_run.plans[-1]
@@ -1086,7 +1078,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 response = self.rp_api_put(
                     session=session,
                     path=f"launch/{launch_uuid}/finish",
-                    json={"endTime": launch_end_time},
+                    json={"endTime": format_timestamp(launch_end_time)},
                 )
                 launch_url = str(yaml_to_dict(response.text).get("link"))
 
