@@ -100,7 +100,7 @@ INNER_WRAPPER_TEMPLATE = jinja2.Template("""
 
 #: A template for the outer wrapper which handles most of the
 #: orchestration and invokes the inner wrapper.
-OUTER_WRAPPER_TEMPLATE = jinja2.Template("""
+OUTER_WRAPPER_TEMPLATE = jinja2.Template("""#!/bin/bash
 {% macro log_to_dmesg(msg) %}
     {%- if not GUEST.facts.is_superuser %}
 # Logging test into kernel log
