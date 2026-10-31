@@ -76,6 +76,7 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
+from tmt.utils._threading import Lock
 from tmt.utils.environment import Environment, EnvVarValue
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError
@@ -1947,12 +1948,7 @@ class Guest(
     localhost = False
 
     #: Guest logs active and available for collection.
-    guest_logs: list[GuestLog]
-
-    #: A lock taken by :py:meth:`update_logs` for the duration of its
-    #: run. Prevents multiple threads from updating logs at the same
-    #: time, and possible conflicts and broken content.
-    _update_logs_lock: threading.Lock
+    guest_logs: Lock[list[GuestLog]]
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
@@ -1973,12 +1969,10 @@ class Guest(
         Initialize guest data
         """
 
-        self.guest_logs = []
+        self.guest_logs = Lock([])
 
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
-
-        self._update_logs_lock = threading.Lock()
 
     @property
     def run_workdir(self) -> Path:
@@ -3059,8 +3053,8 @@ class Guest(
         :param logger: logger to use for logging.
         """
 
-        with self._update_logs_lock:
-            for log in self.guest_logs:
+        with self.guest_logs as guest_logs:
+            for log in guest_logs:
                 try:
                     log.update(logger=logger)
 
@@ -3090,7 +3084,8 @@ class Guest(
 
         self._logger.debug(f"{', '.join(message_components)}.", level=3)
 
-        self.guest_logs.append(log)
+        with self.guest_logs as guest_logs:
+            guest_logs.append(log)
 
     @functools.cached_property
     def update_logs_worker(self) -> GuestLogUpdater:
@@ -3107,8 +3102,9 @@ class Guest(
         :param logger: logger to use for logging.
         """
 
-        for log in self.guest_logs:
-            log.setup(logger=logger)
+        with self.guest_logs as guest_logs:
+            for log in guest_logs:
+                log.setup(logger=logger)
 
     def _teardown_logs(self, *, logger: tmt.log.Logger) -> None:
         """
@@ -3117,8 +3113,9 @@ class Guest(
         :param logger: logger to use for logging.
         """
 
-        for log in self.guest_logs:
-            log.teardown(logger=logger)
+        with self.guest_logs as guest_logs:
+            for log in guest_logs:
+                log.teardown(logger=logger)
 
     def kickoff_logs(self, logger: tmt.log.Logger) -> None:
         """
