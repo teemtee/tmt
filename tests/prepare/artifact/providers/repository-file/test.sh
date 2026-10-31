@@ -13,20 +13,21 @@ rlJournalStart
         build_rpm "bar"
 
         # Stage the locally-built 'bar' RPM so it is synced to the guest and
-        # can be turned into a local repository for CentOS 7 (see main.fmf)
+        # can be turned into a local repository for CentOS 6 and 7 (see main.fmf)
         rlRun "mkdir -p local-repo" 0 "Create local repo staging directory"
         rlRun "cp $LIB_DIR/../rpms/bar/bar-1.0-1.noarch.rpm local-repo/" 0 "Stage bar RPM"
     rlPhaseEnd
 
     while IFS= read -r image; do
-        if ! is_fedora "$image" && ! is_centos "$image"; then
-            # Can only test rpm artifacts right now
-            continue
-        fi
-
-        distro="other"
+        # Can only test rpm artifacts right now
         if is_centos_7 "$image"; then
             distro="centos-7"
+        elif is_centos_6 "$image"; then
+            distro="centos-6"
+        elif is_fedora "$image" || is_centos "$image"; then
+            distro="other"
+        else
+            continue
         fi
 
         phase_prefix="$(test_phase_prefix $image)"
