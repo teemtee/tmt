@@ -89,6 +89,12 @@ if TYPE_CHECKING:
     from tmt.hardware.constraints import Duration, Size
 
 
+# Stand-in variables for generic use.
+T = TypeVar('T')
+S = TypeVar('S')
+P = ParamSpec('P')
+
+
 def sanitize_string(text: str) -> str:
     """Remove invalid Unicode characters from a string"""
     try:
@@ -96,6 +102,35 @@ def sanitize_string(text: str) -> str:
         return text
     except UnicodeEncodeError:
         return text.encode("utf-8", errors="ignore").decode("utf-8")
+
+
+def _configure_constant(default: T, envvar: str, convert: Callable[[str], T], type_name: str) -> T:
+    """
+    Deduce the actual value of a global constant.
+
+    :param default: the default value of the constant.
+    :param envvar: name of the optional environment variable which would
+        override the default value.
+    :param convert: a callback that would convert the value from environment
+        to the correct type.
+    :param type_name: name of the final type, for nicer error messages.
+    :raises ValueError: when the conversion fails.
+    """
+
+    environment = Environment.from_environ()
+
+    value = environment.get(envvar)
+
+    if value is None:
+        return default
+
+    try:
+        return convert(value)
+
+    except ValueError as exc:
+        raise tmt.utils.GeneralError(
+            f"Could not parse '{envvar}={value}' as {type_name}."
+        ) from exc
 
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
@@ -109,18 +144,7 @@ def configure_optional_constant(default: Optional[int], envvar: str) -> Optional
         given default value if the variable did not exist.
     """
 
-    environment = Environment.from_environ()
-
-    if envvar not in environment:
-        return default
-
-    try:
-        return int(environment[envvar])
-
-    except ValueError as exc:
-        raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={environment[envvar]}' as integer."
-        ) from exc
+    return _configure_constant(default, envvar, int, 'integer')
 
 
 def configure_constant(default: int, envvar: str) -> int:
@@ -134,15 +158,7 @@ def configure_constant(default: int, envvar: str) -> int:
         given default value if the variable did not exist.
     """
 
-    environment = Environment.from_environ()
-
-    try:
-        return int(environment.get(envvar, default))
-
-    except ValueError as exc:
-        raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={environment[envvar]}' as integer."
-        ) from exc
+    return _configure_constant(default, envvar, int, 'integer')
 
 
 def configure_float_constant(default: float, envvar: str) -> float:
@@ -156,15 +172,7 @@ def configure_float_constant(default: float, envvar: str) -> float:
         given default value if the variable did not exist.
     """
 
-    environment = Environment.from_environ()
-
-    try:
-        return float(environment.get(envvar, default))
-
-    except ValueError as exc:
-        raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={environment[envvar]}' as float."
-        ) from exc
+    return _configure_constant(default, envvar, float, 'float')
 
 
 def configure_bool_constant(default: bool, envvar: str) -> bool:
@@ -179,10 +187,8 @@ def configure_bool_constant(default: bool, envvar: str) -> bool:
     :returns: value extracted from the environment variable, or the
         given default value if the variable did not exist.
     """
-    value = Environment.from_environ().get(envvar)
-    if value is None:
-        return default
-    return value == "1"
+
+    return _configure_constant(default, envvar, lambda value: value == '1', 'flag')
 
 
 #: How many leading characters to display in tracebacks with
@@ -310,11 +316,6 @@ GIT_CLONE_ATTEMPTS: int = configure_constant(DEFAULT_GIT_CLONE_ATTEMPTS, 'TMT_GI
 
 DEFAULT_GIT_CLONE_INTERVAL: int = 10
 GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GIT_CLONE_INTERVAL')
-
-# Stand-in variables for generic use.
-T = TypeVar('T')
-S = TypeVar('S')
-P = ParamSpec('P')
 
 
 WriteMode = Literal['w', 'a']
