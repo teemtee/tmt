@@ -120,6 +120,11 @@ class ENV_TMT_TEST_DATA(EnvVar):  # noqa: N801
 
 
 class ENV_TMT_TEST_SUBMITTED_FILES(EnvVar):  # noqa: N801
+    """
+    Path to the file that collects paths to files submitted via
+    ``tmt-file-submit`` script, as part of the test results.
+    """
+
     name = 'TMT_TEST_SUBMITTED_FILES'
     scope = EnvVar.Scope.TEST
 
