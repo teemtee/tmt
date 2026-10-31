@@ -220,6 +220,9 @@ class Environment(dict[EnvVarName, EnvVarValue]):
     ) -> Optional[EnvVarValue]:
         return super().get(self._normalize_key(key), self._normalize_default(default))
 
+    # Sentinel distinguishing "no default given" from an explicit ``None``.
+    _MISSING: Any = object()
+
     @overload  # type: ignore[override]
     def pop(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
         pass
@@ -229,9 +232,15 @@ class Environment(dict[EnvVarName, EnvVarValue]):
         pass
 
     def pop(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
-        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = None
+        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = _MISSING
     ) -> Optional[EnvVarValue]:
-        return super().pop(self._normalize_key(key), self._normalize_default(default))
+        normalized_key = self._normalize_key(key)
+
+        if default is self._MISSING:
+            # No default given: preserve `dict.pop` semantics and raise `KeyError`.
+            return super().pop(normalized_key)
+
+        return super().pop(normalized_key, self._normalize_default(default))
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':
