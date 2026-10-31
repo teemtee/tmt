@@ -26,6 +26,7 @@ import enum
 import os
 import re
 import shlex
+import types
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
@@ -58,6 +59,8 @@ if TYPE_CHECKING:
 EnvVarName: 'TypeAlias' = str
 
 _IncomingEnvVarName: 'TypeAlias' = Union[type['EnvVar'], 'EnvVarName']
+_IncomingEnvVarDefault: 'TypeAlias' = Optional[Union[str, 'EnvVarValue', Path]]
+_IncomingEnvVarDefaultKnown: 'TypeAlias' = Union[str, 'EnvVarValue', Path]
 
 
 # This one is not an alias: a full-fledged class makes type linters
@@ -182,48 +185,53 @@ class Environment(dict[EnvVarName, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
 
-    def __init__(self, data: Optional[dict[_IncomingEnvVarName, EnvVarValue]] = None) -> None:
-        super().__init__(
-            {
-                (key.name if not isinstance(key, str) else key): value
-                for key, value in (data or {}).items()
-            }
+    @staticmethod
+    def _normalize_key(key: _IncomingEnvVarName) -> EnvVarName:
+        return key.name if not isinstance(key, str) else key
+
+    @staticmethod
+    def _normalize_default(default: _IncomingEnvVarDefault) -> Optional[EnvVarValue]:
+        return (
+            default if isinstance(default, (EnvVarValue, types.NoneType)) else EnvVarValue(default)
         )
 
+    def __init__(self, data: Optional[dict[_IncomingEnvVarName, EnvVarValue]] = None) -> None:
+        super().__init__({self._normalize_key(key): value for key, value in (data or {}).items()})
+
     def __getitem__(self, key: _IncomingEnvVarName) -> EnvVarValue:
-        return super().__getitem__(key.name if not isinstance(key, str) else key)
+        return super().__getitem__(self._normalize_key(key))
 
     def __setitem__(self, key: _IncomingEnvVarName, value: EnvVarValue) -> None:
-        super().__setitem__((key.name if not isinstance(key, str) else key), value)
+        super().__setitem__(self._normalize_key(key), value)
 
     def __contains__(self, key: _IncomingEnvVarName) -> bool:  # type: ignore[override]
-        return super().__contains__(key.name if not isinstance(key, str) else key)
+        return super().__contains__(self._normalize_key(key))
 
     @overload  # type: ignore[override]
     def get(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
         pass
 
     @overload
-    def get(self, key: _IncomingEnvVarName, default: EnvVarValue) -> EnvVarValue:
+    def get(self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefaultKnown) -> EnvVarValue:
         pass
 
     def get(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
-        self, key: _IncomingEnvVarName, default: Optional[EnvVarValue] = None
+        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = None
     ) -> Optional[EnvVarValue]:
-        return super().get(key.name if not isinstance(key, str) else key, default)
+        return super().get(self._normalize_key(key), self._normalize_default(default))
 
     @overload  # type: ignore[override]
     def pop(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
         pass
 
     @overload
-    def pop(self, key: _IncomingEnvVarName, default: EnvVarValue) -> EnvVarValue:
+    def pop(self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefaultKnown) -> EnvVarValue:
         pass
 
     def pop(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
-        self, key: _IncomingEnvVarName, default: Optional[EnvVarValue] = None
+        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = None
     ) -> Optional[EnvVarValue]:
-        return super().pop(key.name if not isinstance(key, str) else key, default)
+        return super().pop(self._normalize_key(key), self._normalize_default(default))
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':
