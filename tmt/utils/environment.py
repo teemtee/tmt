@@ -22,9 +22,11 @@ the intrinsic ones must come after all user-provided ones.
 
 import abc
 import contextlib
+import enum
 import os
 import re
 import shlex
+import types
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
@@ -33,6 +35,7 @@ from typing import (
     Self,
     Union,
     cast,
+    overload,
 )
 
 import requests
@@ -54,6 +57,11 @@ if TYPE_CHECKING:
 
 #: A type of environment variable name.
 EnvVarName: 'TypeAlias' = str
+
+_IncomingEnvVarName: 'TypeAlias' = Union[type['EnvVar'], 'EnvVarName']
+_IncomingEnvVarDefault: 'TypeAlias' = Optional[Union[str, 'EnvVarValue', Path]]
+_IncomingEnvVarDefaultKnown: 'TypeAlias' = Union[str, 'EnvVarValue', Path]
+
 
 # This one is not an alias: a full-fledged class makes type linters
 # enforce strict instantiation of objects rather than accepting
@@ -77,6 +85,65 @@ class EnvVarValue(str):
         raise GeneralError(
             f"Only strings and paths can be environment variables, '{type(raw_value)}' found."
         )
+
+
+class EnvVar:
+    """
+    Base class defining an environment variable.
+
+    To define new environment variable, subclass this class:
+
+    .. code-block:: python
+
+        class ENV_TMT_TEST_NAME(EnvVar):  # noqa: N801
+            '''
+            User-facing documentation of the variable.
+            '''
+
+            name = 'TMT_FOO'
+            scope = EnvVar.Scope.TEST
+    """
+
+    class Scope(enum.Flag):
+        """
+        Scopes of environment variables.
+        """
+
+        #: Environment variable is consumed by tmt process itself.
+        TMT = enum.auto()
+
+        #: Environment variable is exposed to ``discover`` phases.
+        DISCOVER = enum.auto()
+
+        #: Environment variable is exposed to ``provision`` phases.
+        PROVISION = enum.auto()
+
+        #: Environment variable is exposed to ``prepare`` phases.
+        PREPARE = enum.auto()
+
+        #: Environment variable is exposed to ``execute`` phases.
+        EXECUTE = enum.auto()
+
+        #: Environment variable is exposed to ``finish`` phases.
+        FINISH = enum.auto()
+
+        #: Environment variable is exposed to individual tests.
+        TEST = enum.auto()
+
+    #: Name of the environment variable
+    name: EnvVarName
+
+    #: Scope of the environment variable.
+    scope: Scope
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, EnvVar):
+            return NotImplemented
+
+        return self.name == other.name
 
 
 class HasEnvironment(abc.ABC):
@@ -109,7 +176,7 @@ class HasIntrinsicEnvironment(abc.ABC):
         raise NotImplementedError
 
 
-class Environment(dict[str, EnvVarValue]):
+class Environment(dict[EnvVarName, EnvVarValue]):
     """
     Represents a set of environment variables.
 
@@ -118,8 +185,62 @@ class Environment(dict[str, EnvVarValue]):
     https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
     """
 
-    def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
-        super().__init__(data or {})
+    @staticmethod
+    def _normalize_key(key: _IncomingEnvVarName) -> EnvVarName:
+        return key.name if not isinstance(key, str) else key
+
+    @staticmethod
+    def _normalize_default(default: _IncomingEnvVarDefault) -> Optional[EnvVarValue]:
+        return (
+            default if isinstance(default, (EnvVarValue, types.NoneType)) else EnvVarValue(default)
+        )
+
+    def __init__(self, data: Optional[dict[_IncomingEnvVarName, EnvVarValue]] = None) -> None:
+        super().__init__({self._normalize_key(key): value for key, value in (data or {}).items()})
+
+    def __getitem__(self, key: _IncomingEnvVarName) -> EnvVarValue:
+        return super().__getitem__(self._normalize_key(key))
+
+    def __setitem__(self, key: _IncomingEnvVarName, value: EnvVarValue) -> None:
+        super().__setitem__(self._normalize_key(key), value)
+
+    def __contains__(self, key: _IncomingEnvVarName) -> bool:  # type: ignore[override]
+        return super().__contains__(self._normalize_key(key))
+
+    @overload  # type: ignore[override]
+    def get(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
+        pass
+
+    @overload
+    def get(self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefaultKnown) -> EnvVarValue:
+        pass
+
+    def get(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
+        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = None
+    ) -> Optional[EnvVarValue]:
+        return super().get(self._normalize_key(key), self._normalize_default(default))
+
+    # Sentinel distinguishing "no default given" from an explicit ``None``.
+    _MISSING: Any = object()
+
+    @overload  # type: ignore[override]
+    def pop(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
+        pass
+
+    @overload
+    def pop(self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefaultKnown) -> EnvVarValue:
+        pass
+
+    def pop(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
+        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = _MISSING
+    ) -> Optional[EnvVarValue]:
+        normalized_key = self._normalize_key(key)
+
+        if default is self._MISSING:
+            # No default given: preserve `dict.pop` semantics and raise `KeyError`.
+            return super().pop(normalized_key)
+
+        return super().pop(normalized_key, self._normalize_default(default))
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':
@@ -579,7 +700,11 @@ class Environment(dict[str, EnvVarValue]):
         return [ShellScript(f'export {variable}') for variable in self.to_shell()]
 
     def copy(self) -> 'Environment':
-        return Environment(self)
+        environment = Environment()
+
+        environment.update(self)
+
+        return environment
 
     def update(  # type: ignore[override]
         self, *others: 'Environment'
