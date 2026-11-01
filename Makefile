@@ -35,7 +35,6 @@ _DEPS_CORE_FEDORA := \
     hatch \
     uv \
     python3-devel \
-    python3-hatch-vcs \
     rpm-build \
     clang \
     beakerlib
@@ -44,6 +43,7 @@ _DEPS_DEVELOP_FEDORA := \
     expect \
     gcc \
     git \
+    packit \
     python3-nitrate \
     libvirt-devel \
     krb5-devel \
@@ -55,12 +55,8 @@ _DEPS_DEVELOP_FEDORA := \
     /usr/bin/python3.12 \
     pre-commit
 
-# Note: interestingly, `hatch` is not shipped by Ubuntu, but `hatch` plugins are.
-# Manual `hatch` installation probably does not the packaged plugin, leaving it
-# in for now until we get better coverage.
 _DEPS_CORE_UBUNTU := \
     python3-dev \
-    python3-hatch-vcs \
     clang
 
 _DEPS_DEVELOP_UBUNTU := \
@@ -83,7 +79,7 @@ _OS_ID   := $(shell sh -c '. /etc/os-release 2>/dev/null && echo $$ID')
 _deps/fedora:
 	sudo dnf install -y $(_DEPS_CORE_FEDORA)
 
-_build-deps/fedora: _deps tarball ver2spec
+_build-deps/fedora: _deps
 	rpmbuild --define '_topdir $(TMP)' -br packaging/rpm/tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
 
 _develop/fedora: _deps/fedora
@@ -141,26 +137,15 @@ man:  ## Build man page
 ##
 ## Packaging & Packit
 ##
-build: clean man
-	hatch build
-tarball: clean tmp build
-	mkdir -p $(TMP)/SOURCES
-	cp dist/tmt-*.tar.gz $(TMP)/SOURCES
+build: rpm
 
-rpm: tarball ver2spec  ## Build RPMs
-	# If the build system is missing the required dependencies, use nosrc.rpm to install them
-	rpmbuild --define '_topdir $(TMP)' -bb packaging/rpm/tmt.spec || echo 'Hint: run `make deps` to install build dependencies'
+rpm: tmp ## Build RPMs
+	packit build in-mock --resultdir $(TMP)
 
-srpm: tarball ver2spec  ## Build SRPM
-	rpmbuild --define '_topdir $(TMP)' -bs packaging/rpm/tmt.spec
+srpm: ## Build SRPM
+	packit srpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
-
-version:  ## Build tmt version for packaging purposes
-	hatch version
-
-ver2spec:
-	$(shell sed -E "s/^(Version:[[:space:]]*).*/\1$$(hatch version)/" -i packaging/rpm/tmt.spec)
 
 ##
 ## Containers
