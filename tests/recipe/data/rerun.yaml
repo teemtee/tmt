@@ -148,6 +148,7 @@ plans:
             pull-interval: 5
             stop-time: 1
             user: root
+            log-update-tick: 300
     report:
         enabled: true
         phases:

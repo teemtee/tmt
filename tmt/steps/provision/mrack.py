@@ -1654,7 +1654,8 @@ class GuestBeaker(tmt.guest.GuestSsh):
                 self.info('status', state, color=state_color)
                 previous_state = state
 
-            registered_logs = [log.name for log in self.guest_logs]
+            with self.guest_logs as guest_logs:
+                registered_logs = [log.name for log in guest_logs]
 
             for log_name, url in response.get('logs', {}).items():
                 if log_name in registered_logs:
@@ -1668,7 +1669,7 @@ class GuestBeaker(tmt.guest.GuestSsh):
                 )
 
             if state == 'Reserved':
-                self.setup_logs(logger=self._logger)
+                self.kickoff_logs(logger=self._logger)
 
                 return current
 
