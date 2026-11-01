@@ -821,7 +821,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        self._guest = GuestArtemis(
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,
