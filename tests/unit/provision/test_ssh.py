@@ -1,9 +1,9 @@
-import os
 import re
 from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
+import pytest_mock
 
 import tmt.log
 from tmt.guest import (
@@ -91,11 +91,11 @@ def test_socket_path_hash(
     socket_dir: Path,
     limit_size: bool,
     expected: Optional[str],
-    monkeypatch,
+    mocker: pytest_mock.MockerFixture,
     root_logger: tmt.log.Logger,
 ) -> None:
-    monkeypatch.setattr(os, 'open', MagicMock(name='<mock>os.open'))
-    monkeypatch.setattr(os, 'close', MagicMock(name='<mock>os.close'))
+    mocker.patch('os.open', name='<mock>os.open')
+    mocker.patch('os.close', name='<mock>os.close')
 
     actual = _socket_path_hash(
         socket_dir=socket_dir, guest_id='dummy-id', limit_size=limit_size, logger=root_logger
@@ -108,13 +108,16 @@ def test_socket_path_hash(
         assert re.match(expected, str(actual))
 
 
-def test_socket_path_hash_conflict(monkeypatch, root_logger: tmt.log.Logger) -> None:
-    monkeypatch.setattr(os, 'close', MagicMock(name='<mock>os.close'))
+def test_socket_path_hash_conflict(
+    mocker: pytest_mock.MockerFixture,
+    root_logger: tmt.log.Logger,
+) -> None:
+    mocker.patch('os.close', name='<mock>os.close')
 
     socket_dir = Path('/tmp')
 
     # First, "create" a socket for the first guest.
-    monkeypatch.setattr(os, 'open', MagicMock(name='<mock>os.open'))
+    mocker.patch('os.open', name='<mock>os.open')
 
     actual1 = _socket_path_hash(socket_dir=socket_dir, guest_id='dummy-id', logger=root_logger)
 
@@ -126,7 +129,7 @@ def test_socket_path_hash_conflict(monkeypatch, root_logger: tmt.log.Logger) -> 
 
         return MagicMock()
 
-    monkeypatch.setattr(os, 'open', MagicMock(name='<mock>os.open', side_effect=_raise_but_once))
+    mocker.patch('os.open', name='<mock>os.open', side_effect=_raise_but_once)
 
     actual2 = _socket_path_hash(socket_dir=socket_dir, guest_id='dummy-id', logger=root_logger)
 

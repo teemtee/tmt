@@ -4,8 +4,8 @@ from typing import Any, Optional, Union
 from unittest.mock import MagicMock, Mock
 
 import _pytest.logging
-import _pytest.monkeypatch
 import pytest
+import pytest_mock
 from pytest_container.container import ContainerData
 
 import tmt.utils.feeling_safe
@@ -150,7 +150,7 @@ def test_multihost_name(root_logger: Logger) -> None:
     ),
 )
 def test_execute_no_connection_closed(
-    root_logger: Logger, stdout: str, expected: str, monkeypatch: Any
+    root_logger: Logger, stdout: str, expected: str, mocker: pytest_mock.MockerFixture
 ) -> None:
     step = Provision(
         plan=MagicMock(name='mock<plan>', is_dry_run=False), raw_data=[{}], logger=root_logger
@@ -159,15 +159,15 @@ def test_execute_no_connection_closed(
         logger=root_logger, parent=step, name='foo', data=GuestSshData(primary_address='bar')
     )
 
-    monkeypatch.setattr(
+    mocker.patch.object(
         guest,
         '_prepare_command_environment',
-        MagicMock(return_value=Environment()),
+        return_value=Environment(),
     )
-    monkeypatch.setattr(
+    mocker.patch.object(
         guest,
         '_run_guest_command',
-        MagicMock(return_value=CommandOutput(stdout=stdout, stderr=None)),
+        return_value=CommandOutput(stdout=stdout, stderr=None),
     )
 
     output = guest.execute(Command('some-command'), test_session=True)
@@ -370,7 +370,7 @@ class TestPodmanNetworkSetup:
     ],
 )
 def test_unsafe_ssh_option_case_and_separator(
-    root_logger: Logger, option: str, monkeypatch: _pytest.monkeypatch.MonkeyPatch
+    root_logger: Logger, option: str, mocker: pytest_mock.MockerFixture
 ) -> None:
     """Unsafe option check is case-insensitive and handles both '=' and space separators."""
     step = Provision(
@@ -383,7 +383,7 @@ def test_unsafe_ssh_option_case_and_separator(
         data=GuestSshData(primary_address='bar', ssh_option=[option]),
     )
 
-    monkeypatch.setattr(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIORS', set())
+    mocker.patch.object(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIORS', set())
 
     with pytest.raises(GeneralError, match='--feeling-safe'):
         _ = guest._ssh_options
