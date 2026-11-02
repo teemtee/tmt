@@ -575,7 +575,7 @@ def container_value_to_spec(value: Any, *, minimal: bool = False) -> Any:
     def _get_method(value: Any, name: str) -> Optional[Callable[[], Any]]:
         method = getattr(value, name, None)
 
-        if inspect.ismethod(method) and method.__self__ is value:
+        if callable(method):
             return cast(Callable[[], Any], method)
 
         return None
