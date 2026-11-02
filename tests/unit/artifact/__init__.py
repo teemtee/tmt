@@ -1,7 +1,6 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 MOCK_BUILD_ID_KOJI_BREW = 2829512
-MOCK_BUILD_ID_COPR = 9820798
 
 MOCK_RPMS_KOJI = [
     {"name": f"pkg{i}", "version": "1.0", "release": "1.fc43", "arch": "x86_64"} for i in range(13)
@@ -33,13 +32,6 @@ def mock_koji_brew_build_api_responses(mock_call_api, mock_rpms=None):
         return None
 
     mock_call_api.side_effect = mock_api
-
-
-def mock_copr_build_api_responses(mock_session):
-    mock_build_chroot_proxy = MagicMock()
-    mock_build_chroot_proxy.get_results_urls.return_value = MOCK_RPMS_COPR
-    mock_session.build_chroot_proxy = mock_build_chroot_proxy
-    return mock_session
 
 
 def mock_task_api_responses(mock_call_api, mock_rpms=None, has_build=True):
