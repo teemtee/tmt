@@ -2,11 +2,12 @@ import os
 import stat
 import subprocess
 import time
-from typing import Optional, cast
+from typing import Optional
 from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
+import pytest_mock
 
 import tmt.log
 import tmt.utils
@@ -235,14 +236,8 @@ def test_nonexistent_source_directory(tmppath: Path, root_logger: tmt.log.Logger
         tmt.utils.filesystem.copy_tree(nonexistent_src, destination, root_logger)
 
 
-@mock.patch(
-    'tmt.utils.filesystem._COPY_TREE_STRATEGIES',
-    (
-        mock.MagicMock(return_value=False),
-        mock.MagicMock(wraps=tmt.utils.filesystem._copy_tree_shutil),
-    ),
-)
 def test_fallback(
+    mocker: pytest_mock.MockerFixture,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ) -> None:
@@ -252,12 +247,18 @@ def test_fallback(
 
     source_dir, dest_dir, _ = copy_tree_paths
 
-    mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
+    mocker.patch(
+        "tmt.utils.filesystem._COPY_TREE_STRATEGIES",
+        (
+            (mock_copy_tree_cp := MagicMock(return_value=False)),
+            (mock_copy_tree_shutil := MagicMock(wraps=tmt.utils.filesystem._copy_tree_shutil)),
+        ),
+    )
 
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
-    cast(MagicMock, mock_copy_tree_cp).assert_called_once_with(source_dir, dest_dir, mock.ANY)
-    cast(MagicMock, mock_copy_tree_shutil).assert_called_once_with(source_dir, dest_dir, mock.ANY)
+    mock_copy_tree_cp.assert_called_once_with(source_dir, dest_dir, mock.ANY)
+    mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, mock.ANY)
 
     # Verify files were copied using the fallback approach (shutil.copytree)
     for file_path in _EXPECTED_TEST_FILES:
@@ -296,14 +297,8 @@ def test_metadata_preservation(
     _run_metadata_test_for_item(dest_dir, test_dir)
 
 
-@mock.patch(
-    'tmt.utils.filesystem._COPY_TREE_STRATEGIES',
-    (
-        mock.MagicMock(return_value=False),
-        mock.MagicMock(return_value=False),
-    ),
-)
 def test_all_strategies_fail(
+    mocker: pytest_mock.MockerFixture,
     copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ) -> None:
@@ -312,13 +307,19 @@ def test_all_strategies_fail(
     """
 
     source_dir, dest_dir, _ = copy_tree_paths
-    mock_copy_tree_cp, mock_copy_tree_shutil = tmt.utils.filesystem._COPY_TREE_STRATEGIES
+    mocker.patch(
+        "tmt.utils.filesystem._COPY_TREE_STRATEGIES",
+        (
+            (mock_copy_tree_cp := MagicMock(return_value=False)),
+            (mock_copy_tree_shutil := MagicMock(return_value=False)),
+        ),
+    )
 
     with pytest.raises(tmt.utils.GeneralError):
         tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
-    cast(MagicMock, mock_copy_tree_cp).assert_called_once()
-    cast(MagicMock, mock_copy_tree_shutil).assert_called_once()
+    mock_copy_tree_cp.assert_called_once()
+    mock_copy_tree_shutil.assert_called_once()
 
 
 @pytest.mark.parametrize('strategy', _STRATEGIES)
