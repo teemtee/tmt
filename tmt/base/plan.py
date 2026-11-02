@@ -730,19 +730,6 @@ class Plan(
             step._logger,
         )
 
-    def pull_workdir(self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None) -> None:
-        """
-        Plan pulls the workdir from the guests to the runner's default destination.
-        """
-        guests = self._resolve_step_guests(step, guests)
-
-        tmt.steps.sync_with_guests(
-            step,
-            'pull',
-            tmt.steps.PullTask(guests, lambda guest: (guest.plan_workdir, None), step._logger),
-            step._logger,
-        )
-
     def push_data_directory(
         self, step: tmt.steps.Step, guests: Optional[list[Guest]] = None
     ) -> None:
