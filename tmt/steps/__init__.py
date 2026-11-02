@@ -3652,6 +3652,7 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
     """
 
     mapping: GuestToPathCallback
+    """A callback that returns (source, destination) paths for a given guest."""
 
     def __init__(
         self, guests: list['Guest'], mapping: GuestToPathCallback, logger: tmt.log.Logger
@@ -3659,7 +3660,6 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
         super().__init__(guests, logger)
 
         self.mapping = mapping
-        """A callback that returns (source, destination) paths for a given guest."""
 
     @property
     def name(self) -> str:
