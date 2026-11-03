@@ -58,3 +58,10 @@ default to relevant commands:
 Additional SSH options can be specified either via ``ssh-option`` key
 of respective plugins, or by setting ``TMT_SSH_*`` environment
 variables; see :ref:`command-variables` for details.
+
+tmt reuses SSH connections through a master process. Its control socket
+is normally stored in the run workdir. If that path is too long for a
+control socket, tmt uses a private temporary directory under ``/tmp``
+or ``/var/tmp`` instead, and removes it when the master is cleaned up.
+These short locations are used independently of ``TMPDIR``. If neither
+location is usable, tmt warns and continues without connection reuse.
