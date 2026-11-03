@@ -72,6 +72,68 @@ See :ref:`check-report` for more options including ``html``
 reports.
 
 
+Test Path
+------------------------------------------------------------------
+
+Before executing each individual :tmt:story:`/spec/tests/test`
+script tmt changes directory to the :term:`test path`. When not
+defined, the directory where the test metadata is stored is used.
+So for the frequent use case when both test metadata and test
+script are stored in the same directory, for example:
+
+.. code-block::
+
+    tmt
+    ├── .fmf    <--- fmf tree root
+    └── tests
+        └── feature
+            ├── main.fmf
+            └── test.sh
+
+... the default path is evaluated to ``/tests/feature`` and
+does not need to be explicitly specified in test metadata:
+
+.. code-block:: yaml
+
+    summary: Test the feature
+    test: ./test.sh
+
+On the other hand, when several tests share the same test
+script stored in a different directory, for example like this:
+
+.. code-block::
+
+    tmt
+    ├── .fmf    <--- fmf tree root
+    └── tests
+        ├── area
+        │   └── feature
+        │       ├── one
+        │       │   └── main.fmf
+        │       └── two
+        │           └── main.fmf
+        └── common
+            └── check.sh    <--- shared test script
+
+... you might rather want to provide path to the directory with
+the shared scripts instead of using possibly long relative paths
+in the :tmt:story:`/spec/tests/test` key when the test metadata
+are buried deeper in the directory structure. Instead of:
+
+.. code-block:: yaml
+
+    summary: Lint the feature
+    test: ../../../common/check.sh --feature
+
+You can use:
+
+.. code-block:: yaml
+
+    summary: Lint the feature
+    path: /tests/common
+    test: ./check.sh --feature
+
+
 Select Plans
 ------------------------------------------------------------------
 
