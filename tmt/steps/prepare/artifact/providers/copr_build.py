@@ -5,8 +5,7 @@ Copr Build Artifact Provider
 import types
 from collections.abc import Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Optional
-from urllib.parse import urljoin
+from typing import Any, Optional
 
 import tmt.log
 import tmt.utils
@@ -19,9 +18,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProviderId,
     provides_artifact_provider,
 )
-
-if TYPE_CHECKING:
-    from munch import Munch
 
 copr: Optional[types.ModuleType] = None
 
@@ -90,26 +86,6 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         except (ValueError, IndexError) as error:
             raise ValueError(f"Invalid provider id '{self.id}'.") from error
 
-    @cached_property
-    def build_info(self) -> Optional["Munch"]:
-        """
-        Fetch and return the build metadata.
-
-        :returns: the build metadata, or ``None`` if not found.
-        """
-        return self._session.build_proxy.get(self.build_id)
-
-    @cached_property
-    def is_pulp(self) -> bool:
-        """
-        Check if the build is stored in Pulp.
-        """
-        assert self.build_info is not None
-        project = self._session.project_proxy.get(
-            self.build_info.ownername, self.build_info.projectname
-        )
-        return project is not None and project.storage == "pulp"
-
     def _initialize_session(self) -> 'Client':
         """
         Initialize copr client session.
@@ -132,78 +108,12 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             ) from error
         return value
 
-    @cached_property
-    def result_url(self) -> str:
-        """
-        Fetch and return the result URL for the build chroot.
-        """
-        build_chroot = self._session.build_chroot_proxy.get(self.build_id, self.chroot)
-        if not build_chroot:
-            raise tmt.utils.GeneralError(
-                f"Build chroot '{self.chroot}' not found for build '{self.build_id}'."
-            )
-
-        if not build_chroot.result_url:
-            raise tmt.utils.GeneralError(
-                f"No result URL found for build '{self.build_id}' and chroot '{self.chroot}'."
-            )
-
-        result_url = build_chroot.result_url
-        assert isinstance(result_url, str)
-        return result_url
-
-    @cached_property
-    def build_packages(self) -> Sequence["Munch"]:
-        built_packages = self._session.build_proxy.get_built_packages(self.build_id)
-        if self.chroot not in built_packages:
-            raise tmt.utils.GeneralError(
-                f"Chroot '{self.chroot}' not found in build '{self.build_id}'."
-            )
-        packages = built_packages[self.chroot]["packages"]
-        assert isinstance(packages, list)
-        return packages
-
-    def _fetch_results_json(self) -> list[dict[str, str]]:
-        """
-        Fetch results.json for Pulp builds.
-
-        :returns: list of package dictionaries containing NEVRA info.
-        """
-        results_url = urljoin(self.result_url + "/", "results.json")
-        self.logger.debug(f"Fetching results.json from '{results_url}'.")
-        try:
-            with tmt.utils.retry_session(logger=self.logger) as session:
-                response = session.get(results_url)
-                response.raise_for_status()
-                data = response.json()
-        except Exception:
-            # Idea is not to fail the whole process if results.json is missing
-            self.logger.warning(f"Failed to download: '{results_url}'.")
-            return []
-        packages = data.get("packages")
-        if not isinstance(packages, list):
-            # Again, idea is not to fail the whole process if results.json is invalid
-            self.logger.warning(
-                f"Invalid results.json format from '{results_url}', expected a list of packages."
-            )
-            return []
-        return packages
-
-    def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> ArtifactInfo:
-        version_info = RpmVersion.from_rpm_meta(rpm_meta)
-        filename = f"{version_info}.rpm"
-        if self.is_pulp:
-            assert self.build_info is not None
-            base_url = urljoin(
-                f"{self.build_info.repo_url}/",
-                f"{self.chroot}/Packages/{filename[0]}",
-            )
-        else:
-            base_url = self.result_url.rstrip("/")
-
+    def make_rpm_artifact(self, url: str) -> ArtifactInfo:
+        filename = url.rstrip("/").rsplit("/", 1)[1]
+        version_info = RpmVersion.from_filename(filename)
         return ArtifactInfo(
             version=version_info,
-            location=urljoin(base_url + "/", filename),
+            location=url,
             provider=self,
             repo_id=self.parent.data.repository_name,
         )
@@ -211,6 +121,9 @@ class CoprBuildArtifactProvider(ArtifactProvider):
     @cached_property
     def artifacts(self) -> Sequence[ArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
-        rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
-
-        return [self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas]
+        return [
+            self.make_rpm_artifact(url)
+            for url in self._session.build_chroot_proxy.get_results_urls(
+                self.build_id, self.chroot
+            )
+        ]
