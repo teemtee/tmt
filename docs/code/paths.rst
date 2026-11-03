@@ -86,63 +86,34 @@ with nested fmf trees used for testing specific features:
 test path
 ------------------------------------------------------------------
 
-The :term:`test path` is the :tmt:story:`/spec/tests/path` key of
-a test. It defines the directory to enter before the test is
-executed, expressed as the path from the metadata tree root and
-starting with a slash.
+A :term:`test path` is the path from which a test is executed,
+represented by the :tmt:story:`/spec/tests/path` key in the test
+metadata.
 
-When not defined, the directory where the test metadata is stored
-is used. So for the frequent use case when both test metadata
-and test script are stored in the same directory, for example:
+The default value is the directory where the test metadata of the
+current node is stored, i.e.:
 
 .. code-block::
 
     tmt
     ├── .fmf    <--- fmf tree root
-    └── tests
-        └── feature
-            ├── main.fmf
-            └── test.sh
+    └── tests   <--- default test path
+        ├── smoke.fmf
+        └── test.sh
 
-... the default path is evaluated to ``/tests/feature`` and
-does not need to be explicitly specified in test metadata:
+so the following test metadata of a `smoke.fmf` are equivalent
 
 .. code-block:: yaml
 
-    summary: Test the feature
     test: ./test.sh
 
-On the other hand, when several tests share the same test
-script stored in a different directory, for example like this:
-
-.. code-block::
-
-    tmt
-    ├── .fmf    <--- fmf tree root
-    └── tests
-        ├── area
-        │   └── feature
-        │       ├── one
-        │       │   └── main.fmf
-        │       └── two
-        │           └── main.fmf
-        └── common
-            └── check.sh    <--- shared test script
-
-... you might rather want to provide path to the directory with
-the shared scripts instead of using possibly long relative paths
-in the :tmt:story:`/spec/tests/test` key when the test metadata
-are buried deeper in the directory structure. Instead of:
-
 .. code-block:: yaml
 
-    summary: Lint the feature
-    test: ../../../common/check.sh --feature
+    test: ./test.sh
+    path: /tests
 
-You can use:
+.. note::
 
-.. code-block:: yaml
-
-    summary: Lint the feature
-    path: /tests/common
-    test: ./check.sh --feature
+    When providing a ``path`` key, both relative and absolute
+    paths are equal and they are resolved relative to the
+    :term:`anchor path`.
