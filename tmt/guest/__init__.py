@@ -317,6 +317,9 @@ SSH_MASTER_START_TIMEOUT: int = configure_constant(
     DEFAULT_SSH_MASTER_START_TIMEOUT, 'TMT_SSH_MASTER_START_TIMEOUT'
 )
 
+#: How many seconds to wait for the ``ssh`` master process to terminate
+#: after being signaled before giving up.
+SSH_MASTER_STOP_TIMEOUT: int = 3
 
 # When waiting for ssh master to start, try re-connecting every
 # this many seconds.
@@ -3630,8 +3633,7 @@ class GuestSsh(Guest, CommandCollector):
             self._ssh_master_process.send_signal(signal)
 
             try:
-                # TODO: make the deadline configurable
-                self._ssh_master_process.wait(timeout=3)
+                self._ssh_master_process.wait(timeout=SSH_MASTER_STOP_TIMEOUT)
 
             except subprocess.TimeoutExpired:
                 logger.warning(
@@ -3649,17 +3651,35 @@ class GuestSsh(Guest, CommandCollector):
             return
 
         with self._ssh_master_process_lock:
-            if (
-                self._ssh_master_process is not None
-                and self._ssh_master_process.poll() is not None
-            ):
-                self._logger.debug(
-                    f'SSH master process {self._ssh_master_process.pid} has been terminated'
-                    f' unexpectedly with exit code {self._ssh_master_process.returncode}.',
-                    level=3,
-                )
+            if self._ssh_master_process is not None:
+                if self._ssh_master_process.poll() is not None:
+                    self._logger.debug(
+                        f'SSH master process {self._ssh_master_process.pid} has been terminated'
+                        f' unexpectedly with exit code {self._ssh_master_process.returncode}.',
+                        level=3,
+                    )
 
-                self._flush_ssh_master_process()
+                    self._flush_ssh_master_process()
+
+                elif not self._ssh_master_socket_path.exists():
+                    self._logger.debug(
+                        f'SSH master process {self._ssh_master_process.pid} is running, but its'
+                        f" control socket '{self._ssh_master_socket_path}' is missing.",
+                        level=3,
+                    )
+
+                    self._ssh_master_process.send_signal(_signal.SIGTERM)
+
+                    try:
+                        self._ssh_master_process.wait(timeout=SSH_MASTER_STOP_TIMEOUT)
+
+                    except subprocess.TimeoutExpired:
+                        self._logger.warning(
+                            f'Terminating the SSH master process {self._ssh_master_process.pid}'
+                            ' timed out.'
+                        )
+
+                    self._flush_ssh_master_process()
 
             if self._ssh_master_process is None:
                 self._logger.debug(
