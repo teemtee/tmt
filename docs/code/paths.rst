@@ -66,12 +66,11 @@ with nested fmf trees used for testing specific features:
 .. code-block::
 
     tmt
-    ├── .fmf    <--- main fmf tree
     ├── .git    <--- git repo root
     └── tests
         └── feature
             ├── data
-            │   ├── .fmf    <--- nested fmf tree
+            │   ├── .fmf    <--- fmf tree root
             │   ├── plan.fmf
             │   └── test.fmf
             ├── main.fmf
