@@ -108,11 +108,13 @@ replacing them. It is **not**:
 * a service, tmt is a command-line tool and a library
 * a provisioning or virtualization tool, but it uses libvirt,
   Podman and cloud APIs through plugins
-* an infrastructure-management tool, tmt uses Ansible and supports
-  custom shell scripts for guest preparation
+* a guest preparation tool but it uses Ansible and supports custom
+  shell scripts to set up the guest environment for testing. New
+  :ref:`/plugins/prepare` may be implemented to integrate with
+  other tools, like Chef or Puppet.
 * a test-result management system. tmt only gathers the results.
-  Report plugins may be used to forward these to the desired
-  test-result management system
+  :ref:`/plugins/report` may be used to forward these to the
+  desired test-result management system.
 * tied to any single programming language, framework, operating
   system, cloud or runtime, and it is also not limited to the
   Fedora/RHEL ecosystem
