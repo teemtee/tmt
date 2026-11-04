@@ -86,7 +86,7 @@ script are stored in the same directory, for example:
     tmt
     ├── .fmf    <--- fmf tree root
     └── tests
-        └── feature
+        └── feature     <--- default path
             ├── main.fmf
             └── test.sh
 
@@ -108,12 +108,12 @@ script stored in a different directory, for example like this:
     └── tests
         ├── area
         │   └── feature
-        │       ├── one
+        │       ├── one     <--- default path
         │       │   └── main.fmf
-        │       └── two
+        │       └── two     <--- default path
         │           └── main.fmf
         └── common
-            └── check.sh    <--- shared test script
+            └── lint.sh     <--- shared test script
 
 ... you might rather want to provide path to the directory with
 the shared scripts instead of using possibly long relative paths
@@ -123,7 +123,7 @@ are buried deeper in the directory structure. Instead of:
 .. code-block:: yaml
 
     summary: Lint the feature
-    test: ../../../common/check.sh --feature
+    test: ../../../common/lint.sh feature-one
 
 You can use:
 
@@ -131,7 +131,7 @@ You can use:
 
     summary: Lint the feature
     path: /tests/common
-    test: ./check.sh --feature
+    test: ./lint.sh feature-one
 
 
 Select Plans
