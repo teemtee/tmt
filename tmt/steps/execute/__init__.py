@@ -174,26 +174,6 @@ class ENV_TMT_SOURCE_DIR(EnvVar):  # noqa: N801
 class ENV_TMT_PLAN_ENVIRONMENT_FILE(EnvVar):  # noqa: N801
     """
     Path to the file containing environment variables that should
-    be sourced after prepare and execute steps. These variables
-    will be accessible for all subsequent steps and have lower
-    priority than variables specified by the ``environment`` key,
-    ``environment-file`` key, or the command line. Variables inside
-    the file **have to be** in the format of ``NAME=VALUE`` and
-    each variable should be on a separate line. Other content form
-    is **not** allowed, use ``TMT_PLAN_SOURCE_SCRIPT`` instead to
-    include other bash commands.
-
-    Note that this is not shared between guests of the given plan,
-    each guest has its own dedicated file.
-
-    Example of the file content::
-
-        COUNT=1
-        VARIABLE=VALUE
-        ANOTHER_VARIABLE=ANOTHER_VALUE
-
-
-    Path to the file containing environment variables that should
     be sourced after prepare and execute steps. These variables will
     be accessible for all subsequent steps and will have higher priority
     than other environment variables except those provided via command-line.
