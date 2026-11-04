@@ -9,6 +9,7 @@ rlJournalStart
 
     rlPhaseStartTest "Discover local"
         rlRun -s "tmt run --scratch -i $run discover plans --name plan tests --name test1"
+        rlAssertExists "$run/plan/discover/default-0/tests/main.fmf"
         rlAssertExists "$run/plan/discover/default-0/tests/test1"
         rlAssertNotExists "$run/plan/discover/default-0/tests/test2"
         rlAssertNotExists "$run/plan/discover/default-0/tests/some-file"

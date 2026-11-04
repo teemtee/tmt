@@ -3,12 +3,14 @@ import re
 from collections.abc import Iterator
 from inspect import isclass
 from typing import Optional, Union
+from unittest.mock import MagicMock
 
 import _pytest.logging
 import pytest
 from pytest_container import Container
 from pytest_container.container import ContainerData
 
+import tmt.guest
 import tmt.log
 import tmt.package_managers
 import tmt.package_managers.apk
@@ -29,7 +31,7 @@ from tmt.package_managers import (
     PrepareError,
 )
 from tmt.steps.provision.podman import GuestContainer
-from tmt.utils import ShellScript
+from tmt.utils import Command, ShellScript
 
 from . import MATCH, SEARCH, assert_log
 
@@ -65,6 +67,43 @@ PACKAGE_MANAGER_RPMOSTREE = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTR
     'rpm-ostree'
 )
 PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apk')
+
+
+@pytest.mark.parametrize(
+    ('engine_class', 'binary'),
+    [
+        (tmt.package_managers.dnf.DnfEngine, 'dnf'),
+        (tmt.package_managers.dnf.Dnf5Engine, 'dnf5'),
+        (tmt.package_managers.dnf.YumEngine, 'yum'),
+    ],
+)
+@pytest.mark.parametrize('sudo_prefix', ['', 'sudo'])
+def test_dnf_base_command_is_not_mutated(
+    engine_class: type[tmt.package_managers.dnf.DnfEngine],
+    binary: str,
+    sudo_prefix: str,
+    root_logger: tmt.log.Logger,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Modifying a prepared command cannot corrupt later commands or engines."""
+
+    # Isolate the class variable even if the regression is reintroduced.
+    monkeypatch.setattr(engine_class, '_base_command', Command(binary))
+    guest = MagicMock(spec=tmt.guest.Guest)
+    guest.facts.sudo_prefix = sudo_prefix
+    engine = engine_class(guest=guest, logger=root_logger)
+    expected = Command(*([sudo_prefix] if sudo_prefix else []), binary)
+
+    first, options = engine.prepare_command()
+    assert first == expected
+    first += options
+    first += Command('--setopt=install_weak_deps=False')
+
+    second, second_options = engine.prepare_command()
+    assert second == expected
+    assert second_options == Command('-y')
+    assert engine._base_command == Command(binary)
+    assert engine_class(guest=guest, logger=root_logger).command == expected
 
 
 def has_legacy_dnf(container: ContainerData) -> bool:
