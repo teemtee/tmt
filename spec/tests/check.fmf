@@ -35,6 +35,9 @@ description: |
         Note that running one check multiple times for the same
         test is not yet supported.
 
+        Tests using ``result: custom`` interpret their own outcomes;
+        their adapters must explicitly incorporate check failures.
+
     .. versionchanged:: 1.38.0 the ``result`` key added
 
     See :ref:`/plugins/test-checks` for the list of available checks.
@@ -81,6 +84,13 @@ example:
         ignore-pattern:
           - 'Process.*\\(sleep\\).*dumped core'  # Ignore sleep crashes
           - 'Signal: .*\\(SIGSEGV\\)'            # Ignore segmentation faults
+
+  - |
+    # Detect reboots and collect evidence from an existing kdump setup.
+    check:
+      - how: kernel-crash
+        result: respect
+        download-vmcore: false
 
 link:
   - implemented-by: /tmt/checks

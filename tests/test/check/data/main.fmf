@@ -1,3 +1,29 @@
+/kernel-crash:
+    check:
+      - how: kernel-crash
+        dump-path: /var/empty/tmt-kernel-crash
+
+    /harmless:
+        test: /bin/true
+
+    /restart:
+        restart-on-exit-code: [79]
+        restart-max-count: 1
+        test: |
+            if [ "$TMT_TEST_RESTART_COUNT" -eq 0 ]; then
+                exit 79
+            fi
+            python3 - <<'PY'
+            import json
+            import os
+
+            with open(os.environ['TMT_KERNEL_CRASH_REPORT']) as stream:
+                report = json.load(stream)
+            assert report['version'] == 1
+            assert len(report['reports']) == 1
+            assert report['reports'][0]['classification'] == 'none'
+            PY
+
 /dmesg:
     test: /bin/true
     check: dmesg

@@ -26,6 +26,12 @@ properties:
   ignore-duration:
     type: boolean
 
+  recovery-timeout:
+    $ref: "/schemas/common#/definitions/duration"
+
+  collection-timeout:
+    $ref: "/schemas/common#/definitions/duration"
+
   # name attribute can exist if more methods
   name:
     type: string

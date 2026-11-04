@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 import tmt.log
 import tmt.utils
 from tmt.container import container
-from tmt.guest import Guest
+from tmt.guest import Guest, TransferOptions
 from tmt.steps.context import StepContext
 from tmt.utils.environment import Environment, EnvVarValue
 
@@ -54,7 +54,13 @@ class RestartContext(StepContext):
     def intrinsic_environment(self) -> Environment:
         return Environment({'TMT_TEST_RESTART_COUNT': EnvVarValue(str(self.restart_counter))})
 
-    def handle_restart(self, reboot: Optional['RebootContext'] = None) -> bool:
+    def handle_restart(
+        self,
+        reboot: Optional['RebootContext'] = None,
+        *,
+        recovered: bool = False,
+        push_options: Optional[TransferOptions] = None,
+    ) -> bool:
         """
         "Restart" the action when requested.
 
@@ -75,6 +81,10 @@ class RestartContext(StepContext):
             used when :py:attr:`restart_with_reboot` is set. Setting
             the flag without providing the reboot context will raise
             an exception.
+        :param recovered: the caller has already reconnected and collected
+            artifacts. Do not reconnect again before pushing the workdir.
+        :param push_options: options for restoring the workdir, for example
+            to exclude evidence that should remain on the runner.
         :return: ``True`` when the restart is to take place, ``False``
             otherwise.
         """
@@ -124,7 +134,7 @@ class RestartContext(StepContext):
             # beyond tmt's control, and tmt would try to restart the
             # test, but the guest may be still booting. Make sure it's
             # alive.
-            if not self.guest.reconnect():
+            if not recovered and not self.guest.reconnect():
                 raise tmt.utils.ReconnectTimeoutError("Reconnect timed out.")
 
         if reboot:
@@ -139,6 +149,6 @@ class RestartContext(StepContext):
                 f"Restart during {self.owner_label} with restart count {self.restart_counter}."
             )
 
-        self.guest.push()
+        self.guest.push(options=push_options)
 
         return True

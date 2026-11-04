@@ -90,7 +90,12 @@ class RebootContext(StepContext):
 
         return environment
 
-    def handle_reboot(self, restart: Optional['RestartContext'] = None) -> bool:
+    def handle_reboot(
+        self,
+        restart: Optional['RestartContext'] = None,
+        *,
+        waiting: Optional[Waiting] = None,
+    ) -> bool:
         """
         Reboot the guest if requested.
 
@@ -99,6 +104,7 @@ class RebootContext(StepContext):
 
         :param restart: if set, it's a tracker of restart whose accounting
             should be updated as well.
+        :param waiting: optional recovery budget for the requested reboot.
         :return: ``True`` when the reboot has taken place, ``False``
             otherwise.
         """
@@ -127,7 +133,7 @@ class RebootContext(StepContext):
         rebooted = False
 
         if self.hard_requested:
-            rebooted = self.guest.reboot(mode=RebootMode.HARD)
+            rebooted = self.guest.reboot(mode=RebootMode.HARD, waiting=waiting)
 
         elif self.soft_requested:
             # Extract custom hints from the file, and reset it.
@@ -142,7 +148,7 @@ class RebootContext(StepContext):
             if reboot_data.command:
                 reboot_command = ShellScript(reboot_data.command)
 
-            waiting = Waiting(deadline=Deadline.from_seconds(reboot_data.timeout))
+            waiting = waiting or Waiting(deadline=Deadline.from_seconds(reboot_data.timeout))
 
             os.remove(self.request_path)
             self.guest.execute(ShellScript(f'rm -f {self.request_path}'), silent=True)

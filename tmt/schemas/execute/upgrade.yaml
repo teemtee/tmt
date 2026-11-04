@@ -25,6 +25,12 @@ properties:
   exit-first:
     type: boolean
 
+  recovery-timeout:
+    $ref: "/schemas/common#/definitions/duration"
+
+  collection-timeout:
+    $ref: "/schemas/common#/definitions/duration"
+
   name:
     type: string
 

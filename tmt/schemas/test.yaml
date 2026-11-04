@@ -184,5 +184,10 @@ definitions:
         type: string
       priority:
         type: string
+      dump-path:
+        type: string
+        pattern: "^/"
+      download-vmcore:
+        type: boolean
     required:
       - how

@@ -10,7 +10,7 @@ import tmt.utils.signals
 import tmt.utils.themes
 import tmt.utils.wait
 from tmt.container import container, field
-from tmt.guest import DEFAULT_PULL_OPTIONS, Guest
+from tmt.guest import DEFAULT_PULL_OPTIONS, DEFAULT_PUSH_OPTIONS, Guest
 from tmt.result import Result, ResultOutcome
 from tmt.steps.context.abort import AbortStep
 from tmt.steps.discover import DiscoverPlugin
@@ -22,6 +22,7 @@ from tmt.steps.report.display import ResultRenderer
 from tmt.utils import ShellScript
 from tmt.utils.environment import Environment
 from tmt.utils.themes import style
+from tmt.utils.wait import Deadline, Waiting
 
 #
 # Shell wrappers for the test script.
@@ -150,6 +151,18 @@ class UpdatableMessage(tmt.utils.UpdatableMessage):
 
 @container
 class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
+    recovery_timeout: str = field(
+        default='5m',
+        option='--recovery-timeout',
+        metavar='DURATION',
+        help='Time allowed to reconnect to an interrupted guest, independent of test duration.',
+    )
+    collection_timeout: str = field(
+        default='1m',
+        option='--collection-timeout',
+        metavar='DURATION',
+        help='Time for artifact transfers and kernel crash evidence after interruption.',
+    )
     script: list[ShellScript] = field(
         default_factory=list,
         option=('-s', '--script'),
@@ -330,6 +343,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         test, guest = invocation.test, invocation.guest
 
+        invocation.guest_recovered = None
+        invocation.reboot_performed = False
+        invocation.collection_deadline = None
+        invocation.return_code = None
+
         logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
 
         # Test will be executed in it's own directory, relative to the workdir
@@ -400,7 +418,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
-        invocation.check_results = invocation.invoke_checks_before_test()
+        invocation.check_results += invocation.invoke_checks_before_test()
 
         # Pick the proper timeout for the test
         deadline: Optional[tmt.utils.wait.Deadline]
@@ -452,22 +470,35 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # rsync answer and react before calling the command.
         guest.facts.has_rsync = None
 
+        # Recover the connection before pulling anything or deciding whether
+        # the test may run again. In particular, a denied restart must not
+        # prevent collecting the last attempt's results and crash evidence.
+        self._recover(invocation, logger)
+
         pull_options = test.test_framework.get_pull_options(
             invocation, DEFAULT_PULL_OPTIONS, logger
         )
         # Do not overwrite the captured output
-        pull_options.exclude.append(str(invocation.path / TEST_OUTPUT_FILENAME))
+        pull_options = pull_options.copy()
+        pull_options.exclude.extend(
+            str(path)
+            for path in [invocation.path / TEST_OUTPUT_FILENAME, *invocation.runner_owned_paths]
+        )
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
-        self._post_action_pull(
-            guest=invocation.guest,
-            path=invocation.path,
-            reboot=invocation.reboot,
-            restart=invocation.restart,
-            pull_options=pull_options,
-            exceptions=invocation.exceptions,
-        )
+        if invocation.is_guest_healthy:
+            self._post_action_pull(
+                guest=invocation.guest,
+                path=invocation.path,
+                pull_options=pull_options,
+                exceptions=invocation.exceptions,
+                deadline=invocation.collection_deadline,
+            )
+
+        # The reboot request has now been retrieved. Recovery checks see
+        # both it and the connection outcome, even if the guest never returned.
+        invocation.check_results += invocation.invoke_checks_after_recovery()
 
         # Run after-test checks before extracting results
         invocation.check_results += invocation.invoke_checks_after_test()
@@ -479,14 +510,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Fetch #2: after-test checks might have produced remote files as well,
         # we need to fetch them too.
-        self._post_action_pull(
-            guest=invocation.guest,
-            path=invocation.path,
-            reboot=invocation.reboot,
-            restart=invocation.restart,
-            pull_options=pull_options,
-            exceptions=invocation.exceptions,
-        )
+        if invocation.is_guest_healthy:
+            self._post_action_pull(
+                guest=invocation.guest,
+                path=invocation.path,
+                pull_options=pull_options,
+                exceptions=invocation.exceptions,
+                deadline=invocation.collection_deadline,
+            )
 
         # Attach check results to every test result. There might be more than one,
         # and it's hard to pick the main one, who knows what custom results might
@@ -498,6 +529,62 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             result.check = invocation.check_results
 
         return invocation.results
+
+    def _recover(self, invocation: TestInvocation, logger: tmt.log.Logger) -> None:
+        """Reconnect without pushing runner files over the interrupted attempt."""
+
+        if not (
+            invocation.restart.requested
+            or invocation.reboot.hard_requested
+            or invocation.return_code in (255, tmt.utils.ProcessExitCodes.TIMEOUT)
+        ):
+            return
+
+        logger.debug('Recover guest before collecting test results.')
+        invocation.guest_recovered = False
+
+        try:
+            waiting = Waiting(
+                deadline=Deadline.from_seconds(
+                    tmt.utils.duration_to_seconds(self.data.recovery_timeout)
+                ),
+                tick=1,
+            )
+
+            if invocation.reboot.hard_requested:
+                invocation.reboot_performed = invocation.reboot.handle_reboot(
+                    restart=invocation.restart, waiting=waiting
+                )
+                invocation.guest_recovered = invocation.reboot_performed
+
+            else:
+                invocation.guest_recovered = invocation.guest.reconnect(waiting)
+
+                if not invocation.guest_recovered:
+                    raise tmt.utils.ReconnectTimeoutError('Guest recovery timed out.')
+
+        except tmt.utils.GeneralError as error:
+            invocation.exceptions.append(error)
+
+        invocation.collection_deadline = Deadline.from_seconds(
+            tmt.utils.duration_to_seconds(self.data.collection_timeout)
+        )
+
+    def _can_resume(self, invocation: TestInvocation) -> bool:
+        """Decide whether another attempt is allowed after collecting evidence."""
+
+        if not invocation.is_guest_healthy:
+            return False
+
+        if not self.data.ignore_duration and not self.data.interactive:
+            with invocation.deadline:
+                if invocation.deadline.is_due:
+                    invocation.return_code = tmt.utils.ProcessExitCodes.TIMEOUT
+                    for result in invocation.results:
+                        result.result = ResultOutcome.ERROR
+                    return False
+
+        return True
 
     def go(
         self,
@@ -565,13 +652,35 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 duration = style(invocation.stopwatch.duration_formatted, fg='cyan')
                 shift = 1 if self.verbosity_level < 2 else 2
 
-                # Handle test restart. May include guest reboot too.
-                if invocation.restart.requested:
+                # A retrieved tmt-reboot request takes precedence over an
+                # exit code that also happens to request a restart.
+                if (
+                    invocation.reboot.requested or invocation.reboot_performed
+                ) and self._can_resume(invocation):
+                    logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
+                    try:
+                        if invocation.reboot_performed or invocation.reboot.handle_reboot(
+                            restart=invocation.restart
+                        ):
+                            continue
+                    except tmt.utils.RebootTimeoutError as error:
+                        invocation.exceptions.append(error)
+                        for result in invocation.results:
+                            result.result = ResultOutcome.ERROR
+
+                # Recovering a guest does not opt a test into restarting.
+                elif invocation.restart.requested and self._can_resume(invocation):
                     # Output before the restart
                     logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
 
                     try:
-                        if invocation.restart.handle_restart(reboot=invocation.reboot):
+                        push_options = DEFAULT_PUSH_OPTIONS.copy()
+                        push_options.exclude.extend(
+                            str(path) for path in invocation.runner_owned_paths
+                        )
+                        if invocation.restart.handle_restart(
+                            reboot=invocation.reboot, recovered=True, push_options=push_options
+                        ):
                             continue
 
                     except (
@@ -583,17 +692,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
 
-                # Handle reboot
-                if invocation.reboot.requested:
-                    # Output before the reboot
-                    logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
-                    try:
-                        if invocation.reboot.handle_reboot(restart=invocation.restart):
-                            continue
-                    except tmt.utils.RebootTimeoutError as error:
-                        invocation.exceptions.append(error)
-                        for result in invocation.results:
-                            result.result = ResultOutcome.ERROR
+                if not invocation.is_guest_healthy:
+                    for result in invocation.results:
+                        result.result = ResultOutcome.ERROR
+                    abort_execute_exception = AbortStep(
+                        f"Guest recovery failed during test {test.name}, stopping execution."
+                    )
 
                 # Handle abort signs
                 if invocation.abort.requested or (
@@ -651,9 +755,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         invocation.results, cwd=cwd, environment=invocation.environment
                     )
 
-        # Pull artifacts created in the plan data directory
-        self.debug("Pull the plan data directory.", level=2)
-        guest.pull(source=self.step.plan.data_directory)
+        # Plan artifacts were pulled with each attempt, within its collection
+        # budget. An unconditional final pull could hang on an unrecovered guest.
 
         if abort_execute_exception:
             raise abort_execute_exception
