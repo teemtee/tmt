@@ -157,6 +157,18 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
 
     return_code: Optional[int] = None
 
+    #: Connection status established by the executor's recovery phase.
+    guest_recovered: Optional[bool] = None
+
+    #: Whether recovery already performed an explicitly requested hard reboot.
+    reboot_performed: bool = False
+
+    #: Budget for collecting evidence, independent of the test deadline.
+    collection_deadline: Optional[tmt.utils.wait.Deadline] = None
+
+    #: Runner-owned evidence that artifact pulls must not overwrite.
+    runner_owned_paths: list[Path] = simple_field(default_factory=list)
+
     stopwatch: Stopwatch = simple_field(default_factory=Stopwatch)
 
     #: List of exceptions encountered by the invocation.
@@ -259,6 +271,9 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
             while observing the test, no additional checks are
             performed.
         """
+
+        if self.guest_recovered is not None:
+            return self.guest_recovered
 
         if self.reboot.hard_requested:
             return False
@@ -439,6 +454,11 @@ class TestInvocation(HasStepWorkdir, HasEnvironment, HasIntrinsicEnvironment):
 
     def invoke_checks_after_test(self) -> list[CheckResult]:
         return self.invoke_checks(CheckEvent.AFTER_TEST, self.test.check)
+
+    def invoke_checks_after_recovery(self) -> list[CheckResult]:
+        """Run checks after artifact retrieval, even when recovery failed."""
+
+        return self.invoke_checks(CheckEvent.AFTER_RECOVERY, self.test.check)
 
     def invoke_internal_checks(self) -> list[CheckResult]:
         return self.invoke_checks(CheckEvent.AFTER_TEST, CheckPlugin.internal_checks(self.logger))

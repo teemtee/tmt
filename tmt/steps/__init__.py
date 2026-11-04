@@ -38,6 +38,7 @@ from click import echo
 from click.core import ParameterSource
 
 import tmt.export
+import tmt.guest
 import tmt.log
 import tmt.options
 import tmt.queue
@@ -45,6 +46,7 @@ import tmt.result
 import tmt.steps.context
 import tmt.utils
 import tmt.utils.rest
+import tmt.utils.wait
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
@@ -2590,6 +2592,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         restart: Optional['tmt.steps.context.restart.RestartContext'] = None,
         pull_options: 'TransferOptions',
         exceptions: list[Exception],
+        deadline: Optional[tmt.utils.wait.Deadline] = None,
     ) -> None:
         """
         Pull from the guest after a user-driven action.
@@ -2613,6 +2616,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
             the guest.
         :param exceptions: if the pulling operation raises an exception,
             it is appended to this list.
+        :param deadline: optional shared budget for artifact collection.
         """
 
         from tmt.steps.context import is_guest_healthy
@@ -2621,11 +2625,27 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
             return
 
         try:
-            guest.pull(source=path, options=pull_options)
+
+            def _options(options: 'TransferOptions') -> 'TransferOptions':
+                options = options.copy()
+
+                if deadline is not None:
+                    with deadline:
+                        if deadline.is_due:
+                            raise tmt.utils.GeneralError('Artifact collection timed out.')
+
+                        options.timeout = max(1, int(deadline.time_left.total_seconds()))
+
+                return options
+
+            guest.pull(source=path, options=_options(pull_options))
 
             # Fetch plan data content as well in order to prevent
             # losing logs if the guest becomes later unresponsive.
-            guest.pull(source=self.step.plan.data_directory)
+            guest.pull(
+                source=self.step.plan.data_directory,
+                options=_options(tmt.guest.DEFAULT_PULL_OPTIONS),
+            )
 
         # Handle failing to pull artifacts after guest becoming
         # unresponsive. If not handled test would stay in 'pending' state.

@@ -489,6 +489,9 @@ class TransferOptions:
     #: Run a ``mkdir -p`` of the destination before doing transfer
     create_destination: bool = False
 
+    #: Maximum wall time of a transfer command, in seconds.
+    timeout: Optional[int] = None
+
     def copy(self) -> 'TransferOptions':
         """Create a copy of the options."""
 
@@ -2870,7 +2873,10 @@ class Guest(
 
         def try_whoami() -> None:
             try:
-                self.execute(Command('whoami'), silent=True)
+                with wait.deadline:
+                    timeout = max(1, int(wait.deadline.time_left.total_seconds()))
+
+                self.execute(Command('whoami'), silent=True, timeout=timeout)
 
             except tmt.utils.RunError as error:
                 # Detect common issues with guest access
@@ -3650,7 +3656,7 @@ class GuestSsh(Guest, CommandCollector):
 
             self._flush_ssh_master_process()
 
-    def _assert_ssh_master_process(self) -> None:
+    def _assert_ssh_master_process(self, wait: Optional[Waiting] = None) -> None:
         """
         Make sure the SSH master process is up and running when enabled.
         """
@@ -3698,10 +3704,8 @@ class GuestSsh(Guest, CommandCollector):
                     raise WaitingIncompleteError from exc
 
             try:
-                # TODO: it would be nice to propagate someone's `wait`
-                # down here - here we have no idea how long we can wait
-                # for the socket to pop up.
-                default_ssh_master_start_waiting().wait(_wait_for_ssh_master, self._logger)
+                waiting = wait or default_ssh_master_start_waiting()
+                waiting.wait(_wait_for_ssh_master, self._logger)
 
             except tmt.utils.wait.WaitingTimedOutError as exc:
                 raise SSHMasterProcessFailedToStartError from exc
@@ -3945,7 +3949,16 @@ class GuestSsh(Guest, CommandCollector):
         if self.primary_address is None:
             raise tmt.utils.GeneralError('The guest is not available.')
 
-        self._assert_ssh_master_process()
+        # Connection establishment is part of the command budget, including
+        # recovery probes. A stale multiplexing socket must not add another
+        # independent two-minute wait to a short collection deadline.
+        deadline = Deadline.from_seconds(kwargs['timeout']) if kwargs.get('timeout') else None
+        self._assert_ssh_master_process(Waiting(deadline=deadline) if deadline else None)
+        if deadline is not None:
+            with deadline:
+                if deadline.is_due:
+                    raise SSHMasterProcessFailedToStartError
+                kwargs['timeout'] = max(1, int(deadline.time_left.total_seconds()))
 
         ssh_command: tmt.utils.Command = self._ssh_command
 
@@ -4014,10 +4027,19 @@ class GuestSsh(Guest, CommandCollector):
 
         return output
 
-    def _assert_rsync(self) -> None:
+    def _assert_rsync(self, timeout: Optional[int] = None) -> None:
         """
         Make sure ``rsync`` is installed on the guest.
+
+        A bounded recovery pull only probes rsync; installing packages could
+        consume the evidence-collection budget. Ordinary transfers retain
+        automatic installation.
         """
+
+        if timeout is not None:
+            self.execute(Command('rsync', '--version'), silent=True, timeout=timeout)
+            self.facts.has_rsync = True
+            return
 
         # Refresh the fact first if it's unknown. This will prevent us
         # trying to install rsync if it's (still, or already) installed,
@@ -4080,11 +4102,19 @@ class GuestSsh(Guest, CommandCollector):
         if self.primary_address is None:
             raise tmt.utils.GeneralError('The guest is not available.')
 
-        self._assert_rsync()
-        self._assert_ssh_master_process()
-
         # Prepare options and the push command
         options = options or DEFAULT_PUSH_OPTIONS
+        deadline = Deadline.from_seconds(options.timeout) if options.timeout is not None else None
+        self._assert_rsync(timeout=options.timeout)
+        self._assert_ssh_master_process(Waiting(deadline=deadline) if deadline else None)
+
+        timeout: Optional[int] = None
+        if deadline is not None:
+            with deadline:
+                if deadline.is_due:
+                    raise tmt.utils.GeneralError('File upload timed out.')
+                timeout = max(1, int(deadline.time_left.total_seconds()))
+
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -4113,7 +4143,7 @@ class GuestSsh(Guest, CommandCollector):
             if options.create_destination:
                 self.execute(Command("mkdir", "-p", destination.parent), silent=True)
 
-            self._run_guest_command(cmd, silent=True)
+            self._run_guest_command(cmd, silent=True, timeout=timeout)
 
         except tmt.utils.RunError as exc:
             # Provide a reasonable error to the user
@@ -4150,11 +4180,19 @@ class GuestSsh(Guest, CommandCollector):
         if self.primary_address is None:
             raise tmt.utils.GeneralError('The guest is not available.')
 
-        self._assert_rsync()
-        self._assert_ssh_master_process()
-
         # Prepare options and the pull command
         options = options or DEFAULT_PULL_OPTIONS
+        deadline = Deadline.from_seconds(options.timeout) if options.timeout is not None else None
+        self._assert_rsync(timeout=options.timeout)
+        self._assert_ssh_master_process(Waiting(deadline=deadline) if deadline else None)
+
+        timeout: Optional[int] = None
+        if deadline is not None:
+            with deadline:
+                if deadline.is_due:
+                    raise tmt.utils.GeneralError('Artifact collection timed out.')
+                timeout = max(1, int(deadline.time_left.total_seconds()))
+
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -4177,6 +4215,7 @@ class GuestSsh(Guest, CommandCollector):
                         destination,
                     ),
                     silent=True,
+                    timeout=timeout,
                 )
 
         except tmt.utils.RunError as exc:

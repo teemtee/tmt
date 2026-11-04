@@ -69,6 +69,7 @@ class CheckEvent(enum.Enum):
     """
 
     BEFORE_TEST = 'before-test'
+    AFTER_RECOVERY = 'after-recovery'
     AFTER_TEST = 'after-test'
 
     @classmethod
@@ -198,6 +199,14 @@ class Check(
                 logger=logger,
             )
 
+        if event == CheckEvent.AFTER_RECOVERY:
+            return self.plugin.after_recovery(
+                check=self,
+                invocation=invocation,
+                environment=environment,
+                logger=logger,
+            )
+
         raise tmt.utils.GeneralError(f"Unsupported test check event '{event}'.")
 
 
@@ -283,6 +292,25 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list['CheckResult']:
+        return []
+
+    @classmethod
+    def after_recovery(
+        cls,
+        *,
+        check: CheckT,
+        invocation: 'TestInvocation',
+        environment: Optional[Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list['CheckResult']:
+        """
+        Collect evidence after reconnecting and retrieving test artifacts.
+
+        Called after every attempt, including failed recovery, before
+        after-test checks and before deciding whether to resume. Inspect
+        ``invocation.is_guest_healthy`` before accessing the guest.
+        """
+
         return []
 
 

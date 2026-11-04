@@ -2,6 +2,15 @@ summary: Test test checks
 tier: 2
 duration: 20m
 
+/kernel-crash:
+    summary: Collect kernel crash reports across harmless test restarts
+    test: ./test-kernel-crash.sh
+    tag+:
+      - provision-only
+      - provision-container
+      - provision-local
+      - provision-virtual
+
 /dmesg:
     test: ./test-dmesg.sh
     tag+:
