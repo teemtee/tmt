@@ -114,6 +114,8 @@ def _configure_constant(default: T, envvar: str, convert: Callable[[str], T], ty
     :param convert: a callback that would convert the value from environment
         to the correct type.
     :param type_name: name of the final type, for nicer error messages.
+    :returns: value extracted from the environment variable, or the
+        given default value if the variable did not exist.
     :raises ValueError: when the conversion fails.
     """
 
