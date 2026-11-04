@@ -1,4 +1,3 @@
-import re
 from unittest.mock import MagicMock
 
 import pytest
@@ -18,21 +17,17 @@ class MockProvider(ArtifactProvider):
 
     @property
     def artifacts(self):
-        return [
-            ArtifactInfo(
-                version=Version(name="mock", version="1.0", release="1", arch="x86_64"),
-                location="http://example.com/mock-1.0-1.x86_64.rpm",
-                provider=self,
-                repo_id="mock-repo",
-            )
-        ]
+        yield ArtifactInfo(
+            version=Version(name="mock", version="1.0", release="1", arch="x86_64"),
+            location="http://example.com/mock-1.0-1.x86_64.rpm",
+            provider=self,
+            repo_id="mock-repo",
+        )
 
     def _download_artifact(self, artifact, guest, destination):
         destination.write_text("ok")
 
-    def contribute_to_shared_repository(
-        self, guest, source_path, shared_repo_dir, exclude_patterns=None
-    ):
+    def contribute_to_shared_repository(self, guest, source_path, shared_repo_dir):
         pass
 
 
@@ -47,15 +42,10 @@ def mock_provider(root_logger):
     )
 
 
-def test_filter_artifacts(mock_provider):
-    artifacts = list(mock_provider._filter_artifacts([re.compile("mock")]))
-    assert artifacts == []
-
-
 def test_download_artifacts(tmp_path, root_logger, mock_provider):
     guest = MagicMock()
 
-    paths = mock_provider.fetch_contents(guest, tmp_path, [])
+    paths = mock_provider.fetch_contents(guest, tmp_path)
     file_path = tmp_path / "mock-1.0-1.x86_64.rpm"
     assert file_path in paths
     assert file_path.exists()

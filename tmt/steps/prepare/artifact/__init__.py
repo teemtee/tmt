@@ -15,7 +15,6 @@ from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
     SHARED_REPO_NAME,
     ArtifactProvider,
-    Repository,
 )
 
 # ``@provides_method`` causes pyright to lose the class type, which is the
@@ -314,23 +313,14 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # This aggregates all local artifacts from file-based providers.
         # If this prepare step runs multiple times in the same plan, artifacts
         # accumulate in the same directory and createrepo updates the metadata.
-
         guest.package_manager.create_repository(shared_repo_dir)
+        guest.package_manager.install_repository(shared_repository)
 
-        # Collect all repositories (shared repository + provider repositories)
-        repositories: list[Repository] = [shared_repository]
+        # Install and enumerate all artifacts
         for provider in providers:
-            repositories.extend(provider.get_repositories())
-
-        # Install all repositories centrally
-        # This ensures consistent handling across all providers
-        for repo in repositories:
-            guest.package_manager.install_repository(repo)
-            logger.debug(f"Installed repository '{repo.name}'.")
-
-        # Enumerate artifacts from installed repositories.
-        for provider in providers:
-            provider.enumerate_artifacts(guest)
+            for repo in provider.get_repositories():
+                guest.package_manager.install_repository(repo)
+                provider.enumerate_artifacts(guest, repository=repo)
 
         # Persist artifact metadata to YAML
         self._save_artifacts_metadata(providers)
@@ -338,12 +328,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Verify phase injection
         if self.data.verify:
             self._prepare_verify(providers, guest)
-
-        # Report configuration summary
-        logger.info(
-            f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
-            f"and {len(repositories)} repository(ies)."
-        )
 
         return outcome
 
