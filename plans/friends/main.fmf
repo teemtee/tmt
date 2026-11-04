@@ -15,6 +15,13 @@ adjust:
       - order: 40
         how: artifact
         provide: copr.repository:@teemtee/latest
+        # Higher priority value than the default 50 from the testing-farm artifacts
+        default_repository_priority: 75
+      - name: enable-epel
+        how: feature
+        epel: enabled
+        order: 10
+        when: distro == centos-stream
     discover+:
       url: https://github.com/teemtee/tmt
       ref: main
