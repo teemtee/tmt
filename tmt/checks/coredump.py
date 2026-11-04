@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Command, Path, ShellScript
@@ -53,20 +53,6 @@ class CoredumpCheck(Check):
     # Path to the file storing information about coredumps before test execution
     # Default is current directory, will be properly set in _save_existing_coredumps
     coredump_last_dumps_filepath: Path = field(default_factory=Path, internal=True)
-
-    def to_spec(self) -> _RawCheck:
-        """Convert to raw specification."""
-        spec = super().to_spec()
-
-        spec["ignore-pattern"] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-            pattern.pattern for pattern in self.ignore_pattern
-        ]
-
-        return spec
-
-    def to_minimal_spec(self) -> _RawCheck:
-        """Convert to minimal raw specification."""
-        return self.to_spec()
 
     def _configure_coredump(self, guest: "Guest", logger: tmt.log.Logger) -> None:
         """

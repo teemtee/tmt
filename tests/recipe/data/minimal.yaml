@@ -1,67 +1,47 @@
 plans:
-- cleanup:
+- adjust: []
+  author: []
+  cleanup:
     enabled: true
     phases:
     - how: tmt
       name: default-0
-      order: 50
+  contact: []
+  context: {}
+  description: null
   discover:
     enabled: true
     phases:
-    - dist-git-download-only: false
-      dist-git-install-builddeps: false
-      dist-git-source: false
-      how: shell
-      keep-git-metadata: false
+    - how: shell
       name: default-0
-      order: 50
       tests:
-      - duration: 1h
-        enabled: true
-        manual: false
-        name: script-00
-        order: 50
-        result: respect
+      - name: script-00
         test: echo "Execute script"
-        tty: false
-      url-content-type: git
     tests:
-    - discover-phase: default-0
+    - adjust: []
+      discover-phase: default-0
       duration: 1h
-      enabled: true
-      framework: shell
-      manual: false
+      link: []
       name: /script-00
-      order: 50
       path: /default-0/tests
-      restart-max-count: 1
-      restart-with-reboot: false
-      result: respect
       serial-number: 1
       test: echo "Execute script"
-      tty: false
   enabled: true
   environment:
     PLAN_ENV: plan_value
   execute:
     enabled: true
     phases:
-    - duration: 1h
-      exit-first: false
-      how: tmt
-      ignore-duration: false
-      interactive: false
+    - how: tmt
       name: default-0
-      no-progress-bar: false
-      order: 50
-      restraint-compatible: false
     results-path: plans/minimal/execute/results.yaml
   finish:
     enabled: true
     phases:
     - how: shell
       name: default-0
-      order: 50
+  id: null
+  link: []
   name: /plans/minimal
   order: 50
   prepare:
@@ -69,30 +49,22 @@ plans:
     phases:
     - how: shell
       name: default-0
-      order: 50
   provision:
     enabled: true
     phases:
-    - become: false
+    - ansible: {}
       environment:
         PROVISION_ENV: provision_value
-      force-pull: false
       how: container
-      image: fedora
       name: default-0
-      order: 50
-      pull-attempts: 5
-      pull-interval: 5
-      stop-time: 1
-      user: root
   report:
     enabled: true
     phases:
-    - display-guest: auto
-      how: display
+    - how: display
       name: default-0
-      order: 50
   summary: A minimal plan
+  tag: []
+  tier: null
 run:
   context: {}
   environment:

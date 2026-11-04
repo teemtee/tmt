@@ -404,23 +404,6 @@ class StepData(
         default=None, help='Concise summary describing purpose of the phase.'
     )
 
-    def to_spec(self) -> _RawStepData:
-        """
-        Convert to a form suitable for saving in a specification file
-        """
-
-        return cast(_RawStepData, {key_to_option(key): value for key, value in self.items()})
-
-    def to_minimal_spec(self) -> _RawStepData:
-        return cast(
-            _RawStepData,
-            {
-                key_to_option(key): value
-                for key, value in self.items()
-                if value not in (None, [], {})
-            },
-        )
-
     @classmethod
     def pre_normalization(cls, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
         """
