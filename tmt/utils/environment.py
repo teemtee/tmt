@@ -23,6 +23,7 @@ the intrinsic ones must come after all user-provided ones.
 import abc
 import contextlib
 import enum
+import inspect
 import os
 import re
 import shlex
@@ -136,11 +137,14 @@ class EnvVar:
     #: Scope of the environment variable.
     scope: Scope
 
+    #: If set, the environment variable was added in this tmt version.
+    version_added: Optional[str] = None
+
     def __hash__(self) -> int:
         return hash(self.name)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, EnvVar):
+        if not inspect.isclass(other) or not issubclass(other, EnvVar):
             return NotImplemented
 
         return self.name == other.name

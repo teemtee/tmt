@@ -154,12 +154,11 @@ class ENV_TMT_TEST_ITERATION_ID(EnvVar):  # noqa: N801
     The iteration ID is a combination of a unique run ID and the
     test serial number. The value is different for each new test
     execution.
-
-    .. versionadded:: 1.32
     """
 
     name = 'TMT_TEST_ITERATION_ID'
     scope = EnvVar.Scope.TEST
+    version_added = '1.32'
 
 
 class ENV_TMT_SOURCE_DIR(EnvVar):  # noqa: N801
@@ -193,11 +192,30 @@ class ENV_TMT_PLAN_ENVIRONMENT_FILE(EnvVar):  # noqa: N801
         VARIABLE=VALUE
         ANOTHER_VARIABLE=ANOTHER_VALUE
 
-    .. versionadded:: 1.29
+
+    Path to the file containing environment variables that should
+    be sourced after prepare and execute steps. These variables will
+    be accessible for all subsequent steps and will have higher priority
+    than other environment variables except those provided via command-line.
+
+    Variables inside the file **have to be** in the format of ``NAME=VALUE``
+    and each variable should be on a separate line. Other content form is
+    **not** allowed, use ``TMT_PLAN_SOURCE_SCRIPT`` instead to include
+    other bash commands.
+
+    Note that this file is not shared between guests of the given plan,
+    each guest has its own dedicated file.
+
+    Example of the file content::
+
+        COUNT=1
+        VARIABLE=VALUE
+        ANOTHER_VARIABLE=ANOTHER_VALUE
     """
 
     name = 'TMT_PLAN_ENVIRONMENT_FILE'
     scope = EnvVar.Scope.PREPARE | EnvVar.Scope.EXECUTE | EnvVar.Scope.FINISH | EnvVar.Scope.TEST
+    version_added = '1.29'
 
 
 class ENV_TMT_PLAN_SOURCE_SCRIPT(EnvVar):  # noqa: N801
@@ -206,12 +224,11 @@ class ENV_TMT_PLAN_SOURCE_SCRIPT(EnvVar):  # noqa: N801
     phases. Unlike ``TMT_PLAN_ENVIRONMENT_FILE``, this file can be an
     arbitrary content that can be parsed by ``bash``. In order to use it,
     populate its content in a prepare step.
-
-    .. versionadded:: 1.63
     """
 
     name = 'TMT_PLAN_SOURCE_SCRIPT'
     scope = EnvVar.Scope.PREPARE | EnvVar.Scope.EXECUTE | EnvVar.Scope.FINISH | EnvVar.Scope.TEST
+    version_added = '1.63'
 
 
 @container
