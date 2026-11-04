@@ -123,7 +123,7 @@ are buried deeper in the directory structure. Instead of:
 .. code-block:: yaml
 
     summary: Lint the feature
-    test: ../../../common/lint.sh feature-one
+    test: ../../../common/lint.sh some-argument
 
 You can use:
 
@@ -131,7 +131,7 @@ You can use:
 
     summary: Lint the feature
     path: /tests/common
-    test: ./lint.sh feature-one
+    test: ./lint.sh some-argument
 
 
 Select Plans
