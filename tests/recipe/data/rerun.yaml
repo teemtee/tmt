@@ -1,95 +1,110 @@
 plans:
-  - cleanup:
-        phases:
-          - how: tmt
-            name: default-0
-    discover:
-        phases:
-          - how: fmf
-            name: discover-fmf
-          - how: shell
-            name: discover-shell
-            tests:
-              - adjust: []
-                link: []
-                name: /shell-test
-                test: /bin/true
-        tests:
-          - adjust: []
-            discover-phase: discover-fmf
-            environment:
-                TEST_ENV: test_value
-            framework: beakerlib
-            link: []
-            name: /discover-fmf/tests/first
-            path: /discover-fmf/tests
-            require:
-              - name: /very/deep/file
-                type: library
-                url: https://github.com/beakerlib/test
-            serial-number: 1
-            summary: First test
-            test: ./test.sh
-          - adjust: []
-            check:
-              - how: dmesg
-                result: info
-            discover-phase: discover-fmf
-            link: []
-            name: /discover-fmf/tests/second
-            path: /discover-fmf/tests
-            serial-number: 2
-            summary: Second test
-            test: echo SECOND_TEST
-          - adjust: []
-            discover-phase: discover-shell
-            duration: 1h
-            link: []
-            name: /discover-shell/shell-test
-            path: /discover-shell/tests
-            serial-number: 3
-            test: /bin/true
+- adjust: []
+  author: []
+  cleanup:
+    enabled: false
+    phases:
+    - how: tmt
+      name: default-0
+  contact: []
+  context: {}
+  description: null
+  discover:
+    enabled: false
+    phases:
+    - how: fmf
+      name: discover-fmf
+    - how: shell
+      name: discover-shell
+      tests:
+      - adjust: []
+        link: []
+        name: /shell-test
+        test: /bin/true
+    tests:
+    - adjust: []
+      discover-phase: discover-fmf
+      environment:
+        TEST_ENV: test_value
+      framework: beakerlib
+      link: []
+      name: /discover-fmf/tests/first
+      path: /discover-fmf/tests
+      require:
+      - name: /very/deep/file
+        type: library
+        url: https://github.com/beakerlib/test
+      serial-number: 1
+      summary: First test
+      test: ./test.sh
+    - adjust: []
+      check:
+      - how: dmesg
+        result: info
+      discover-phase: discover-fmf
+      link: []
+      name: /discover-fmf/tests/second
+      path: /discover-fmf/tests
+      serial-number: 2
+      summary: Second test
+      test: echo SECOND_TEST
+    - adjust: []
+      discover-phase: discover-shell
+      duration: 1h
+      link: []
+      name: /discover-shell/shell-test
+      path: /discover-shell/tests
+      serial-number: 3
+      test: /bin/true
+  enabled: true
+  environment:
+    PLAN_ENV: plan_value
+  execute:
+    enabled: false
+    phases:
+    - how: tmt
+      name: Execute phase
+    results-path: plans/local/execute/results.yaml
+  finish:
+    enabled: false
+    phases:
+    - how: shell
+      name: default-0
+      script:
+      - echo "Finish phase"
+  id: null
+  link:
+  - relates: https://something.org/related
+  name: /plans/local
+  order: 50
+  prepare:
+    enabled: false
+    phases:
+    - how: shell
+      name: default-0
+      script:
+      - echo "Prepare phase"
+  provision:
+    enabled: false
+    phases:
+    - ansible: {}
+      environment:
+        PROVISION_ENV: provision_value
+      how: container
+      name: default-0
+  report:
     enabled: true
-    environment:
-        PLAN_ENV: plan_value
-    execute:
-        phases:
-          - how: tmt
-            name: Execute phase
-        results-path: plans/local/execute/results.yaml
-    finish:
-        phases:
-          - how: shell
-            name: default-0
-            script:
-              - echo "Finish phase"
-    link:
-      - relates: https://something.org/related
-    name: /plans/local
-    order: 50
-    prepare:
-        phases:
-          - how: shell
-            name: default-0
-            script:
-              - echo "Prepare phase"
-    provision:
-        phases:
-          - ansible: {}
-            environment:
-                PROVISION_ENV: provision_value
-            how: container
-            name: default-0
-    report:
-        enabled: true
-        phases:
-          - how: html
-            name: default-0
-    summary: A local plan
+    phases:
+    - how: html
+      name: default-0
+  summary: A local plan
+  tag: []
+  tier: null
 run:
-    context:
-        distro:
-          - fedora
-    environment:
-        RUN_ENV: run_value
-    root: /path/to/fmf_root
+  context:
+    distro:
+    - fedora
+  environment:
+    RUN_ENV: run_value
+  remove: false
+  root: /path/to/fmf_root

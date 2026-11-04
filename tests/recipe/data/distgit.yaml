@@ -1,81 +1,93 @@
 plans:
-  - cleanup:
-        enabled: true
-        phases:
-          - how: tmt
-            name: default-0
-    discover:
-        enabled: true
-        phases:
-          - dist-git-extract: tmt-1.74.0/tests/execute/basic/data
-            dist-git-source: true
-            how: fmf
-            name: discover-fmf
-            ref: 518edd9
-            test:
-              - ^/test/shell/good$
-            url: https://src.fedoraproject.org/rpms/tmt.git
-          - dist-git-source: true
-            how: shell
-            name: discover-shell
-            ref: 518edd9
-            tests:
-              - adjust: []
-                link: []
-                name: /pyproject
-                test: test -e $TMT_SOURCE_DIR/tmt-1.74.0/pyproject.toml
-            url: https://src.fedoraproject.org/rpms/tmt.git
-        tests:
-          - adjust: []
-            discover-phase: discover-fmf
-            link: []
-            name: /discover-fmf/test/shell/good
-            path: /discover-fmf/tests/tmt-1.74.0/tests/execute/basic/data
-            serial-number: 2
-            summary: Passing test
-            test: 'true'
-          - adjust: []
-            discover-phase: discover-shell
-            duration: 1h
-            link: []
-            name: /discover-shell/pyproject
-            path: /discover-shell/tests
-            serial-number: 1
-            test: test -e $TMT_SOURCE_DIR/tmt-1.74.0/pyproject.toml
+- adjust: []
+  author: []
+  cleanup:
     enabled: true
-    environment:
-        PLAN_ENV: plan_value
-    execute:
-        enabled: true
-        phases:
-          - how: tmt
-            name: default-0
-        results-path: plans/distgit/execute/results.yaml
-    finish:
-        enabled: true
-        phases:
-          - how: shell
-            name: default-0
-    name: /plans/distgit
-    order: 50
-    prepare:
-        enabled: true
-        phases:
-          - how: shell
-            name: default-0
-    provision:
-        enabled: true
-        phases:
-          - ansible: {}
-            environment:
-                PROVISION_ENV: provision_value
-            how: container
-            name: default-0
-    report:
-        enabled: true
-        phases:
-          - how: display
-            name: default-0
-    summary: A plan with distgit sources
+    phases:
+    - how: tmt
+      name: default-0
+  contact: []
+  context: {}
+  description: null
+  discover:
+    enabled: true
+    phases:
+    - dist-git-extract: tmt-1.74.0/tests/execute/basic/data
+      dist-git-source: true
+      how: fmf
+      name: discover-fmf
+      ref: 518edd9
+      test:
+      - ^/test/shell/good$
+      url: https://src.fedoraproject.org/rpms/tmt.git
+    - dist-git-source: true
+      how: shell
+      name: discover-shell
+      ref: 518edd9
+      tests:
+      - adjust: []
+        link: []
+        name: /pyproject
+        test: test -e $TMT_SOURCE_DIR/tmt-1.74.0/pyproject.toml
+      url: https://src.fedoraproject.org/rpms/tmt.git
+    tests:
+    - adjust: []
+      discover-phase: discover-fmf
+      link: []
+      name: /discover-fmf/test/shell/good
+      path: /discover-fmf/tests/tmt-1.74.0/tests/execute/basic/data
+      serial-number: 2
+      summary: Passing test
+      test: 'true'
+    - adjust: []
+      discover-phase: discover-shell
+      duration: 1h
+      link: []
+      name: /discover-shell/pyproject
+      path: /discover-shell/tests
+      serial-number: 1
+      test: test -e $TMT_SOURCE_DIR/tmt-1.74.0/pyproject.toml
+  enabled: true
+  environment:
+    PLAN_ENV: plan_value
+  execute:
+    enabled: true
+    phases:
+    - how: tmt
+      name: default-0
+    results-path: plans/distgit/execute/results.yaml
+  finish:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+  id: null
+  link: []
+  name: /plans/distgit
+  order: 50
+  prepare:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+  provision:
+    enabled: true
+    phases:
+    - ansible: {}
+      environment:
+        PROVISION_ENV: provision_value
+      how: container
+      name: default-0
+  report:
+    enabled: true
+    phases:
+    - how: display
+      name: default-0
+  summary: A plan with distgit sources
+  tag: []
+  tier: null
 run:
-    root: /path/to/fmf_root
+  context: {}
+  environment: {}
+  remove: false
+  root: /path/to/fmf_root

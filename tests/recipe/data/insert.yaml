@@ -1,92 +1,103 @@
 plans:
-  - cleanup:
-        enabled: true
-        phases:
-          - how: tmt
-            name: default-0
-    discover:
-        enabled: true
-        phases:
-          - how: shell
-            name: discover-shell
-            tests:
-              - adjust: []
-                link: []
-                name: /shell-test
-                test: /bin/true
-          - how: fmf
-            name: default-0
-        tests:
-          - adjust: []
-            discover-phase: discover-shell
-            duration: 1h
-            link: []
-            name: /discover-shell/shell-test
-            path: /discover-shell/tests
-            serial-number: 1
-            test: /bin/true
-          - adjust: []
-            discover-phase: default-0
-            environment:
-                TEST_ENV: test_value
-            framework: beakerlib
-            link: []
-            name: /default-0/tests/first
-            path: /default-0/tests
-            require:
-              - name: /very/deep/file
-                type: library
-                url: https://github.com/beakerlib/test
-            serial-number: 2
-            summary: First test
-            test: ./test.sh
-          - adjust: []
-            check:
-              - how: dmesg
-                result: info
-            discover-phase: default-0
-            link: []
-            name: /default-0/tests/second
-            path: /default-0/tests
-            serial-number: 3
-            summary: Second test
-            test: echo SECOND_TEST
+- adjust: []
+  author: []
+  cleanup:
     enabled: true
-    environment:
-        PLAN_ENV: plan_value
-    execute:
-        enabled: true
-        phases:
-          - how: tmt
-            name: default-0
-        results-path: plans/insert/execute/results.yaml
-    finish:
-        enabled: true
-        phases:
-          - how: shell
-            name: default-0
-    name: /plans/insert
-    order: 50
-    prepare:
-        enabled: true
-        phases:
-          - how: shell
-            name: default-0
-    provision:
-        enabled: true
-        phases:
-          - ansible: {}
-            environment:
-                PROVISION_ENV: provision_value
-            how: container
-            name: default-0
-    report:
-        enabled: true
-        phases:
-          - how: display
-            name: default-0
-    summary: A plan with inserted steps
+    phases:
+    - how: tmt
+      name: default-0
+  contact: []
+  context: {}
+  description: null
+  discover:
+    enabled: true
+    phases:
+    - how: shell
+      name: discover-shell
+      tests:
+      - adjust: []
+        link: []
+        name: /shell-test
+        test: /bin/true
+    - how: fmf
+      name: default-0
+    tests:
+    - adjust: []
+      discover-phase: discover-shell
+      duration: 1h
+      link: []
+      name: /discover-shell/shell-test
+      path: /discover-shell/tests
+      serial-number: 1
+      test: /bin/true
+    - adjust: []
+      discover-phase: default-0
+      environment:
+        TEST_ENV: test_value
+      framework: beakerlib
+      link: []
+      name: /default-0/tests/first
+      path: /default-0/tests
+      require:
+      - name: /very/deep/file
+        type: library
+        url: https://github.com/beakerlib/test
+      serial-number: 2
+      summary: First test
+      test: ./test.sh
+    - adjust: []
+      check:
+      - how: dmesg
+        result: info
+      discover-phase: default-0
+      link: []
+      name: /default-0/tests/second
+      path: /default-0/tests
+      serial-number: 3
+      summary: Second test
+      test: echo SECOND_TEST
+  enabled: true
+  environment:
+    PLAN_ENV: plan_value
+  execute:
+    enabled: true
+    phases:
+    - how: tmt
+      name: default-0
+    results-path: plans/insert/execute/results.yaml
+  finish:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+  id: null
+  link: []
+  name: /plans/insert
+  order: 50
+  prepare:
+    enabled: true
+    phases:
+    - how: shell
+      name: default-0
+  provision:
+    enabled: true
+    phases:
+    - ansible: {}
+      environment:
+        PROVISION_ENV: provision_value
+      how: container
+      name: default-0
+  report:
+    enabled: true
+    phases:
+    - how: display
+      name: default-0
+  summary: A plan with inserted steps
+  tag: []
+  tier: null
 run:
-    environment:
-        RUN_ENV: run_value
-    root: /path/to/fmf_root
+  context: {}
+  environment:
+    RUN_ENV: run_value
+  remove: false
+  root: /path/to/fmf_root
