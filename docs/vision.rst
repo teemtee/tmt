@@ -104,10 +104,10 @@ replacing them. It is **not**:
   technology might require a different framework to be used based
   on the test author's needs. tmt wraps around frameworks and
   executes tests of any of them.
-* a CI, gating or build system, tmt runs inside them
-* a service, tmt is a command-line tool and a library
+* a CI, gating or build system, tmt runs inside them.
+* a service, tmt is a command-line tool and a library.
 * a provisioning or virtualization tool, but it uses libvirt,
-  Podman and cloud APIs through plugins
+  Podman and cloud APIs through :ref:`/plugins/provision`.
 * a guest preparation tool but it uses Ansible and supports custom
   shell scripts to set up the guest environment for testing. New
   :ref:`/plugins/prepare` may be implemented to integrate with
@@ -117,9 +117,9 @@ replacing them. It is **not**:
   desired test-result management system.
 * tied to any single programming language, framework, operating
   system, cloud or runtime, and it is also not limited to the
-  Fedora/RHEL ecosystem
+  Fedora/RHEL ecosystem.
 * a monolith, tmt is a plugin architecture where you use only what
-  you need
+  you need.
 
 
 Guiding Principles
@@ -150,9 +150,9 @@ Can't we do this outside of tmt?
     wrapper, it likely does not belong in tmt.
 
 Is it hard to achieve outside of tmt?
-    The stronger the case that it is genuinely difficult without the
-    orchestration and metadata layer, the stronger the case for
-    including it.
+    The stronger the case that it is genuinely difficult without
+    the orchestration and metadata layer, the stronger the case
+    for including it.
 
 Then, if it fits, decide how it should live in tmt:
 
@@ -162,13 +162,13 @@ Could it be implemented as a plugin?
     shared utilities.
 
 Does it have to be implemented in the core?
-    Add to the core only what cannot live in a plugin, such as shared
-    functionality several plugins build upon, and keep that addition
-    as small as possible.
+    Add to the core only what cannot live in a plugin, such as
+    shared functionality several plugins build upon, and keep that
+    addition as small as possible.
 
 In short: integrate before building, build outside the core before
-building inside it, and add to the core only what a plugin genuinely
-needs.
+building inside it, and add to the core only what a plugin
+genuinely needs.
 
 .. _Makefiles: https://github.com/teemtee/tmt/blob/main/examples/convert/Makefile
 .. _Flexible Metadata Format: https://fmf.readthedocs.io/
