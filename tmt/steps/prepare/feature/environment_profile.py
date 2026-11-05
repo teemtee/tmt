@@ -37,7 +37,7 @@ class Profile(Feature):
     roles, and packaged as Ansible collections. The CI systems use
     profiles to set up guests before testing, and users may use the same
     profiles to establish the same environment locally when developing
-    tests or reprodcing issues.
+    tests or reproducing issues.
 
     Apply a profile to the guest:
 
