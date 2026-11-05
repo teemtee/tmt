@@ -3651,8 +3651,8 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
     Task performing a workdir push to a guest
     """
 
+    #: A callback that returns (source, destination) paths for a given guest.
     mapping: GuestToPathCallback
-    """A callback that returns (source, destination) paths for a given guest."""
 
     def __init__(
         self, guests: list['Guest'], mapping: GuestToPathCallback, logger: tmt.log.Logger
@@ -3678,8 +3678,8 @@ class PullTask(tmt.queue.MultiGuestTask[None]):
     Task performing a workdir pull from a guest
     """
 
+    #: A callback that returns (source, destination) paths for a given guest.
     mapping: GuestToPathCallback
-    """A callback that returns (source, destination) paths for a given guest."""
 
     def __init__(
         self, guests: list['Guest'], mapping: GuestToPathCallback, logger: tmt.log.Logger
