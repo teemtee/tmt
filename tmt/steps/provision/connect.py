@@ -273,6 +273,18 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             how: connect
             guest: host.example.org
 
+    A macOS guest is reached as a regular user with passwordless ``sudo``
+    and ``become`` set, since Homebrew, which provides the essential
+    requirements, refuses to run as ``root``:
+
+    .. code-block:: yaml
+
+        provision:
+            how: connect
+            guest: mac.example.org
+            user: admin
+            become: true
+
     To support hard reboot of a guest, ``hard-reboot`` must be set to
     an executable command or script. Without this key set, hard reboot
     will remain unsupported and result in an error. In comparison,
