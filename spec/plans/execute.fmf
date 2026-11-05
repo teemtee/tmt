@@ -1,5 +1,17 @@
 summary: Define how tests should be executed
 
 description: |
+    Run discovered tests in the provisioned environment. The internal
+    ``tmt`` executor is used by default. It reports test progress and
+    supports optional interactive debugging.
+
     This is a **required** attribute. Each plan has to define this
-    step.
+    step. See the :ref:`/plugins/execute` documentation for available
+    methods and supported options.
+
+example: |
+    execute:
+        how: tmt
+
+link:
+    - implemented-by: /tmt/steps/execute

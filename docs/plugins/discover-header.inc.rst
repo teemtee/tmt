@@ -1,40 +1,6 @@
-Gather information about tests which are supposed to be run.
-Provide method ``tests()`` returning a list of discovered
-tests and ``requires()`` returning a list of all required
-packages aggregated from the `require`_ attribute of the
-individual test metadata.
-
-.. _require: https://tmt.readthedocs.io/en/latest/spec/tests.html#require
-
-Store the list of aggregated tests with their corresponding
-metadata in the ``tests.yaml`` file. The format must be a
-list of dictionaries structured in the following way:
-
-.. code-block:: yaml
-
-    - name: /test/one
-      summary: Short test summary.
-      description: Long test description.
-      contact: Petr Šplíchal <psplicha@redhat.com>
-      component: [tmt]
-      test: tmt --help
-      path: /test/path/
-      require: [package1, package2]
-      environment:
-          key1: value1
-          key2: value2
-          key3: value3
-      duration: 5m
-      enabled: true
-      result: respect
-      tag: [tag]
-      tier: 1
-      serial-number: 1
-
-    - name: /test/two
-      summary: Short test summary.
-      description: Long test description.
-      ...
+The :tmt:story:`/spec/plans/discover` step plugins gather tests
+and their metadata for execution. Select a discovery method using
+the ``how`` key.
 
 .. _/plugins/discover/dist-git-source:
 

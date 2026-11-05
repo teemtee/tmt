@@ -1,8 +1,10 @@
 summary: Provision a system for testing
 
 description: |
-    See the :ref:`/plugins/provision` documentation for details about
-    supported options.
+    Provide the guests on which tests will run, for example a virtual
+    machine, a container or an existing host. See the
+    :ref:`/plugins/provision` documentation for available methods,
+    hardware requirements and supported options.
 
 example: |
     # Provision a local virtual machine with the latest Fedora

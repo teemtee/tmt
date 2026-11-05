@@ -1,3 +1,5 @@
+Report test results according to user preferences.
+
 .. _/plugins/report/when:
 
 when

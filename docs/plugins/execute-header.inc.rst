@@ -1,7 +1,6 @@
-Execute discovered tests in the provisioned environment using
-selected test executor. By default tests are executed using
-the internal ``tmt`` executor which allows to show detailed
-progress of the testing and supports interactive debugging.
+Execute discovered tests in the provisioned environment using the
+selected executor. The internal ``tmt`` executor is used by default.
+It reports test progress and supports optional interactive debugging.
 
 For each test, a separate directory is created for storing
 artifacts related to the test execution. Its path is
@@ -15,25 +14,6 @@ the test.
 In each plan, the execute step must produce a ``results.yaml`` file
 with results for executed tests. The format of the file is described
 at :tmt:story:`/spec/results`.
-
-.. _/plugins/execute/isolate:
-
-isolate
--------
-
-.. tmt:story:: /spec/plans/execute/isolate
-    :title: isolate
-
-    Run tests in an isolated environment
-
-    Optional boolean attribute `isolate` can be used to
-    request a clean test environment for each test.
-
-    .. code-block:: yaml
-
-        execute:
-            how: tmt
-            isolate: true
 
 .. _/plugins/execute/exit-first:
 

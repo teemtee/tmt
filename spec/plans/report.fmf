@@ -1,8 +1,13 @@
 summary: Report test results
+
 description:
     Report test results according to user preferences. For more information
     about the supported report methods, check the :ref:`/plugins/report`
     documentation.
-example: []
+
+example: |
+    report:
+        how: display
+
 link:
     - implemented-by: /tmt/steps/report

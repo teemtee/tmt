@@ -3,6 +3,14 @@ performed after the test execution has been completed. These can
 be useful for finishing tasks such as an additional guest cleanup
 or uploading specific logs to an external server.
 
+.. code-block:: yaml
+
+    finish:
+      - how: shell
+        script: upload-logs.sh
+      - how: ansible
+        playbook: playbooks/cleanup.yaml
+
 .. _/plugins/finish/where:
 
 where
@@ -27,7 +35,7 @@ where
     .. code-block:: yaml
 
         # Stop Apache on the server
-        prepare:
+        finish:
           - how: shell
             script: systemctl stop httpd
             where: server

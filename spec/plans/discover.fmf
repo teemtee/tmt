@@ -1,1 +1,15 @@
 summary: Discover tests relevant for execution
+
+description: |
+    Gather tests and their metadata for execution. Use the ``how`` key
+    to select a discovery method, such as ``fmf`` for tests defined in
+    an fmf tree or ``shell`` for tests defined directly in the plan.
+    See the :ref:`/plugins/discover` documentation for available methods
+    and supported options.
+
+example: |
+    discover:
+        how: fmf
+
+link:
+    - implemented-by: /tmt/steps/discover

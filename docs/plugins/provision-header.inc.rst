@@ -12,15 +12,10 @@ As part of the provision step it is also possible to specify
 detailed hardware requirements for the testing environment. See
 the :tmt:story:`/spec/hardware` specification section for details.
 
-As part of the provision step it is also possible to specify
-kickstart file used during the installation.
-See the :tmt:story:`/spec/plans/provision/kickstart` specification
-section for details.
-
 
 .. _/plugins/provision/multihost:
 
-multihost
+Multihost
 ---------
 
 .. Preserve the original story targets for existing cross-references.
@@ -77,7 +72,7 @@ multihost
 
 .. _/plugins/provision/ansible:
 
-ansible
+Ansible
 -------
 
 .. tmt:story:: /spec/plans/provision/ansible
@@ -155,7 +150,7 @@ ansible
 
 .. _/plugins/provision/kickstart:
 
-kickstart
+Kickstart
 ---------
 
 .. tmt:story:: /spec/plans/provision/kickstart

@@ -9,9 +9,6 @@ from the official distribution or copr repositories. Use the
 playbooks or execute :ref:`/plugins/prepare/shell` scripts
 to perform arbitrary preparation tasks.
 
-See the :ref:`/plugins/prepare` section for the full list of
-available prepare plugins and their supported options.
-
 .. code-block:: yaml
 
     # Install fresh packages from a custom copr repository
@@ -60,9 +57,7 @@ preparations by tmt:
 
   .. note::
 
-     Individual plugins may define their own special ``order`` values,
-     and you shall find the relevant information in :ref:`plugins`
-     documentation.
+     Individual plugins may define their own special ``order`` values.
 
 .. note::
 

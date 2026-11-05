@@ -1,5 +1,16 @@
 summary: Prepare the environment for testing
 
+description: |
+    Prepare the guest environment before running tests, for example
+    by installing packages, running shell scripts or applying Ansible
+    playbooks. See the :ref:`/plugins/prepare` documentation for
+    available methods and supported options.
+
+example: |
+    prepare:
+        how: install
+        package: [httpd, curl]
+
 link:
     - implemented-by: /tmt/steps/prepare
     - verified-by: /tests/prepare
