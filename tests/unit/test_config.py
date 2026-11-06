@@ -3,10 +3,10 @@ import re
 import textwrap
 import threading
 import unittest.mock
-from unittest.mock import MagicMock
 
 import fmf
 import pytest
+import pytest_mock
 
 import tmt.config
 import tmt.utils
@@ -16,10 +16,10 @@ from tmt.utils import Path
 
 
 @pytest.fixture
-def config_path(tmppath: Path, monkeypatch) -> Path:
+def config_path(tmppath: Path, mocker: pytest_mock.MockerFixture) -> Path:
     config_path = tmppath / 'config'
     config_path.mkdir()
-    monkeypatch.setattr(tmt.config, 'effective_config_dir', MagicMock(return_value=config_path))
+    mocker.patch.object(tmt.config, "effective_config_dir", return_value=config_path)
     return config_path
 
 
@@ -35,7 +35,7 @@ def test_config(config_path: Path, root_logger: Logger):
     assert config2.last_run.resolve() == run.resolve()
 
 
-def test_last_run_race(tmppath: Path, monkeypatch, root_logger: Logger):
+def test_last_run_race(tmppath: Path, mocker: pytest_mock.MockerFixture, root_logger: Logger):
     """
     Race in last run symlink shouldn't be fatal
     """
@@ -44,9 +44,9 @@ def test_last_run_race(tmppath: Path, monkeypatch, root_logger: Logger):
 
     config_path = tmppath / 'config'
     config_path.mkdir()
-    monkeypatch.setattr(tmt.config, 'effective_config_dir', MagicMock(return_value=config_path))
+    mocker.patch.object(tmt.config, "effective_config_dir", return_value=config_path)
     mock_logger = unittest.mock.MagicMock()
-    monkeypatch.setattr(logger, 'warning', mock_logger)
+    mocker.patch.object(logger, 'warning', mock_logger)
     config = tmt.config.Config(logger)
     results = queue.Queue()
     threads = []
