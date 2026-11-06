@@ -59,6 +59,14 @@ rlJournalStart "CRB Feature Test"
             rlRun "tmt run --all provision --how $PROVISION_HOW --image $image plan --name /crb/disabled" 0 "Run /crb/disabled plan for $image"
         rlPhaseEnd
 
+        # Both plans must recognize the distribution in the same tmt process.
+        rlPhaseStartTest "Test multiple CRB plans on $image"
+            rlRun -s "tmt run --all provision --how $PROVISION_HOW --image $image plan --name '/crb/(enabled|disabled)$'" 0 "Run both CRB plans for $image"
+            rlAssertGrep '/crb/enabled' "$rlRun_LOG"
+            rlAssertGrep '/crb/disabled' "$rlRun_LOG"
+            rlAssertNotGrep 'CRB prepare feature is supported on' "$rlRun_LOG"
+        rlPhaseEnd
+
         # Run the '/crb_package'
         rlPhaseStartTest "Test /crb/crb_package on $image"
             # This plan enables CRB and tries to install a package from it.

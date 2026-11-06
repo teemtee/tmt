@@ -1037,6 +1037,18 @@ class TestGitAdd:
 #
 # tmt.utils.wait & waiting for things to happen
 #
+@pytest.mark.parametrize(('now', 'expected'), [(105.5, -4.5), (110.0, 0.0), (112.5, 2.5)])
+def test_deadline_time_over(monkeypatch: pytest.MonkeyPatch, now: float, expected: float) -> None:
+    """The deadline overrun is measured in seconds, before and after it is due."""
+
+    monkeypatch.setattr('tmt.utils.wait.time.monotonic', lambda: 100.0)
+    deadline = Deadline.from_seconds(10)
+
+    monkeypatch.setattr('tmt.utils.wait.time.monotonic', lambda: now)
+    with deadline:
+        assert deadline.time_over == timedelta(seconds=expected)
+
+
 def test_wait_deadline_already_passed(root_logger):
     """
     :py:func:`wait` shall not call ``check`` if the given timeout leads to
