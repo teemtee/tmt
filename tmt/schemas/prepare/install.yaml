@@ -62,5 +62,8 @@ properties:
   when:
     $ref: "/schemas/common#/definitions/when"
 
+  allow-erasing:
+    type: boolean
+
 required:
   - how
