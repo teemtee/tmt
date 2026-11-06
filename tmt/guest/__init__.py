@@ -3608,6 +3608,40 @@ class GuestSsh(Guest, CommandCollector):
         self._ssh_master_process_stdout_logger.start()
         self._ssh_master_process_stderr_logger.start()
 
+    def _terminate_ssh_master_process(
+        self, signal: _signal.Signals = _signal.SIGTERM, logger: Optional[tmt.log.Logger] = None
+    ) -> None:
+        """
+        Terminate the SSH master process and flush its state.
+        """
+
+        logger = logger or self._logger
+
+        if self._ssh_master_process is None:
+            logger.debug(
+                'The SSH master process cannot be terminated because it is unset.', level=3
+            )
+
+            return
+
+        logger.debug(
+            f'Terminating the SSH master process {self._ssh_master_process.pid}'
+            f' with {signal.name}.',
+            level=3,
+        )
+
+        self._ssh_master_process.send_signal(signal)
+
+        try:
+            self._ssh_master_process.wait(timeout=SSH_MASTER_STOP_TIMEOUT)
+
+        except subprocess.TimeoutExpired:
+            logger.warning(
+                f'Terminating the SSH master process {self._ssh_master_process.pid} timed out.'
+            )
+
+        self._flush_ssh_master_process()
+
     def _cleanup_ssh_master_process(
         self, signal: _signal.Signals = _signal.SIGTERM, logger: Optional[tmt.log.Logger] = None
     ) -> None:
@@ -3625,30 +3659,7 @@ class GuestSsh(Guest, CommandCollector):
             return
 
         with self._ssh_master_process_lock:
-            if self._ssh_master_process is None:
-                logger.debug(
-                    'The SSH master process cannot be terminated because it is unset.', level=3
-                )
-
-                return
-
-            logger.debug(
-                f'Terminating the SSH master process {self._ssh_master_process.pid}'
-                f' with {signal.name}.',
-                level=3,
-            )
-
-            self._ssh_master_process.send_signal(signal)
-
-            try:
-                self._ssh_master_process.wait(timeout=SSH_MASTER_STOP_TIMEOUT)
-
-            except subprocess.TimeoutExpired:
-                logger.warning(
-                    f'Terminating the SSH master process {self._ssh_master_process.pid} timed out.'
-                )
-
-            self._flush_ssh_master_process()
+            self._terminate_ssh_master_process(signal=signal, logger=logger)
 
     def _assert_ssh_master_process(self) -> None:
         """
@@ -3676,18 +3687,7 @@ class GuestSsh(Guest, CommandCollector):
                         level=3,
                     )
 
-                    self._ssh_master_process.send_signal(_signal.SIGTERM)
-
-                    try:
-                        self._ssh_master_process.wait(timeout=SSH_MASTER_STOP_TIMEOUT)
-
-                    except subprocess.TimeoutExpired:
-                        self._logger.warning(
-                            f'Terminating the SSH master process {self._ssh_master_process.pid}'
-                            ' timed out.'
-                        )
-
-                    self._flush_ssh_master_process()
+                    self._terminate_ssh_master_process()
 
             if self._ssh_master_process is None:
                 self._logger.debug(
