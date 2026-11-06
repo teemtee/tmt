@@ -194,6 +194,8 @@ TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX = tmt/container/test
 # The list of tmt test container images.
 TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream9:latest \
@@ -226,9 +228,11 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
 
 UNAME_M := $(shell uname -m)  # Get the machine architecture
 
-# CentOS 7 is not available for aarch64 architecture, so we filter it.
+# CentOS 6 and 7 are not available for aarch64 architecture, so we filter them.
 ifeq ($(UNAME_M),aarch64)
 TMT_TEST_CONTAINER_IMAGES := $(filter-out \
+  $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6:latest \
+  $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6/upstream:latest \
   $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7:latest \
   $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream:latest, \
   $(TMT_TEST_CONTAINER_IMAGES))
@@ -285,8 +289,14 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine\:
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream\:latest:
 	$(call build-test-container-image,$@,alpine/Containerfile.upstream)
 
-# CentOS 7 is not available for aarch64 architecture, so we skip it.
+# CentOS 6 and 7 are not available for aarch64 architecture, so we skip them.
 ifneq ($(UNAME_M),aarch64)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6\:latest:
+	$(call build-test-container-image,$@,centos/6/Containerfile)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6/upstream\:latest:
+	$(call build-test-container-image,$@,centos/6/Containerfile.upstream)
+
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7\:latest:
 	$(call build-test-container-image,$@,centos/7/Containerfile)
 
