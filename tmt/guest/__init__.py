@@ -319,7 +319,15 @@ SSH_MASTER_START_TIMEOUT: int = configure_constant(
 
 #: How many seconds to wait for the ``ssh`` master process to terminate
 #: after being signaled before giving up.
-SSH_MASTER_STOP_TIMEOUT: int = 3
+DEFAULT_SSH_MASTER_STOP_TIMEOUT: int = 3
+
+#: How many seconds to wait for the ``ssh`` master process to terminate
+#: after being signaled before giving up.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_SSH_MASTER_STOP_TIMEOUT``.
+SSH_MASTER_STOP_TIMEOUT: int = configure_constant(
+    DEFAULT_SSH_MASTER_STOP_TIMEOUT, 'TMT_SSH_MASTER_STOP_TIMEOUT'
+)
 
 # When waiting for ssh master to start, try re-connecting every
 # this many seconds.
