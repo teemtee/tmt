@@ -334,7 +334,8 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
 
 
 @container
-class TestcloudGuestData(tmt.guest.GuestSshData):
+class TestcloudGuestData(tmt.steps.provision.HasImage, tmt.guest.GuestSshData):
+    # Override parent with more fitting help.
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
@@ -344,6 +345,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
              or a complete url.
              """,
     )
+
     memory: Optional['Size'] = field(
         default=cast(Optional['Size'], None),
         option=('-m', '--memory'),
