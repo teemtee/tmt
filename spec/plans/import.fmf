@@ -22,60 +22,19 @@ description: |
     .. code-block:: yaml
 
        /some-plan:
-         plan:
-           import:
-             url: ...
-             name: ...
-             ref: ...
-             path: ...
+            plan:
+                import:
+                    url: ...
+                    name: ...
+                    ref: ...
+                    path: ...
 
     The ``url`` and ``name`` keys are required, ``ref`` and ``path``
     are optional. If ``ref`` is set, the given git ref will be
     checked out before looking for plans; ``path`` defines where in
-    the remote repository the metadata tree lives.
-
-    By default, only a single remote plan is allowed to be imported,
-    and it always replaces the importing plan. To import multiple plans,
-    set ``scope`` key to ``all-plans``:
-
-    .. code-block:: yaml
-
-      /some-plan:
-        plan:
-          import:
-            ...
-
-            # This is the default, only the first discovered plan is imported,
-            # the rest is ignored.
-            scope: first-plan-only
-
-            # To limit the import to one and one plan only, and fail if
-            # more plans would match the criteria:
-            scope: single-plan-only
-
-            # To allow import of multiple plans:
-            scope: all-plans
-
-    If, instead of replacing the current plan, you want to make the imported
-    plans "children" of the current plan with the ``importing``
-    key:
-
-    .. code-block:: yaml
-
-      /some-plan:
-        plan:
-          import:
-            ...
-
-            # This is the default, replace the current plan.
-            importing: replace
-
-            # All imported plans will get their names to begin with `/some-plan/...`.
-            importing: become-parent
-
-    The ``name`` key is treated as a
-    :ref:`regular expression <regular-expressions>`, and only plans with
-    matching names will be imported.
+    the remote repository the metadata tree lives. The ``name`` key is
+    treated as a :ref:`regular expression <regular-expressions>`, and
+    only plans with matching names will be imported.
 
     .. note::
 
@@ -87,25 +46,76 @@ description: |
     the importing plan. See the :ref:`dynamic-ref` section for
     usage details and examples.
 
-    Plan steps must not be defined in the remote plan reference.
-    The imported plan can be modified in only two ways. First way
-    is via environment and context variables. Imported plan inherits
-    all environment and context variables from the importing plan.
-    This behavior can be changed by setting the ``inherit-context``
-    or ``inherit-environment`` options:
+    By default, only a single remote plan is allowed to be imported,
+    and it always replaces the importing plan:
 
     .. code-block:: yaml
 
-       /some-plan:
-           context:
-               ...
-           environment:
-               ...
-           plan:
-               import:
-                   ...
-                   inherit-context: false
-                   inherit-environment: false
+      /some-plan:
+            plan:
+                import:
+                    # This is the default, only the first discovered
+                    # plan is imported, the rest is ignored.
+                    scope: first-plan-only
+
+                    # Limit the import to one and only one plan, and
+                    # fail if more plans would match the criteria:
+                    scope: single-plan-only
+
+                    # To allow import of multiple plans:
+                    scope: all-plans
+
+                    ...
+
+    Set the ``importing`` key to ``become-parent`` if you want to keep
+    the imported plan names and make them children of the local
+    importing plan:
+
+    .. code-block:: yaml
+
+      /some-plan:
+            plan:
+                import:
+                    # This is the default, replace the current plan.
+                    importing: replace
+
+                    # Imported plan names will begin with `/some-plan/...`.
+                    importing: become-parent
+
+                    ...
+
+    In order to import multiple plans, set both ``scope`` and
+    ``importing`` keys:
+
+    .. code-block:: yaml
+        :emphasize-lines: 4,5
+
+        /some-plan:
+            plan:
+                import:
+                    scope: all-plans
+                    importing: become-parent
+                    ...
+
+    Plan steps must not be defined in the remote plan reference. The
+    imported plan can be modified in several ways. The first way is via
+    environment and context variables. The Imported plan inherits all
+    environment and context variables from the importing plan. This
+    behavior can be changed by setting the ``inherit-context`` or
+    ``inherit-environment`` options:
+
+    .. code-block:: yaml
+
+        /some-plan:
+            context:
+                ...
+            environment:
+                ...
+            plan:
+                import:
+                    inherit-context: false
+                    inherit-environment: false
+                    ...
 
     .. note::
 
@@ -182,6 +192,8 @@ example:
         import:
             url: https://github.com/teemtee/tmt
             name: /plans/provision/(connect|local)
+            importing: become-parent
+            scope: all-plans
 
 link:
   - relates: https://github.com/teemtee/tmt/issues/975
