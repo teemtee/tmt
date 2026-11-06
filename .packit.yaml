@@ -49,7 +49,7 @@ _:
   - &copr-under-packit
     job: copr_build
     additional_repos:
-      - copr://@teemtee/stable
+      - copr://@teemtee/latest
 
   # Copr jobs under the teemtee project
   - &copr-under-teemtee
@@ -69,16 +69,6 @@ _:
     trigger: pull_request
     tf_extra_params:
       settings: *pipeline-settings
-      environments:
-        - &copr-teemtee-stable
-          artifacts:
-            # Testing Farm fails to install the repository when a multiline
-            # string is used. The script looks broken, as if one piece of
-            # the process incorrectly loads it, producing broken repo file
-            # URL.
-            - type: repository-file
-              # yamllint disable-line rule:line-length
-              id: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/fedora-rawhide/group_teemtee-stable-fedora-rawhide.repo
 
   # Latest fedora & epel targets
   - &latest-targets
@@ -94,7 +84,6 @@ _:
       settings: *pipeline-settings
       environments:
         - &tmt-cloud-resources
-          <<: *copr-teemtee-stable
           settings:
             provisioning:
               tags:
