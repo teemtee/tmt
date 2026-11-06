@@ -6,7 +6,6 @@ import tmt.steps
 import tmt.steps.report
 from tmt.container import container, field, simple_field
 from tmt.result import (
-    RESULT_OUTCOME_COLORS,
     BaseResult,
     CheckResult,
     PhaseResult,
@@ -44,6 +43,18 @@ DEFAULT_NOTE_TEMPLATE = """
       {{ line }}
 {% endfor %}
 """
+
+
+RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
+    ResultOutcome.PASS: 'green',
+    ResultOutcome.FAIL: 'red',
+    ResultOutcome.INFO: 'blue',
+    ResultOutcome.WARN: 'yellow',
+    ResultOutcome.ERROR: 'magenta',
+    # TODO (happz) make sure the color is visible for all terminals
+    ResultOutcome.SKIP: 'bright_black',
+    ResultOutcome.PENDING: 'cyan',
+}
 
 
 RenderableResult = Union[Result, PhaseResult]
