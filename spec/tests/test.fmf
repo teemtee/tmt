@@ -23,6 +23,23 @@ description: |
     using ``set +eo pipefail``. These options are not applied when
     ``beakerlib`` is used as the :tmt:story:`/spec/tests/framework`.
 
+    Once the test exits, tmt does not wait for processes the test
+    left running in the background, e.g. ``perf record ... &`` which
+    was never stopped. If they still hold the test output open, tmt
+    prints a warning in the test output, and drops what they write
+    later than a second after the test exits. tmt does not kill them,
+    but on guests connected over ssh the end of the session sends
+    them ``SIGHUP``, and they get ``SIGPIPE`` once they write to the
+    closed output. The same applies to ``prepare/shell`` scripts.
+    Tests with :tmt:story:`/spec/tests/tty` enabled are not affected.
+
+    To keep a process running for later tests, e.g. a server stopped
+    by another test, detach it and redirect its output, for example
+    ``systemd-run --unit=my-server my-server`` or ``setsid my-server
+    >/var/tmp/my-server.log 2>&1 </dev/null &``.
+
+    .. versionadded:: 1.80
+
 example:
   - |
     # Run a script
