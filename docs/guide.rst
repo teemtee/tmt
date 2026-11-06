@@ -1147,6 +1147,20 @@ phases with corresponding guests by their
 Essentially, plan author tells tmt on which guest(s) a test or
 script should run by listing guest name(s) or guest role(s).
 
+.. note::
+
+    Multihost testing is meant for scenarios where the provisioned
+    guests need to **communicate with each other**, e.g. a classic
+    server/client setup.
+
+    If your guests do **not** need to talk to each other, for example
+    when you only want to run the same tests across multiple
+    environments or architectures independently, do **not** use
+    multihost testing. Create a **separate plan** for each environment
+    instead. This keeps the scenarios isolated, makes results easier to
+    read, and a failure to provision one environment does not affect the
+    others.
+
 The granularity of the multihost scenario is on the step phase
 level. The user may define multiple ``discover``, ``prepare`` and
 ``finish`` phases, and everything in them will start on given guests
