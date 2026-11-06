@@ -123,7 +123,7 @@ when
           - name: Prepare config to run only on Fedora
             when: distro == fedora
             how: shell
-            script: ./fedora_specific.
+            script: ./fedora_specific.sh
           - name: Runs always
             how: shell
             script: ./setup.sh

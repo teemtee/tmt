@@ -23,13 +23,13 @@ dist-git-source
     All source files are available for further use in the
     directory provided in the ``TMT_SOURCE_DIR`` variable.
 
-    Patches are applied by ``rpm-build -bp`` command which
+    Patches are applied by the ``rpmbuild -bp`` command which
     runs in ``prepare`` step on the provisioned guest, with
     order ``60``. All created files and directories by this command
     are directly in ``TMT_SOURCE_DIR``.
 
     To run the plan without uploading source files to the lookaside
-    the type ``local`` can be used. Sources have to be listed in the ``source``
+    the type ``local`` can be used. Sources have to be listed in the ``sources``
     file and present in the same directory as the ``spec`` file.
 
     The :ref:`/plugins/discover/fmf` plugin supports
@@ -161,7 +161,9 @@ when
             url: https://public
           - name: Just a demo of more rules in the 'when' key
             how: shell
-            script: ./something.sh
+            tests:
+              - name: something
+                test: ./something.sh
             when:
             - initiator == konflux and distro == fedora
             - initiator == human and distro == fedora
