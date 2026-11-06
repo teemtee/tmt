@@ -131,6 +131,54 @@ story: 'As a user I want to comfortably work with tests'
           - implemented-by: /tmt/export/polarion.py
           - verified-by: /plans/remote/polarion
 
+    /jira:
+        story: 'I want to export test metadata into Jira.'
+        example:
+            - tmt test export --how jira --create --link-jira --jira-url https://issues.redhat.com --jira-user me@example.com --jira-token <token> --project-id RHELTEST
+        description: |
+            Export test metadata to a Jira project as ``Test Case``
+            work items. Authentication uses a Jira API token with
+            HTTP Basic Auth. Provide credentials and target project
+            via the ``--jira-url``, ``--jira-user``, ``--jira-token``,
+            and ``--project-id`` options.
+
+            The following ``fmf`` attributes are exported to the
+            corresponding Jira ``Test Case`` fields:
+
+            +-------------------------------------------+-------------------------------------------------+
+            | fmf attribute                             | Jira field                                      |
+            +===========================================+=================================================+
+            | ``summary``                               | summary                                         |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``description``                           | description                                     |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``id``                                    | ``ID`` custom field used for future lookup      |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``component``                             | components                                      |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``tag``                                   | labels                                          |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``contact``                               | assignee (resolved to a Jira Cloud              |
+            |                                           | ``accountId`` via user search API)              |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``enabled``                               | status (always ``Active`` in Jira)              |
+            +-------------------------------------------+-------------------------------------------------+
+
+            The web link to the test file in the git repository is
+            stored in the ``URL`` custom field.
+
+            ``verifies`` links to issues on the same Jira instance become
+            ``tests`` issue links. When ``--bugzilla`` is enabled, Bugzilla
+            links become remote links.
+
+            After a successful export, add ``--link-jira`` to
+            write an ``implements`` link back to the fmf metadata
+            so that subsequent exports and reports can locate the
+            Jira ``Test Case`` without a UUID search.
+        link:
+          - implemented-by: /tmt/export/jira.py
+          - documented-by: /docs/examples.rst#jira-project-configuration
+
 /filter:
     story: 'Filter available tests'
     description: |
