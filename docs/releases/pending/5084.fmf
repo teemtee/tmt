@@ -1,0 +1,4 @@
+description: |
+  The context :tmt:story:`/spec/core/adjust` rules are now applied when
+  resolving libraries, so library ``require`` and ``recommend``
+  respect the current fmf context.
