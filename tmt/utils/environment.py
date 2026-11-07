@@ -79,6 +79,9 @@ class EnvVarValue(str):
         )
 
 
+_VARIABLE_PATTERN = re.compile(r'\$(\w+|\{[^}]*\}?)', re.ASCII)
+
+
 class HasEnvironment(abc.ABC):
     """
     A class that provides :py:attr:`environment` attribute.
@@ -120,6 +123,20 @@ class Environment(dict[str, EnvVarValue]):
 
     def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
         super().__init__(data or {})
+
+    def expandvars(self, value: str) -> str:
+        """Expand shell-style variables using this environment."""
+
+        def replace(match: re.Match[str]) -> str:
+            variable = match.group(1)
+            if variable.startswith('{'):
+                if not variable.endswith('}'):
+                    return match.group(0)
+                variable = variable[1:-1]
+
+            return self.get(variable, match.group(0))
+
+        return _VARIABLE_PATTERN.sub(replace, value)
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':

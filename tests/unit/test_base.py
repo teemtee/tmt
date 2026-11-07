@@ -219,7 +219,7 @@ def test_pickleable_tree() -> None:
     assert check_equal_pickled_object(tree, unpickled_tree)
 
 
-def test_expand_node_data(monkeypatch) -> None:
+def test_expand_node_data() -> None:
     """
     :py:func:`tmt.base.core.expand_node_data` handles various forms of variables
     """
@@ -294,10 +294,20 @@ def test_expand_node_data(monkeypatch) -> None:
 
     expected = [*_expected, [*_expected], {f'key{i}': value for i, value in enumerate(_expected)}]
 
-    for envvar in Environment.from_environ():
-        monkeypatch.delenv(envvar)
+    assert expand_node_data(data, Environment.from_dict(environ), fmf_context) == expected
 
-    for envvar, value in environ.items():
-        monkeypatch.setenv(envvar, value)
 
-    assert expand_node_data(data, fmf_context) == expected
+def test_expand_node_data_does_not_replace_environment(monkeypatch) -> None:
+    """
+    Context expansion must not replace the process environment.
+    """
+
+    original_environment = Environment.from_environ()
+
+    def fail_if_called(*args: object, **kwargs: object) -> None:
+        raise AssertionError('Environment.as_environ() must not be called')
+
+    monkeypatch.setattr(Environment, 'as_environ', fail_if_called)
+
+    assert expand_node_data('$@WALDO', original_environment, {'WALDO': ['plugh']}) == 'plugh'
+    assert Environment.from_environ() == original_environment
