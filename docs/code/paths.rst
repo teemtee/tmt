@@ -40,11 +40,24 @@ repository:
 .. code-block::
 
     # basic case when git root and fmf root are the same
-    /var/tmp/tmt/run-123/import/plan
+    /var/tmp/tmt/run-123/import/plan/    <--- anchor path
+    ├── .fmf/                            <--- fmf tree root
+    ├── .git/                            <--- git repo root
+    ├── plans/
+    │   └── plan.fmf
+    └── scripts/
+        └── setup.sh
 
     # fmf root stored deeper in the git repository
-    /var/tmp/tmt/run-123/import/plan/nested/tree
-
+    /var/tmp/tmt/run-123/import/plan/
+    ├── .git/           <--- git repo root
+    └── nested/
+        └── tree/       <--- anchor path
+            ├── .fmf/   <--- fmf tree root
+            ├── plans/
+            │   └── plan.fmf
+            └── scripts/
+                └── setup.sh
 
 .. _fmf-path:
 
