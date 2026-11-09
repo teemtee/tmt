@@ -513,7 +513,7 @@ class _Formatter(logging.Formatter):
     def __init__(
         self, fmt: Optional[str] = None, datefmt: str = '%H:%M:%S', apply_colors: bool = False
     ) -> None:
-        super().__init__(fmt=fmt, datefmt='%H:%M:%S')
+        super().__init__(fmt=fmt, datefmt=datefmt)
 
         self.apply_colors = apply_colors
 
