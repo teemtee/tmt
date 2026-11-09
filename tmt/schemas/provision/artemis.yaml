@@ -53,6 +53,9 @@ properties:
   kickstart:
     $ref: "/schemas/provision/kickstart#/definitions/kickstart"
 
+  log-update-tick:
+    $ref: "/schemas/provision/common#/definitions/log-update-tick"
+
   pool:
     type: string
 

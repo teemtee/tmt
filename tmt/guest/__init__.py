@@ -1487,10 +1487,8 @@ class GuestData(
         default=DEFAULT_GUEST_LOG_UPDATE_TICK,
         option='--log-update-tick',
         metavar='SECONDS',
-        help=f"""
-             Interval between attempts to update guest logs.
-             {DEFAULT_GUEST_LOG_UPDATE_TICK} seconds by default.
-             """,
+        help='Interval between attempts to update guest logs.',
+        show_default=True,
         normalize=tmt.utils.normalize_int,
     )
 
@@ -1801,7 +1799,6 @@ class GuestLogUpdater(threading.Thread):
         self.stop_running = threading.Event()
 
     def run(self) -> None:
-        # TODO: shall fetch before first sleep?
         while not self.stop_running.wait(timeout=self.update_tick):
             self.guest.update_logs(logger=self.guest._logger)
 

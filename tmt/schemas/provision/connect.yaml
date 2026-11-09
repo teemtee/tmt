@@ -63,5 +63,8 @@ properties:
   hard-reboot:
     type: string
 
+  log-update-tick:
+    $ref: "/schemas/provision/common#/definitions/log-update-tick"
+
 required:
   - how
