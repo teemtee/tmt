@@ -468,10 +468,12 @@ class YumEngine(DnfEngine):
             nevra_query = Command("repoquery", "--installed")
             if not packages_only:
                 nevra_query += Command("--whatprovides")
+            # in case there are multiple matches;
+            # take the first line so the follow-up query gets one argument.
             return ShellScript(f"""
             for query in {' '.join(package_specs)}; do
                 echo "'$query':"
-                full_nevra=$({nevra_query} "$query")
+                full_nevra=$({nevra_query} "$query" | head -n1)
                 if [ -n "$full_nevra" ]; then
                     {query_command} "$full_nevra"
                 fi
@@ -611,6 +613,8 @@ class Yum(Dnf):
     _engine_class = YumEngine
 
     copr_plugin: ClassVar[str] = 'yum-plugin-copr'
+    # Package name of the config-manager plugin for this package manager.
+    # Provided by essential_requires
     config_manager_plugin: ClassVar[str] = 'yum-utils'
 
     bootc_builder = False
@@ -625,5 +629,8 @@ class Yum(Dnf):
     def essential_requires(self) -> list[DependencySimple]:
         return [
             # We need `yum-plugin-priorities` in order to handle repo priorities
-            DependencySimple("yum-plugin-priorities")
+            DependencySimple("yum-plugin-priorities"),
+            # `repoquery` and `yum-config-manager` come from yum-utils; required for
+            # resolve_provides / repository enablement (e.g. prepare/artifact on centos-6)
+            DependencySimple("yum-utils"),
         ]

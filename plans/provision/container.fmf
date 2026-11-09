@@ -41,6 +41,9 @@ adjust+:
     /centos:
         environment+:
             TEST_CONTAINER_IMAGES+: /centos
+        /6:
+            environment+:
+                TEST_CONTAINER_IMAGES+: /6/upstream:latest
         /7:
             environment+:
                 TEST_CONTAINER_IMAGES+: /7/upstream:latest
