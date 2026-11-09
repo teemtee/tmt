@@ -895,7 +895,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         if data.hardware and data.hardware.constraint:
             self.warn("The 'mock' provision plugin does not support hardware requirements.")
 
-        self._guest = GuestMock(
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,
