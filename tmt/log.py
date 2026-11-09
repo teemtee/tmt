@@ -472,21 +472,6 @@ class LogRecord(logging.LogRecord):
 
     details: LogRecordDetails
 
-    @override
-    def getMessage(self) -> str:
-        if is_our_log_record(self):
-            return indent(
-                self.details.key,
-                value=self.details.value,
-                # Always apply colors - message can be decolorized later.
-                color=self.details.color,
-                level=self.details.shift,
-                labels=self.details.logger_labels,
-                labels_padding=self.details.logger_labels_padding,
-            )
-
-        return super().getMessage()
-
 
 def is_our_log_record(record: logging.LogRecord) -> TypeGuard[LogRecord]:
     """
@@ -502,11 +487,7 @@ def is_our_log_record(record: logging.LogRecord) -> TypeGuard[LogRecord]:
     :py:attr:`LogRecord.details` attribute and its type.
     """
 
-    return isinstance(record, LogRecord) and hasattr(record, 'details')
-
-
-# Tell logging to use our custom log record class.
-logging.setLogRecordFactory(LogRecord)
+    return hasattr(record, 'details')
 
 
 class RunWarningsHandler(logging.FileHandler):
@@ -543,7 +524,20 @@ class _Formatter(logging.Formatter):
 
     @override
     def formatMessage(self, record: logging.LogRecord) -> str:
-        return self._decolorize(super().formatMessage(record))
+        if is_our_log_record(record):
+            return self._decolorize(
+                indent(
+                    record.details.key,
+                    value=record.details.value,
+                    # Always apply colors - message can be decolorized later.
+                    color=record.details.color,
+                    level=record.details.shift,
+                    labels=record.details.logger_labels,
+                    labels_padding=record.details.logger_labels_padding,
+                )
+            )
+
+        return super().formatMessage(record)
 
 
 class LogfileFormatter(_Formatter):
