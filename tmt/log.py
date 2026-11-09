@@ -10,6 +10,13 @@ The main workhorses are :py:class:`Logger` instances. Each instance wraps a part
 having console and logfile handlers attached. tmt's log verbosity/debug/quiet features are handled
 on our side, with the use of :py:class:`logging.Filter` classes.
 
+A custom :py:class:`LogRecord` class is used to "connect the dots": message formatting happens
+in formatters, when invoked by handlers, and our formatting is very custom, depends on many
+parameters stored in ``record.details`` field. Since the default or 3rd party formatters are not
+aware of this special formatting, they would most likely end up with a broken or incomplete
+message. Therefore we are asking all loggers to use our custom ``LogRecord`` class which knows
+how to handle ``record.details`` field when it's present.
+
 ``Logger`` instances can be cloned and modified, to match various levels of tmt's runtime class
 tree - ``tmt`` spawns a "root logger" from which a new one is cloned - and indented by one extra
 level - for ``Run`` instance, and so on. This way, every object in tmt's hierarchy uses a given
@@ -471,6 +478,28 @@ class LogRecord(logging.LogRecord):
 
     details: LogRecordDetails
 
+    @override
+    def getMessage(self) -> str:
+        if is_our_log_record(self):
+            return indent(
+                self.details.key,
+                value=self.details.value,
+                # Always apply colors - message can be decolorized later.
+                color=self.details.color,
+                level=self.details.shift,
+                labels=self.details.logger_labels,
+                labels_padding=self.details.logger_labels_padding,
+            )
+
+        return super().getMessage()
+
+
+# Ask all loggers to use our custom record class, with our custom method
+# for message formatting. This should be safe even when used by loggers
+# not owned by tmt, our `LogRecord` is sane, `details` are optional, and
+# checked by our custom `getMessage()` method.
+logging.setLogRecordFactory(LogRecord)
+
 
 def is_our_log_record(record: logging.LogRecord) -> TypeGuard[LogRecord]:
     """
@@ -522,7 +551,7 @@ class _Formatter(logging.Formatter):
     @override
     def formatMessage(self, record: logging.LogRecord) -> str:
         if is_our_log_record(record):
-            return self._decolorize(
+            record.message = self._decolorize(
                 indent(
                     record.details.key,
                     value=record.details.value,
