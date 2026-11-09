@@ -386,7 +386,6 @@ directory:
     labels: Tier1 core
     components: tmt
     enabled: True
-    implements: https://issues.redhat.com/browse/RHELTEST-100
     Test case '/tests/core/smoke' successfully exported to Jira.
 
 Before export to ``--how nitrate`` tmt checks that used test
@@ -434,8 +433,13 @@ at https://github.com/RedHatQE/pylero
 Jira Project Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable export of test cases to Jira, the target Jira project and
-instance must have the following configuration:
+The Jira exporter targets the Red Hat Jira Cloud instance using REST v3,
+ADF descriptions and HTTP Basic Auth with an email address and API token.
+Install the ``tmt[link-jira]`` extra (or ``tmt+link-jira`` system package).
+Existing ``tmt link`` consumers retain the SDK's Server/Data Center
+behavior; Server/Data Center export is not supported by this plugin.
+
+The target project and instance must provide the following schema:
 
 **Issue Types:**
 
@@ -446,7 +450,8 @@ instance must have the following configuration:
 **Custom Fields:**
 
 * ``ID`` (Short text / plain text): Stores the unique tmt UUID (``id:`` in
-  fmf) for lookup and synchronization.
+  fmf) for lookup and synchronization. It must support equality searches
+  with ``cf[NUMBER]`` in JQL.
 * ``URL`` (URL field): Stores the clickable web link to the test file in
   the git repository.
 * ``External issue URL`` (URL field, optional): Used when exporting with
@@ -458,6 +463,111 @@ instance must have the following configuration:
   test cases to ``Active``).
 * ``Draft``: Initial / work-in-progress status before activation.
 * ``Retired``: Used when a test case is archived/retired.
+
+The exporter always transitions created or updated issues to ``Active``.
+Preparation validates that the status belongs to the project/issue type
+workflow. For an existing issue, the transition is resolved before any
+write; none or multiple transitions to ``Active`` fail the export.
+
+Credentials are supplied through ``--jira-url``, ``--jira-user`` and
+``--jira-token``. Cloud UUID lookups use the supported ``search/jql``
+endpoint through the SDK's authenticated transport, including Jira SDK
+3.5 on Python 3.9, and follow token pagination to detect ambiguous
+matches across response pages.
+
+Existing ``Test Case`` issues are located first by the tmt UUID stored in
+the ``ID`` custom field, then by an ``implements`` link pointing to the
+configured instance. UUID lookup is scoped to the project and issue type
+and never includes components. ``implements`` backlinks are also checked
+for project, issue type and conflicting UUIDs. Multiple candidate issues
+fail explicitly. Two selected tests cannot share a restored or generated
+UUID, or target the same issue. Existing local UUIDs are preserved. If
+metadata has no UUID, a linked issue's UUID is restored, otherwise one is
+generated and persisted. ``--duplicate`` is rejected because Jira identity
+must be unique.
+
+The whole selected collection is checked for committed, published
+metadata before UUID generation or optional backlink writes.
+``--ignore-git-validation`` permits unpublished metadata and still
+constructs an automation URL when possible. Preparation then resolves all
+identities in memory, builds payloads, and validates fields,
+relationships and transitions for the entire collection. Application
+starts only after preparation succeeds. Virtual tests can share source
+files without failing on the exporter's own writes. Validation covers the
+initial collection; it is not a lock against concurrent edits.
+``--create`` permits new issues; otherwise a missing issue fails.
+``--link-jira`` adds an ``implements`` link to local metadata and is
+disabled by default. Commit and publish generated UUIDs or requested
+backlinks before the next validated export.
+
+The first ``contact`` entry is resolved to a Jira account, accepting full
+display names or email addresses while preserving display names that are
+not email forms. Exact email matches take precedence over display names
+and usernames, and account decisions, misses and ambiguity are cached for
+one client. An unresolved or ambiguous non-empty contact warns and leaves
+the assignment unchanged.
+
+The exporter owns ``summary``, ``description``, ``components``, ``labels``,
+``assignee``, the ``ID`` UUID field and the ``URL`` automation field.
+``summary`` falls back to the resolved fmf name, and an empty source clears
+``description``. ``URL`` is populated from ``Test.web_link()``. The
+``External issue URL`` field is populated only with ``--polarion``.
+``project`` and ``issuetype`` are set on creation only.
+
+Jira ``verifies`` links pointing to the configured instance are recreated
+with the ``pair`` issue link type, with the exported test case as the
+source. Same-instance links are deduplicated by type, direction and
+target. With ``--bugzilla``, Bugzilla ``verifies`` links are also exported
+as remote web links titled ``BZ#<id>``. Remote links are deduplicated by
+URL, and unrecognised targets are skipped with a warning.
+
+The whole collection is prepared before any write, so invalid titles,
+identity collisions, missing required fields and late failures leave
+metadata and Jira untouched. Application errors report completed tests and
+warn of possible partial writes in the current test. Persisted UUIDs
+support retries. Jira export is not transactional across tests or
+protected from concurrent Jira/schema changes between preparation and
+application.
+
+An external extension can subclass ``JiraExporter`` and register another
+export format using ``Test.provides_export``. Override either public hook:
+
+* ``enrich_payload(test, context, fields)`` mutates the create/update payload
+  during preparation and is also called for dry runs. It must preserve
+  identity and create routing fields and perform no local or external writes,
+  even when preparing a live export.
+* ``post_export(test, context)`` runs after CRUD, transitions, relationships
+  and optional backlinks. It also runs for dry runs. Extensions must check
+  ``context.dry_run`` before performing any local or external writes.
+
+Both receive the resolved ``Test`` and ``JiraExportContext``, containing the
+Jira connection, project, issue type ID, resolved field IDs, UUID,
+automation URL, dry-run state and issue key. The key is available before
+enrichment on updates and after creation for new issues. It is ``None`` for
+a dry run of a new issue. ``prepare_test_collection()`` returns typed
+``JiraExportPlan`` objects without generic exporter writes; ``to_dict()``
+provides their credential-free YAML/JSON representation.
+``apply_test_collection()`` applies those prepared operations or displays the
+plans in dry mode. Hook exceptions propagate; already completed Jira writes
+are not rolled back.
+
+See ``examples/plugins/jira_export.py`` for a small extension that adds a
+label and handles a post-export action without replacing discovery, UUID
+lookup or Jira CRUD. Load it with ``TMT_PLUGINS=examples/plugins`` and use
+``--how jira-example`` with the same Jira options. ``--dry`` allows schema
+and identity reads, prepares the same fields and operations and invokes both
+hooks, but makes no Jira or metadata writes in the generic exporter.
+Normal dry-run output shows YAML containing resolved destinations,
+create/update decisions, field replacements and clears, automation URL,
+relationships, transition status/ID, and planned UUID/backlink metadata
+writes.
+
+This plugin exports test metadata; it does not report execution results.
+Future report plugins can reuse the public, read-only
+``JiraInstance.find_issue_by_uuid(uuid, project_id=..., issue_type=...,
+uuid_field=...)`` lookup. Backlinks remain an exporter concern. Result
+issue types, grouping and outcome workflows belong in a separate report
+step, rather than metadata enrichment or post-export hooks.
 
 
 BeakerLib Libraries
