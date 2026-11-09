@@ -464,10 +464,9 @@ class LogRecord(logging.LogRecord):
     """
     Custom log record class, aware of our log record details.
 
-    :py:mod:`logging` is instructed to use this class instead of its
-    default :py:class:`logging.LogRecord`. This formalizes the existence
-    of the :py:attr:`details` attribute, and allows for custom message
-    rendering.
+    This class is never used for constructing actual records, it serves
+    as type guard for type checkers, and formalized the existence and
+    type of the :py:attr:`details` attribute.
     """
 
     details: LogRecordDetails
@@ -477,11 +476,7 @@ def is_our_log_record(record: logging.LogRecord) -> TypeGuard[LogRecord]:
     """
     Type guard for narrowing logging record type.
 
-    Narrows a log record down to our custom :py:class:`LogRecord` type
-    if and only if:
-
-    1. record is an instance of said class, and
-    2. record has :py:attr:`LogRecord.details` attribute.
+    Narrows a log record down to our custom :py:class:`LogRecord` type.
 
     Once narrowed, the type checker should correctly recognize
     :py:attr:`LogRecord.details` attribute and its type.
@@ -515,8 +510,10 @@ class ConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
 
 
 class _Formatter(logging.Formatter):
-    def __init__(self, fmt: str, apply_colors: bool = False) -> None:
-        super().__init__(fmt, datefmt='%H:%M:%S')
+    def __init__(
+        self, fmt: Optional[str] = None, datefmt: str = '%H:%M:%S', apply_colors: bool = False
+    ) -> None:
+        super().__init__(fmt=fmt, datefmt='%H:%M:%S')
 
         self.apply_colors = apply_colors
 
@@ -542,13 +539,13 @@ class _Formatter(logging.Formatter):
 
 class LogfileFormatter(_Formatter):
     def __init__(self) -> None:
-        super().__init__('%(asctime)s %(message)s', apply_colors=False)
+        super().__init__(fmt='%(asctime)s %(message)s', apply_colors=False)
 
 
 class ConsoleFormatter(_Formatter):
     def __init__(self, apply_colors: bool = True, show_timestamps: bool = False) -> None:
         super().__init__(
-            '%(asctime)s %(message)s' if show_timestamps else '%(message)s',
+            fmt='%(asctime)s %(message)s' if show_timestamps else '%(message)s',
             apply_colors=apply_colors,
         )
 
@@ -569,7 +566,7 @@ class RunWarningEntry(SpecBasedContainer[_RawRunWarningEntry, _RawRunWarningEntr
         return cls(**spec)
 
 
-class RunWarningsFormatter(logging.Formatter):
+class RunWarningsFormatter(_Formatter):
     #: Yaml handler for formatting the content.
     _yaml_handler: YAML
 
@@ -582,7 +579,7 @@ class RunWarningsFormatter(logging.Formatter):
         # make use of the document is composed of direct list items so we can
         # simply append each item as a new list.
         self._yaml_handler = _yaml(yaml_type="safe")
-        super().__init__('%(message)s', datefmt='%H:%M:%S')
+        super().__init__(fmt='%(message)s', datefmt='%H:%M:%S')
 
     def format(self, record: logging.LogRecord) -> str:
         if is_our_log_record(record):
