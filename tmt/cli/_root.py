@@ -924,8 +924,8 @@ _test_export_default = 'yaml'
     '--ignore-git-validation',
     is_flag=True,
     help="""
-         Ignore unpublished git changes and export to Nitrate. The case might not be able to be
-         scheduled!
+         Ignore unpublished git changes during export. Automation URLs may refer to unpublished
+         metadata.
          """,
 )
 @option(
@@ -940,7 +940,7 @@ _test_export_default = 'yaml'
 @option(
     '--create',
     is_flag=True,
-    help="Create test cases in nitrate if they don't exist.",
+    help="Create test cases if they don't exist.",
 )
 @option(
     '--general / --no-general',
