@@ -218,6 +218,34 @@ class CustomGroup(click.Group):
         context.fail(f"Did you mean {fmf.utils.listed(sorted(matches), join='or')}?")
         return None
 
+    # ignore[override]: expected, we want to use more specific `Context`
+    # type than the one declared in superclass.
+    def resolve_command(  # type: ignore[override]
+        self,
+        context: Context,
+        args: list[str],
+    ) -> tuple[Optional[str], Optional[click.Command], list[str]]:
+        """
+        Split step options from the `tmt try` command line
+
+        Allows `tmt try` to accept options of individual steps, e.g.
+        `tmt try fedora@minute provision --flavor u1.large`. The command
+        line is split on the first step name, the leading part is handled
+        by the `tmt try` command itself, the rest is applied to the
+        corresponding step as if it was given to `tmt run`.
+        """
+
+        cmd_name, command, args = click.Group.resolve_command(self, context, args)
+
+        if cmd_name == 'try' and command is not None:
+            # Delayed import to avoid a circular one
+            import tmt.cli.trying
+
+            args, step_arguments = tmt.cli.trying.split_step_arguments(args, command)
+            tmt.cli.trying.stash_step_arguments(step_arguments)
+
+        return cmd_name, command, args
+
 
 class HelpFormatter(click.HelpFormatter):
     """

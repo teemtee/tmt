@@ -69,6 +69,15 @@ rlJournalStart
         rlAssertGrep "container: removed" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Step Options"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ./steps.exp"
+        rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
+        rlAssertGrep "cmd: rpm -q --whatprovides tree" $rlRun_LOG
+        rlAssertGrep "cmd: dnf.* install -y  tree" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+        rlAssertGrep "container: removed" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartTest "Verbose Output"
         rlRun -s "TMT_CONFIG_DIR=$config ./verbose.exp"
         rlAssertGrep "custom-prepare" $rlRun_LOG

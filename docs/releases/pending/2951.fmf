@@ -1,0 +1,15 @@
+description: |
+    The ``tmt try`` command now accepts options of individual steps, given
+    on the command line after the image. They are applied to the plan in
+    the same way as when running ``tmt run``:
+
+    tmt try fedora@minute provision --flavor u1.large
+    tmt try fedora@local prepare --insert --how install --package tree
+
+    The provision method provided by the ``image@method`` syntax is used
+    as the ``--how`` option of the provision step, therefore method-specific
+    options such as ``--flavor`` of the ``minute`` plugin are accepted
+    without repeating the method. Step names can be abbreviated as long
+    as the abbreviation is unambiguous, e.g. ``prov`` for ``provision``.
+    A new ``--flavor`` option has been added to ``tmt try`` as well,
+    as a handy shortcut for the most common use case.
