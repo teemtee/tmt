@@ -9,25 +9,6 @@ from the official distribution or copr repositories. Use the
 playbooks or execute :ref:`/plugins/prepare/shell` scripts
 to perform arbitrary preparation tasks.
 
-.. code-block:: yaml
-
-    # Install fresh packages from a custom copr repository
-    prepare:
-      - how: install
-        copr: psss/tmt
-        package: tmt+all
-
-.. code-block:: yaml
-
-    # Install required packages and start the service
-    prepare:
-      - name: packages
-        how: install
-        package: [httpd, curl]
-      - name: service
-        how: shell
-        script: systemctl start httpd
-
 .. _/plugins/prepare/order:
 
 Preparation order
