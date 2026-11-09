@@ -140,7 +140,7 @@ man:  ## Build man page
 build: rpm
 
 rpm: tmp ## Build RPMs
-	packit build in-mock --resultdir $(TMP)
+	packit -d build in-mock --resultdir $(TMP)
 
 srpm: ## Build SRPM
 	packit srpm
