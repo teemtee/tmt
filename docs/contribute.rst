@@ -417,7 +417,9 @@ good to include respective documentation. You can for example
 update the :ref:`specification` or write a new chapter for the
 user :ref:`guide`.
 
-Layout
+.. _docs-layout:
+
+Docs Layout
 ------------------------------------------------------------------
 
 Documentation is structured into several areas, each one has its
