@@ -37,6 +37,10 @@
     prepare:
       - how: shell
         script: dnf remove -y python3-click python3-pluggy python3-pip || /bin/true
+      - how: shell
+        script: source "$TMT_TOPOLOGY_BASH"; printf '%s\n' "${TMT_GUEST[name]}" > /tmp/tmt-ansible-guest
+      - how: ansible
+        playbook: playbook.yml
 
     execute:
         how: tmt
