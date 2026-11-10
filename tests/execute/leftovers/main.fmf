@@ -1,0 +1,10 @@
+summary: Verify leftover background processes do not block test execution
+description: |
+    A test which starts a background process holding its output
+    open, and exits without stopping it, must not block tmt until
+    the test duration runs out. The test exit code and output must
+    be kept, and the leftover process reported in the test output.
+duration: 15m
+tag+:
+  - provision-container
+  - provision-virtual

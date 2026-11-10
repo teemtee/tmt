@@ -55,21 +55,33 @@ event, and they do not finish on their own.
 
 The ssh client always allocates a tty, so the timeout handling works
 (#1387). Because the allocated tty is generally not suitable for the
-execution of test, or scripts in general, the wrapper uses ``|& cat`` to
-emulate execution without a tty. In certain cases, where the execution
-of given action with available tty is required (#2381), the tty can be
-enabled in the outer script.
+execution of test, or scripts in general, the wrapper sends the action
+output to ``cat`` through a pipe to emulate execution without a tty. In
+certain cases, where the execution of given action with available tty
+is required (#2381), the tty can be enabled in the outer script.
 
 The outer wrapper handles the following 3 execution modes:
 
 * In the interactive mode, stdin and stdout are unhandled, it is expected
   user interacts with the executed command.
 * In the non-interactive mode without a tty, stdin is fed with
-  ``/dev/null`` (EOF), and ``|& cat`` is used to simulate the "no tty
-  available" for the running action.
+  ``/dev/null`` (EOF), and the output goes to ``cat`` through a pipe to
+  simulate the "no tty available" for the running action.
 * In the non-interactive mode with a tty, stdin is available to the
   action, and the simulation of "tty not available" for output is not
   run.
+
+Without a tty, the action may leave processes running in the background
+which inherited its output, e.g. ``perf record ... &`` which was never
+stopped. With ``action |& cat``, bash would wait for ``cat``, and
+``cat`` would wait until all these processes close the pipe, possibly
+until the action timeout. Therefore ``cat`` runs in a process
+substitution, which bash does not wait for, and the wrapper waits for
+the action only. Once the action exits, the wrapper gives ``cat`` a
+second to read the rest of the output, then warns about the leftovers
+and stops ``cat``. The leftovers are not killed by the wrapper: with
+the ssh tty, the end of the session sends them ``SIGHUP``, otherwise
+they get ``SIGPIPE`` once they write to the closed pipe.
 """
 
 import functools
@@ -163,12 +175,27 @@ _exit_code="$?"
 {{ exit () }}
 
 {% else %}
-set -o pipefail
-
 {{ enter() }}
 
-{{ COMMAND }} </dev/null |& cat
+# Read the output in a process substitution, bash does not wait for it.
+# Wait for the action only, not for processes it left holding the output.
+exec 5> >(exec cat)
+_tmt_output_reader="$!"
+
+{{ COMMAND }} </dev/null >&5 2>&5 5>&-
 _exit_code="$?"
+exec 5>&-
+
+# Give the reader a second to read the rest of the output
+for _ in {1..10}; do
+    kill -0 "$_tmt_output_reader" 2>/dev/null || break
+    sleep 0.1
+done
+
+if kill -0 "$_tmt_output_reader" 2>/dev/null; then
+    echo "tmt: warning: processes started by the script still hold its output open, ignoring their output."
+    kill "$_tmt_output_reader" 2>/dev/null
+fi
 
 {{ exit () }}
 {% endif %}
