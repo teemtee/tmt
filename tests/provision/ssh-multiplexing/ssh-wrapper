@@ -1,22 +1,20 @@
 #!/bin/bash
 set -eu
 
-state_prefix="${BASH_SOURCE[0]}.state"
+state="${BASH_SOURCE[0]}.state"
 
 for argument in "$@"; do
-    if [[ "$argument" == *reboot* && "$argument" != *soft-reboot* ]]; then
-        touch "$state_prefix.reboot-issued"
-        break
-    fi
+    case "$argument" in
+        *MNnT*)
+            if [[ -f "$state.reboot-issued" && ! -f "$state.failure-injected" ]]; then
+                touch "$state.failure-injected"
+                exit 255
+            fi
+            ;;
+        *reboot*)
+            [[ "$argument" != *soft-reboot* ]] && touch "$state.reboot-issued"
+            ;;
+    esac
 done
-
-if [[ -f "$state_prefix.reboot-issued" && ! -f "$state_prefix.failure-injected" ]]; then
-    for argument in "$@"; do
-        if [[ "$argument" == *MNnT* ]]; then
-            touch "$state_prefix.failure-injected"
-            exit 255
-        fi
-    done
-fi
 
 exec /usr/bin/ssh "$@"
