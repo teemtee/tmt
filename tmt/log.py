@@ -10,6 +10,13 @@ The main workhorses are :py:class:`Logger` instances. Each instance wraps a part
 having console and logfile handlers attached. tmt's log verbosity/debug/quiet features are handled
 on our side, with the use of :py:class:`logging.Filter` classes.
 
+A custom :py:class:`LogRecord` class is used to "connect the dots": message formatting happens
+in formatters, when invoked by handlers, and our formatting is very custom, depends on many
+parameters stored in ``record.details`` field. Since the default or 3rd party formatters are not
+aware of this special formatting, they would most likely end up with a broken or incomplete
+message. Therefore we are asking all loggers to use our custom ``LogRecord`` class which knows
+how to handle ``record.details`` field when it's present.
+
 ``Logger`` instances can be cloned and modified, to match various levels of tmt's runtime class
 tree - ``tmt`` spawns a "root logger" from which a new one is cloned - and indented by one extra
 level - for ``Run`` instance, and so on. This way, every object in tmt's hierarchy uses a given
@@ -43,6 +50,7 @@ from typing import (
     Self,
     TextIO,
     TypeAlias,
+    TypeGuard,
     Union,
     cast,
     override,
@@ -459,6 +467,53 @@ class LogRecordDetails:
     reason: Optional[str] = None
 
 
+class LogRecord(logging.LogRecord):
+    """
+    Custom log record class, aware of our log record details.
+
+    This class is never used for constructing actual records, it serves
+    as type guard for type checkers, and formalized the existence and
+    type of the :py:attr:`details` attribute.
+    """
+
+    details: LogRecordDetails
+
+    @override
+    def getMessage(self) -> str:
+        if is_our_log_record(self):
+            return indent(
+                self.details.key,
+                value=self.details.value,
+                # Always apply colors - message can be decolorized later.
+                color=self.details.color,
+                level=self.details.shift,
+                labels=self.details.logger_labels,
+                labels_padding=self.details.logger_labels_padding,
+            )
+
+        return super().getMessage()
+
+
+# Ask all loggers to use our custom record class, with our custom method
+# for message formatting. This should be safe even when used by loggers
+# not owned by tmt, our `LogRecord` is sane, `details` are optional, and
+# checked by our custom `getMessage()` method.
+logging.setLogRecordFactory(LogRecord)
+
+
+def is_our_log_record(record: logging.LogRecord) -> TypeGuard[LogRecord]:
+    """
+    Type guard for narrowing logging record type.
+
+    Narrows a log record down to our custom :py:class:`LogRecord` type.
+
+    Once narrowed, the type checker should correctly recognize
+    :py:attr:`LogRecord.details` attribute and its type.
+    """
+
+    return hasattr(record, 'details')
+
+
 class RunWarningsHandler(logging.FileHandler):
     def __init__(self, filepath: Path) -> None:
         # mode="a": We want to keep the old warnings.yaml if we are running a new run on top
@@ -484,8 +539,10 @@ class ConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
 
 
 class _Formatter(logging.Formatter):
-    def __init__(self, fmt: str, apply_colors: bool = False) -> None:
-        super().__init__(fmt, datefmt='%H:%M:%S')
+    def __init__(
+        self, fmt: Optional[str] = None, datefmt: str = '%H:%M:%S', apply_colors: bool = False
+    ) -> None:
+        super().__init__(fmt=fmt, datefmt=datefmt)
 
         self.apply_colors = apply_colors
 
@@ -493,18 +550,31 @@ class _Formatter(logging.Formatter):
 
     @override
     def formatMessage(self, record: logging.LogRecord) -> str:
-        return self._decolorize(super().formatMessage(record))
+        if is_our_log_record(record):
+            record.message = self._decolorize(
+                indent(
+                    record.details.key,
+                    value=record.details.value,
+                    # Always apply colors - message can be decolorized later.
+                    color=record.details.color,
+                    level=record.details.shift,
+                    labels=record.details.logger_labels,
+                    labels_padding=record.details.logger_labels_padding,
+                )
+            )
+
+        return super().formatMessage(record)
 
 
 class LogfileFormatter(_Formatter):
     def __init__(self) -> None:
-        super().__init__('%(asctime)s %(message)s', apply_colors=False)
+        super().__init__(fmt='%(asctime)s %(message)s', apply_colors=False)
 
 
 class ConsoleFormatter(_Formatter):
     def __init__(self, apply_colors: bool = True, show_timestamps: bool = False) -> None:
         super().__init__(
-            '%(asctime)s %(message)s' if show_timestamps else '%(message)s',
+            fmt='%(asctime)s %(message)s' if show_timestamps else '%(message)s',
             apply_colors=apply_colors,
         )
 
@@ -525,7 +595,7 @@ class RunWarningEntry(SpecBasedContainer[_RawRunWarningEntry, _RawRunWarningEntr
         return cls(**spec)
 
 
-class RunWarningsFormatter(logging.Formatter):
+class RunWarningsFormatter(_Formatter):
     #: Yaml handler for formatting the content.
     _yaml_handler: YAML
 
@@ -538,28 +608,35 @@ class RunWarningsFormatter(logging.Formatter):
         # make use of the document is composed of direct list items so we can
         # simply append each item as a new list.
         self._yaml_handler = _yaml(yaml_type="safe")
-        super().__init__('%(message)s', datefmt='%H:%M:%S')
+        super().__init__(fmt='%(message)s', datefmt='%H:%M:%S')
 
     def format(self, record: logging.LogRecord) -> str:
-        # TODO: make this in a better yaml with a schema
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-        if not details:
-            # Not a tmt owned warning
-            warning_msg = super().format(record)
-        else:
+        if is_our_log_record(record):
             # Tmt warning, we take the original raw value
             record_copy = copy.copy(record)
-            record_copy.msg = details.value
+            record_copy.msg = record.details.value
             warning_msg = super().format(record_copy)
+
+            source: Optional[str] = record.details.source
+            reason: Optional[str] = record.details.reason
+
+        else:
+            # Not a tmt owned warning
+            warning_msg = super().format(record)
+
+            source = "(external)"
+            reason = None
+
         # The yaml content to be appended is always a single list item so that
         # it can be appended with the previous content
+        # TODO: make this in a better yaml with a schema
         yaml_content = [
             RunWarningEntry(
                 msg=warning_msg,
                 logger=record.name,
                 trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
-                source=details.source if details else "(external)",
-                reason=details.reason if details else None,
+                source=source,
+                reason=reason,
             ).to_minimal_spec(),
         ]
         # Format and dump the yaml content
@@ -573,15 +650,16 @@ class VerbosityLevelFilter(logging.Filter):
         if record.levelno != logging.INFO:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return True
 
-        if details.message_verbosity_level is None:
+        if record.details.message_verbosity_level is None:
             return True
 
-        return details.logger_verbosity_level >= details.message_verbosity_level
+        if record.details.logger_verbosity_level >= record.details.message_verbosity_level:
+            return True
+
+        return False
 
 
 class DebugLevelFilter(logging.Filter):
@@ -589,15 +667,16 @@ class DebugLevelFilter(logging.Filter):
         if record.levelno != logging.DEBUG:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return True
 
-        if details.message_debug_level is None:
+        if record.details.message_debug_level is None:
             return True
 
-        return details.logger_debug_level >= details.message_debug_level
+        if record.details.logger_debug_level >= record.details.message_debug_level:
+            return True
+
+        return False
 
 
 class QuietnessFilter(logging.Filter):
@@ -605,15 +684,13 @@ class QuietnessFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO, logging.WARNING):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return False
 
-        if not details.logger_quiet:
+        if not record.details.logger_quiet:
             return True
 
-        if details.ignore_quietness:
+        if record.details.ignore_quietness:
             return True
 
         return False
@@ -624,15 +701,13 @@ class TopicFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
-
-        if details is None:
+        if not is_our_log_record(record):
             return False
 
-        if details.message_topic is None:
+        if record.details.message_topic is None:
             return True
 
-        if details.message_topic in details.logger_topics:
+        if record.details.message_topic in record.details.logger_topics:
             return True
 
         return False
@@ -1018,24 +1093,14 @@ class Logger:
 
         details.shift = details.shift + self._base_shift
 
-        if not message:
-            message = indent(
-                details.key,
-                value=details.value,
-                # Always apply colors - message can be decolorized later.
-                color=details.color,
-                level=details.shift,
-                labels=self.labels,
-                labels_padding=self.labels_padding,
-            )
-
         # stacklevel: This function is never called directly, instead it is called by one level
         # higher e.g. `info`. So we escape at least 2 levels of the stack (this function, and its
         # caller) + the requested stacklevel of the caller (default is the current caller of
         # `info`)
         self._logger._log(
             level,
-            message,
+            # No message - our log record class will utilize `details` instead.
+            None,
             (),
             extra={'details': details},
             stacklevel=stacklevel + 2,
