@@ -1,0 +1,132 @@
+.. _paths:
+
+======================
+    Path Handling
+======================
+
+Paths show up in several places of the fmf metadata and in the
+code. Here we give them clear names and describe how they are
+resolved so that we can clearly distinguish them.
+
+
+.. _anchor-path:
+
+anchor path
+------------------------------------------------------------------
+
+When a relative path is provided by the user, for example an
+:ref:`/plugins/prepare/ansible` playbook for preparing the guest
+or a local :ref:`/plugins/prepare/artifact` to be installed on the
+guest, tmt resolves it against a well-defined directory called an
+:term:`anchor path`. It is the fmf tree root of the node (a plan,
+test or story) the metadata belongs to.
+
+For the special case when there is no fmf tree root, for example
+when running commands like ``tmt try fedora`` from your home
+directory, the current working directory is used as the anchor.
+
+For a plan defined directly in the :term:`user tree` the anchor
+path is the user tree root:
+
+.. code-block::
+
+    /home/user/git/project
+
+For an imported plan the anchor path points to the fmf tree root
+under the :term:`import tree`, so that relative paths resolve
+correctly the same way as when the plan runs in its own
+repository:
+
+.. code-block::
+
+    # basic case when git root and fmf root are the same
+    /var/tmp/tmt/run-123/import/plan/    <--- anchor path
+    ├── .fmf/                            <--- fmf tree root
+    ├── .git/                            <--- git repo root
+    ├── plans/
+    │   └── plan.fmf
+    └── scripts/
+        └── setup.sh
+
+    # fmf root stored deeper in the git repository
+    /var/tmp/tmt/run-123/import/plan/
+    ├── .git/           <--- git repo root
+    └── nested/
+        └── tree/       <--- anchor path
+            ├── .fmf/   <--- fmf tree root
+            ├── plans/
+            │   └── plan.fmf
+            └── scripts/
+                └── setup.sh
+
+.. _fmf-path:
+
+fmf path
+------------------------------------------------------------------
+
+The :term:`fmf path` is the ``path`` key of the :term:`fmf id`.
+It points to the location of the fmf tree inside its git
+repository, expressed as the relative path from the git repository
+root to the fmf tree root and starting with a slash. It is used
+for example by ``plan.import`` to find a plan stored deeper in the
+repository.
+
+For a tree stored directly in the git repository root the fmf path
+is not needed. When the tree lives deeper, fmf path captures that
+location. For testing we quite often use the ``data`` directories
+with nested fmf trees used for testing specific features:
+
+.. code-block::
+
+    tmt
+    ├── .git    <--- git repo root
+    └── tests
+        └── feature
+            ├── data
+            │   ├── .fmf    <--- fmf tree root
+            │   ├── plan.fmf
+            │   └── test.fmf
+            ├── main.fmf
+            └── test.sh
+
+    git root: /home/user/git/tmt
+    fmf root: /home/user/git/tmt/tests/feature/data
+    fmf path: /tests/feature/data
+
+
+.. _test-path:
+
+test path
+------------------------------------------------------------------
+
+A :term:`test path` is the path from which a test is executed,
+represented by the :tmt:story:`/spec/tests/path` key in the test
+metadata.
+
+The default value is the directory where the test metadata of the
+current node is stored, i.e.:
+
+.. code-block::
+
+    tmt
+    ├── .fmf    <--- fmf tree root
+    └── tests   <--- default test path
+        ├── smoke.fmf
+        └── test.sh
+
+so the following test metadata of a `smoke.fmf` are equivalent
+
+.. code-block:: yaml
+
+    test: ./test.sh
+
+.. code-block:: yaml
+
+    test: ./test.sh
+    path: /tests
+
+.. note::
+
+    When providing a ``path`` key, both relative and absolute
+    paths are equal and they are resolved relative to the
+    :term:`anchor path`.
