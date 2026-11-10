@@ -6,6 +6,7 @@
 
 # Prepare variables
 TMP = $(CURDIR)/tmp
+MOCK_CHROOT = default
 
 ccred=$(shell env TERM="$${TERM:-linux}" tput setaf 1)
 ccgreen=$(shell env TERM="$${TERM:-linux}" tput setaf 2)
@@ -79,8 +80,8 @@ _OS_ID   := $(shell sh -c '. /etc/os-release 2>/dev/null && echo $$ID')
 _deps/fedora:
 	sudo dnf install -y $(_DEPS_CORE_FEDORA)
 
-_build-deps/fedora: _deps
-	rpmbuild --define '_topdir $(TMP)' -br packaging/rpm/tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
+_build-deps/fedora: srpm
+	mock -r $(MOCK_CHROOT) --calculate-build-dependencies --resultdir $(TMP) tmt-*.src.rpm || sudo dnf builddep -y $(TMP)/tmt-*buildreqs.nosrc.rpm
 
 _develop/fedora: _deps/fedora
 	sudo dnf install -y $(_DEPS_DEVELOP_FEDORA)
@@ -138,7 +139,7 @@ man:  ## Build man page
 ## Packaging & Packit
 ##
 rpm: tmp ## Build RPMs
-	packit -d build in-mock --resultdir $(TMP)
+	packit -d build in-mock -r $(MOCK_CHROOT) --resultdir $(TMP)
 
 srpm: ## Build SRPM
 	packit srpm
