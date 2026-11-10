@@ -137,8 +137,6 @@ man:  ## Build man page
 ##
 ## Packaging & Packit
 ##
-build: rpm
-
 rpm: tmp ## Build RPMs
 	packit -d build in-mock --resultdir $(TMP)
 
