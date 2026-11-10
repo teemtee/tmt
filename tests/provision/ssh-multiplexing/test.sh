@@ -11,6 +11,8 @@ rlJournalStart
         rlRun "tmpdir=\$(mktemp -d)" 0 "Create temporary directory"
         rlRun "sed 's|RUN|$run|g' test.exp > $tmpdir/test.exp"
         rlRun "chmod a+x $tmpdir/test.exp"
+        rlRun "cp ssh-wrapper $tmpdir/ssh"
+        rlRun "chmod a+x $tmpdir/ssh"
 
         rlRun "pushd data"
     rlPhaseEnd
@@ -27,6 +29,16 @@ rlJournalStart
     rlPhaseEnd
 
     if [ "$PROVISION_HOW" = "virtual" ]; then
+        rlPhaseStartTest "Reconnect retries a failed SSH master start after reboot (#5164)"
+            rlRun "reconnect_run=\$(mktemp -d)" 0 "Create reconnect run directory"
+            rlRun "tmt -vv run -i $reconnect_run provision -h virtual" 0 "Provision reconnect guest"
+
+            rlRun -s "PATH='$tmpdir:$PATH' tmt -vv run -i '$reconnect_run' reboot --step provision" \
+                0 "Reboot and reconnect after one injected SSH master failure"
+            rlAssertExists "$tmpdir/ssh.state.failure-injected"
+            rlAssertGrep "Reboot finished" "$reconnect_run/log.txt"
+        rlPhaseEnd
+
         rlPhaseStartTest "Make sure SSH multiplexing does not block reuse of guests (#3520)"
             rlRun "tmt -vv run -i $run --scratch provision -h $PROVISION_HOW"
 
@@ -45,5 +57,9 @@ rlJournalStart
         rlRun "rm -r $tmpdir" 0 "Remove temporary directory"
         rlRun "rm -r $run" 0 "Remove run directory"
         rlRun "rm -r $long_run" 0 "Remove run directory with the long name"
+        if [ -n "${reconnect_run:-}" ]; then
+            rlRun "tmt run -i $reconnect_run cleanup" 0 "Clean up reconnect guest"
+            rlRun "rm -r $reconnect_run" 0 "Remove reconnect run directory"
+        fi
     rlPhaseEnd
 rlJournalEnd
