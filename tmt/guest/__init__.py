@@ -1653,14 +1653,14 @@ class GuestLog(abc.ABC):
       the :py:attr:`Guest.guest_logs` list. Generally, it should be
       possible to fetch content of the log.
     * Once :py:attr:`Guest.guest_logs` is populated, the plugin shall
-      invoke :py:meth:`Guest.setup_logs`. This method is responsible
+      invoke :py:meth:`Guest.kickoff_logs`. This method is responsible
       for invoking :py:meth:`setup` of all registered logs.
     * After this point, tmt may start collecting logs by invoking their
       :py:meth:`update` methods. It is allowed for the log to not be
       available yet, the log may be empty, other issues shall raise an
       exception.
     * The ``cleanup`` step will collect logs one more time.
-    * The ``cleanup`` step will invoke :py:meth:`Guest.teardown_logs`,
+    * The ``cleanup`` step will invoke :py:meth:`Guest.finalize_logs`,
       which will invoke :py:meth:`teardown` methods of all registered
       logs.
     * After this point, logs will not be collected anymore.
