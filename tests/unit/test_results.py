@@ -435,6 +435,39 @@ def test_result_interpret_edge_cases() -> None:
         ),
         pytest.param(
             CheckPhasesCase(
+                result_outcome=ResultOutcome.SKIP,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.SKIP,
+                note_contains=[],
+            ),
+            id="skip-respect-pass-xfail",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.SKIP,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.SKIP,
+                note_contains=["check 'check1' failed as expected"],
+            ),
+            id="skip-respect-fail-xfail",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PENDING,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.PENDING,
+                note_contains=[],
+            ),
+            id="pending-respect-pass-xfail",
+        ),
+        pytest.param(
+            CheckPhasesCase(
                 result_outcome=ResultOutcome.PASS,
                 result_interpret=ResultInterpret.RESPECT,
                 check_outcome=ResultOutcome.PASS,

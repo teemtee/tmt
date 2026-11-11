@@ -1,0 +1,4 @@
+description: |
+    ``SKIP`` and ``PENDING`` test results now stay unchanged when the
+    test has a passing check with ``result: xfail``. Such a test used
+    to end up as ``FAIL``.

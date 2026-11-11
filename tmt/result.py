@@ -420,7 +420,13 @@ class Result(BaseResult):
             self.note.append(f"check '{check_name}' is informational")
 
         elif interpret == CheckResultInterpret.XFAIL:
-            if reduced_outcome == ResultOutcome.PASS:
+            # Do not invert a passing check of a test which did not run. The
+            # check stays PASS, and merge_check_results() keeps the SKIP or
+            # PENDING test result.
+            if reduced_outcome == ResultOutcome.PASS and self.original_result not in (
+                ResultOutcome.PENDING,
+                ResultOutcome.SKIP,
+            ):
                 interpreted_outcome = ResultOutcome.FAIL
                 self.note.append(f"check '{check_name}' did not fail as expected")
 

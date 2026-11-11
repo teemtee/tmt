@@ -23,8 +23,11 @@ description: |
             test result. This is the default.
 
         xfail
-            The check result is expected to fail (pass becomes
-            fail and vice-versa).
+            The check result is inverted, ``pass`` becomes ``fail``
+            and ``fail`` becomes ``pass``. Use it for a check which
+            you expect to fail. When the test did not run and has
+            the ``skip`` or ``pending`` result, a passing check is not
+            inverted and the test result stays unchanged.
 
         info
             The check result is treated as an informational
