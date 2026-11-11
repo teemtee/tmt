@@ -1334,7 +1334,7 @@ class Step(
                     if plugin_class is None:
                         debug3(f"no plugin class found for '{how}'")
 
-                        return ({self._plugin_base_class._data_class.get_data_class()}, None)
+                        return ({self._plugin_base_class.get_data_class()}, None)
 
                     # Then get the "step data" class...
                     plugin_data_class = cast(
