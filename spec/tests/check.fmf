@@ -24,9 +24,10 @@ description: |
 
         xfail
             The check result is expected to fail (pass becomes
-            fail and vice-versa). A passing check of a test which
-            did not run, with the ``skip`` or ``pending`` result,
-            keeps the test result unchanged.
+            fail and vice-versa). When the test did not run and has
+            the ``skip`` or ``pending`` result, a passing check keeps
+            the test result unchanged. The check result itself is
+            kept as ``pass``.
 
         info
             The check result is treated as an informational
