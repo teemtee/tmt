@@ -420,7 +420,12 @@ class Result(BaseResult):
             self.note.append(f"check '{check_name}' is informational")
 
         elif interpret == CheckResultInterpret.XFAIL:
-            if reduced_outcome == ResultOutcome.PASS:
+            # A test which did not run cannot be expected to fail, and its
+            # SKIP or PENDING outcome is kept when check results are applied
+            if reduced_outcome == ResultOutcome.PASS and self.result not in (
+                ResultOutcome.PENDING,
+                ResultOutcome.SKIP,
+            ):
                 interpreted_outcome = ResultOutcome.FAIL
                 self.note.append(f"check '{check_name}' did not fail as expected")
 
