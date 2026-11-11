@@ -2308,6 +2308,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-mock"
+version = "3.17.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/c2/28b9f5b955ff2bcd4727a6f768e2ca9b586cd7c37b95ea5f7b9b873ac7b3/pytest_mock-3.17.0.tar.gz", hash = "sha256:e36576e0985e01027e999891e7a966c67822d40c89ef1b4c8b6e22737e3590b4", size = 43064, upload-time = "2026-10-17T16:21:42.435Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e8/ea/47fbdc8f37410956fd445720e927589b1e2a47772c5f28109f0ce2fa26d9/pytest_mock-3.17.0-py3-none-any.whl", hash = "sha256:1b82aa4b37137248bd687055e109723debeb07b489de1565297dc9589c5f2d6b", size = 11248, upload-time = "2026-10-17T16:21:41.265Z" },
+]
+
+[[package]]
 name = "pytest-testinfra"
 version = "10.2.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3131,6 +3143,7 @@ dev = [
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-container" },
+    { name = "pytest-mock" },
     { name = "pytest-xdist" },
     { name = "python-coveralls" },
     { name = "renku-sphinx-theme" },
@@ -3158,6 +3171,7 @@ docs = [
 tests = [
     { name = "pytest" },
     { name = "pytest-container" },
+    { name = "pytest-mock" },
     { name = "pytest-xdist" },
     { name = "requre" },
 ]
@@ -3230,6 +3244,7 @@ dev = [
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-container" },
+    { name = "pytest-mock" },
     { name = "pytest-xdist" },
     { name = "python-coveralls" },
     { name = "renku-sphinx-theme" },
@@ -3257,6 +3272,7 @@ docs = [
 tests = [
     { name = "pytest" },
     { name = "pytest-container" },
+    { name = "pytest-mock" },
     { name = "pytest-xdist" },
     { name = "requre" },
 ]

@@ -44,7 +44,7 @@ rlJournalStart
             rlRun "TEST_VENV=$(mktemp -d)"
 
             rlRun "python3 -m venv $TEST_VENV --system-site-packages"
-            rlRun "$TEST_VENV/bin/pip install 'pytest-container>=0.4.1' pytest-xdist"
+            rlRun "$TEST_VENV/bin/pip install --group ../../:tests"
 
             # Note: we're not in the root directory!
             rlRun "$TEST_VENV/bin/python3 -m $PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK ."
