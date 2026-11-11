@@ -1,6 +1,6 @@
 import copy
 import shutil
-from typing import Any, Callable, Optional, Self, TypeVar, cast
+from typing import Any, Optional, Self, TypeVar, cast
 
 import click
 import fmf
@@ -19,9 +19,7 @@ from tmt.container import (
     SpecBasedContainer,
     container,
     field,
-    option_to_key,
 )
-from tmt.steps import _RawStepData
 from tmt.utils import (
     Command,
     Path,
@@ -30,10 +28,6 @@ from tmt.utils import (
 from tmt.utils.environment import Environment
 
 T = TypeVar('T', bound='TestDescription')
-
-
-class _RawDiscoverShellData(_RawStepData):
-    tests: Optional[list[dict[str, Any]]]
 
 
 @container
@@ -145,9 +139,9 @@ class TestDescription(
     environment: Environment = field(
         default_factory=Environment,
         normalize=Environment.normalize,
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
-        exporter=lambda environment: environment.to_fmf_spec(),
+        serialize=lambda environment: environment.to_spec(),
+        unserialize=lambda serialized: Environment.from_spec(serialized),
+        exporter=lambda environment: environment.to_spec(),
     )
     check: list[tmt.checks.Check] = field(
         default_factory=list,
@@ -173,45 +167,6 @@ class TestDescription(
 
         data = cls(name=raw_data['name'], test=raw_data['test'])
         data._load_keys(raw_data, cls.__name__, logger)
-
-        return data
-
-    def to_spec(self) -> dict[str, Any]:
-        """
-        Convert to a form suitable for saving in a specification file
-        """
-
-        data = super().to_spec()
-        data['link'] = self.link.to_spec() if self.link else None
-        data['require'] = [require.to_spec() for require in self.require]
-        data['recommend'] = [recommend.to_spec() for recommend in self.recommend]
-        data['check'] = [check.to_spec() for check in self.check]
-        data['test'] = str(self.test)
-
-        return data
-
-    def to_minimal_spec(self) -> dict[str, Any]:
-        data = {key: value for key, value in self.items() if value not in (None, [], {})}
-
-        # Some fields need special handling.
-        # Map them to functions that will correctly convert them.
-        field_map: dict[str, Callable[[Any], Any]] = {
-            'link': lambda link: link.to_spec(),
-            'require': lambda requires: [require.to_spec() for require in requires],
-            'recommend': lambda recommends: [recommend.to_spec() for recommend in recommends],
-            'check': lambda checks: [check.to_spec() for check in checks],
-            'test': str,
-        }
-
-        for key, transform in field_map.items():
-            value = getattr(self, option_to_key(key), None)
-            if value is not None:
-                value = transform(value)
-            # Do not include empty values
-            if value in (None, [], {}):
-                data.pop(key, None)
-            else:
-                data[key] = value
 
         return data
 
@@ -241,23 +196,6 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
             Implicit if ``dist-git-source`` is used.
             """,
     )
-
-    def to_spec(self) -> _RawDiscoverShellData:
-        """
-        Convert to a form suitable for saving in a specification file
-        """
-
-        return cast(
-            _RawDiscoverShellData,
-            {**super().to_spec(), 'tests': [test.to_spec() for test in self.tests]},
-        )
-
-    def to_minimal_spec(self) -> _RawDiscoverShellData:
-        spec = {**super().to_minimal_spec()}
-        spec.pop('tests', None)
-        if self.tests:
-            spec['tests'] = [test.to_minimal_spec() for test in self.tests]
-        return cast(_RawDiscoverShellData, spec)
 
 
 @tmt.steps.provides_method('shell')

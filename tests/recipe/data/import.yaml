@@ -1,131 +1,93 @@
-run:
-    root: /path/to/fmf_root
-    remove: false
-    environment:
-        RUN_ENV: run_value
-    context: {}
 plans:
-  - name: /plans/import
-    summary: A simple smoke plan for remote testing
-    description: This is just a simple smoke plan used for testing import of
-        remote plans. See the related test coverage for more details.
+- adjust: []
+  author: []
+  cleanup:
+    enabled: false
+    phases:
+    - how: tmt
+      name: default-0
+  contact: []
+  context: {}
+  description: This is just a simple smoke plan used for testing import of remote
+    plans. See the related test coverage for more details.
+  discover:
     enabled: true
-    order: 50
-    link:
-      - relates: https://github.com/teemtee/tmt/tree/main/tests/plan/import
-    discover:
-        enabled: true
-        phases:
-          - name: default-0
-            how: fmf
-            order: 50
-            url-content-type: git
-            dist-git-source: false
-            dist-git-download-only: false
-            dist-git-install-builddeps: false
-            filter:
-              - tag:remote
-            modified-only: false
-            dist-git-init: false
-            dist-git-remove-fmf-root: false
-            dist-git-merge: false
-            sync-repo: false
-            fmf-id: false
-            prune: false
-        tests:
-          - name: /tests/one
-            discover-phase: default-0
-            test: echo one
-            path: /default-0/tests/tests
-            summary: Remote test one
-            enabled: true
-            order: 50
-            tag:
-              - remote
-            framework: shell
-            manual: false
-            tty: false
-            duration: 5m
-            restart-max-count: 1
-            restart-with-reboot: false
-            serial-number: 1
-            result: respect
-          - name: /tests/two
-            discover-phase: default-0
-            test: echo two
-            path: /default-0/tests/tests
-            summary: Remote test two
-            enabled: true
-            order: 50
-            tag:
-              - remote
-            framework: shell
-            manual: false
-            tty: false
-            duration: 5m
-            restart-max-count: 1
-            restart-with-reboot: false
-            serial-number: 2
-            result: respect
-    provision:
-        enabled: false
-        phases:
-          - become: false
-            how: local
-            name: default-0
-            order: 50
-    prepare:
-        enabled: false
-        phases:
-          - check-first: true
-            copr:
-              - '@teemtee/latest'
-            how: install
-            missing: fail
-            name: enable-latest-copr
-            order: 50
-            summary: Enable copr repo with the latest tmt bits
-          - how: shell
-            name: disable-tag-repo
-            order: 50
-            script:
-              - |
-                dnf repolist | grep testing-farm-tag-repository || exit 0
-                if command -v dnf5; then
-                    dnf config-manager setopt testing-farm-tag-repository.enabled=0
-                else
-                    dnf config-manager --set-disabled testing-farm-tag-repository
-                fi
-            summary: Completely disable the tag repository
-    execute:
-        enabled: false
-        phases:
-          - duration: 1h
-            exit-first: false
-            how: tmt
-            ignore-duration: false
-            interactive: false
-            name: default-0
-            no-progress-bar: false
-            order: 50
-            restraint-compatible: false
-        results-path: plans/import/execute/results.yaml
-    report:
-        enabled: false
-        phases:
-          - display-guest: auto
-            how: display
-            name: default-0
-            order: 50
-    finish:
-        enabled: false
-        phases:
-          - how: shell
-            name: default-0
-            order: 50
-    cleanup:
-        enabled: false
-        phases:
-          - how: tmt
-            name: default-0
-            order: 50
+    phases:
+    - filter:
+      - tag:remote
+      how: fmf
+      name: default-0
+    tests:
+    - adjust: []
+      discover-phase: default-0
+      link: []
+      name: /tests/one
+      path: /default-0/tests/tests
+      serial-number: 1
+      summary: Remote test one
+      tag:
+      - remote
+      test: echo one
+    - adjust: []
+      discover-phase: default-0
+      link: []
+      name: /tests/two
+      path: /default-0/tests/tests
+      serial-number: 2
+      summary: Remote test two
+      tag:
+      - remote
+      test: echo two
+  enabled: true
+  environment: {}
+  execute:
+    enabled: false
+    phases:
+    - how: tmt
+      name: default-0
+    results-path: plans/import/execute/results.yaml
+  finish:
+    enabled: false
+    phases:
+    - how: shell
+      name: default-0
+  id: null
+  link:
+  - relates: https://github.com/teemtee/tmt/tree/main/tests/plan/import
+  name: /plans/import
+  order: 50
+  prepare:
+    enabled: false
+    phases:
+    - copr:
+      - '@teemtee/latest'
+      how: install
+      name: enable-latest-copr
+      summary: Enable copr repo with the latest tmt bits
+    - how: shell
+      name: disable-tag-repo
+      script:
+      - "dnf repolist | grep testing-farm-tag-repository || exit 0\nif command -v
+        dnf5; then\n    dnf config-manager setopt testing-farm-tag-repository.enabled=0\nelse\n
+        \   dnf config-manager --set-disabled testing-farm-tag-repository\nfi\n"
+      summary: Completely disable the tag repository
+  provision:
+    enabled: false
+    phases:
+    - ansible: {}
+      how: local
+      name: default-0
+  report:
+    enabled: false
+    phases:
+    - how: display
+      name: default-0
+  summary: A simple smoke plan for remote testing
+  tag: []
+  tier: null
+run:
+  context: {}
+  environment:
+    RUN_ENV: run_value
+  remove: false
+  root: /path/to/fmf_root
