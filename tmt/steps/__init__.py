@@ -1247,7 +1247,7 @@ class Step(
             self.plan._applied_cli_invocations.append(invocation)
 
         def _apply_cli_invocation(
-            invocation: tmt.cli.CliInvocation, raw_datum: _RawStepData
+            invocation: 'tmt.cli.CliInvocation', raw_datum: _RawStepData
         ) -> _RawStepData:
             """
             Apply CLI invocation on the given phase specification.
