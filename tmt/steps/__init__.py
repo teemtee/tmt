@@ -1321,17 +1321,20 @@ class Step(
 
                 def _collect_plugin_key_bases(
                     how: str,
-                ) -> set[Union[type[StepData], type[_IsStepDataTrait]]]:
+                ) -> tuple[
+                    set[Union[type[StepData], type[_IsStepDataTrait]]], Optional[type[StepData]]
+                ]:
                     # Find the plugin class...
                     plugin_class = self._plugin_base_class._find_plugin_by_how(self, how)
 
                     # ... and if there's no such class - can happen,
                     # e.g. when using environment variables - just
-                    # state there are no base classes.
+                    # state use the base plugin class for this step. That
+                    # way we can preserve the very basic keys like `name`.
                     if plugin_class is None:
                         debug3(f"no plugin class found for '{how}'")
 
-                        return set()
+                        return ({self._plugin_base_class._data_class.get_data_class()}, None)
 
                     # Then get the "step data" class...
                     plugin_data_class = cast(
@@ -1340,39 +1343,87 @@ class Step(
 
                     # ... and, finally, collect its parent classes - but only those that define
                     # step data keys.
-                    return {
-                        klass_
-                        for klass_ in plugin_data_class.__mro__
-                        if issubclass(klass_, (StepData, _IsStepDataTrait))
-                        and klass_ is not plugin_data_class
-                    }
+                    return (
+                        {
+                            klass_
+                            for klass_ in plugin_data_class.__mro__
+                            if issubclass(klass_, (StepData, _IsStepDataTrait))
+                            and klass_ is not plugin_data_class
+                        },
+                        plugin_data_class,
+                    )
 
-                original_key_sources = _collect_plugin_key_bases(how)
-                incoming_key_sources = _collect_plugin_key_bases(incoming_how)
+                def _collect_plugin_keys(
+                    key_sources: set[Union[type[StepData], type[_IsStepDataTrait]]],
+                ) -> set[str]:
+                    keys: set[str] = set()
+
+                    for klass_ in key_sources:
+                        keys.update(
+                            field_name.replace('_', '-') for field_name in container_keys(klass_)
+                        )
+
+                    return keys
+
+                original_key_sources, original_plugin_class = _collect_plugin_key_bases(how)
+                incoming_key_sources, incoming_plugin_class = _collect_plugin_key_bases(
+                    incoming_how
+                )
 
                 shared_key_sources = original_key_sources & incoming_key_sources
 
-                compatible_keys: set[str] = set()
+                original_keys = _collect_plugin_keys(
+                    (original_key_sources | {original_plugin_class})
+                    if original_plugin_class is not None
+                    else set()
+                )
+                incoming_keys = _collect_plugin_keys(
+                    (incoming_key_sources | {incoming_plugin_class})
+                    if incoming_plugin_class is not None
+                    else set()
+                )
+                compatible_keys = _collect_plugin_keys(shared_key_sources)
 
-                for klass_ in shared_key_sources:
-                    compatible_keys.update(
-                        field_name.replace('_', '-') for field_name in container_keys(klass_)
-                    )
-
+                debug3(
+                    'original plugin class',
+                    original_plugin_class.__name__
+                    if original_plugin_class is not None
+                    else 'none',
+                )
+                debug3(
+                    'incoming plugin class',
+                    incoming_plugin_class.__name__
+                    if incoming_plugin_class is not None
+                    else 'none',
+                )
+                debug3(
+                    'original key sources',
+                    ', '.join(klass_.__name__ for klass_ in original_key_sources),
+                )
+                debug3(
+                    'incoming key sources',
+                    ', '.join(klass_.__name__ for klass_ in incoming_key_sources),
+                )
+                debug3('original keys', ', '.join(original_keys))
+                debug3('incoming keys', ', '.join(incoming_keys))
                 debug3('compatible keys', ', '.join(compatible_keys))
 
                 # Let user know about incompatible keys: we cannot inherit those, make sure
                 # user is aware some keys might not apply after the change.
+                # But report only those keys the plugins actually define, i.e. avoid reporting
+                # keys defining verbosity or debug levels, log topics, and others. Stick to those
+                # plugin data classes own.
                 for key in raw_datum:
                     if key in compatible_keys:
                         continue
 
-                    self.warn(
-                        f"Cannot update {self.step_name} phase '{raw_datum.get('name')}'"
-                        f" and inherit '{key}' key."
-                        f" This key is recognized by the original plugin '{how}'"
-                        f" but not by the requested plugin '{incoming_how}'."
-                    )
+                    if key in original_keys or key in incoming_keys:
+                        self.warn(
+                            f"Cannot update {self.step_name} phase '{raw_datum.get('name')}'"
+                            f" and inherit '{key}' key."
+                            f" This key is recognized by the original plugin '{how}'"
+                            f" but not by the requested plugin '{incoming_how}'."
+                        )
 
                 # Finally, reduce the original keys to only those that can the incoming can
                 # accept, i.e. the compatible ones.
