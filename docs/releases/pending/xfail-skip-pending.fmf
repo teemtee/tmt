@@ -1,4 +1,4 @@
 description: |
-    A passing check with ``result: xfail`` no longer turns a ``SKIP`` or
-    ``PENDING`` test result into ``FAIL``. A test which did not run keeps
-    its result.
+    ``SKIP`` and ``PENDING`` test results now stay unchanged when the
+    test has a passing check with ``result: xfail``. Such a test used
+    to end up as ``FAIL``.
