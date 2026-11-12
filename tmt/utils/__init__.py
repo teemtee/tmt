@@ -450,6 +450,7 @@ PLAN_SKIP_WORKTREE_INIT = 'plan_skip_worktree_init'
 
 # List of schemas that need to be ignored in a plan
 PLAN_SCHEMA_IGNORED_IDS: list[str] = [
+    '/schemas/provision/common',
     '/schemas/provision/hardware',
     '/schemas/provision/kickstart',
 ]
