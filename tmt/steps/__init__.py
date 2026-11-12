@@ -1443,7 +1443,7 @@ class Step(
             return raw_datum
 
         def _apply_cli_invocation_to_raw_data(
-            invocation: tmt.cli.CliInvocation,
+            invocation: 'tmt.cli.CliInvocation',
             raw_data: list[_RawStepData],
             match_name: bool = False,
         ) -> list[_RawStepData]:
