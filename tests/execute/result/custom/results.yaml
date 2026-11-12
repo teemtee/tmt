@@ -8,6 +8,8 @@
     some-id: foo1
     another-id: bar1
   duration: 00:11:22
+  start-time: "2024-08-15T13:15:06.123456+00:00"
+  end-time: "2024-08-15T13:15:17.123456+00:00"
   serial-number: 1
   guest:
     name: client-1
@@ -26,6 +28,8 @@
     some-id: foo2
     another-id: bar2
   duration: 00:22:33
+  start-time: "2024-08-15T13:15:06+02:00"
+  end-time: "2024-08-15T13:15:29+02:00"
   note:
     - fail result
   serial-number: 2
@@ -54,6 +58,8 @@
     some-id: foo4
     another-id: bar4
   duration: 00:55:44
+  start-time: "2024-08-15T13:15:06"
+  end-time: "2024-08-15T13:15:40"
   serial-number: 4
   guest:
     name: client-1
@@ -62,4 +68,6 @@
 - name: /test/skipped
   result: skip
   duration: 00:00:00
+  start-time: "2024-08-15T13:15:06Z"
+  end-time: "2024-08-15T13:15:06Z"
   serial-number: 5

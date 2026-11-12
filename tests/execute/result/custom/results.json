@@ -13,6 +13,8 @@
       "another-id": "bar1"
     },
     "duration": "00:12:23",
+    "start-time": "2024-08-15T13:15:06.123456+00:00",
+    "end-time": "2024-08-15T13:15:17.123456+00:00",
     "serial-number": 1,
     "guest": {
       "name": "client-1",
@@ -30,6 +32,8 @@
       "another-id": "bar2"
     },
     "duration": "00:23:34",
+    "start-time": "2024-08-15T13:15:06+02:00",
+    "end-time": "2024-08-15T13:15:29+02:00",
     "note": [
       "fail result"
     ],
@@ -50,6 +54,8 @@
       "another-id": "bar3"
     },
     "duration": "00:34:56",
+    "start-time": "2024-08-15T13:15:06Z",
+    "end-time": "2024-08-15T13:15:06Z",
     "serial-number": 3,
     "guest": {
       "name": "client-2",

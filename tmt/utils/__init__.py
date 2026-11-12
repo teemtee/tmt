@@ -6198,7 +6198,7 @@ def format_timestamp(timestamp: datetime.datetime) -> str:
     Convert timestamp to a human readable format
     """
 
-    return timestamp.isoformat(timespec='microseconds')
+    return timestamp.isoformat()
 
 
 def format_duration(duration: datetime.timedelta) -> str:
@@ -6219,13 +6219,11 @@ def parse_timestamp(timestamp: str) -> datetime.datetime:
     """
     Read a timestamp stored by :py:func:`format_timestamp`.
 
-    A trailing ``Z`` is read as UTC. A timestamp without a timezone is
-    read as UTC too, so a later comparison never mixes naive and aware
-    values.
+    ``datetime.datetime.fromisoformat`` reads the forms the results
+    specification allows, including a trailing ``Z``. A value without a
+    time zone is read as UTC, so a later comparison never mixes naive and
+    aware values.
     """
-
-    if timestamp.endswith('Z'):
-        timestamp = timestamp[:-1] + '+00:00'
 
     try:
         parsed = datetime.datetime.fromisoformat(timestamp)
@@ -6246,12 +6244,19 @@ def parse_duration(duration: str) -> datetime.timedelta:
     else, including a fractional second, is rejected.
     """
 
-    if not re.fullmatch(r'[0-9]{2,}:[0-5][0-9]:[0-5][0-9]', duration):
+    matched = re.fullmatch(
+        r'(?P<hours>[0-9]{2,}):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])',
+        duration,
+    )
+
+    if matched is None:
         raise tmt.utils.SpecificationError(f"Malformed duration '{duration}'.")
 
-    hours, minutes, seconds = (int(part) for part in duration.split(':'))
-
-    return datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
+    return datetime.timedelta(
+        hours=int(matched.group('hours')),
+        minutes=int(matched.group('minutes')),
+        seconds=int(matched.group('seconds')),
+    )
 
 
 def retry(
