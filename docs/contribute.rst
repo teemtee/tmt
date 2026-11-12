@@ -448,24 +448,27 @@ Questions
     Stored in ``/docs/questions.rst``.
 
 Specification
-    Definition of :tmt:story:`/spec/tests`,
+    Technical reference describing metadata levels, syntax,
+    supported keys and allowed values. Defines the API, for
+    example the format of data files like ``tests.yaml`` or
+    ``results.yaml``.
+
+    Includes definition of :tmt:story:`/spec/tests`,
     :tmt:story:`/spec/plans`, :tmt:story:`/spec/stories`, and the
     common :tmt:story:`/spec/core` keys supported across all
-    metadata levels. Includes technical details such as syntax and
-    allowed values for each supported key. Covers high-level
-    concepts like :tmt:story:`/spec/context`,
-    :tmt:story:`/spec/policy`, :tmt:story:`/spec/recipe`,
-    :tmt:story:`/spec/hardware` and :tmt:story:`/spec/results` as
-    well.
+    metadata levels. Covers high-level concepts like
+    :tmt:story:`/spec/context`, :tmt:story:`/spec/policy`,
+    :tmt:story:`/spec/recipe`, :tmt:story:`/spec/hardware` and
+    :tmt:story:`/spec/results` as well.
 
     Maintained in the form of tmt stories under the ``/spec``
     folder, using the :tmt:story:`/spec/core/link` key to track
     the current implementation status.
 
 Plugins
-    List of available plugins for individual steps together with
-    detailed information about the provided functionality and
-    supported keys.
+    List of available plugins together with detailed information
+    about the provided functionality and supported keys. Covers
+    individual step plugins, test checks and export plugins.
 
     Step header files are stored under ``/docs/plugins/*``,
     individual plugin documentation is extracted directly from the
@@ -497,12 +500,17 @@ Workshop
 
     Maintained in the `workshop`_ repository.
 
-Fedora
-    Documentation covering the `Fedora CI`_ use cases such as
-    working with the dist-git repositories and enabling tests for
-    gating.
+Integration
+    Documentation covering specific use cases where tmt is
+    integrated is maintained in the respective area:
 
-    Maintained in the `ci/docs`_ repository.
+    +------------------------+------------------------------------------+
+    | Documentation          | Repository                               |
+    +========================+==========================================+
+    | `Fedora CI`_           | https://forge.fedoraproject.org/ci/docs  |
+    +------------------------+------------------------------------------+
+    | `Testing Farm`_        | https://gitlab.com/testing-farm/docs     |
+    +------------------------+------------------------------------------+
 
 Examples, Stories
     To be dropped. Existing content to be migrated to the Guide or
@@ -510,7 +518,7 @@ Examples, Stories
 
 .. _workshop: https://github.com/teemtee/workshop
 .. _Fedora CI: https://docs.fedoraproject.org/en-US/ci/tmt/
-.. _ci/docs: https://forge.fedoraproject.org/ci/docs
+.. _Testing Farm: https://docs.testing-farm.io/
 
 
 Format & Style
