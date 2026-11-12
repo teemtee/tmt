@@ -10,6 +10,7 @@ description: |
 example: |
     discover:
         how: fmf
+        filter: tier:1
 
 link:
     - implemented-by: /tmt/steps/discover
