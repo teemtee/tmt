@@ -3,19 +3,6 @@ provisioned environment using the selected executor. The internal ``tmt``
 executor is used by default.
 It reports test progress and supports optional interactive debugging.
 
-For each test, a separate directory is created for storing
-artifacts related to the test execution. Its path is
-constructed from the test name and it's stored under the
-``execute/data`` directory. It contains a ``metadata.yaml``
-file with the aggregated L1 metadata which can be used by the
-test :tmt:story:`/spec/tests/framework`. In addition to supported
-:tmt:story:`/spec/tests` attributes it also contains fmf ``name`` of
-the test.
-
-In each plan, the execute step must produce a ``results.yaml`` file
-with results for executed tests. The format of the file is described
-at :tmt:story:`/spec/results`.
-
 .. _/plugins/execute/exit-first:
 
 exit-first
