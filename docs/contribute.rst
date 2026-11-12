@@ -413,9 +413,116 @@ Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When submitting a change affecting user experience it's always
-good to include respective documentation. You can add or update
-the :ref:`specification`, extend the :ref:`examples` or write a
-new chapter for the user :ref:`guide`.
+good to include respective documentation. You can for example
+update the :ref:`specification` or write a new chapter for the
+user :ref:`guide`.
+
+.. _docs-layout:
+
+Docs Layout
+------------------------------------------------------------------
+
+Documentation is structured into several areas, each one has its
+dedicated purpose and focus:
+
+Overview
+    A single page with a concise overview of the most essential
+    features, installation options, available exit codes and
+    important environment variables. Distributed also as a man
+    page for quick access using ``man tmt``.
+
+    Stored in ``/docs/overview.rst``.
+
+Guide
+    A detailed commented walk through all supported features,
+    structured into chapters covering various user scenarios and
+    demonstrating the actual usage on real life examples.
+
+    The main structure is stored in ``/docs/guide.rst``,
+    individual chapters should go under ``/docs/guide/*``.
+
+Questions
+    Frequently asked questions and corresponding answers
+    clarifying common confusions or misunderstandings.
+
+    Stored in ``/docs/questions.rst``.
+
+Specification
+    Technical reference describing metadata levels, syntax,
+    supported keys and allowed values. Defines the API, for
+    example the format of data files like ``tests.yaml`` or
+    ``results.yaml``.
+
+    Includes definition of :tmt:story:`/spec/tests`,
+    :tmt:story:`/spec/plans`, :tmt:story:`/spec/stories`, and the
+    common :tmt:story:`/spec/core` keys supported across all
+    metadata levels. Covers high-level concepts like
+    :tmt:story:`/spec/context`, :tmt:story:`/spec/policy`,
+    :tmt:story:`/spec/recipe`, :tmt:story:`/spec/hardware` and
+    :tmt:story:`/spec/results` as well.
+
+    Maintained in the form of tmt stories under the ``/spec``
+    folder, using the :tmt:story:`/spec/core/link` key to track
+    the current implementation status.
+
+Plugins
+    List of available plugins together with detailed information
+    about the provided functionality and supported keys. Covers
+    individual step plugins, test checks and export plugins.
+
+    Step header files are stored under ``/docs/plugins/*``,
+    individual plugin documentation is extracted directly from the
+    plugin code.
+
+Glossary
+    Short term definitions helping users and contributors with
+    understanding essential concepts and objects.
+
+    Stored under ``/docs/glossary.rst``.
+
+Contribute
+    Developer focused documentation such as environment setup for
+    developing, code style recommendations or agreed processes.
+
+    Stored in ``/docs/contribute.rst``.
+
+Code
+    Overview of important classes, explanation of complex concepts
+    such as :ref:`trees` and detailed documentation generated from
+    the Python code.
+
+    Maintained under ``/docs/code`` and in the Python code.
+
+Workshop
+    A set of lessons providing hands-on exercises with tangible
+    real-life examples targeting new users to get an efficient
+    quick start with the tool.
+
+    Maintained in the `workshop`_ repository.
+
+Integration
+    Documentation covering specific use cases where tmt is
+    integrated is maintained in the respective area:
+
+    +------------------------+------------------------------------------+
+    | Documentation          | Repository                               |
+    +========================+==========================================+
+    | `Fedora CI`_           | https://forge.fedoraproject.org/ci/docs  |
+    +------------------------+------------------------------------------+
+    | `Testing Farm`_        | https://gitlab.com/testing-farm/docs     |
+    +------------------------+------------------------------------------+
+
+Examples, Stories
+    To be dropped. Existing content to be migrated to the Guide or
+    under the Specification.
+
+.. _workshop: https://github.com/teemtee/workshop
+.. _Fedora CI: https://docs.fedoraproject.org/en-US/ci/tmt/
+.. _Testing Farm: https://docs.testing-farm.io/
+
+
+Format & Style
+------------------------------------------------------------------
 
 tmt documentation is written with `reStructuredText`__ and built
 with `Sphinx`__. Various features of both reST and Sphinx are used
