@@ -3,7 +3,7 @@
 #
 # JSON Schema definition for kickstart specification
 #
-# https://tmt.readthedocs.io/en/stable/plugins/provision.html#kickstart
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#kickstart
 #
 
 $id: /schemas/provision/kickstart
