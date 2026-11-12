@@ -227,6 +227,14 @@ description: |
     The first ``log`` item is considered to be the "main" log, presented
     to the user by default.
 
+    The ``start-time`` and ``end-time`` values use the shape shown in the
+    examples below, ``yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ``. The date and the
+    time of day are required: a time of day alone carries no date and
+    cannot be placed on a timeline, so it is refused. The fractional part
+    of a second and the UTC offset are optional when a value is read, and
+    a value without an offset is understood as UTC. tmt itself always
+    writes both.
+
     The ``serial-number``, ``guest`` and ``fmf-id`` keys, if present in the
     custom results file, will be overwritten by tmt during their import after
     test completes. This happens on purpose, to assure this vital
