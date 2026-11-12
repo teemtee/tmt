@@ -14,63 +14,6 @@ detailed hardware requirements for the testing environment. See
 the :tmt:story:`/spec/hardware` specification section for details.
 
 
-.. _/plugins/provision/multihost:
-
-Multihost
----------
-
-.. Preserve the original story targets for existing cross-references.
-
-.. tmt:story:: /spec/plans/provision/multihost
-    :title: multihost
-
-    Multihost testing specification
-
-    .. versionchanged:: 1.24
-
-    As a part of the provision step it is possible to request
-    multiple guests to be provisioned for testing. Each guest
-    has to be assigned a unique ``name`` which is used to
-    identify it.
-
-    The optional parameter ``role`` can be used to mark
-    related guests so that common actions can be applied to
-    all such guests at once. An example role name can be
-    `client` or `server` but arbitrary identifier can be used.
-
-    Both `name` and `role` can be used together with the
-    ``where`` key to select guests on which the
-    :tmt:story:`preparation</spec/plans/prepare/where>`
-    tasks should be applied or where the test
-    :tmt:story:`execution</spec/plans/discover/where>` should
-    take place.
-
-    See :tmt:story:`/spec/plans/guest-topology` for details on how
-    this information is exposed to tests and ``prepare`` and
-    ``finish`` tasks.
-
-    .. code-block:: yaml
-
-        # Request two guests
-        provision:
-          - name: server
-            how: virtual
-          - name: client
-            how: virtual
-
-        # Assign role to guests
-        provision:
-          - name: main-server
-            role: primary
-          - name: backup-one
-            role: replica
-          - name: backup-two
-            role: replica
-          - name: tester-one
-            role: client
-          - name: tester-two
-            role: client
-
 .. _/plugins/provision/ansible:
 
 Ansible
