@@ -2614,7 +2614,7 @@ def render_report(
     yield (
         f'# Started at {timer.start_time_formatted},'
         f' finished at {timer.end_time_formatted}'
-        f' ({timer.duration})'
+        f' ({timer.duration_formatted})'
     )
 
     if report is not None:
@@ -6192,6 +6192,11 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
             return (*safe_call(fn, *args, **kwargs), self)
 
 
+#: Shown where a duration was never measured. A measured duration of zero
+#: seconds is ``00:00:00`` instead, so the two stay distinguishable.
+DURATION_NOT_MEASURED = '..:..:..'
+
+
 def format_timestamp(timestamp: datetime.datetime) -> str:
     """
     Convert timestamp to a human readable format
@@ -6212,6 +6217,50 @@ def format_duration(duration: datetime.timedelta) -> str:
     minutes, seconds = divmod(counter, 60)
 
     return f'{hours:02}:{minutes:02}:{seconds:02}'
+
+
+def parse_timestamp(timestamp: str) -> datetime.datetime:
+    """
+    Read a timestamp stored by :py:func:`format_timestamp`.
+
+    ``datetime.datetime.fromisoformat`` reads the forms the results
+    specification allows, including a trailing ``Z``. A value without a
+    time zone is read as UTC, so a later comparison never mixes naive and
+    aware values.
+    """
+
+    try:
+        parsed = datetime.datetime.fromisoformat(timestamp)
+    except ValueError as exc:
+        raise tmt.utils.SpecificationError(f"Malformed timestamp '{timestamp}'.") from exc
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.UTC)
+
+    return parsed
+
+
+def parse_duration(duration: str) -> datetime.timedelta:
+    """
+    Read a duration stored by :py:func:`format_duration`.
+
+    The stored form is ``hh:mm:ss`` with at least two hour digits. Anything
+    else, including a fractional second, is rejected.
+    """
+
+    matched = re.fullmatch(
+        r'(?P<hours>[0-9]{2,}):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])',
+        duration,
+    )
+
+    if matched is None:
+        raise tmt.utils.SpecificationError(f"Malformed duration '{duration}'.")
+
+    return datetime.timedelta(
+        hours=int(matched.group('hours')),
+        minutes=int(matched.group('minutes')),
+        seconds=int(matched.group('seconds')),
+    )
 
 
 def retry(
