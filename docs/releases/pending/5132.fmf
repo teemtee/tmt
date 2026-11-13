@@ -1,0 +1,23 @@
+description: |
+    The new ``jira`` exporter creates and updates Jira Cloud issues from
+    resolved tmt metadata. It targets the Red Hat Jira instance with a
+    ``Test Case`` issue type, the ``ID`` UUID field, the ``URL`` automation
+    field and the ``Active`` workflow status. Public enrichment and
+    post-export hooks support site-specific integrations. The exporter
+    prepares and validates the whole collection before writes; dry-run
+    output displays planned fields and operations. Existing UUIDs are
+    preserved, ambiguous identities and collisions are rejected, and
+    contact resolution handles display names and email ambiguity.
+
+    Use ``--create`` to allow creation and ``--dry`` to preview without
+    writes. Metadata backlinks require ``--link-jira``; ``--bugzilla``
+    recreates Bugzilla ``verifies`` links as remote links and ``--polarion``
+    stores the Polarion case URL. See :ref:`jira-project-configuration` for
+    authentication, schema requirements and extension examples.
+
+    .. code-block:: shell
+
+        tmt tests export --how jira --create --link-jira \
+            --jira-url https://issues.redhat.com \
+            --jira-user me@example.com --jira-token TOKEN \
+            --project-id RHELTEST
