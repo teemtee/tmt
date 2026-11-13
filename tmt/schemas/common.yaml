@@ -82,7 +82,7 @@ definitions:
       - how
 
   # Definition of provision ansible configuration
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-provision-ansible
+  # https://tmt.readthedocs.io/en/stable/plugins/provision.html#ansible
   provision_ansible:
     type: object
     additionalProperties: false
@@ -155,11 +155,11 @@ definitions:
       - required:
           - nick
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  # https://tmt.readthedocs.io/en/stable/plugins/discover.html#dist-git-source
   dist-git-source:
     type: boolean
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  # https://tmt.readthedocs.io/en/stable/plugins/discover.html#dist-git-source
   dist-git-type:
     type: string
     enum:
@@ -168,21 +168,21 @@ definitions:
       - rhel
       - local
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  # https://tmt.readthedocs.io/en/stable/plugins/discover.html#dist-git-source
   dist-git-download-only:
     type: boolean
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  # https://tmt.readthedocs.io/en/stable/plugins/discover.html#dist-git-source
   dist-git-install-builddeps:
     type: boolean
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  # https://tmt.readthedocs.io/en/stable/plugins/discover.html#dist-git-source
   dist-git-require:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#duration
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#shell
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#script
+  # https://tmt.readthedocs.io/en/stable/plugins/execute.html#script
   duration:
     type: string
     pattern: "^([0-9*. ]+[smhd]? *)+$"
@@ -409,7 +409,7 @@ definitions:
           type: string
 
   # In multihost scenarios, guests can be given roles
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#multihost
+  # https://tmt.readthedocs.io/en/stable/plugins/provision.html#multihost
   role:
     type: string
 
@@ -467,7 +467,7 @@ definitions:
       - $ref: "/schemas/common#/definitions/fmf_id"
 
   # In multihost scenarios, some steps can be executed on some guests only.
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#multihost
+  # https://tmt.readthedocs.io/en/stable/plugins/provision.html#multihost
   where:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 

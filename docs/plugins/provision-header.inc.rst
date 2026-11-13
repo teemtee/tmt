@@ -1,6 +1,7 @@
-Describes what environment is needed for testing and how it should be
-provisioned. There are several provision plugins supporting multiple ways
-to provision the environment for testing, for example:
+The :tmt:story:`/spec/plans/provision` step describes what environment is
+needed for testing and how it should be provisioned. There are several
+provision plugins supporting multiple ways to provision the environment for
+testing, for example:
 
 * :ref:`/plugins/provision/virtual.testcloud`
 * :ref:`/plugins/provision/container`
@@ -12,6 +13,84 @@ As part of the provision step it is also possible to specify
 detailed hardware requirements for the testing environment. See
 the :tmt:story:`/spec/hardware` specification section for details.
 
+
+.. _/plugins/provision/ansible:
+
+Ansible
+-------
+
+.. tmt:story:: /spec/plans/provision/ansible
+    :title: ansible
+
+    Per-guest Ansible customization
+
+    Each provisioned guest may define an optional ``ansible`` key
+    to define its corresponding Ansible inventory section.
+
+    group
+        Assigns the guest to an Ansible specific group. If omitted,
+        the :ref:`role </plugins/provision/common-keys>` key would
+        serve as the Ansible group name. If neither ``ansible.group``
+        nor ``role`` is set, the host will be placed in
+        the `ungrouped` group.
+
+    vars
+        Defines host-specific Ansible variables to include under
+        that host in the inventory.
+
+    .. versionadded:: 1.60
+
+    .. code-block:: yaml
+
+        # Plan file
+        provision:
+            # If both role and ansible.group are set,
+            # ansible.group takes precedence
+          - name: master-guest
+            role: master
+            ansible:
+                group: server
+                vars:
+                    var1: value1
+                    var2: value2
+          - name: client-guest
+            role: client
+            ansible:
+                vars:
+                    ansible_user: fedora
+                    ansible_port: 2222
+            # If a specified group doesn't exist in the layout,
+            # it will be created automatically in the output inventory.
+          - name: database-guest
+            role: database
+            # Orphan guest without role or ansible.group,
+            # will be placed in `ungrouped`
+          - name: orphan-guest
+
+        # Generated inventory file
+        all:
+            children:
+                server:
+                    hosts:
+                        master-guest: {}
+                client:
+                    hosts:
+                        client-guest: {}
+                database:
+                    hosts:
+                        database-guest: {}
+                ungrouped:
+                    hosts:
+                        orphan-guest: {}
+            hosts:
+                master-guest:
+                    var1: value1
+                    var2: value2
+                client-guest:
+                    ansible_user: fedora
+                    ansible_port: 2222
+                database-guest: {}
+                orphan-guest: {}
 
 .. _/plugins/provision/hard-reboot:
 
