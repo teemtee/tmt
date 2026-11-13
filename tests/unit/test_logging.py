@@ -264,6 +264,20 @@ def test_labels(
     _exercise_logger(caplog, capsys, root_logger, labels=['foo', 'bar'])
 
 
+def test_clone_labels_are_independent(root_logger: Logger) -> None:
+    """Mutating a cloned logger's labels does not affect its parent or vice versa."""
+
+    root_logger.labels.append('shared')
+    child = root_logger.clone()
+    assert child.labels == ['shared']
+
+    child.labels.append('child')
+    assert root_logger.labels == ['shared']
+
+    root_logger.labels.append('parent')
+    assert child.labels == ['shared', 'child']
+
+
 def test_bootstrap_logger(
     caplog: _pytest.logging.LogCaptureFixture, capsys: _pytest.capture.CaptureFixture[str]
 ) -> None:

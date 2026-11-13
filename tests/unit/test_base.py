@@ -3,16 +3,18 @@ import os
 import pickle
 import shutil
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import jsonschema
 import pytest
 
 import tmt
+import tmt.log
 import tmt.result
 import tmt.utils
 from tmt.base.core import FmfId, expand_node_data
 from tmt.base.links import Link, LinkNeedle, Links
+from tmt.lint import LinterOutcome
 from tmt.utils import Environment, Path, SpecificationError
 
 if TYPE_CHECKING:
@@ -53,6 +55,53 @@ def test_test_defaults(root_logger):
     assert test.enabled is True
     assert test.result == tmt.result.ResultInterpret.RESPECT
     assert test.tag == []
+
+
+def test_lint_with_no_linters(root_logger: tmt.log.Logger) -> None:
+    """An explicitly empty linter list must not select all registered linters."""
+
+    test = tmt.Test.from_dict(logger=root_logger, mapping={'test': 'true'}, name='/smoke')
+    valid, rulings = test.lint(enable_checks=['C001'], linters=[])
+    assert valid
+    assert rulings == []
+
+    _, default_rulings = test.lint(enable_checks=['C001'])
+    assert default_rulings
+
+
+@pytest.mark.parametrize('with_pattern', [False, True], ids=['additional', 'pattern'])
+@pytest.mark.parametrize('with_id', [False, True], ids=['without-id', 'with-id'])
+def test_lint_schema_unknown_key(
+    root_logger: tmt.log.Logger, monkeypatch: pytest.MonkeyPatch, with_pattern: bool, with_id: bool
+) -> None:
+    """Report unknown keys even when a validation schema has no identifier."""
+
+    test = tmt.Test.from_dict(
+        logger=root_logger,
+        mapping={'test': 'true', 'unknown': 'value'},
+        name='/smoke',
+        skip_validation=True,
+    )
+    schema: dict[str, Any] = {
+        'type': 'object',
+        'properties': {'test': {'type': 'string'}},
+        'additionalProperties': False,
+    }
+    if with_id:
+        schema['$id'] = 'https://example.org/test'
+    if with_pattern:
+        schema['patternProperties'] = {'^extra-': {}}
+
+    monkeypatch.setattr(tmt.utils, 'load_schema', lambda _: schema)
+    identifier = ' https://example.org/test' if with_id else ''
+    pattern_suffix = ', and does not match "^extra-" pattern' if with_pattern else ''
+    assert list(test.lint_validate()) == [
+        (
+            LinterOutcome.WARN,
+            f'key "unknown" not recognized by schema{identifier}{pattern_suffix}',
+        ),
+        (LinterOutcome.WARN, 'fmf node failed schema validation'),
+    ]
 
 
 def test_test_invalid(root_logger):
