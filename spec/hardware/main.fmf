@@ -288,6 +288,6 @@ example:
     provision:
         how: artemis
         image: fedora
+        arch: x86_64
         hardware:
-            arch: x86_64
             memory: 8 GB
