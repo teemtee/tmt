@@ -1,0 +1,3 @@
+description: |
+  Plan context variables are now exposed in the :ref:`/plugins/prepare/ansible`
+  plugin under the ``tmt.context`` variable.

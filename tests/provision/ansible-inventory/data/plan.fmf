@@ -3,6 +3,8 @@ provision:
     image: fedora
 execute:
     script: 'true'
+context:
+    plan-var: foo
 
 # Default layout test - single guest
 /default-layout:
