@@ -50,6 +50,24 @@ EOF
 """
 
 
+def podman_environment(rootless: bool) -> Environment:
+    """
+    Compose the environment for podman invocations.
+
+    The host environment is always exposed so that podman can locate its
+    helper binaries (e.g. ``qemu-img`` used by ``podman machine``) and the
+    user's home directory. When the podman connection is rootless, select the
+    dedicated machine connection on top of the host environment.
+    """
+
+    environment = Environment.from_environ()
+
+    if rootless:
+        environment.update(PODMAN_ENV)
+
+    return environment
+
+
 @container
 class BootcGuestData(tmt.steps.provision.testcloud.TestcloudGuestData):
     # The container image used to build the bootc disk. Stored as guest data
@@ -83,12 +101,15 @@ class GuestBootc(GuestTestcloud):
                 cwd=self.guest_workdir,
                 stream_output=True,
                 logger=self._logger,
-                environment=PODMAN_ENV if self.rootless else None,
+                environment=podman_environment(self.rootless),
             )
 
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
-                cwd=self.guest_workdir, stream_output=True, logger=self._logger
+                cwd=self.guest_workdir,
+                stream_output=True,
+                logger=self._logger,
+                environment=Environment.from_environ(),
             )
         except BaseException:
             self._logger.debug(
@@ -287,7 +308,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
-            environment=PODMAN_ENV if self._rootless else None,
+            environment=podman_environment(self._rootless),
         )
 
         return image_tag
@@ -311,7 +332,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
-            environment=PODMAN_ENV if self._rootless else None,
+            environment=podman_environment(self._rootless),
         )
         return image_tag
 
@@ -345,13 +366,22 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
-            environment=PODMAN_ENV if self._rootless else None,
+            environment=podman_environment(self._rootless),
         )
 
     def _init_podman_machine(self) -> None:
+        # Host environment is required so that podman can locate its helper
+        # binaries (e.g. ``qemu-img``) and the user's home directory.
+        environment = Environment.from_environ()
+
+        home = Path.home()
+
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
-                cwd=self.phase_workdir, stream_output=True, logger=self._logger
+                cwd=self.phase_workdir,
+                stream_output=True,
+                logger=self._logger,
+                environment=environment,
             )
         except BaseException:
             self._logger.debug("Unable to remove existing podman machine (it might not exist).")
@@ -364,20 +394,33 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "--memory", f"{DEFAULT_PODMAN_MACHINE_MEM.magnitude}",
             "--cpus", f"{DEFAULT_PODMAN_MACHINE_CPU}",
             "-v", f"{DEFAULT_TMP_PATH}:{DEFAULT_TMP_PATH}",
-            "-v", "$HOME:$HOME",
+            "-v", f"{home}:{home}",
             PODMAN_MACHINE_NAME,
-        ).run(cwd=self.phase_workdir, stream_output=True, logger=self._logger)
+        ).run(
+            cwd=self.phase_workdir,
+            stream_output=True,
+            logger=self._logger,
+            environment=environment,
+        )
         # fmt: on
 
         self._logger.debug("Start podman machine.")
         tmt.utils.Command("podman", "machine", "start", PODMAN_MACHINE_NAME).run(
-            cwd=self.phase_workdir, stream_output=True, logger=self._logger
+            cwd=self.phase_workdir,
+            stream_output=True,
+            logger=self._logger,
+            environment=environment,
         )
 
     def _check_if_podman_is_rootless(self) -> None:
         output = tmt.utils.Command(
             "podman", "info", "--format", "{{.Host.Security.Rootless}}"
-        ).run(cwd=self.phase_workdir, stream_output=True, logger=self._logger)
+        ).run(
+            cwd=self.phase_workdir,
+            stream_output=True,
+            logger=self._logger,
+            environment=Environment.from_environ(),
+        )
         self._rootless = output.stdout == "true\n"
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
