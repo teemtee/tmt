@@ -13,6 +13,7 @@ from tmt.guest import (
     AnsibleApplicable,
     Guest,
     GuestData,
+    GuestFacts,
     GuestSsh,
     GuestSshData,
     TransferOptions,
@@ -387,3 +388,101 @@ def test_unsafe_ssh_option_case_and_separator(
 
     with pytest.raises(GeneralError, match='--feeling-safe'):
         _ = guest._ssh_options
+
+
+@pytest.mark.parametrize(
+    ('method_name', 'expected_command'),
+    [
+        (
+            '_query_is_ostree',
+            '''
+                ( [ -e /run/ostree-booted ] || [ -L /ostree ] ) && echo yes || echo no
+                ''',
+        ),
+        ('_query_is_toolbox', '[ -e /run/.toolboxenv ] && echo yes || echo no'),
+        ('_query_toolbox_container_name', '[ -e /run/.containerenv ] && echo yes || echo no'),
+        ('_query_is_container', 'echo -n "$container"'),
+    ],
+)
+def test_guest_facts_query_execution(
+    root_logger: Logger,
+    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
+    method_name: str,
+    expected_command: str,
+) -> None:
+    """Verify that GuestFacts query methods construct and run proper shell commands."""
+    guest = MockGuest(
+        logger=root_logger, name='mock-guest', data=GuestData(primary_address='127.0.0.1')
+    )
+    mock_execute = MagicMock(
+        name='<mock>execute', return_value=CommandOutput(stdout='no', stderr='')
+    )
+    monkeypatch.setattr(guest, 'execute', mock_execute)
+
+    facts = GuestFacts()
+    query_method = getattr(facts, method_name)
+    query_method(guest)
+
+    assert mock_execute.call_args[0][0] == ShellScript(expected_command).to_shell_command()
+
+
+@pytest.mark.parametrize(
+    ('method_name', 'stdout', 'expected_result'),
+    [
+        ('_query_is_ostree', 'yes\n', True),
+        ('_query_is_ostree', 'no\n', False),
+        ('_query_is_ostree', None, None),
+        ('_query_is_toolbox', 'yes\n', True),
+        ('_query_is_toolbox', 'no\n', False),
+        ('_query_is_toolbox', None, None),
+        ('_query_is_container', 'podman', True),
+        ('_query_is_container', '', False),
+        ('_query_is_container', None, None),
+    ],
+)
+def test_guest_facts_query_results(
+    root_logger: Logger,
+    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
+    method_name: str,
+    stdout: Optional[str],
+    expected_result: Any,
+) -> None:
+    """Verify parsing of GuestFacts query outputs into boolean or None results."""
+    guest = MockGuest(
+        logger=root_logger, name='mock-guest', data=GuestData(primary_address='127.0.0.1')
+    )
+    mock_output = CommandOutput(stdout=stdout, stderr='') if stdout is not None else None
+    mock_execute = MagicMock(name='<mock>execute', return_value=mock_output)
+    monkeypatch.setattr(guest, 'execute', mock_execute)
+
+    facts = GuestFacts()
+    query_method = getattr(facts, method_name)
+    assert query_method(guest) == expected_result
+
+
+def test_query_toolbox_container_name(
+    root_logger: Logger, monkeypatch: _pytest.monkeypatch.MonkeyPatch
+) -> None:
+    """Verify detection and parsing of toolbox container name from guest facts."""
+    guest = MockGuest(
+        logger=root_logger, name='mock-guest', data=GuestData(primary_address='127.0.0.1')
+    )
+    facts = GuestFacts()
+
+    # /run/.containerenv does not exist
+    mock_execute = MagicMock(
+        name='<mock>execute', return_value=CommandOutput(stdout='no\n', stderr='')
+    )
+    monkeypatch.setattr(guest, 'execute', mock_execute)
+    assert facts._query_toolbox_container_name(guest) is None
+
+    # /run/.containerenv exists and has container name
+    mock_execute = MagicMock(
+        name='<mock>execute',
+        side_effect=[
+            CommandOutput(stdout='yes\n', stderr=''),
+            CommandOutput(stdout='id="fedora"\nname="my-toolbox-container"\n', stderr=''),
+        ],
+    )
+    monkeypatch.setattr(guest, 'execute', mock_execute)
+    assert facts._query_toolbox_container_name(guest) == 'my-toolbox-container'
