@@ -227,9 +227,9 @@ description: |
     The first ``log`` item is considered to be the "main" log, presented
     to the user by default.
 
-    The ``serial-number``, ``guest`` and ``fmf-id`` keys, if present in the
-    custom results file, will be overwritten by tmt during their import after
-    test completes. This happens on purpose, to assure this vital
+    The ``serial-number``, ``guest``, ``fmf-id``, ``web-link`` and
+    ``data-path`` keys, if present in the custom results file, will be
+    overwritten by tmt during their import after test completes. This happens on purpose, to assure this vital
     information is correct.
 
     Similarly, the ``duration``, ``start-time`` and ``end-time`` keys, if

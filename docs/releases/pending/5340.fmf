@@ -1,0 +1,6 @@
+description: |
+    Results imported from a custom ``results.yaml`` or ``results.json``
+    file now carry the ``fmf-id``, ``web-link`` and ``data-path`` keys
+    of the test that produced them. Previously these keys were left
+    empty, and reports such as :ref:`/plugins/report/junit` were missing
+    a link to the test source.

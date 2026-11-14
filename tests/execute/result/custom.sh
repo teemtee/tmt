@@ -35,6 +35,28 @@ rlJournalStart
         rlAssertGrep "/test/custom-results/test/failing 1 fail default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results 1 pass default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results/without-leading-slash 1 pass default-0" $rlRun_LOG
+
+        # All results carry the fmf id and data path of the test which produced them
+        rlRun "yq -e 'all_c(.fmf-id.name == \"/test/custom-results\")' $run/default/plan/execute/results.yaml" 0 "Results have fmf id"
+        rlRun "yq -e 'all_c(.data-path == \"data/guest/default-0/test/custom-results-1/data\")' $run/default/plan/execute/results.yaml" 0 "Results have data path"
+    rlPhaseEnd
+
+    testName="/test/custom-results"
+    rlPhaseStartTest "${testName} (git repository)"
+        rlRun "repo=\$(mktemp -d)" 0 "Create git repository"
+        rlRun "cp -a . $repo"
+        rlRun "git -C $repo init -q -b main"
+        rlRun "git -C $repo remote add origin https://github.com/teemtee/custom-results.git"
+        rlRun "git -C $repo add -A"
+        rlRun "git -C $repo -c user.name=tmt -c user.email=tmt@example.com commit -q -m initial"
+
+        rlRun -s "tmt --root $repo run --scratch -a --id ${run} provision --how local execute -vv report -vv test --name ${testName} 2>&1 >/dev/null" 1
+
+        # All results carry the git url and web link of the test which produced them
+        rlRun "yq -e 'all_c(.fmf-id.url == \"https://github.com/teemtee/custom-results.git\")' $run/default/plan/execute/results.yaml" 0 "Results have git url"
+        rlRun "yq -e 'all_c(.web-link == \"https://github.com/teemtee/custom-results/tree/main/test.fmf\")' $run/default/plan/execute/results.yaml" 0 "Results have web link"
+
+        rlRun "rm -rf $repo" 0 "Remove git repository"
     rlPhaseEnd
 
     testName="/test/custom-json-results"
