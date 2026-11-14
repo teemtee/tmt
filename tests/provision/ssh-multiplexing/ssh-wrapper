@@ -1,0 +1,20 @@
+#!/bin/bash
+set -eu
+
+state="${BASH_SOURCE[0]}.state"
+
+for argument in "$@"; do
+    case "$argument" in
+        *MNnT*)
+            if [[ -f "$state.reboot-issued" && ! -f "$state.failure-injected" ]]; then
+                touch "$state.failure-injected"
+                exit 255
+            fi
+            ;;
+        *reboot*)
+            [[ "$argument" != *soft-reboot* ]] && touch "$state.reboot-issued"
+            ;;
+    esac
+done
+
+exec /usr/bin/ssh "$@"

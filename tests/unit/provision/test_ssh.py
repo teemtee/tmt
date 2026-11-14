@@ -7,9 +7,12 @@ import pytest
 
 import tmt.log
 from tmt.guest import (
+    GuestSsh,
+    GuestSshData,
     _socket_path_hash,
     _socket_path_trivial,
 )
+from tmt.steps.provision import Provision
 from tmt.utils import Path
 
 
@@ -132,3 +135,23 @@ def test_socket_path_hash_conflict(monkeypatch, root_logger: tmt.log.Logger) -> 
 
     assert re.match(r'/tmp/[a-z0-9]{4}.socket', str(actual1))
     assert re.match(r'/tmp/[a-z0-9]{5}.socket', str(actual2))
+
+
+def test_ssh_does_not_share_socket_between_guests(root_logger, tmppath) -> None:
+    """SSH master sockets must be unique for multiple guests in one plan."""
+    provision = MagicMock(spec=Provision)
+    provision.run_workdir = tmppath
+    guests = {
+        name: GuestSsh(
+            logger=root_logger,
+            parent=provision,
+            name=name,
+            data=GuestSshData(primary_address=address),
+        )
+        for name, address in (
+            ('guest-one', '192.0.2.1'),
+            ('guest-two', '192.0.2.2'),
+        )
+    }
+    socket_paths = {name: guest._ssh_master_socket_path for name, guest in guests.items()}
+    assert len(set(socket_paths.values())) == len(guests)
