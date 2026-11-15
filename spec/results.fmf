@@ -61,10 +61,10 @@ description: |
          some-id: foo
          another-id: bar
 
-       # String, when the test started, in an ISO 8601 format.
+       # String, when the test started, as an ISO 8601 date and time of day.
        start-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
-       # String, when the test finished, in an ISO 8601 format.
+       # String, when the test finished, as an ISO 8601 date and time of day.
        end-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
        # String, how long did the test run.
@@ -116,10 +116,10 @@ description: |
             - path/to/check/log2.log
               ...
 
-          # String, when the check started, in an ISO 8601 format.
+          # String, when the check started, as an ISO 8601 date and time of day.
           start-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
-          # String, when the check finished, in an ISO 8601 format.
+          # String, when the check finished, as an ISO 8601 date and time of day.
           end-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
           # String, how long did the check run.
@@ -155,10 +155,10 @@ description: |
             - path/to/subresult/log2.log
               ...
 
-          # String, when the subtest started, in an ISO 8601 format.
+          # String, when the subtest started, as an ISO 8601 date and time of day.
           start-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
-          # String, when the subtest finished, in an ISO 8601 format.
+          # String, when the subtest finished, as an ISO 8601 date and time of day.
           end-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
           # String, how long did the subtest run.
@@ -234,7 +234,8 @@ description: |
     of a second and the UTC offset are optional when a value is read, and
     a value without an offset is understood as UTC. tmt itself always
     writes the offset, and writes the fractional part only when the value
-    carries one.
+    carries one. A timer reading, how long something took rather than when
+    it happened, belongs in ``duration`` and not here.
 
     The ``serial-number``, ``guest`` and ``fmf-id`` keys, if present in the
     custom results file, will be overwritten by tmt during their import after
