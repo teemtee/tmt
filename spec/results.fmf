@@ -233,7 +233,8 @@ description: |
     cannot be placed on a timeline, so it is refused. The fractional part
     of a second and the UTC offset are optional when a value is read, and
     a value without an offset is understood as UTC. tmt itself always
-    writes both.
+    writes the offset, and writes the fractional part only when the value
+    carries one.
 
     The ``serial-number``, ``guest`` and ``fmf-id`` keys, if present in the
     custom results file, will be overwritten by tmt during their import after
