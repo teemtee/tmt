@@ -1161,39 +1161,58 @@ def test_result_times_round_trip_as_spec_strings() -> None:
     assert restored.duration == timedelta(seconds=1)
 
 
-def test_timestamp_keeps_only_the_precision_it_was_given() -> None:
+@pytest.mark.parametrize(
+    ('field', 'key', 'value', 'stored'),
+    [
+        pytest.param(
+            'start_time',
+            'start-time',
+            datetime(2024, 8, 15, 13, 15, 6, tzinfo=UTC),
+            '2024-08-15T13:15:06+00:00',
+            id='whole second',
+        ),
+        pytest.param(
+            'end_time',
+            'end-time',
+            # The same wall clock read five hours behind UTC, so a different instant.
+            datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone(timedelta(hours=-5))),
+            '2024-08-15T13:15:06-05:00',
+            id='five hours behind UTC',
+        ),
+        pytest.param(
+            'start_time',
+            'start-time',
+            # A tenth of a second, so the fraction is real and must survive.
+            datetime(2024, 8, 15, 13, 15, 6, 100000, tzinfo=UTC),
+            '2024-08-15T13:15:06.100000+00:00',
+            id='microseconds',
+        ),
+    ],
+)
+def test_timestamp_keeps_only_the_precision_it_was_given(
+    field: str, key: str, value: datetime, stored: str
+) -> None:
     """A whole second omits the fraction; a value with microseconds keeps it."""
 
-    whole = datetime(2024, 8, 15, 13, 15, 6, tzinfo=UTC)
-    # The same wall clock read five hours behind UTC, so a different instant.
-    behind = datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone(timedelta(hours=-5)))
-    # A tenth of a second, so the fraction is real and must survive.
-    fraction = datetime(2024, 8, 15, 13, 15, 6, 100000, tzinfo=UTC)
+    result = Result(name='/test/one')
+    setattr(result, field, value)
 
-    assert Result(name='/test/one', start_time=whole).to_serialized()['start-time'] == (
-        '2024-08-15T13:15:06+00:00'
-    )
-    assert Result(name='/test/one', end_time=behind).to_serialized()['end-time'] == (
-        '2024-08-15T13:15:06-05:00'
-    )
-    assert Result(name='/test/one', start_time=fraction).to_serialized()['start-time'] == (
-        '2024-08-15T13:15:06.100000+00:00'
-    )
+    assert result.to_serialized()[key] == stored
 
 
 @pytest.mark.parametrize(
     ('key', 'value'),
     [
         # A time of day carries no date, so it cannot be placed on a timeline.
-        ('start-time', '131506'),
-        ('start-time', '13:15:06'),
+        pytest.param('start-time', '131506', id='start-time without date'),
+        pytest.param('start-time', '13:15:06', id='start-time without date, with colons'),
         # A minute field out of range.
-        ('duration', '00:99:00'),
+        pytest.param('duration', '00:99:00', id='duration with minute out of range'),
         # Neither a timestamp nor a duration.
-        ('start-time', 'not-a-time'),
+        pytest.param('start-time', 'not-a-time', id='start-time that is not a time'),
     ],
 )
-def test_result_time_parser_rejects_spec_violations(key: str, value: str) -> None:
+def test_results_time_invalid(key: str, value: str) -> None:
     """A stored time that breaks the result spec is refused, not guessed."""
 
     stored = {
@@ -1212,13 +1231,13 @@ def test_result_time_parser_rejects_spec_violations(key: str, value: str) -> Non
     'raw',
     [
         # The shape the specification documents, with and without a `Z` suffix.
-        '2024-08-15T13:15:06+00:00',
-        '2024-08-15T13:15:06Z',
+        pytest.param('2024-08-15T13:15:06+00:00', id='offset'),
+        pytest.param('2024-08-15T13:15:06Z', id='zulu'),
         # No offset, read as UTC.
-        '2024-08-15T13:15:06',
+        pytest.param('2024-08-15T13:15:06', id='no offset'),
         # The space separator and the compact form, both ISO 8601.
-        '2024-08-15 13:15:06',
-        '20240815T131506',
+        pytest.param('2024-08-15 13:15:06', id='space separator'),
+        pytest.param('20240815T131506', id='compact'),
     ],
 )
 def test_result_timestamp_accepts_isoformat_variants(raw: str) -> None:
