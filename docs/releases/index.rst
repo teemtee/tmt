@@ -1247,7 +1247,7 @@ provisioning in sequence.
 The :tmt:story:`/spec/plans/prepare` step now installs test requirements
 only on guests on which the said tests would run. Tests can be
 directed to subset of guests with a
-:tmt:story:`/spec/plans/discover/where` key, but, until 1.31, tmt would
+:ref:`where <guest-selection>` key, but, until 1.31, tmt would
 install all requirements of a given test on all guests, even on
 those on which the said test would never run.  This approach
 consumed resources needlessly and might be a issue for tests with
