@@ -409,7 +409,7 @@ definitions:
           type: string
 
   # In multihost scenarios, guests can be given roles
-  # https://tmt.readthedocs.io/en/stable/plugins/provision.html#multihost
+  # https://tmt.readthedocs.io/en/stable/guide.html#guest-selection
   role:
     type: string
 
@@ -467,7 +467,7 @@ definitions:
       - $ref: "/schemas/common#/definitions/fmf_id"
 
   # In multihost scenarios, some steps can be executed on some guests only.
-  # https://tmt.readthedocs.io/en/stable/plugins/provision.html#multihost
+  # https://tmt.readthedocs.io/en/stable/guide.html#guest-selection
   where:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
