@@ -16,8 +16,7 @@ available functionality, follow our :ref:`guide` which will help
 you with the first steps and teach you how to efficiently use the
 tool, check out the :ref:`stories` which motivated the effort,
 consult the :ref:`specification` to get detailed information about
-supported features, get inspired by many :ref:`examples`
-demonstrating the usage on real-life scenarios.
+supported features.
 
 
 Table of Contents
@@ -37,7 +36,6 @@ Table of Contents
     :caption: User
 
     Guide <guide>
-    Examples <examples>
     Questions <questions>
 
 .. toctree::

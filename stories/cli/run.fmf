@@ -13,7 +13,7 @@ story: 'As a user I want to execute tests easily'
             breaking user environment such as laptop.
         link:
           - implemented-by: /tmt/base/core.py
-          - documented-by: /docs/examples.rst#run
+
           - documented-by: /docs/guide.rst
         example: tmt run
     /plan:
@@ -55,7 +55,7 @@ story: 'As a user I want to execute tests easily'
         link:
           - implemented-by: /tmt/base/core.py
           - verified-by: /tests/run/default
-          - documented-by: /docs/examples.rst#run
+
 
 /select:
     story: 'Select multiple steps to be executed'
@@ -63,7 +63,7 @@ story: 'As a user I want to execute tests easily'
     link:
       - implemented-by: /tmt/base/core.py
       - verified-by: /tests/steps/select
-      - documented-by: /docs/examples.rst#select-steps
+
 
     /pick:
         story: 'Choose steps to be executed'
@@ -111,7 +111,7 @@ story: 'As a user I want to execute tests easily'
             - tmt run plan --condition=CONDITION
         link:
           - implemented-by: /tmt/base/core.py
-          - documented-by: /docs/examples.rst#select-plans
+
           - verified-by: /tests/plan/select
     /test:
         story: 'Select tests for execution'
@@ -122,7 +122,7 @@ story: 'As a user I want to execute tests easily'
             - tmt run plan --name=NAME2 test --name=NAME1
         link:
           - implemented-by: /tmt/base/core.py
-          - documented-by: /docs/examples.rst#select-tests
+
           - verified-by: /tests/test/select
 
 /keep:
@@ -134,7 +134,7 @@ story: 'As a user I want to execute tests easily'
         - tmt run --id ID execute
     link:
       - implemented-by: /tmp/base.py
-      - documented-by: /docs/examples.rst#debug-tests
+
 
 /debug:
     summary: Handsfree debugging
@@ -184,7 +184,7 @@ story: 'As a user I want to execute tests easily'
         Note that ``tmt`` saves last run id on each new execution.
     link:
       - implemented-by: /tmt/base/core.py
-      - documented-by: /docs/examples.rst#debug-tests
+
     example:
         - tmt run -l
         - tmt run --last
@@ -199,7 +199,7 @@ story: 'As a user I want to execute tests easily'
     link:
       - implemented-by: /tmt/steps
       - verified-by: /tests/login
-      - documented-by: /docs/examples.rst#guest-login
+
 
     /last:
         summary: 'Log in at the end of the last enabled step'

@@ -28,14 +28,14 @@
         example: tmt run provision
         link:
           - implemented-by: /tmt/steps/provision
-          - documented-by: /docs/examples.rst#provision-options
+
 
     /local:
         story: 'Use localhost for testing'
         example: tmt run provision --how=local
         link:
           - implemented-by: /tmt/steps/provision/local.py
-          - documented-by: /docs/examples.rst#provision-options
+
           - verified-by: /tests/init/base
 
     /virtual:
@@ -43,14 +43,14 @@
         example: tmt run provision --how=virtual --image=fedora/31-cloud-base
         link:
           - implemented-by: /tmt/steps/provision/testcloud.py
-          - documented-by: /docs/examples.rst#provision-options
+
 
     /container:
         story: 'Provision a container'
         example: tmt run provision --how=container --image=fedora:latest
         link:
           - implemented-by: /tmt/steps/provision/podman.py
-          - documented-by: /docs/examples.rst#provision-options
+
 
     /connect:
         story: 'Connect to a provisioned box'
@@ -59,7 +59,7 @@
             authentication data to connect to a running machine.
         link:
           - implemented-by: /tmt/steps/provision/connect.py
-          - documented-by: /docs/examples.rst#provision-options
+
         example:
             - tmt run provision --how=connect --guest=name-or-ip --user=login --password=secret
             - tmt run provision --how=connect --guest=name-or-ip --key=private-key-path
@@ -122,7 +122,7 @@
           - tmt run --all execute --how tmt --interactive
         link:
           - implemented-by: /tmt/steps/execute/internal.py
-          - documented-by: /docs/examples.rst
+
 
     /exit-first:
         summary: Stop execution after a test fails
