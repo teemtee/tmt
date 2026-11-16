@@ -6223,7 +6223,7 @@ def parse_timestamp(timestamp: str) -> datetime.datetime:
     """
     Read a timestamp stored by :py:func:`format_timestamp`.
 
-    ``datetime.datetime.fromisoformat`` reads the forms the results
+    :py:meth:`datetime.datetime.fromisoformat` reads the forms the results
     specification allows, including a trailing ``Z``. A value without a
     time zone is read as UTC, so a later comparison never mixes naive and
     aware values.
@@ -6240,6 +6240,11 @@ def parse_timestamp(timestamp: str) -> datetime.datetime:
     return parsed
 
 
+_DURATION_PATTERN: Pattern[str] = re.compile(
+    r'(?P<hours>[0-9]{2,}):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])'
+)
+
+
 def parse_duration(duration: str) -> datetime.timedelta:
     """
     Read a duration stored by :py:func:`format_duration`.
@@ -6248,10 +6253,7 @@ def parse_duration(duration: str) -> datetime.timedelta:
     else, including a fractional second, is rejected.
     """
 
-    matched = re.fullmatch(
-        r'(?P<hours>[0-9]{2,}):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])',
-        duration,
-    )
+    matched = _DURATION_PATTERN.fullmatch(duration)
 
     if matched is None:
         raise tmt.utils.SpecificationError(f"Malformed duration '{duration}'.")
