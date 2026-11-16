@@ -1153,19 +1153,22 @@ discovered tests or phase tasks apply to all provisioned guests.
 The :tmt:story:`/spec/plans/provision` step can request multiple guests.
 Every guest has a unique ``name`` and may also have an optional ``role``.
 Unlike names, roles may be shared by multiple guests and may use any
-identifier suitable for the plan. The following examples request guests
-by name and assign roles to groups of guests:
+identifier suitable for the plan. The first example requests two guests
+and identifies each guest by name:
 
 .. code-block:: yaml
 
-    # Request two guests
     provision:
       - name: server
         how: virtual
       - name: client
         how: virtual
 
-    # Assign role to guests
+The second example describes a separate scenario in which roles group
+related guests:
+
+.. code-block:: yaml
+
     provision:
       - name: main-server
         role: primary
@@ -1191,12 +1194,12 @@ to execute different test code on individual guests.
 A name in ``where`` selects the individual guest with that name, while a
 role selects every guest assigned to that role. In the following examples,
 ``server`` and ``client`` select guests from the first provisioning example
-by name. With the second provisioning example, ``client`` would instead
-select both guests assigned to that role.
+by name. In the second example, ``client``, ``replica`` and ``primary``
+select guests by role.
 
 .. code-block:: yaml
 
-    # Run a different script for each named guest or guest role
+    # Run a different script for each named guest
     discover:
       - how: shell
         where: client
@@ -1218,7 +1221,9 @@ select both guests assigned to that role.
         where: client
       - how: fmf
         filter: tag:server-tests
-        where: server
+        where:
+          - replica
+          - primary
 
 The granularity of the multihost scenario is on the step phase
 level. The user may define multiple ``discover``, ``prepare`` and
