@@ -211,6 +211,9 @@ class Environment(dict[EnvVarName, EnvVarValue]):
     def __contains__(self, key: _IncomingEnvVarName) -> bool:  # type: ignore[override]
         return super().__contains__(self._normalize_key(key))
 
+    def __delitem__(self, key: _IncomingEnvVarName) -> None:
+        super().__delitem__(self._normalize_key(key))
+
     @overload  # type: ignore[override]
     def get(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
         pass
@@ -223,6 +226,25 @@ class Environment(dict[EnvVarName, EnvVarValue]):
         self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = None
     ) -> Optional[EnvVarValue]:
         return super().get(self._normalize_key(key), self._normalize_default(default))
+
+    @overload
+    def setdefault(self, key: _IncomingEnvVarName, default: None = None) -> Optional[EnvVarValue]:
+        pass
+
+    @overload
+    def setdefault(
+        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefaultKnown
+    ) -> EnvVarValue:
+        pass
+
+    def setdefault(  # type: ignore[reportIncompatibleMethodOverride,unused-ignore]
+        self, key: _IncomingEnvVarName, default: _IncomingEnvVarDefault = None
+    ) -> Optional[EnvVarValue]:
+        # dict accepts None as a default at runtime, despite its value type.
+        return super().setdefault(
+            self._normalize_key(key),
+            cast(EnvVarValue, self._normalize_default(default)),
+        )
 
     # Sentinel distinguishing "no default given" from an explicit ``None``.
     _MISSING: Any = object()

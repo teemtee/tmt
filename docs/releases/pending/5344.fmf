@@ -1,0 +1,3 @@
+description: |
+  ``Environment.setdefault()`` and key deletion now normalize ``EnvVar`` keys to
+  their declared environment-variable names.
