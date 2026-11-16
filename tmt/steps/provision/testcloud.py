@@ -334,7 +334,8 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
 
 
 @container
-class TestcloudGuestData(tmt.guest.GuestSshData):
+class TestcloudGuestData(tmt.steps.provision.HasImage, tmt.guest.GuestSshData):
+    # Override parent with more fitting help.
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
@@ -344,6 +345,7 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
              or a complete url.
              """,
     )
+
     memory: Optional['Size'] = field(
         default=cast(Optional['Size'], None),
         option=('-m', '--memory'),
@@ -1149,7 +1151,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         self.collect_log(console_log, hint=f'following {console_log.filepath}')
 
-        self.setup_logs(logger=self._logger)
+        self.kickoff_logs(logger=self._logger)
 
         # Prepare config
         self.prepare_config()
@@ -1357,12 +1359,13 @@ class GuestTestcloud(tmt.GuestSsh):
         waiting.deadline = Deadline.from_seconds(CONNECT_TIMEOUT * time_coeff)
         self.assert_reachable(waiting)
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop provisioned guest
         """
 
-        super().stop()
+        super().stop(logger=logger)
+
         # Stop only if the instance successfully booted
         if self._instance and self.primary_address:
             self.debug(f"Stopping testcloud instance '{self.instance_name}'.")
@@ -1599,7 +1602,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                 )
 
         # Create a new GuestTestcloud instance and start it
-        self._guest = GuestTestcloud(
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,

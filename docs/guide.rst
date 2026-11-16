@@ -1147,6 +1147,23 @@ phases with corresponding guests by their
 Essentially, plan author tells tmt on which guest(s) a test or
 script should run by listing guest name(s) or guest role(s).
 
+.. note::
+
+    Use multihost testing when the provisioned guests need to
+    **communicate with each other**, for example in a server/client
+    setup.
+
+    To run the same tests on several environments or architectures,
+    keep a single-guest plan and **run it once per environment**.
+    Give each run its own :tmt:story:`/spec/context`, for example
+    ``tmt --context arch=aarch64 run``, and use :ref:`adjust-metadata`
+    to disable or modify tests which do not fit the given environment.
+    Testing Farm does this for you: request several architectures and
+    it runs the plan on each of them separately, see the `Testing Farm
+    FAQ`__.
+
+    __ https://docs.testing-farm.io/Testing%20Farm/0.1/faq.html#multihost-or-multiple-environments
+
 The granularity of the multihost scenario is on the step phase
 level. The user may define multiple ``discover``, ``prepare`` and
 ``finish`` phases, and everything in them will start on given guests

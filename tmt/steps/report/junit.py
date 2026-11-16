@@ -448,15 +448,7 @@ def make_junit_xml(
 
 
 @container
-class ReportJUnitData(tmt.steps.report.ReportStepData):
-    file: Optional[Path] = field(
-        default=None,
-        option='--file',
-        metavar='PATH',
-        help='Path to the file to store JUnit to.',
-        normalize=tmt.utils.normalize_path,
-    )
-
+class ReportJUnitData(tmt.steps.report.HasOutputFile, tmt.steps.report.ReportStepData):
     flavor: str = field(
         default=DEFAULT_FLAVOR_NAME,
         option='--flavor',

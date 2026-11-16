@@ -18,7 +18,10 @@ rlJournalStart
         rlLogInfo "Running \"tmt run -i $run -dddvvva provision -h $PROVISION_HOW plan -n /plan &> tmt.output\" in the background"
         rlLogInfo "Background tmt PID is $tmt_pid"
 
-        # Now we wait for the test to go to sleep...
+        # Now we wait for the test to go to sleep. The `sleep 3600` command
+        # comes from the `/tests/do` test defined in data/main.fmf, and tmt
+        # traces it because the test body turns on `set -x`.
+        attempts=0
         while true; do
             rlLogInfo "checking output for 'sleep 3600'..."
 
@@ -26,15 +29,39 @@ rlJournalStart
 
             rlLogDebug "Current tmt output tail:\n$current_tail"
 
-            if [[ "$current_tail" == *"+++ sleep 3600"* ]]; then
+            # The command is traced by bash, one "+" per level of shell nesting,
+            # and tmt prints that line with an indent and a ``stdout:`` label,
+            # so the run of "+" signs is not at the start of the line. Match
+            # whichever count of them arrives, and require it to stand as its
+            # own token so ``sleep 36000`` or ``x=+ sleep 3600`` are not taken
+            # for the trace. The whole file is searched, not just the tail,
+            # because the line scrolls out of the last ten lines as soon as
+            # tmt writes more output.
+            if grep -a -qE '(^|[[:space:]])\+{1,} sleep 3600($|[[:space:]])' tmt.output; then
                 rlLogInfo "found!"
                 break;
+            fi
+
+            # 180 checks give 179 sleeps of 10 seconds, about 1790 s. With virtual
+            # provisioning this test is given 40 minutes, so the bound is reached
+            # roughly ten minutes before the deadline and the failure is reported
+            # while the phase is still running. The bound limits the polling only,
+            # the interrupt that follows is not covered by it. The deadline this
+            # test gets under local provisioning is 20 minutes, shorter than the
+            # bound, so there the deadline ends the phase first and this bound
+            # only keeps the loop itself finite.
+            attempts=$((attempts + 1))
+            if [ "$attempts" -ge 180 ]; then
+                tail_output="${TMT_TEST_DATA:-.}/tmt.output-tail.txt"
+                tail -n 50 tmt.output > "$tail_output"
+                rlFail "the test did not reach 'sleep 3600' in 180 checks, the last output is in $tail_output"
+                break
             fi
 
             sleep 10
         done
 
-        rlRun "kill -SIGINT $tmt_pid"
+        rlRun "kill -SIGINT $tmt_pid" 0,1
         wait "$tmt_pid"
 
         rlAssertGrep "warn: Interrupt requested via SIGINT signal." "$run/log.txt"

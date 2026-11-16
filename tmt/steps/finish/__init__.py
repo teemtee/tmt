@@ -14,8 +14,6 @@ from tmt.steps import (
     Method,
     PluginOutcome,
     PluginTask,
-    PullTask,
-    sync_with_guests,
 )
 from tmt.utils.environment import Environment
 
@@ -264,14 +262,7 @@ class Finish(tmt.steps.StepWithQueue[FinishStepData, PluginOutcome]):
             # Pull artifacts created in the plan data directory
             # if there was at least one plugin executed
             if self.phases() and self._steppified_ready_guests:
-                sync_with_guests(
-                    self,
-                    'pull',
-                    PullTask(
-                        self._steppified_ready_guests, self.plan.data_directory, self._logger
-                    ),
-                    self._logger,
-                )
+                self.plan.pull_data_directory(self)
 
                 # To separate "finish" from "pull" queue visually
                 self.info('')

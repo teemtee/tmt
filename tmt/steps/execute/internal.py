@@ -653,7 +653,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Pull artifacts created in the plan data directory
         self.debug("Pull the plan data directory.", level=2)
-        guest.pull(source=self.step.plan.data_directory)
+        self.step.plan.pull_data_directory(self.step, guests=[guest])
+
+        # Fetch also guest-specific data.
+        self.step.plan.pull_guest_data_directory(self.step, guests=[guest])
 
         if abort_execute_exception:
             raise abort_execute_exception

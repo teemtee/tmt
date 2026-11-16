@@ -213,12 +213,12 @@ class GuestLocal(tmt.Guest):
 
         self.assert_reachable()
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop the guest
         """
 
-        self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
+        logger.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
     def reboot(
         self,
@@ -337,7 +337,9 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")
 
-        self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
+        self._guest = self._guest_class(
+            logger=self._logger, data=data, name=self.name, parent=self.step
+        )
         self._guest.start()
         self._guest.setup()
 

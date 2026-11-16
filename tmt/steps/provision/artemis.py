@@ -120,7 +120,15 @@ def _normalize_log_type(key_address: str, raw_value: Any, logger: tmt.log.Logger
 
 
 @container
-class ArtemisGuestData(tmt.guest.GuestSshData):
+class ArtemisGuestData(tmt.steps.provision.HasImage, tmt.guest.GuestSshData):
+    # Override parent with more fitting help.
+    image: str = field(
+        default='fedora',
+        option=('-i', '--image'),
+        metavar='COMPOSE',
+        help='Image (or "compose" in Artemis terminology) to provision.',
+    )
+
     # API
     api_url: str = field(
         default=DEFAULT_API_URL,
@@ -142,12 +150,6 @@ class ArtemisGuestData(tmt.guest.GuestSshData):
         option='--arch',
         metavar='ARCH',
         help='Architecture to provision.',
-    )
-    image: Optional[str] = field(
-        default=None,
-        option=('-i', '--image'),
-        metavar='COMPOSE',
-        help='Image (or "compose" in Artemis terminology) to provision.',
     )
     pool: Optional[str] = field(
         default=None,
@@ -602,7 +604,7 @@ class GuestArtemis(tmt.GuestSsh):
         for log_type in self.log_type:
             self.collect_log(GuestLogArtemis(name=log_type, guest=self))
 
-        self.setup_logs(logger=self._logger)
+        self.kickoff_logs(logger=self._logger)
 
         def get_new_state() -> GuestInspectType:
             nonlocal previous_state
@@ -821,7 +823,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        self._guest = GuestArtemis(
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,

@@ -27,3 +27,9 @@ execute:
 /without-how:
   report:
     - order: 60
+
+/with-incompatible-keys:
+  report:
+    - how: html
+      file: junit.xml
+      absolute-paths: true
