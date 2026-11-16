@@ -43,7 +43,7 @@ def _duration_to_seconds_filter(duration: None) -> None:
     pass
 
 
-def _duration_to_seconds_filter(duration: timedelta | None) -> int | None:
+def _duration_to_seconds_filter(duration: Optional[timedelta]) -> Optional[int]:
     """
     Convert a duration into whole seconds
     """
