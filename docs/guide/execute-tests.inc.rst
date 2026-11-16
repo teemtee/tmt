@@ -41,7 +41,6 @@ Even if there are no :tmt:story:`/spec/plans` defined it is still
 possible to execute tests and custom scripts. See the default
 :tmt:story:`/stories/cli/run/default/plan` story for details.
 
-
 Dry run mode is enabled with the ``--dry`` option:
 
 .. code-block:: shell
