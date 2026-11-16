@@ -135,6 +135,7 @@ details about the default shell options.
             systemctl start httpd
             echo foo > /var/www/html/index.html
             curl http://localhost/ | grep foo
+
 Test Path
 ------------------------------------------------------------------
 
