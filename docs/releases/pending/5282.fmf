@@ -1,0 +1,15 @@
+description: |
+  Test results now hold their times as values instead of the text found
+  in ``results.yaml``. Two things change in the output.
+
+  A ``start-time`` or ``end-time`` given without a timezone is read as
+  UTC and written back with the ``+00:00`` offset. Previously the string
+  was stored and written out untouched. Values that already carry an
+  offset are written back unchanged, and a value with whole seconds keeps
+  exactly that precision.
+
+  In the ``junit`` report, the ``time`` attribute is now emitted for a
+  result whose duration was measured as zero. It used to be left out,
+  which made a measured zero indistinguishable from a duration that was
+  never measured. A duration that was never measured still has no
+  ``time`` attribute.
