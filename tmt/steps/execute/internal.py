@@ -167,6 +167,8 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
             :tmt:story:`/spec/tests/duration` for tests defined directly
             under the execute step is ``1h``. Use the ``duration``
             attribute to modify the default limit.
+
+            See :ref:`inline-shell-tests` for examples.
             """,
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
