@@ -1055,6 +1055,38 @@ Configuration and guide for setting up pylero can be found
 at https://github.com/RedHatQE/pylero
 
 
+BeakerLib Libraries
+------------------------------------------------------------------
+
+In order to prevent unnecessary test code duplication it makes
+sense to use a test library which implements frequently repeated
+actions. Currently beakerlib libraries are supported. They can be
+defined in the :tmt:story:`/spec/tests/require` attribute and are
+fetched during the :tmt:story:`/spec/plans/discover` step.
+
+Use the short backward-compatible syntax to fetch libraries from
+the `default repository`__:
+
+.. code-block:: yaml
+
+    require: library(openssl/certgen)
+
+__ https://github.com/beakerlib/
+
+The full fmf identifier allows to fetch libraries from arbitrary
+location:
+
+.. code-block:: yaml
+
+    require:
+      - type: library
+        url: https://github.com/beakerlib/openssl
+        name: /certgen
+
+See the :tmt:story:`/spec/tests/require` attribute specification for
+detailed description of the syntax and available keys.
+
+
 .. _share-tests:
 
 Share Tests
@@ -1694,6 +1726,307 @@ Several other commands also support ``--dry``:
 .. include:: guide/test-runner.inc.rst
 .. include:: guide/guest-preparation.inc.rst
 .. include:: guide/recipes.inc.rst
+
+
+Status
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``status`` command is used to inspect the progress of runs,
+plans and steps that have previously been started:
+
+.. code-block:: shell
+
+    $ tmt status
+    status     id
+    prepare    /var/tmp/tmt/run-002
+    done       /var/tmp/tmt/run-001
+
+
+Verbosity Levels
+------------------------------------------------------------------
+
+With no verbosity (the default), the status of whole runs is
+displayed as shown above. The last done step is shown as the run
+status (or 'done' if all enabled steps are completed). With more
+verbosity (-v), the status of plans in runs is shown:
+
+.. code-block:: shell
+
+    $ tmt status -v
+    status     id
+    prepare    /var/tmp/tmt/run-002  /base
+    done       /var/tmp/tmt/run-001  /advanced
+    done       /var/tmp/tmt/run-001  /base
+
+With the highest verbosity (-vv), the status of individual steps
+for each plan is displayed:
+
+.. code-block:: shell
+
+    $ tmt status -vv
+    disc prov prep exec repo fini  id
+    done done done todo todo todo  /var/tmp/tmt/run-002  /base
+    done done done done todo done  /var/tmp/tmt/run-001  /advanced
+    done done done done todo done  /var/tmp/tmt/run-001  /base
+
+
+Status Filtering
+------------------------------------------------------------------
+
+The runs shown in the status are by default taken from
+``/var/tmp/tmt``. The directory containing runs can be specified
+using an argument to ``tmt status``:
+
+.. code-block:: shell
+
+    $ tmt status /tmp/run
+    status     id
+    done       /tmp/run/001
+
+Status of one specific run can also be shown using the ``--id``
+option:
+
+.. code-block:: shell
+
+    $ tmt status -vv --id run-002
+    disc prov prep exec repo fini  id
+    done done done todo todo todo  /var/tmp/tmt/run-002  /base
+
+Runs and plans can also be filtered based on their status. Option
+``--abandoned`` can be used to list runs/plans which have
+provision step completed but finish step not yet done. This is
+useful for finding active containers or virtual machines:
+
+.. code-block:: shell
+
+    $ tmt status --abandoned
+    status     id
+    prepare    /var/tmp/tmt/run-002
+
+To show only completed runs/plans, ``--finished`` can be used:
+
+.. code-block:: shell
+
+    $ tmt status --finished
+    status     id
+    done       /var/tmp/tmt/run-001
+
+Finally, ``--active`` displays runs/plans in progress (at least
+one enabled step has not been finished):
+
+.. code-block:: shell
+
+    $ tmt status --active
+    status     id
+    prepare    /var/tmp/tmt/run-002
+
+
+Clean
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When running tests, a lot of metadata can gather over time taking
+a lot of space. It may be useful to clean it every now and then
+using the ``clean`` command. Its goal is to stop the running
+guests, remove working directories or remove images. Without any
+subcommand, all of these actions are done:
+
+.. code-block:: shell
+
+    $ tmt clean
+    clean
+        guests
+        runs
+        images
+            testcloud
+
+It may be useful to see exactly which runs are affected using
+the ``--verbose`` option:
+
+.. code-block:: shell
+
+    $ tmt clean -v
+    clean
+        guests
+            Stopping guests in run '/var/tmp/tmt/run-001' plan '/base'.
+        runs
+            Removing workdir '/var/tmp/tmt/run-003'.
+            Removing workdir '/var/tmp/tmt/run-002'.
+            Removing workdir '/var/tmp/tmt/run-001'.
+        images
+            testcloud
+                warn: Directory '/var/tmp/tmt/testcloud/images' does not exist.
+
+However, before cleaning up all available metadata, you may want
+to see what would actually happen using ``--dry`` mode:
+
+.. code-block:: shell
+
+    $ tmt clean -v --dry
+    clean
+        guests
+            Would stop guests in run '/var/tmp/tmt/run-001' plan '/advanced'.
+            Would stop guests in run '/var/tmp/tmt/run-001' plan '/base'.
+        runs
+            Would remove workdir '/var/tmp/tmt/run-002'.
+            Would remove workdir '/var/tmp/tmt/run-001'.
+        images
+            testcloud
+                warn: Directory '/var/tmp/tmt/testcloud/images' does not exist.
+
+You may also want to clean everything in only one run using
+the ``--id`` or ``--last`` options.
+
+.. code-block:: shell
+
+    $ tmt clean -v --last
+    clean
+    guests
+        Stopping guests in run '/var/tmp/tmt/run-001' plan '/plans/testcloud'.
+            finish
+
+                guest: stopped
+                guest: removed
+                summary: 0 tasks completed
+    runs
+        Removing workdir '/var/tmp/tmt/run-001'.
+    images
+        testcloud
+            warn: Directory '/var/tmp/tmt/testcloud/images' does not exist.
+
+You can also skip cleaning selected resources using the ``--skip``
+option.
+
+.. code-block:: shell
+
+    $ tmt clean -v --last --skip images
+    clean
+    guests
+        Stopping guests in run '/var/tmp/tmt/run-001' plan '/plans/testcloud'.
+            finish
+
+                guest: stopped
+                guest: removed
+                summary: 0 tasks completed
+    runs
+        Removing workdir '/var/tmp/tmt/run-001'.
+
+In some cases, you may want to have a bit more control over the
+behaviour which can be achieved using subcommands and their
+options. All of the options described above can be used with
+individual subcommands too.
+
+
+Clean guests
+------------------------------------------------------------------
+
+The subcommand ``clean guests`` aims to stop all running guests.
+By default, runs are taken from ``/var/tmp/tmt``, this can be
+changed using ``--workdir-root`` option of the subcommand:
+
+.. code-block:: shell
+
+    $ tmt clean guests -v --workdir-root /tmp/run
+    clean
+        guests
+            Stopping guests in run '/tmp/run/002' plan '/advanced'.
+            Stopping guests in run '/tmp/run/002' plan '/base'.
+
+You may also want to clean the guests in only one run using
+``--id`` or ``--last`` options. This serves as an alternative
+to ``tmt run --last finish``:
+
+.. code-block:: shell
+
+    $ tmt clean guests -v --last
+    clean
+        guests
+            Stopping guests in run '/var/tmp/tmt/run-003' plan '/advanced'.
+            Stopping guests in run '/var/tmp/tmt/run-003' plan '/base'.
+
+The type of provision to be cleaned can be changed using
+``--how`` option:
+
+.. code-block:: shell
+
+    $ tmt run provision -h container
+    /var/tmp/tmt/run-001
+    ...
+
+    $ tmt run provision -h virtual
+    /var/tmp/tmt/run-002
+    ...
+
+    $ tmt clean guests --how container
+    clean
+        guests
+            Stopping guests in run '/var/tmp/tmt/run-001' plan '/advanced'.
+            Stopping guests in run '/var/tmp/tmt/run-001' plan '/base'.
+
+    $ tmt clean guests --how virtual
+    clean
+        guests
+            Stopping guests in run '/var/tmp/tmt/run-002' plan '/advanced'.
+            Stopping guests in run '/var/tmp/tmt/run-002' plan '/base'.
+
+
+Clean workdirs
+------------------------------------------------------------------
+
+The goal of ``clean runs`` is to remove workdirs of past runs.
+Similarly to above, ``/var/tmp/tmt`` is used by default as run
+location and this can be changed using ``--workdir-root`` option:
+
+.. code-block:: shell
+
+    $ tmt clean runs --workdir-root /tmp/run
+    clean
+        runs
+            Removing workdir '/tmp/run/001'.
+
+Only one specific run can also be removed using ``--id`` or
+``--last`` options, similarly to ``clean guests``:
+
+.. code-block:: shell
+
+    $ tmt clean runs -v -i /var/tmp/tmt/run-001
+    clean
+        runs
+            Removing workdir '/var/tmp/tmt/run-001'.
+
+You may also want to remove only old runs. This can be achieved
+using ``--keep`` option which allows you to specify the number
+of latest runs to keep:
+
+.. code-block:: shell
+
+    $ for i in $(seq 1 10); do tmt run; done
+    ...
+
+    $ tmt clean runs --dry -v --keep 5
+    clean
+        runs
+            Would remove workdir '/var/tmp/tmt/run-005'.
+            Would remove workdir '/var/tmp/tmt/run-004'.
+            Would remove workdir '/var/tmp/tmt/run-003'.
+            Would remove workdir '/var/tmp/tmt/run-002'.
+            Would remove workdir '/var/tmp/tmt/run-001'.
+
+
+Clean images
+------------------------------------------------------------------
+
+The subcommand ``clean images`` removes images of all provision
+methods that support it. Currently, only testcloud provision
+supports this option, the images are removed from
+``/var/tmp/tmt/testcloud/images``:
+
+.. code-block:: shell
+
+    $ tmt clean images
+    clean
+        images
+            testcloud
+                Removing '/var/tmp/tmt/testcloud/images/Fedora-Cloud-Base-34_Beta-1.3.x86_64.qcow2'.
 
 
 Coding
