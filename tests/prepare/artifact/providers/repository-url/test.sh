@@ -18,8 +18,8 @@ rlJournalStart
             continue
         fi
 
-        if is_centos_7 "$image"; then
-            # RPMs built in copr are incompatible with CentOS 7
+        if is_centos_7 "$image" || is_centos_6 "$image"; then
+            # RPMs built in copr are incompatible with CentOS 7 and 6
             continue
         fi
 

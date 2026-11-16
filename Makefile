@@ -6,6 +6,7 @@
 
 # Prepare variables
 TMP = $(CURDIR)/tmp
+MOCK_CHROOT = default
 
 ccred=$(shell env TERM="$${TERM:-linux}" tput setaf 1)
 ccgreen=$(shell env TERM="$${TERM:-linux}" tput setaf 2)
@@ -35,7 +36,6 @@ _DEPS_CORE_FEDORA := \
     hatch \
     uv \
     python3-devel \
-    python3-hatch-vcs \
     rpm-build \
     clang \
     beakerlib
@@ -44,6 +44,7 @@ _DEPS_DEVELOP_FEDORA := \
     expect \
     gcc \
     git \
+    packit \
     python3-nitrate \
     libvirt-devel \
     krb5-devel \
@@ -55,12 +56,8 @@ _DEPS_DEVELOP_FEDORA := \
     /usr/bin/python3.12 \
     pre-commit
 
-# Note: interestingly, `hatch` is not shipped by Ubuntu, but `hatch` plugins are.
-# Manual `hatch` installation probably does not the packaged plugin, leaving it
-# in for now until we get better coverage.
 _DEPS_CORE_UBUNTU := \
     python3-dev \
-    python3-hatch-vcs \
     clang
 
 _DEPS_DEVELOP_UBUNTU := \
@@ -83,8 +80,8 @@ _OS_ID   := $(shell sh -c '. /etc/os-release 2>/dev/null && echo $$ID')
 _deps/fedora:
 	sudo dnf install -y $(_DEPS_CORE_FEDORA)
 
-_build-deps/fedora: _deps tarball ver2spec
-	rpmbuild --define '_topdir $(TMP)' -br packaging/rpm/tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
+_build-deps/fedora: srpm
+	mock -r $(MOCK_CHROOT) --calculate-build-dependencies --resultdir $(TMP) tmt-*.src.rpm || sudo dnf builddep -y $(TMP)/tmt-*buildreqs.nosrc.rpm
 
 _develop/fedora: _deps/fedora
 	sudo dnf install -y $(_DEPS_DEVELOP_FEDORA)
@@ -141,26 +138,13 @@ man:  ## Build man page
 ##
 ## Packaging & Packit
 ##
-build: clean man
-	hatch build
-tarball: clean tmp build
-	mkdir -p $(TMP)/SOURCES
-	cp dist/tmt-*.tar.gz $(TMP)/SOURCES
+rpm: tmp ## Build RPMs
+	packit -d build in-mock -r $(MOCK_CHROOT) --resultdir $(TMP)
 
-rpm: tarball ver2spec  ## Build RPMs
-	# If the build system is missing the required dependencies, use nosrc.rpm to install them
-	rpmbuild --define '_topdir $(TMP)' -bb packaging/rpm/tmt.spec || echo 'Hint: run `make deps` to install build dependencies'
-
-srpm: tarball ver2spec  ## Build SRPM
-	rpmbuild --define '_topdir $(TMP)' -bs packaging/rpm/tmt.spec
+srpm: ## Build SRPM
+	packit srpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
-
-version:  ## Build tmt version for packaging purposes
-	hatch version
-
-ver2spec:
-	$(shell sed -E "s/^(Version:[[:space:]]*).*/\1$$(hatch version)/" -i packaging/rpm/tmt.spec)
 
 ##
 ## Containers
@@ -194,6 +178,8 @@ TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX = tmt/container/test
 # The list of tmt test container images.
 TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream9:latest \
@@ -211,7 +197,6 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged:latest \
-                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/bootc:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43/unprivileged:latest \
@@ -226,9 +211,11 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
 
 UNAME_M := $(shell uname -m)  # Get the machine architecture
 
-# CentOS 7 is not available for aarch64 architecture, so we filter it.
+# CentOS 6 and 7 are not available for aarch64 architecture, so we filter them.
 ifeq ($(UNAME_M),aarch64)
 TMT_TEST_CONTAINER_IMAGES := $(filter-out \
+  $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6:latest \
+  $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6/upstream:latest \
   $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7:latest \
   $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream:latest, \
   $(TMT_TEST_CONTAINER_IMAGES))
@@ -285,8 +272,14 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine\:
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream\:latest:
 	$(call build-test-container-image,$@,alpine/Containerfile.upstream)
 
-# CentOS 7 is not available for aarch64 architecture, so we skip it.
+# CentOS 6 and 7 are not available for aarch64 architecture, so we skip them.
 ifneq ($(UNAME_M),aarch64)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6\:latest:
+	$(call build-test-container-image,$@,centos/6/Containerfile)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/6/upstream\:latest:
+	$(call build-test-container-image,$@,centos/6/Containerfile.upstream)
+
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7\:latest:
 	$(call build-test-container-image,$@,centos/7/Containerfile)
 
@@ -338,9 +331,6 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/l
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/unprivileged\:latest:
 	$(call build-test-container-image,$@,fedora/latest/Containerfile.unprivileged)
-
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/bootc\:latest:
-	$(call build-test-container-image,$@,fedora/42/bootc/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43\:latest:
 	$(call build-test-container-image,$@,fedora/43/Containerfile)
@@ -394,6 +384,8 @@ clean:  ## Remove all temporary files, packaging artifacts and docs
 	rm -rf examples/convert/{main.fmf,test.md,Manual} Manual
 	rm -f tests/full/repo_copy.tgz
 	rm -rf .profile_common_commands .profile_synthetic_runs tests/performance/synthetic
+	rm -rf *.rpm
+	rm -rf packaging/rpm/*.tar.gz
 
 clean/images:  ## Remove tmt images
 	for image in $(TMT_DISTRO_CONTAINER_IMAGES); do \

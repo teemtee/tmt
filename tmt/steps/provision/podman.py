@@ -15,7 +15,7 @@ from tmt.guest import (
     RebootMode,
     TransferOptions,
 )
-from tmt.steps.provision import Provision
+from tmt.steps.provision import HasImage, Provision
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -41,13 +41,15 @@ DEFAULT_STOP_TIME = 1
 
 
 @container
-class PodmanGuestData(tmt.guest.GuestData):
+class PodmanGuestData(HasImage, tmt.guest.GuestData):
+    # Override parent with more fitting help.
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
         metavar='IMAGE',
         help='Select image to use. Short name or complete url.',
     )
+
     # Override parent class with our defaults
     user: str = field(
         default=DEFAULT_USER,
@@ -490,7 +492,6 @@ class GuestContainer(tmt.Guest):
         try:
             return self._run_guest_command(
                 Command('podman') + command,
-                environment=Environment.from_environ(),
                 silent=silent,
                 **kwargs,
             )
@@ -646,7 +647,7 @@ class GuestContainer(tmt.Guest):
         if not self.is_ready:
             return
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop provisioned guest
         """
@@ -662,7 +663,7 @@ class GuestContainer(tmt.Guest):
             self.podman(
                 Command('container', 'stop', '--time', str(self.stop_time), self.container)
             )
-            self.info('container', 'stopped', color='green')
+            logger.info('container', 'stopped', color='green')
 
     def remove(self) -> None:
         """
@@ -810,8 +811,8 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
         for device in data.expose_device:
             self._validate_device_against_allowlist(device)
 
-        # Create a new GuestTestcloud instance and start it
-        self._guest = GuestContainer(
+        # Create a new GuestContainer instance and start it
+        self._guest = self._guest_class(
             logger=self._logger,
             data=data,
             name=self.name,

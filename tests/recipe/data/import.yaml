@@ -74,6 +74,7 @@ plans:
             how: local
             name: default-0
             order: 50
+            log-update-tick: 300
     prepare:
         enabled: false
         phases:

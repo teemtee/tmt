@@ -696,16 +696,18 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self,
         provides: Sequence[str],
         repo_ids: Optional[Iterable[str]] = None,
-    ) -> dict[str, list['RpmVersion']]:
+    ) -> dict[str, set['RpmVersion']]:
         """
         Map each provide to the :py:class:`RpmVersion` objects of packages that provide it.
 
         :param provides: Provides to resolve.
         :param repo_ids: Restrict the query to these repository IDs; searches all enabled
             repositories when not provided.
-        :returns: Mapping from each provide to a list of :py:class:`RpmVersion` objects,
+        :returns: Mapping from each provide to a set of :py:class:`RpmVersion` objects,
             each carrying the NEVRA and source repository. Every requested provide appears
-            as a key; provides with no match map to an empty list.
+            as a key; provides with no match map to an empty set. A set is used so identical
+            NEVRA/repo hits (e.g. duplicated yum repoquery output on el6) are not treated
+            as a multi-match.
         """
         from tmt.package_managers._rpm import RpmVersion
 
@@ -713,7 +715,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             return {}
         output = self.guest.execute(self.engine.resolve_provides(provides, repo_ids=repo_ids))
 
-        result: dict[str, list[RpmVersion]] = {provide: [] for provide in provides}
+        result: dict[str, set[RpmVersion]] = {provide: set() for provide in provides}
 
         assert output.stdout is not None  # narrow type
         provides_yaml: dict[str, Optional[list[_ResolvedEntry]]] = tmt.utils.from_yaml(
@@ -726,7 +728,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                 continue
             for resolved_provide in nevras:
                 try:
-                    result[provide].append(
+                    result[provide].add(
                         RpmVersion.from_nevra(
                             resolved_provide['full_nevra'], repo_id=resolved_provide['repoid']
                         )

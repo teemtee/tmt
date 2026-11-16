@@ -86,5 +86,8 @@ properties:
   build-disk-image-only:
     type: boolean
 
+  log-update-tick:
+    $ref: "/schemas/provision/common#/definitions/log-update-tick"
+
 required:
   - how

@@ -1,0 +1,10 @@
+summary: Multihost prepare step must allow per-guest environments and data
+description:
+    Some beaker jobs require per-guest settings of the environments,
+    these are set during the prepare step and needs to be copied to
+    respected guests during provisioning.
+tag+:
+    - provision-only
+    - provision-container
+    - provision-local
+    - provision-virtual

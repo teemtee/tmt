@@ -60,13 +60,13 @@ class GuestLocal(tmt.Guest):
     # TODO: the existence of this method is very questionable, it may
     # go away while works on https://github.com/teemtee/tmt/pull/4364
     # continue.
-    #
-    # `local` plugin has its own implementation as it needs to populate
-    # the environment with the tmt process environment, since the guest
-    # is the same as the runner.
     def _prepare_command_environment(
         self, environment: Optional[Environment] = None
     ) -> Environment:
+        # `local` plugin exposes the tmt environment to commands that
+        # do not provide their own environment, but it is not expected
+        # to expose this environment to user-provided code: tests,
+        # `prepare` scripts, etc.
         if environment is None:
             environment = Environment.from_environ()
 
@@ -189,6 +189,9 @@ class GuestLocal(tmt.Guest):
             friendly_command=friendly_command or str(command),
             silent=silent,
             cwd=cwd,
+            # Do not add tmt environment by default: if necessary, it has been
+            # already baked into the `script` in `_prepare_command_environment`.
+            environment=Environment(),
             interactive=interactive,
             on_process_start=on_process_start,
             on_process_end=on_process_end,
@@ -210,12 +213,12 @@ class GuestLocal(tmt.Guest):
 
         self.assert_reachable()
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop the guest
         """
 
-        self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
+        logger.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
     def reboot(
         self,
@@ -334,7 +337,9 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")
 
-        self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
+        self._guest = self._guest_class(
+            logger=self._logger, data=data, name=self.name, parent=self.step
+        )
         self._guest.start()
         self._guest.setup()
 

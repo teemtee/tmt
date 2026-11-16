@@ -76,6 +76,7 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
+from tmt.utils._threading import Lock
 from tmt.utils.environment import Environment, EnvVarValue
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError
@@ -177,6 +178,10 @@ def default_reconnect_waiting() -> Waiting:
     )
 
 
+#: Interval between attempts to update guest logs. This is the default
+#: value tmt would use unless told otherwise via plugin keys.
+DEFAULT_GUEST_LOG_UPDATE_TICK = 5 * 60
+
 # Types for things Ansible can execute
 ANSIBLE_COLLECTION_PLAYBOOK_PATTERN = re.compile(r'[a-zA-z0-9_]+\.[a-zA-z0-9_]+\.[a-zA-z0-9_]+')
 
@@ -265,6 +270,10 @@ UNSAFE_SSH_OPTIONS: frozenset[str] = frozenset(
         'dynamicforward',
         # Executes a command on the local machine to retrieve known host keys.
         'knownhostscommand',
+        # Sends local environment variable to remote box. If we let user control
+        # which variables are sent, they may leak variables supposedly
+        # exposed to tmt process only.
+        'sendenv',
     }
 )
 
@@ -1474,6 +1483,15 @@ class GuestData(
         help='Ansible configuration for individual guest inventory generation.',
     )
 
+    log_update_tick: int = field(
+        default=DEFAULT_GUEST_LOG_UPDATE_TICK,
+        option='--log-update-tick',
+        metavar='SECONDS',
+        help='Interval between attempts to update guest logs.',
+        show_default=True,
+        normalize=tmt.utils.normalize_int,
+    )
+
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
@@ -1635,14 +1653,14 @@ class GuestLog(abc.ABC):
       the :py:attr:`Guest.guest_logs` list. Generally, it should be
       possible to fetch content of the log.
     * Once :py:attr:`Guest.guest_logs` is populated, the plugin shall
-      invoke :py:meth:`Guest.setup_logs`. This method is responsible
+      invoke :py:meth:`Guest.kickoff_logs`. This method is responsible
       for invoking :py:meth:`setup` of all registered logs.
     * After this point, tmt may start collecting logs by invoking their
       :py:meth:`update` methods. It is allowed for the log to not be
       available yet, the log may be empty, other issues shall raise an
       exception.
     * The ``cleanup`` step will collect logs one more time.
-    * The ``cleanup`` step will invoke :py:meth:`Guest.teardown_logs`,
+    * The ``cleanup`` step will invoke :py:meth:`Guest.finalize_logs`,
       which will invoke :py:meth:`teardown` methods of all registered
       logs.
     * After this point, logs will not be collected anymore.
@@ -1751,6 +1769,73 @@ class GuestLog(abc.ABC):
         raise NotImplementedError
 
 
+class GuestLogUpdater(threading.Thread):
+    """
+    A thread periodically updating guest logs.
+
+    :param guest: guest whose logs the thread updates.
+    :param update_tick: fetch log updates every this many seconds.
+    """
+
+    #: Guest whose logs the thread updates.
+    guest: 'Guest'
+
+    #: As long as this flag is **not** set, the inner loop will continue
+    #: its iterations.
+    stop_running: threading.Event
+
+    def __init__(
+        self,
+        guest: 'Guest',
+        update_tick: int = DEFAULT_GUEST_LOG_UPDATE_TICK,
+    ) -> None:
+        # Starting as a daemon thread, tmt won't wait for this thread to
+        # finish when quitting.
+        super().__init__(name=f'{guest.name} / update-logs worker', daemon=True)
+
+        self.guest = guest
+        self.update_tick = update_tick
+
+        self.stop_running = threading.Event()
+
+    def run(self) -> None:
+        while not self.stop_running.wait(timeout=self.update_tick):
+            self.guest.update_logs(logger=self.guest._logger)
+
+    def start(self) -> None:
+        """
+        Start the periodic log updating.
+
+        .. important::
+
+            It is the responsibility of plugins to start the worker thread,
+            as they are in the best position to decide at which point it
+            is possible - or worth the effort - to start the updates.
+        """
+
+        self.stop_running.clear()
+
+        super().start()
+
+    def stop(self) -> None:
+        """
+        Stop the periodic log updating.
+
+        .. important::
+
+            It is the responsibility of plugins to stop the worker thread,
+            as they are in the best position to decide at which point it
+            no longer makes sense to update logs.
+        """
+
+        if not self.is_alive():
+            return
+
+        self.stop_running.set()
+
+        self.join()
+
+
 class CommandCollector(abc.ABC):
     """
     Mixin for that supports collecting commands for deferred execution.
@@ -1854,11 +1939,13 @@ class Guest(
 
     ansible: Optional[GuestAnsible]
 
+    log_update_tick: int
+
     # Flag to indicate localhost guest, requires special handling
     localhost = False
 
     #: Guest logs active and available for collection.
-    guest_logs: list[GuestLog]
+    guest_logs: Lock[list[GuestLog]]
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
@@ -1879,7 +1966,7 @@ class Guest(
         Initialize guest data
         """
 
-        self.guest_logs = []
+        self.guest_logs = Lock([])
 
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
@@ -1985,6 +2072,18 @@ class Guest(
         )
 
     @functools.cached_property
+    def guest_data_directory(self) -> Path:
+        """
+        A path to the guest specific-data folder.
+        """
+        directory = self.plan_workdir / "guest-data" / self.pathless_safe_name
+
+        self.debug(f"Create the guest data directory '{directory}'.", level=2)
+        directory.mkdir(exist_ok=True, parents=True)
+
+        return directory
+
+    @functools.cached_property
     def plan_environment_path(self) -> Optional[Path]:
         """
         A path to the :ref:`plan environment file <step-variables>` file.
@@ -1993,7 +2092,7 @@ class Guest(
         if not isinstance(self.parent, tmt.steps.provision.Provision):
             return None
 
-        path = self.parent.plan.data_directory / f'{PLAN_ENVIRONMENT_FILENAME}-{self.safe_name}'
+        path = self.guest_data_directory / PLAN_ENVIRONMENT_FILENAME
         path.touch(exist_ok=True)
 
         self.debug(f"Create the environment file '{path}'.", level=2)
@@ -2009,7 +2108,7 @@ class Guest(
         if not isinstance(self.parent, tmt.steps.provision.Provision):
             return None
 
-        path = self.parent.plan.data_directory / f'{PLAN_SOURCE_SCRIPT_FILENAME}-{self.safe_name}'
+        path = self.guest_data_directory / PLAN_SOURCE_SCRIPT_FILENAME
         path.touch(exist_ok=True)
 
         self.debug(f"Create the plan source script  '{path}'.", level=2)
@@ -2040,10 +2139,14 @@ class Guest(
         environment = Environment()
 
         if self.plan_environment_path is not None:
-            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+            from tmt.steps.execute import ENV_TMT_PLAN_ENVIRONMENT_FILE
+
+            environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(self.plan_environment_path)
 
         if self.plan_source_script_path:
-            environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
+            from tmt.steps.execute import ENV_TMT_PLAN_SOURCE_SCRIPT
+
+            environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = EnvVarValue(self.plan_source_script_path)
 
         return environment
 
@@ -2378,10 +2481,16 @@ class Guest(
             # untangling settles. Follow https://github.com/teemtee/tmt/issues/4241
             # for more.
             if self.plan_environment_path:
-                environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_path)
+                from tmt.steps.execute import ENV_TMT_PLAN_ENVIRONMENT_FILE
+
+                environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(
+                    self.plan_environment_path
+                )
 
             if self.plan_source_script_path:
-                environment['TMT_PLAN_SOURCE_SCRIPT'] = EnvVarValue(self.plan_source_script_path)
+                from tmt.steps.execute import ENV_TMT_PLAN_SOURCE_SCRIPT
+
+                environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = EnvVarValue(self.plan_source_script_path)
 
         else:
             # Create a copy of given environment - this prevents any
@@ -2399,10 +2508,10 @@ class Guest(
         """
         Prepare environment for an ``ansible-playbook`` command.
 
-        Unlike commands running on the guest, ``ansible-playbook`` runs on the
-        control node and therefore inherits the tmt (parent) process
-        environment, extended with the command environment prepared for the
-        guest.
+        Unlike commands running on the guest, ``ansible-playbook`` runs
+        on the runner and therefore inherits the tmt (parent) process
+        environment by default, but we also need to include the
+        test/plan/guest environment variables.
 
         :param environment: if set, it is passed to
             :py:meth:`_prepare_command_environment` as the desired command
@@ -2430,12 +2539,15 @@ class Guest(
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
-        Run a command, local or remote, related to the guest.
+        Run a **local** command related to the guest.
+
+        The command may eventually run on the guest, e.g. ``ssh`` runs
+        locally but executes more commands on the guest - this helper
+        exists to invoke said ``ssh``, not the remote commands.
 
         A rather thin wrapper of :py:meth:`run` whose purpose is to be a single
         point through all commands related to a guest must go through. We expect
-        consistent logging from such commands, be it an ``ansible-playbook``
-        running on the control host or a test script on the guest.
+        consistent logging from such commands.
 
         :param command: a command to execute.
         :param friendly_command: if set, it would be logged instead of the
@@ -2444,8 +2556,9 @@ class Guest(
             reduced.
         :param cwd: if set, command would be executed in the given directory,
             otherwise the current working directory is used.
-        :param environment: environment variables to combine with the current environment
-            before running the command.
+        :param environment: if set, this environment would be used when
+            running the command. Otherwise, the tmt process environment
+            would be used.
         :param interactive: if set, the command would be executed in an interactive
             manner, i.e. with stdout and stdout connected to terminal for live
             interaction with user.
@@ -2456,6 +2569,8 @@ class Guest(
 
         if friendly_command is None:
             friendly_command = str(command)
+
+        environment = environment if environment is not None else Environment.from_environ()
 
         return self.run(
             command,
@@ -2707,7 +2822,7 @@ class Guest(
             raise DownloadError(f"Failed to download '{url}' to '{destination}'.") from error
 
     @abc.abstractmethod
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop the guest
 
@@ -2946,6 +3061,32 @@ class Guest(
 
         return dirpath
 
+    def update_logs(
+        self,
+        *,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Fetch the up-to-date content of guest logs, and update saved files.
+
+        :param logger: logger to use for logging.
+        """
+
+        with self.guest_logs as guest_logs:
+            for log in guest_logs:
+                try:
+                    log.update(logger=logger)
+
+                except Exception as exc:
+                    tmt.utils.show_exception_as_warning(
+                        exception=exc,
+                        message=f"Failed to update guest log '{log.name}'.",
+                        logger=logger,
+                    )
+
+                else:
+                    logger.info(log.name, str(log.filepath))
+
     def collect_log(self, log: GuestLog, hint: Optional[str] = None) -> None:
         """
         Register a guest log for (later) collection.
@@ -2962,52 +3103,73 @@ class Guest(
 
         self._logger.debug(f"{', '.join(message_components)}.", level=3)
 
-        self.guest_logs.append(log)
+        with self.guest_logs as guest_logs:
+            guest_logs.append(log)
 
-    def setup_logs(self, *, logger: tmt.log.Logger) -> None:
+    @functools.cached_property
+    def update_logs_worker(self) -> GuestLogUpdater:
+        """
+        A worker thread that updates guest logs periodically.
+        """
+
+        return GuestLogUpdater(self, update_tick=self.log_update_tick)
+
+    def _setup_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will begin.
 
         :param logger: logger to use for logging.
         """
 
-        for log in self.guest_logs:
-            log.setup(logger=logger)
+        with self.guest_logs as guest_logs:
+            for log in guest_logs:
+                log.setup(logger=logger)
 
-    def teardown_logs(self, *, logger: tmt.log.Logger) -> None:
+    def _teardown_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will no longer continue.
 
         :param logger: logger to use for logging.
         """
 
-        for log in self.guest_logs:
-            log.teardown(logger=logger)
+        with self.guest_logs as guest_logs:
+            for log in guest_logs:
+                log.teardown(logger=logger)
 
-    def update_logs(
-        self,
-        *,
-        logger: tmt.log.Logger,
-    ) -> None:
+    def kickoff_logs(self, logger: tmt.log.Logger) -> None:
         """
-        Fetch the up-to-date content of guest logs, and update saved files.
-
-        :param logger: logger to use for logging.
+        Kick of guest log collection process.
         """
 
-        for log in self.guest_logs:
-            try:
-                log.update(logger=logger)
+        logger.debug("Kicking off guest logs.")
 
-            except Exception as exc:
-                tmt.utils.show_exception_as_warning(
-                    exception=exc,
-                    message=f"Failed to update guest log '{log.name}'.",
-                    logger=logger,
-                )
+        # Set up the logs. After this point, tmt can being their updating
+        # process.
+        self._setup_logs(logger=logger)
 
-            else:
-                logger.info(log.name, str(log.filepath))
+        # Start the background log update worker.
+        self.update_logs_worker.start()
+
+    def finalize_logs(self, logger: tmt.log.Logger) -> None:
+        """
+        The last attempt to update logs, just before the guest is terminated.
+        """
+
+        logger.debug("Finalizing guest logs.")
+
+        # Stop the update log worker. Plugins are responsible for both
+        # starting and stopping it.
+        self.update_logs_worker.stop()
+
+        # Explicitly update guest logs before tearing logs down. It
+        # is certainly possible the worker just updated them, but
+        # there still may interesting info emitted in the last
+        # seconds, info we do not want to miss.
+        self.update_logs(logger=logger)
+
+        # And, finally, tear down the whole log setup. After this point,
+        # logs cannot be updated anymore.
+        self._teardown_logs(logger=logger)
 
     def _construct_mkdtemp_command(
         self,
@@ -3681,7 +3843,6 @@ class GuestSsh(Guest, CommandCollector):
                             'check',
                             'unused-hostname',
                         ),
-                        environment=Environment.from_environ(),
                         silent=True,
                     )
 
@@ -4191,7 +4352,7 @@ class GuestSsh(Guest, CommandCollector):
         # Close the master ssh connection
         self._cleanup_ssh_master_process()
 
-    def stop(self) -> None:
+    def stop(self, logger: tmt.log.Logger) -> None:
         """
         Stop the guest
 
@@ -4199,6 +4360,8 @@ class GuestSsh(Guest, CommandCollector):
         any memory or cpu resources. If needed, perform any actions
         necessary to store the instance status to disk.
         """
+
+        self.finalize_logs(logger=logger)
 
         self.suspend()
 

@@ -1,0 +1,4 @@
+description: |
+    Fixed a multihost bug where a guest's plan environment file and plan
+    source script (see :ref:`Step Variables <step-variables>`) could be
+    replaced by a stale empty copy pulled from another guest.

@@ -18,8 +18,8 @@ rlJournalStart
             continue
         fi
 
-        if is_centos_7 "$image"; then
-            # copr support for CentOS 7 is gone
+        if is_centos_7 "$image" || is_centos_6 "$image"; then
+            # copr support for CentOS 7 and 6 is gone
             continue
         fi
 

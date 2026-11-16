@@ -8,14 +8,7 @@ from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
-from tmt.steps import (
-    Action,
-    PluginOutcome,
-    PluginTask,
-    PullTask,
-    PushTask,
-    sync_with_guests,
-)
+from tmt.steps import Action, PluginOutcome, PluginTask
 from tmt.utils import uniq
 from tmt.utils.environment import Environment
 
@@ -394,9 +387,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             guest.on_step_start(self)
 
         if self._steppified_ready_guests:
-            sync_with_guests(
-                self, 'push', PushTask(self._steppified_ready_guests, self._logger), self._logger
-            )
+            self.plan.push_data_directory(self)
 
             # To separate "push" from "prepare" queue visually
             self.info('')
@@ -497,12 +488,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
         # Pull artifacts created in the plan data directory
         # if there was at least one plugin executed
         if self.phases() and self._steppified_ready_guests:
-            sync_with_guests(
-                self,
-                'pull',
-                PullTask(self._steppified_ready_guests, self.plan.data_directory, self._logger),
-                self._logger,
-            )
+            self.plan.pull_data_directory(self)
 
             # To separate "prepare" from "pull" queue visually
             self.info('')
