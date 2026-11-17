@@ -188,6 +188,58 @@ def test_link():
     assert not links.has_link(needle=LinkNeedle(relation=r'.*', target=r'.*'))
 
 
+@pytest.mark.parametrize(
+    ('spec', 'expected_relation', 'expected_target'),
+    [
+        ('/tmp/foo', r'.*', '/tmp/foo'),
+        ('relates:/tmp/foo', 'relates', '/tmp/foo'),
+        ('rel.*:/tmp/foo', 'rel.*', '/tmp/foo'),
+        (
+            'verifies:https://github.com/teemtee/tmt/issues/870',
+            'verifies',
+            'https://github.com/teemtee/tmt/issues/870',
+        ),
+        ('ver.*:.*/issues/870', 'ver.*', '.*/issues/870'),
+        ('.*/issues/870', r'.*', '.*/issues/870'),
+        (
+            'https://github.com/teemtee/tmt/issues/870',
+            r'.*',
+            'https://github.com/teemtee/tmt/issues/870',
+        ),
+        ('http://example.com/foo', r'.*', 'http://example.com/foo'),
+    ],
+    ids=[
+        'target-only',
+        'relation-and-target',
+        'relation-regex',
+        'relation-and-url',
+        'relation-regex-and-target-regex',
+        'target-regex',
+        'url-https',
+        'url-http',
+    ],
+)
+def test_link_needle_from_spec(spec: str, expected_relation: str, expected_target: str) -> None:
+    needle = LinkNeedle.from_spec(spec)
+
+    assert needle.relation == expected_relation
+    assert needle.target == expected_target
+
+
+def test_link_needle_from_spec_url_matches_link() -> None:
+    """
+    A bare URL needle must find links created from the same bare URL
+    """
+
+    url = 'https://github.com/teemtee/tmt/issues/870'
+
+    assert Links(data=url).has_link(needle=LinkNeedle.from_spec(url))
+    assert Links(data={'verifies': url}).has_link(needle=LinkNeedle.from_spec(url))
+    assert not Links(data={'verifies': url}).has_link(
+        needle=LinkNeedle.from_spec('https://github.com/teemtee/tmt/issues/1374')
+    )
+
+
 def test_pickleable_tree() -> None:
     """
     https://github.com/teemtee/tmt/issues/2503

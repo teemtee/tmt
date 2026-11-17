@@ -54,6 +54,12 @@ _RawLink = Union[str, '_RawFmfId', _RawLinkRelation]
 _RawLinks = Union[_RawLink, list[_RawLink]]
 
 
+#: Matches a URL scheme followed by ``//`` at the beginning of a link
+#: needle, e.g. ``https://``. Such a needle is a target with the
+#: relation part omitted, the scheme is not a relation.
+URL_SCHEME_PATTERN = re.compile(r'^(?P<scheme>[a-zA-Z][a-zA-Z0-9+.\-]*)://')
+
+
 @container
 class LinkNeedle:
     """
@@ -77,6 +83,13 @@ class LinkNeedle:
 
         [1] https://tmt.readthedocs.io/en/stable/plugins/discover.html#fmf
         """
+
+        # A bare URL, e.g. ``https://...``, is a target: the colon after
+        # the scheme does not separate relation from target.
+        match = URL_SCHEME_PATTERN.match(value)
+
+        if match is not None and match.group('scheme') not in Links._relations:
+            return LinkNeedle(target=value)
 
         parts = value.split(':', maxsplit=1)
 
