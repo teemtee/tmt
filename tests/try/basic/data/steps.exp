@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+# Try with step options
+
+set timeout 180
+spawn tmt try fedora@container -p /plans/basic prepare --insert --how install --package tree
+expect "What do we do next?"
+send -- "q\r"
+expect eof

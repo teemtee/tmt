@@ -190,3 +190,41 @@ link:
 
         link:
           - implemented-by: /tmt/cli
+
+    /flavor:
+        story:
+            As a user I want an easy way to specify the hardware flavor of the guest.
+        description: |
+            Specify the hardware flavor of the guest. Supported by provision
+            plugins such as minute. Use 'tmt run provision --how minute
+            --list-flavors' to see what's available.
+
+            .. versionadded:: 1.81
+
+        example:
+            - tmt try fedora@minute --flavor u1.large
+
+        link:
+          - implemented-by: /tmt/cli
+
+    /step-options:
+        story:
+            As a user I want to provide options of individual steps to
+            the `tmt try` command.
+        description: |
+            Options of individual steps can be given on the `tmt try`
+            command line. They are applied to the plan in the same way
+            as when running `tmt run`. The provision method provided by
+            the `image@method` syntax is used as the `--how` option of
+            the provision step, therefore method-specific options are
+            accepted as well. Step names can be abbreviated as long as
+            the abbreviation is unambiguous, e.g. `prov` for `provision`.
+
+            .. versionadded:: 1.81
+
+        example:
+            - tmt try fedora@minute provision --flavor u1.large
+            - tmt try fedora@local prepare --insert --how install --package tree
+
+        link:
+          - implemented-by: /tmt/cli
