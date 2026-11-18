@@ -1,6 +1,5 @@
 The :tmt:story:`/spec/plans/discover` step plugins gather tests
-and their metadata for execution. Select a discovery method using
-the ``how`` key.
+and their metadata for execution.
 
 .. _/plugins/discover/dist-git-source:
 

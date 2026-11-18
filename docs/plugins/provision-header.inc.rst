@@ -1,13 +1,5 @@
 The :tmt:story:`/spec/plans/provision` step describes what environment is
-needed for testing and how it should be provisioned. There are several
-provision plugins supporting multiple ways to provision the environment for
-testing, for example:
-
-* :ref:`/plugins/provision/virtual.testcloud`
-* :ref:`/plugins/provision/container`
-* :ref:`/plugins/provision/connect`
-* :ref:`/plugins/provision/local`
-* :ref:`/plugins/provision/artemis`
+needed for testing and how it should be provisioned.
 
 As part of the provision step it is also possible to specify
 detailed hardware requirements for the testing environment. See
