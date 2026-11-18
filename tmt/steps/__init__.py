@@ -490,11 +490,7 @@ class WhereableStepData(_IsStepDataTrait):
 
     To be used as a mixin class, adds necessary keys.
 
-    See [1-3] for specification.
-
-    1. :tmt:story:`discover.where</spec/plans/discover/where>`
-    2. :tmt:story:`prepare.where</spec/plans/prepare/where>`
-    3. :tmt:story:`finish.where</spec/plans/finish/where>`
+    See :ref:`guest-selection` for details.
     """
 
     where: list[str] = field(

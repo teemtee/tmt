@@ -651,12 +651,12 @@ load the respective plans only instead of all available plans to
 save disk space and speed up the execution.
 
 Aborted tests and tests that failed when
-:tmt:story:`/spec/plans/execute/exit-first` was enabled did not skip all
-remaining tests, only tests from the current ``discover`` phase.
+:ref:`exit-first </plugins/execute>` was enabled did not skip all remaining
+tests, only tests from the current ``discover`` phase.
 Plans with multiple ``discover`` phases would start ``execute``
 step for remaining ``discover`` phases. This is now fixed, aborted
-test and :tmt:story:`/spec/plans/execute/exit-first` will skip **all**
-remaining tests.
+test and :ref:`exit-first </plugins/execute>` will skip
+**all** remaining tests.
 
 Added support for translating hardware constraints using a config
 file for the :ref:`/plugins/provision/beaker` provision plugin. It
@@ -1247,7 +1247,7 @@ provisioning in sequence.
 The :tmt:story:`/spec/plans/prepare` step now installs test requirements
 only on guests on which the said tests would run. Tests can be
 directed to subset of guests with a
-:tmt:story:`/spec/plans/discover/where` key, but, until 1.31, tmt would
+:ref:`where <guest-selection>` key, but, until 1.31, tmt would
 install all requirements of a given test on all guests, even on
 those on which the said test would never run.  This approach
 consumed resources needlessly and might be a issue for tests with
