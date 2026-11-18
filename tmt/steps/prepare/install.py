@@ -89,6 +89,13 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         help='Check whether packages are already installed before attempting to install them.',
     )
 
+    allow_erasing: bool = field(
+        default=False,
+        option='--allow-erasing',
+        is_flag=True,
+        help='Allow removing installed packages to resolve conflicts (dnf only).',
+    )
+
 
 @tmt.steps.provides_method('install')
 class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
@@ -163,6 +170,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             how: install
             directory: tmp/RPMS/noarch
             exclude: tmt+provision-virtual
+
+    Set ``allow-erasing: true`` to allow ``dnf`` to remove installed
+    packages when resolving conflicts.
 
     .. note::
 
@@ -446,6 +456,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             excluded_packages=[Package(p) for p in self.data.exclude],
             skip_missing=self.data.missing == 'skip',
             check_first=self.data.check_first,
+            allow_erasing=self.data.allow_erasing,
         )
 
         self._prepare_installables(self.data.package, self.data.directory, logger)
