@@ -1184,7 +1184,7 @@ related guests:
     to disable or modify tests which do not fit the given environment.
     Testing Farm does this for you: request several architectures and
     it runs the plan on each of them separately, see the `Testing Farm
-    FAQ`__. 
+    FAQ`__.
 
     __ https://docs.testing-farm.io/Testing%20Farm/0.1/faq.html#multihost-or-multiple-environments
 
