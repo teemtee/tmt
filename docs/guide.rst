@@ -1140,28 +1140,6 @@ Multihost Testing
 
 Support for basic server/client scenarios is now available.
 
-.. note::
-
-    Use multihost testing when the provisioned guests need to
-    **communicate with each other**, for example in a server/client
-    setup.
-
-    To run the same tests on several environments or architectures,
-    keep a single-guest plan and **run it once per environment**.
-    Give each run its own :tmt:story:`/spec/context`, for example
-    ``tmt --context arch=aarch64 run``, and use :ref:`adjust-metadata`
-    to disable or modify tests which do not fit the given environment.
-    Testing Farm does this for you: request several architectures and
-    it runs the plan on each of them separately, see the `Testing Farm
-    FAQ`__.
-
-    __ https://docs.testing-farm.io/Testing%20Farm/0.1/faq.html#multihost-or-multiple-environments
-
-.. _guest-selection:
-
-Guest selection
-------------------------------------------------------------------
-
 The :tmt:story:`/spec/plans/provision` step can request multiple guests.
 Every guest has a unique ``name`` and may also have an optional ``role``.
 Unlike names, roles may be shared by multiple guests and may use any
@@ -1192,6 +1170,28 @@ related guests:
         role: client
       - name: tester-two
         role: client
+
+.. note::
+
+    Use multihost testing when the provisioned guests need to
+    **communicate with each other**, for example in a server/client
+    setup.
+
+    To run the same tests on several environments or architectures,
+    keep a single-guest plan and **run it once per environment**.
+    Give each run its own :tmt:story:`/spec/context`, for example
+    ``tmt --context arch=aarch64 run``, and use :ref:`adjust-metadata`
+    to disable or modify tests which do not fit the given environment.
+    Testing Farm does this for you: request several architectures and
+    it runs the plan on each of them separately, see the `Testing Farm
+    FAQ`__. 
+
+    __ https://docs.testing-farm.io/Testing%20Farm/0.1/faq.html#multihost-or-multiple-environments
+
+.. _guest-selection:
+
+Guest selection
+------------------------------------------------------------------
 
 The ``where`` key selects provisioned guests by their
 :ref:`name or role </plugins/provision/common-keys>`. It accepts a
