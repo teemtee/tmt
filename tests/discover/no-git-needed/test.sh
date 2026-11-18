@@ -4,6 +4,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "plan_run=\$(mktemp -d)" 0 "Create plan-configured run directory"
         rlRun "set -o pipefail"
         rlRun "pushd data"
         rlRun "git init"
@@ -19,8 +20,14 @@ rlJournalStart
         rlAssertExists "$run/plan/discover/default-0/tests/foo"
     rlPhaseEnd
 
+    rlPhaseStartTest "sync-repo configured in the plan"
+        rlRun "tmt --root tests run --keep --scratch -i $plan_run discover plan -n /sync-repo" 0
+        rlAssertExists "$plan_run/plan/sync-repo/discover/default-0/tests/foo"
+        rlAssertExists "$plan_run/plan/sync-repo/discover/default-0/tests/.git"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
-        rlRun "rm -r $run .git" 0 "Remove run directory"
+        rlRun "rm -r $run $plan_run .git" 0 "Remove run directories"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
