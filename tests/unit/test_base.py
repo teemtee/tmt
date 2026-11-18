@@ -207,6 +207,12 @@ def test_link():
             'https://github.com/teemtee/tmt/issues/870',
         ),
         ('http://example.com/foo', r'.*', 'http://example.com/foo'),
+        (
+            'verifies:http://example.com/foo',
+            'verifies',
+            'http://example.com/foo',
+        ),
+        ('https:foo', 'https', 'foo'),
     ],
     ids=[
         'target-only',
@@ -217,6 +223,8 @@ def test_link():
         'target-regex',
         'url-https',
         'url-http',
+        'relation-and-url-http',
+        'scheme-without-slashes-is-relation',
     ],
 )
 def test_link_needle_from_spec(spec: str, expected_relation: str, expected_target: str) -> None:

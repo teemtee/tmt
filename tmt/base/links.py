@@ -54,10 +54,22 @@ _RawLink = Union[str, '_RawFmfId', _RawLinkRelation]
 _RawLinks = Union[_RawLink, list[_RawLink]]
 
 
-#: Matches a URL scheme followed by ``//`` at the beginning of a link
-#: needle, e.g. ``https://``. Such a needle is a target with the
-#: relation part omitted, the scheme is not a relation.
-URL_SCHEME_PATTERN = re.compile(r'^(?P<scheme>[a-zA-Z][a-zA-Z0-9+.\-]*)://')
+#: Parses a link needle into an optional relation and a target. The
+#: relation is everything before the first colon, unless that colon
+#: starts ``://``: a needle beginning with a URL scheme such as
+#: ``https://`` is a bare target, the scheme is not a relation.
+LINK_NEEDLE_PATTERN = re.compile(
+    r"""
+    ^
+    (?:(?P<relation>[^:]*):(?!//))?
+    (?P<target>
+        (?:(?P<scheme>[a-zA-Z][a-zA-Z0-9+.\-]*)://)?
+        .*
+    )
+    $
+    """,
+    re.VERBOSE | re.DOTALL,
+)
 
 
 @container
@@ -84,19 +96,15 @@ class LinkNeedle:
         [1] https://tmt.readthedocs.io/en/stable/plugins/discover.html#fmf
         """
 
-        # A bare URL, e.g. ``https://...``, is a target: the colon after
-        # the scheme does not separate relation from target.
-        match = URL_SCHEME_PATTERN.match(value)
+        match = LINK_NEEDLE_PATTERN.match(value)
 
-        if match is not None and match.group('scheme') not in Links._relations:
-            return LinkNeedle(target=value)
+        # The pattern matches any string, the relation group is optional.
+        assert match is not None
 
-        parts = value.split(':', maxsplit=1)
+        if match.group('relation') is None:
+            return LinkNeedle(target=match.group('target'))
 
-        if len(parts) == 1:
-            return LinkNeedle(target=parts[0])
-
-        return LinkNeedle(relation=parts[0], target=parts[1])
+        return LinkNeedle(relation=match.group('relation'), target=match.group('target'))
 
     def __str__(self) -> str:
         return f'{self.relation}:{self.target}'
