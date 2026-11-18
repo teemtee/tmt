@@ -1,0 +1,3 @@
+description: |
+  Fix an issue where test logs sometimes would not have been added to the
+  top-most test result logs. E.g. when using ``tmt-report-result -o ... /some-sibbling``.
