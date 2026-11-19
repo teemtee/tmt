@@ -226,6 +226,11 @@ man_pages = [
 # If true, show URL addresses after external links.
 # man_show_urls = False
 
+# The date is not used anywhere in the other documentation, and
+# we explicitly do not want it in the manpage to avoid diff changes
+# just because of that.
+today = ' '
+
 # -- Options for linkcheck builder ----------------------------------------
 linkcheck_retries = 3
 linkcheck_ignore = [
