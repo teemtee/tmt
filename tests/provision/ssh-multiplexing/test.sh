@@ -54,8 +54,8 @@ rlJournalStart
             rlAssertGrep "Connection timed out during banner exchange\|Connection refused" "$rlRun_LOG"
             rlAssertGrep "SSH master process .* has been terminated unexpectedly" "$rlRun_LOG"
             rlAssertGrep "'try_whoami' finished successfully" "$rlRun_LOG"
-            rlRun "test \$(grep -c 'SSH master process is not running and will be spawned\\.' '$rlRun_LOG') -eq 2" \
-                0 "Retry the SSH master process after the initial failure"
+            rlRun "test \$(grep -c \"'try_whoami' still pending\" '$rlRun_LOG') -eq 1" \
+                0 "Retry the connection after the initial SSH master failure"
             rlRun "tmt run -i '$run_connect' cleanup" 0 "Clean up connect guest"
             rlRun "tmt run -i '$run' cleanup" 0 "Clean up original virtual guest"
             rlRun "rm -r '$run_connect'" 0 "Remove connect run directory"
