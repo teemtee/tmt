@@ -1,11 +1,12 @@
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
+from pydantic import ValidationError
+
 import tmt.container
 import tmt.steps
 import tmt.utils
-from tmt._compat.pydantic import ValidationError
-from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_field
+from tmt.container import ConfigDict, MetadataContainer, metadata_field
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
 from tmt.utils.environment import Environment
@@ -37,12 +38,7 @@ class Instruction(MetadataContainer):
     A single instruction describing changes to test, plan or story keys.
     """
 
-    if PYDANTIC_V1:
-
-        class Config(MetadataContainer.Config):
-            extra = "allow"
-    else:
-        model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")
 
     def _apply_to_trivial_key(
         self, obj: 'Core', key: str, template_variable_name: str, logger: Logger

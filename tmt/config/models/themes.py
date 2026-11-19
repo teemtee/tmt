@@ -2,10 +2,10 @@ from typing import Any, Optional, TypeAlias, Union, cast
 
 # TID251: this use of `click.style()` is expected, and on purpose.
 from click import style as _style  # noqa: TID251
+from pydantic import ValidationError
 
 import tmt.log
 import tmt.utils
-from tmt._compat.pydantic import ValidationError
 from tmt.container import MetadataContainer, metadata_field
 
 Color: TypeAlias = Union[int, tuple[int, int, int], str, None]
