@@ -11,14 +11,12 @@ rlJournalStart
         rlRun "tmpdir=\$(mktemp -d)" 0 "Create temporary directory"
         rlRun "sed 's|RUN|$run|g' test.exp > $tmpdir/test.exp"
         rlRun "chmod a+x $tmpdir/test.exp"
-        rlRun "cp ssh-wrapper $tmpdir/ssh"
-        rlRun "chmod a+x $tmpdir/ssh"
 
         rlRun "pushd data"
     rlPhaseEnd
 
     rlPhaseStartTest "SSH multiplexing should be enabled by default ($PROVISION_HOW)"
-        rlRun "tmt -vv run -i $run -a provision -h $PROVISION_HOW"
+        rlRun "tmt -vv run -i $run provision -h $PROVISION_HOW"
         rlAssertGrep "Spawning the SSH master process" "$run/log.txt"
     rlPhaseEnd
 
@@ -30,13 +28,37 @@ rlJournalStart
 
     if [ "$PROVISION_HOW" = "virtual" ]; then
         rlPhaseStartTest "Reconnect retries a failed SSH master start after reboot (#5164)"
-            rlRun "reconnect_run=\$(mktemp -d)" 0 "Create reconnect run directory"
-            rlRun "tmt -vv run -i $reconnect_run provision -h virtual" 0 "Provision reconnect guest"
+            rlRun "guest=\$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))[\"default-0\"][\"primary-address\"])' '$run/plan/provision/guests.yaml')" \
+                0 "Read guest address"
+            rlRun "guest_port=\$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))[\"default-0\"][\"port\"])' '$run/plan/provision/guests.yaml')" \
+                0 "Read guest SSH port"
+            rlRun "guest_key=\$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))[\"default-0\"][\"key\"][0])' '$run/plan/provision/guests.yaml')" \
+                0 "Read guest SSH key"
+            rlRun "cp '$guest_key' '$tmpdir/reconnect-key'" 0 "Preserve guest SSH key"
 
-            rlRun -s "PATH='$tmpdir:$PATH' tmt -vv run -i '$reconnect_run' reboot --step provision" \
-                0 "Reboot and reconnect after one injected SSH master failure"
-            rlAssertExists "$tmpdir/ssh.state.failure-injected"
-            rlAssertGrep "Reboot finished" "$reconnect_run/log.txt"
+            rlRun "tmt -vv run -i '$run' --again prepare -h shell --script 'mkdir -p /etc/systemd/system/sshd.service.d; printf \"[Service]\\nExecStartPre=/bin/sleep 3\\n\" > /etc/systemd/system/sshd.service.d/tmt-delay.conf; systemctl daemon-reload'" \
+                0 "Delay SSH daemon startup"
+            rlRun -s "ssh -oBatchMode=yes -oControlMaster=no -oControlPath=none \
+                -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=60 \
+                -p '$guest_port' -i '$tmpdir/reconnect-key' root@$guest 'systemctl reboot' || true" \
+                0 "Reboot guest directly"
+            rlRun "sleep 1" 0 "Wait for guest reboot to begin"
+
+            rlRun -s "TMT_SSH_CONNECTION_ATTEMPTS=1 TMT_SSH_CONNECT_TIMEOUT=1 \
+                TMT_SSH_MASTER_START_TIMEOUT=1 tmt -vvv -ddd run -i '$run' --scratch \
+                provision -h connect --guest '$guest' --port '$guest_port' --key '$tmpdir/reconnect-key'" \
+                0 "Reconnect after an initial SSH master failure"
+            rlAssertGrep "waiting for condition 'try_whoami'" "$rlRun_LOG"
+            rlAssertGrep "Connection timed out during banner exchange\|Connection refused" "$rlRun_LOG"
+            rlAssertGrep "SSH master process .* has been terminated unexpectedly" "$rlRun_LOG"
+            rlAssertGrep "'try_whoami' finished successfully" "$rlRun_LOG"
+            rlRun "test \$(grep -c 'SSH master process is not running and will be spawned\\.' '$rlRun_LOG') -eq 2" \
+                0 "Retry the SSH master process after the initial failure"
+            rlRun "ssh -oBatchMode=yes -oControlMaster=no -oControlPath=none \
+                -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=60 \
+                -p '$guest_port' -i '$tmpdir/reconnect-key' root@$guest 'systemctl poweroff' || true" \
+                0 "Power off reconnect guest"
+            rlRun "tmt run -i '$run' cleanup" 0 "Clean up reconnect guest"
         rlPhaseEnd
 
         rlPhaseStartTest "Make sure SSH multiplexing does not block reuse of guests (#3520)"
@@ -57,9 +79,5 @@ rlJournalStart
         rlRun "rm -r $tmpdir" 0 "Remove temporary directory"
         rlRun "rm -r $run" 0 "Remove run directory"
         rlRun "rm -r $long_run" 0 "Remove run directory with the long name"
-        if [ -n "${reconnect_run:-}" ]; then
-            rlRun "tmt run -i $reconnect_run cleanup" 0 "Clean up reconnect guest"
-            rlRun "rm -r $reconnect_run" 0 "Remove reconnect run directory"
-        fi
     rlPhaseEnd
 rlJournalEnd
