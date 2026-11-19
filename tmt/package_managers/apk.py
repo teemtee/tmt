@@ -16,6 +16,7 @@ from tmt.package_managers import (
 from tmt.utils import (
     Command,
     CommandOutput,
+    FrozenCommand,
     GeneralError,
     RunError,
     ShellScript,
@@ -35,19 +36,18 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
 
 
 class ApkEngine(PackageManagerEngine):
-    install_command = Command('add')
+    install_command = FrozenCommand('add')
 
-    def prepare_command(self) -> tuple[Command, Command]:
+    def prepare_command(self) -> tuple[FrozenCommand, FrozenCommand]:
         """
         Prepare installation command for apk
         """
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
-        command = Command('apk')
 
         if self.guest.facts.sudo_prefix:
-            command = Command(self.guest.facts.sudo_prefix, 'apk')
+            return (FrozenCommand(self.guest.facts.sudo_prefix, 'apk'), FrozenCommand())
 
-        return (command, Command())
+        return (FrozenCommand('apk'), FrozenCommand())
 
     def path_to_package(self, path: FileSystemPath) -> Package:
         """
