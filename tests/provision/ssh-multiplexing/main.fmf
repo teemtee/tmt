@@ -7,3 +7,4 @@ tag+:
 require+:
   - expect
   - procps-ng
+  - yq
