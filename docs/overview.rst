@@ -968,7 +968,7 @@ Conor Tull, Athrey Vinay, David Pascual, Vaibhav D. Aren, Qin
 Yuan, Thiébaud Weksteen, Nisha Saini, Yaakov Selkowitz, Petr
 Khartskhaev, Bruno Goncalves, Israel Santana, Jakub Skunda,
 Md Habibur Rahman, Owen Taylor, Rajesh Kumar Srivastava,
-Daniel Simko, Jakub Klus and Minxi Hou.
+Daniel Simko, Jakub Klus, Minxi Hou and Jakub Haruda.
 
 
 
