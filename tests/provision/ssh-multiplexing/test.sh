@@ -56,8 +56,8 @@ rlJournalStart
             rlAssertGrep "'try_whoami' finished successfully" "$rlRun_LOG"
             rlRun "test \$(grep -c 'SSH master process is not running and will be spawned\\.' '$rlRun_LOG') -eq 2" \
                 0 "Retry the SSH master process after the initial failure"
-            rlRun "tmt run -i '$run' cleanup" 0 "Clean up original virtual guest"
             rlRun "tmt run -i '$run_connect' cleanup" 0 "Clean up connect guest"
+            rlRun "tmt run -i '$run' cleanup" 0 "Clean up original virtual guest"
             rlRun "rm -r '$run_connect'" 0 "Remove connect run directory"
         rlPhaseEnd
 
