@@ -28,11 +28,11 @@ rlJournalStart
 
     if [ "$PROVISION_HOW" = "virtual" ]; then
         rlPhaseStartTest "Reconnect retries a failed SSH master start after reboot (#5164)"
-            rlRun "guest=\$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))[\"default-0\"][\"primary-address\"])' '$run/plan/provision/guests.yaml')" \
+            rlRun "guest=\$(yq '.\"default-0\" | .\"primary-address\"' '$run/plan/provision/guests.yaml')" \
                 0 "Read guest address"
-            rlRun "guest_port=\$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))[\"default-0\"][\"port\"])' '$run/plan/provision/guests.yaml')" \
+            rlRun "guest_port=\$(yq '.\"default-0\" | .port' '$run/plan/provision/guests.yaml')" \
                 0 "Read guest SSH port"
-            rlRun "guest_key=\$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))[\"default-0\"][\"key\"][0])' '$run/plan/provision/guests.yaml')" \
+            rlRun "guest_key=\$(yq '.\"default-0\" | .key[0]' '$run/plan/provision/guests.yaml')" \
                 0 "Read guest SSH key"
             rlRun "cp '$guest_key' '$tmpdir/reconnect-key'" 0 "Preserve guest SSH key"
 
