@@ -37,7 +37,7 @@ rlJournalStart
                 0 "Read guest SSH key"
             rlRun "cp '$guest_key' '$tmpdir/reconnect-key'" 0 "Preserve guest SSH key"
 
-            rlRun "tmt -vv run -i '$run' prepare -h shell --script 'mkdir -p /etc/systemd/system/sshd.service.d; printf \"[Service]\\nExecStartPre=/bin/sleep 3\\n\" > /etc/systemd/system/sshd.service.d/tmt-delay.conf; systemctl daemon-reload'" \
+            rlRun "tmt --context provision_how=$PROVISION_HOW -vv run -i '$run' prepare" \
                 0 "Delay SSH daemon startup"
             rlRun -s "ssh -oBatchMode=yes -oControlMaster=no -oControlPath=none \
                 -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=60 \

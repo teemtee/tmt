@@ -6,3 +6,14 @@ discover:
     tests:
     - name: smoke
       test: /bin/true
+
+adjust:
+  - when: provision_how == virtual
+    prepare+:
+      - name: Delay SSH daemon startup
+        how: shell
+        script: |
+          mkdir -p /etc/systemd/system/sshd.service.d
+          printf '[Service]\nExecStartPre=/bin/sleep 3\n' \
+            > /etc/systemd/system/sshd.service.d/tmt-delay.conf
+          systemctl daemon-reload
