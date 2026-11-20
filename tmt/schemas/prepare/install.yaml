@@ -56,6 +56,9 @@ properties:
   package:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
+  reboot:
+    type: boolean
+
   where:
     $ref: "/schemas/common#/definitions/where"
 

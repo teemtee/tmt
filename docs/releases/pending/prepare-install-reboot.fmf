@@ -1,0 +1,8 @@
+description: |
+    The :ref:`/plugins/prepare/install` plugin gained a new ``reboot``
+    key (``--reboot`` on the command line) which reboots the guest after
+    package installation, for example to boot into a freshly installed
+    kernel. The reboot is skipped when no package was actually installed,
+    image mode guests reuse the reboot performed by the ``bootc`` image
+    switch, and the option is not supported on ``local``, ``container``
+    and ``mock`` guests.

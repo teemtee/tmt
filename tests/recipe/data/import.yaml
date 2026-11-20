@@ -85,6 +85,7 @@ plans:
             missing: fail
             name: enable-latest-copr
             order: 50
+            reboot: false
             summary: Enable copr repo with the latest tmt bits
           - how: shell
             name: disable-tag-repo

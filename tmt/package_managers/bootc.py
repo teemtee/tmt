@@ -297,7 +297,11 @@ class Bootc(PackageManager[BootcEngine]):
 
                 # Reboot into the new image
                 self.info("package", "rebooting to apply new image", color="green")
-                self.guest.reboot()
+                if not self.guest.reboot():
+                    raise tmt.utils.PrepareError(
+                        f"Failed to reboot guest into the new image '{image_tag}'."
+                    )
+                self.guest.facts.sync(self.guest, 'kernel_release')
 
                 return build_output
 

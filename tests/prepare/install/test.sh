@@ -358,6 +358,35 @@ rlJournalStart
             fi
         rlPhaseEnd
 
+        rlPhaseStartTest "$phase_prefix Reboot option via CLI (--reboot)"
+            if [ "$PROVISION_HOW" = "container" ]; then
+                if is_ubi "$image"; then
+                    rlRun -s "$tmt -d --insert --how install --reboot --package dconf plan --name /empty$" 2
+                else
+                    rlRun -s "$tmt -d --insert --how install --reboot --package tree plan --name /empty$" 2
+                fi
+                rlAssertGrep "Reboot after package installation is not supported on container guests" $rlRun_LOG
+            elif [ "$package_manager" = "bootc" ]; then
+                rlRun -s "$tmt -d --insert --how install --reboot --package tree plan --name /empty$"
+                rlAssertGrep "Reboot already handled by the 'bootc' package manager" $rlRun_LOG
+            elif [ "$PROVISION_HOW" = "virtual" ]; then
+                if is_ubi "$image"; then
+                    rlRun -s "$tmt -d --insert --how install --reboot --package dconf plan --name /empty$"
+                else
+                    rlRun -s "$tmt -d --insert --how install --reboot --package tree plan --name /empty$"
+                fi
+                rlAssertGrep "reboot: Rebooting guest after package installation" $rlRun_LOG
+
+                # When packages are already installed, reboot must be skipped
+                if is_ubi "$image"; then
+                    rlRun -s "$tmt -d --insert --how install --reboot --package dconf plan --name /existing$"
+                else
+                    rlRun -s "$tmt -d --insert --how install --reboot --package tree plan --name /existing$"
+                fi
+                rlAssertGrep "Skipping reboot as no packages were installed" $rlRun_LOG
+            fi
+        rlPhaseEnd
+
         # Limit these test cases to:
         # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
         # * image mode - the code handling is different in this case, so we need to make sure these cases work well
