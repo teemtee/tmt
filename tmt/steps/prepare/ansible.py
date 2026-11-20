@@ -113,6 +113,14 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
          before using ``ansible`` plugin from an alternative repository
          or local build.
 
+    .. note::
+
+       tmt tries to install ``/usr/bin/python3`` on the guest before
+       running the playbook, but continues when no package provides
+       it. Playbooks running on such guests are expected to provide
+       their own interpreter, e.g. by installing it with ``raw`` tasks
+       and setting ``ansible_python_interpreter``.
+
     Run a single playbook on the guest:
 
     .. code-block:: yaml
@@ -295,14 +303,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
         return outcome
 
-    def essential_requires(self) -> list[tmt.base.core.Dependency]:
+    def essential_recommends(self) -> list[tmt.base.core.Dependency]:
         """
-        Collect all essential requirements of the plugin.
+        Collect all essential recommendations of the plugin.
 
-        Essential requirements of a plugin are necessary for the plugin to
-        perform its basic functionality.
-
-        :returns: a list of requirements.
+        :returns: a list of recommendations.
         """
 
-        return tmt.guest.essential_ansible_requires()
+        return tmt.guest.essential_ansible_recommends()

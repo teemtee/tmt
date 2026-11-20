@@ -546,9 +546,14 @@ DEFAULT_PULL_OPTIONS = TransferOptions(
 # Note: returns a static list, but we cannot make it a mere list,
 # because `tmt.base.core` needs to be imported and that creates a circular
 # import loop.
-def essential_ansible_requires() -> list['tmt.base.core.Dependency']:
+def essential_ansible_recommends() -> list['tmt.base.core.Dependency']:
     """
-    Return essential requirements for running Ansible modules
+    Return essential recommendations for running Ansible modules
+
+    Python is not a hard requirement: playbooks may set
+    ``ansible_python_interpreter`` on their own, e.g. to an interpreter
+    installed by ``raw`` tasks, and guests like RHEL 6 have no package
+    providing ``/usr/bin/python3`` at all.
     """
 
     from tmt.base.core import DependencySimple
