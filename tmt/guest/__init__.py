@@ -197,7 +197,7 @@ SSH_OPTIONS_ENVVAR_PATTERN: Pattern[str] = re.compile(
     # ignore the following envvars: they do look familiar, but are in
     # fact not related to ssh options
     (?!
-        MASTER_START_TIMEOUT
+        MASTER_START_TIMEOUT | MASTER_STOP_TIMEOUT
     )
     ([a-zA-Z_]+)    # match all other letter/underscore mix
     """,
