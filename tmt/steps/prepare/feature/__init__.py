@@ -387,14 +387,11 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
 
         return outcome
 
-    def essential_requires(self) -> list[tmt.base.core.Dependency]:
+    def essential_recommends(self) -> list[tmt.base.core.Dependency]:
         """
-        Collect all essential requirements of the plugin.
+        Collect all essential recommendations of the plugin.
 
-        Essential requirements of a plugin are necessary for the plugin to
-        perform its basic functionality.
-
-        :returns: a list of requirements.
+        :returns: a list of recommendations.
         """
 
-        return tmt.guest.essential_ansible_requires()
+        return tmt.guest.essential_ansible_recommends()
