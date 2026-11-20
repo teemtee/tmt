@@ -151,7 +151,7 @@ def _create_prepare_install(
     root_logger: tmt.log.Logger,
     *,
     packages: list[str],
-    reboot: bool = False,
+    reboot: Literal['never', 'if-installed'] = 'never',
     missing: Literal['skip', 'fail'] = 'fail',
     check_first: bool = True,
     simulated_guest: Optional[_SimulatedGuest] = None,
@@ -259,7 +259,7 @@ def test_install_reboot_disabled_by_default(root_logger: tmt.log.Logger) -> None
     """
 
     plugin, guest = _create_prepare_install(root_logger, packages=[NEW_KERNEL])
-    assert plugin.data.reboot is False
+    assert plugin.data.reboot == 'never'
 
     plugin.go(guest=guest, logger=root_logger)
 
@@ -295,7 +295,9 @@ def test_install_reboot_enabled(
     Verify the guest boots the installed kernel and kernel_release fact is refreshed
     """
 
-    plugin, guest = _create_prepare_install(root_logger, packages=[NEW_KERNEL], reboot=True)
+    plugin, guest = _create_prepare_install(
+        root_logger, packages=[NEW_KERNEL], reboot='if-installed'
+    )
 
     plugin.go(guest=guest, logger=root_logger)
 
@@ -317,7 +319,7 @@ def test_install_reboot_skipped_when_already_installed(
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=[NEW_KERNEL],
-        reboot=True,
+        reboot='if-installed',
         simulated_guest=_SimulatedGuest(present=[NEW_KERNEL]),
     )
 
@@ -340,7 +342,7 @@ def test_install_reboot_skipped_when_already_installed_without_check_first(
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=['tree'],
-        reboot=True,
+        reboot='if-installed',
         check_first=False,
         simulated_guest=_SimulatedGuest(present=['tree'], available=['tree']),
     )
@@ -358,7 +360,7 @@ def test_install_reboot_skipped_when_no_packages_specified(root_logger: tmt.log.
     Verify reboot is skipped when no packages or directories are configured
     """
 
-    plugin, guest = _create_prepare_install(root_logger, packages=[], reboot=True)
+    plugin, guest = _create_prepare_install(root_logger, packages=[], reboot='if-installed')
 
     plugin.go(guest=guest, logger=root_logger)
 
@@ -387,7 +389,7 @@ def test_install_reboot_skipped_when_missing_skip_installs_nothing(
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=packages,
-        reboot=True,
+        reboot='if-installed',
         missing='skip',
         simulated_guest=_SimulatedGuest(present=present),
     )
@@ -407,7 +409,7 @@ def test_install_reboot_when_missing_skip_installs_some(root_logger: tmt.log.Log
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=[NEW_KERNEL, 'nonexistent-pkg'],
-        reboot=True,
+        reboot='if-installed',
         missing='skip',
     )
 
@@ -424,7 +426,7 @@ def test_install_reboot_after_debuginfo_installation(root_logger: tmt.log.Logger
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=['grep-debuginfo'],
-        reboot=True,
+        reboot='if-installed',
         simulated_guest=_SimulatedGuest(available=['grep-debuginfo']),
     )
 
@@ -466,7 +468,7 @@ def test_install_reboot_after_local_or_remote_packages(
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=[package],
-        reboot=True,
+        reboot='if-installed',
         simulated_guest=_SimulatedGuest(available=[package]),
     )
 
@@ -487,7 +489,7 @@ def test_install_reboot_skipped_on_bootc(
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=[NEW_KERNEL],
-        reboot=True,
+        reboot='if-installed',
         simulated_guest=simulated_guest,
     )
     guest.facts.package_manager = 'bootc'
@@ -521,7 +523,7 @@ def test_install_reboot_skipped_on_bootc_when_nothing_installed(
     plugin, guest = _create_prepare_install(
         root_logger,
         packages=['tree'],
-        reboot=True,
+        reboot='if-installed',
         simulated_guest=_SimulatedGuest(present=['tree']),
     )
     guest.facts.package_manager = 'bootc'
@@ -538,7 +540,9 @@ def test_install_reboot_not_called_on_failed_install(root_logger: tmt.log.Logger
     Verify guest.reboot is not called when package installation fails
     """
 
-    plugin, guest = _create_prepare_install(root_logger, packages=[NEW_KERNEL], reboot=True)
+    plugin, guest = _create_prepare_install(
+        root_logger, packages=[NEW_KERNEL], reboot='if-installed'
+    )
     run_error = RunError(
         'Failed to install package',
         Command('dnf', 'install', '-y', NEW_KERNEL),
@@ -564,7 +568,9 @@ def test_install_reboot_after_metadata_refresh_retry(root_logger: tmt.log.Logger
     packages installed by the first attempt must still trigger the reboot.
     """
 
-    plugin, guest = _create_prepare_install(root_logger, packages=[NEW_KERNEL], reboot=True)
+    plugin, guest = _create_prepare_install(
+        root_logger, packages=[NEW_KERNEL], reboot='if-installed'
+    )
     guest.package_manager.finalize_installation.side_effect = [
         RunError('Failed to finalize installation', Command('false'), 1),
         CommandOutput(stdout=None, stderr=None),
@@ -596,7 +602,9 @@ def test_install_failed_reboot_raises_prepare_error(
     Verify a failed reboot raises PrepareError without triggering package install retry
     """
 
-    plugin, guest = _create_prepare_install(root_logger, packages=[NEW_KERNEL], reboot=True)
+    plugin, guest = _create_prepare_install(
+        root_logger, packages=[NEW_KERNEL], reboot='if-installed'
+    )
     if isinstance(reboot_side_effect, Exception):
         guest.reboot.side_effect = reboot_side_effect
     else:
@@ -645,7 +653,7 @@ def test_install_reboot_unsupported_guests(
     """
 
     plugin, guest = _create_prepare_install(
-        root_logger, packages=[NEW_KERNEL], reboot=True, guest_class=guest_class
+        root_logger, packages=[NEW_KERNEL], reboot='if-installed', guest_class=guest_class
     )
     guest.localhost = is_localhost
     guest.facts.is_container = is_container
@@ -655,4 +663,35 @@ def test_install_reboot_unsupported_guests(
 
     guest.package_manager.check_presence.assert_not_called()
     guest.package_manager.install.assert_not_called()
+    guest.reboot.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ('guest_class', 'is_localhost', 'is_container'),
+    [
+        (Guest, True, False),
+        (Guest, False, True),
+        (GuestMock, False, False),
+    ],
+    ids=['local-guest', 'container-guest', 'mock-guest'],
+)
+def test_install_reboot_never_on_unsupported_guests(
+    root_logger: tmt.log.Logger,
+    guest_class: type[Guest],
+    is_localhost: bool,
+    is_container: bool,
+) -> None:
+    """
+    Verify the default ``reboot: never`` does not reject guests which cannot reboot
+    """
+
+    plugin, guest = _create_prepare_install(
+        root_logger, packages=[NEW_KERNEL], reboot='never', guest_class=guest_class
+    )
+    guest.localhost = is_localhost
+    guest.facts.is_container = is_container
+
+    plugin.go(guest=guest, logger=root_logger)
+
+    guest.package_manager.install.assert_called_once()
     guest.reboot.assert_not_called()

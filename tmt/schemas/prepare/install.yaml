@@ -57,7 +57,10 @@ properties:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
   reboot:
-    type: boolean
+    type: string
+    enum:
+      - never
+      - if-installed
 
   where:
     $ref: "/schemas/common#/definitions/where"

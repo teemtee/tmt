@@ -89,12 +89,15 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         help='Check whether packages are already installed before attempting to install them.',
     )
 
-    reboot: bool = field(
-        default=False,
-        option='--reboot / --no-reboot',
-        is_flag=True,
-        show_default=True,
-        help='Reboot the guest after package installation if any package was installed.',
+    reboot: Literal['never', 'if-installed'] = field(
+        default='never',
+        option='--reboot',
+        metavar='WHEN',
+        choices=['never', 'if-installed'],
+        help="""
+             When to reboot the guest after package installation, never (default),
+             or if-installed when at least one package was installed.
+             """,
     )
 
 
@@ -167,17 +170,18 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         prepare:
             how: install
             package: kernel-6.12.0-1.fc41.x86_64
-            reboot: true
+            reboot: if-installed
 
-    Use ``reboot: true`` (or ``--reboot`` on the command line) to reboot
-    the guest after the installation, e.g. to boot a newly installed
-    kernel. The guest is rebooted only when the phase installed a
-    package: at least one requested package which was not present on
-    the guest before the installation is present after it. Local rpm
-    files (paths or ``directory``) and remote package URLs cannot be
-    checked by name, therefore requesting any of them always counts as
-    an installation once the installation finishes. The reboot is
-    skipped when:
+    Use ``reboot`` (or ``--reboot WHEN`` on the command line) to decide
+    whether the guest should be rebooted after the installation, e.g.
+    to boot a newly installed kernel. By default, it is set to
+    ``never``. With ``if-installed``, the guest is rebooted only when
+    the phase installed a package: at least one requested package which
+    was not present on the guest before the installation is present
+    after it. Local rpm files (paths or ``directory``) and remote
+    package URLs cannot be checked by name, therefore requesting any of
+    them always counts as an installation once the installation
+    finishes. The reboot is skipped when:
 
     * all requested packages were already present on the guest. This
       applies with ``check-first: false`` as well, even if the package
@@ -638,7 +642,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         if guest.facts.package_manager is None:
             raise tmt.utils.PrepareError('Unrecognized package manager.')
 
-        if self.data.reboot:
+        if self.data.reboot != 'never':
             self._validate_reboot(guest)
 
         options = Options(
@@ -659,7 +663,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         # Packages missing before the first installation attempt. Collected
         # once, so that packages installed by a failed first attempt are
         # still recognized as installed after the retry below.
-        missing_installables = self._find_missing_installables(guest) if self.data.reboot else []
+        missing_installables = (
+            self._find_missing_installables(guest) if self.data.reboot == 'if-installed' else []
+        )
 
         # ... and install packages.
         try:
@@ -684,7 +690,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                         self._show_failed_packages_with_tests(failed_packages)
                 raise exc2 from exc1
 
-        if self.data.reboot:
+        if self.data.reboot == 'if-installed':
             self._reboot(
                 guest,
                 installed=self._were_packages_installed(guest, missing_installables),
