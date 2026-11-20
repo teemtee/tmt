@@ -2,8 +2,8 @@ import logging
 from collections.abc import Sequence
 
 import _pytest.logging
-import _pytest.monkeypatch
 import pytest
+import pytest_mock
 
 import tmt
 import tmt.utils.feeling_safe
@@ -39,15 +39,15 @@ def test_assert_is_allowed(
     expect_warn: bool,
     expect_exception: bool,
     root_logger: Logger,
-    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
+    mocker: pytest_mock.MockerFixture,
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
     # Make sure to not pollute the UB registry with test-only instances.
-    monkeypatch.setattr(tmt.utils.feeling_safe.UnsafeBehavior, 'KNOWN_UB', set())
+    mocker.patch.object(tmt.utils.feeling_safe.UnsafeBehavior, 'KNOWN_UB', set())
 
     ub = UnsafeBehavior(name='test', label='test unsafe behavior', locked_since=deprecated_version)
 
-    monkeypatch.setattr(tmt, '__version__', tmt_version)
+    mocker.patch.object(tmt, '__version__', tmt_version)
 
     if expect_exception:
         with pytest.raises(GeneralError):
@@ -113,10 +113,10 @@ def test_is_allowed(
     allowed_behaviors: Sequence[str],
     requested_behaviors: Sequence[str],
     expected: bool,
-    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
+    mocker: pytest_mock.MockerFixture,
 ) -> None:
     # Make sure to not pollute the allowed UB list with test-only instances.
-    monkeypatch.setattr(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIORS', set())
+    mocker.patch.object(tmt.utils.feeling_safe, 'ALLOWED_BEHAVIORS', set())
 
     allow_unsafe_behavior(None, *allowed_behaviors)
 

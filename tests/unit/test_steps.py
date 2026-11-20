@@ -1,8 +1,8 @@
 from typing import Optional, cast
 from unittest.mock import MagicMock
 
-import _pytest.monkeypatch
 import pytest
+import pytest_mock
 
 import tmt.guest
 import tmt.queue
@@ -13,7 +13,7 @@ from tmt.utils.environment import Environment
 
 @pytest.fixture(name='mocked_queue')
 def fixture_mocked_queue(
-    root_logger: Logger, monkeypatch: _pytest.monkeypatch.MonkeyPatch
+    root_logger: Logger, mocker: pytest_mock.MockerFixture
 ) -> tuple[tmt.steps.StepWithQueue, tmt.queue.Queue, tmt.steps.Plugin]:
     class DummyStep(tmt.steps.StepWithQueue[tmt.steps.StepData, None]):
         _plugin_base_class = tmt.steps.Plugin
@@ -40,12 +40,8 @@ def fixture_mocked_queue(
         step=step, data=tmt.steps.StepData(name='default-0', how='foo'), logger=root_logger
     )
 
-    monkeypatch.setattr(
-        step._queue, 'enqueue_action', MagicMock(name='<mock>queue.enqueue_action')
-    )
-    monkeypatch.setattr(
-        step._queue, 'enqueue_plugin', MagicMock(name='<mock>queue.enqueue_plugin')
-    )
+    mocker.patch.object(step._queue, 'enqueue_action', name='<mock>queue.enqueue_action')
+    mocker.patch.object(step._queue, 'enqueue_plugin', name='<mock>queue.enqueue_plugin')
 
     return [step, step._queue, plugin]
 
