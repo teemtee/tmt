@@ -21,6 +21,12 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Run a dummy test"
+        if [ "${OUT_OF_BAND_REBOOT:-no}" = "yes" ] && [ "$TMT_TEST_RESTART_COUNT" == "0" ]; then
+            test_pid=$$
+            rlRun "systemd-run --unit=tmt-out-of-band-reboot --collect /bin/sh -c 'while kill -0 $test_pid 2>/dev/null; do sleep 0.1; done; systemctl reboot'"
+            exit 79
+        fi
+
         rlRun "sync"
 
         # Fail two times - each time triggering a test restart - and pretend

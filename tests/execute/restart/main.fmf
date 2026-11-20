@@ -15,3 +15,7 @@ tag+:
 /with-reboot:
     environment+:
         WITH_REBOOT: "yes"
+
+/out-of-band-reboot:
+    environment+:
+        OUT_OF_BAND_REBOOT: "yes"

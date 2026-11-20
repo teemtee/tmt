@@ -5,6 +5,7 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
         rlRun "WITH_REBOOT=${WITH_REBOOT:-no}"
+        rlRun "OUT_OF_BAND_REBOOT=${OUT_OF_BAND_REBOOT:-no}"
         rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "set -o pipefail"
         rlRun "pushd data"
@@ -14,6 +15,12 @@ rlJournalStart
         if [ "$WITH_REBOOT" = "yes" ]; then
             rlRun -s "tmt -vv run --scratch -i $run -a provision -h $PROVISION_HOW test -n /with-reboot"
             rlRun "inner_test=$run/plan/execute/data/guest/default-0/test/with-reboot-1/output.txt"
+        elif [ "$OUT_OF_BAND_REBOOT" = "yes" ]; then
+            rlRun -s "tmt -vvv -ddd run --scratch -i $run -a provision -h $PROVISION_HOW test -n /out-of-band-reboot"
+            rlAssertGrep "SSH master process .* has been terminated unexpectedly" "$rlRun_LOG"
+            rlAssertGrep "waiting for condition 'try_whoami'" "$rlRun_LOG"
+            rlAssertGrep "'try_whoami' finished successfully" "$rlRun_LOG"
+            rlRun "inner_test=$run/plan/execute/data/guest/default-0/test/out-of-band-reboot-1/output.txt"
         else
             rlRun -s "tmt -vv run --scratch -i $run -a provision -h $PROVISION_HOW test -n /basic"
             rlRun "inner_test=$run/plan/execute/data/guest/default-0/test/basic-1/output.txt"

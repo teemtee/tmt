@@ -10,3 +10,8 @@ restart-max-count: 5
 
 /with-reboot:
     restart-with-reboot: true
+
+/out-of-band-reboot:
+    restart-with-reboot: false
+    environment+:
+        OUT_OF_BAND_REBOOT: "yes"
