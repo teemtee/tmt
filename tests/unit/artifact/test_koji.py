@@ -29,7 +29,7 @@ def test_koji_valid_build(mock_koji, mock_call_api, artifact_provider):
     provider = artifact_provider(f"koji.build:{MOCK_BUILD_ID_KOJI_BREW}")
     assert isinstance(provider, KojiBuild)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.artifacts) == 13
+    assert len(list(provider.artifacts)) == 13
 
 
 def test_koji_valid_nvr(mock_koji, mock_call_api, artifact_provider):
@@ -37,15 +37,13 @@ def test_koji_valid_nvr(mock_koji, mock_call_api, artifact_provider):
     provider = artifact_provider("koji.nvr:tmt-1.58.0-1.fc43")
     assert isinstance(provider, KojiNvr)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.artifacts) == 13
+    assert len(list(provider.artifacts)) == 13
 
 
 def test_koji_invalid_nvr(mock_koji, mock_call_api, artifact_provider):
     mock_call_api.return_value = None
-    provider = artifact_provider("koji.nvr:nonexistent-1.0-1.fc43")
-    assert isinstance(provider, KojiNvr)
     with pytest.raises(GeneralError, match=r"No build found for NVR 'nonexistent-1\.0-1\.fc43'\."):
-        _ = provider.build_id
+        artifact_provider("koji.nvr:nonexistent-1.0-1.fc43")
 
 
 def test_koji_valid_task_id_actual_build(mock_koji, mock_call_api, artifact_provider):
@@ -53,7 +51,7 @@ def test_koji_valid_task_id_actual_build(mock_koji, mock_call_api, artifact_prov
     provider = artifact_provider("koji.task:137451383")
     assert isinstance(provider, KojiTask)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.artifacts) == 13
+    assert len(list(provider.artifacts)) == 13
 
 
 def test_koji_valid_task_id_scratch_build(mock_koji, mock_call_api, artifact_provider):
@@ -68,7 +66,7 @@ def test_koji_valid_task_id_scratch_build(mock_koji, mock_call_api, artifact_pro
     assert len(tasks) == 2
     assert task_id in tasks
     assert provider.build_id is None
-    assert len(provider.artifacts) == 2
+    assert len(list(provider.artifacts)) == 2
 
 
 @pytest.mark.parametrize(
