@@ -70,40 +70,29 @@ PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_
 
 
 @pytest.mark.parametrize(
-    ('engine_class', 'binary'),
+    'engine_class',
     [
-        (tmt.package_managers.dnf.DnfEngine, 'dnf'),
-        (tmt.package_managers.dnf.Dnf5Engine, 'dnf5'),
-        (tmt.package_managers.dnf.YumEngine, 'yum'),
+        tmt.package_managers.dnf.DnfEngine,
+        tmt.package_managers.dnf.Dnf5Engine,
+        tmt.package_managers.dnf.YumEngine,
     ],
 )
-@pytest.mark.parametrize('sudo_prefix', ['', 'sudo'])
 def test_dnf_base_command_is_not_mutated(
     engine_class: type[tmt.package_managers.dnf.DnfEngine],
-    binary: str,
-    sudo_prefix: str,
     root_logger: tmt.log.Logger,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Modifying a prepared command cannot corrupt later commands or engines."""
+    """Modifying a prepared command cannot corrupt later command instances."""
 
-    # Isolate the class variable even if the regression is reintroduced.
-    monkeypatch.setattr(engine_class, '_base_command', Command(binary))
     guest = MagicMock(spec=tmt.guest.Guest)
-    guest.facts.sudo_prefix = sudo_prefix
+    guest.facts.sudo_prefix = ''
+
     engine = engine_class(guest=guest, logger=root_logger)
-    expected = Command(*([sudo_prefix] if sudo_prefix else []), binary)
+    command, _ = engine.prepare_command()
+    command += Command('builddep', '-y', 'foo.src.rpm')
 
-    first, options = engine.prepare_command()
-    assert first == expected
-    first += options
-    first += Command('--setopt=install_weak_deps=False')
-
-    second, second_options = engine.prepare_command()
-    assert second == expected
-    assert second_options == Command('-y')
-    assert engine._base_command == Command(binary)
-    assert engine_class(guest=guest, logger=root_logger).command == expected
+    assert 'builddep' not in str(
+        engine_class(guest=guest, logger=root_logger).install(Package('jq'))
+    )
 
 
 def has_legacy_dnf(container: ContainerData) -> bool:

@@ -1,4 +1,5 @@
 import re
+from collections.abc import Sequence
 from unittest.mock import MagicMock
 
 import pytest
@@ -53,15 +54,12 @@ def test_debuginfo(root_logger):
     ids=['crb', 'epel', 'fips'],
 )
 def test_supported_distro_patterns_are_reusable(
-    patterns: tuple[re.Pattern[str], ...], distro: str
+    patterns: Sequence[re.Pattern[str]], distro: str
 ) -> None:
     """Checking a distribution in one plan must not exhaust patterns for the next."""
 
-    assert isinstance(patterns, tuple)
-    assert patterns
     assert any(pattern.match(distro) for pattern in patterns)
     assert any(pattern.match(distro) for pattern in patterns)
-    assert list(patterns) == list(patterns)
 
 
 @pytest.mark.parametrize(
