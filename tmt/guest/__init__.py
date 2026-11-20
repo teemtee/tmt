@@ -3775,6 +3775,9 @@ class GuestSsh(Guest, CommandCollector):
     ) -> None:
         """
         Terminate the SSH master process and flush its state.
+
+        The caller must hold the ``_ssh_master_process_lock`` lock and
+        is responsible for checking that SSH multiplexing is enabled.
         """
 
         logger = logger or self._logger
