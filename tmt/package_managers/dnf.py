@@ -115,9 +115,11 @@ class DnfEngine(PackageManagerEngine):
         return ShellScript(f'rpm -q {" ".join(escape_installables(*installables))}')
 
     def check_presence(self, *installables: Installable) -> ShellScript:
+        # `rpm -q --whatprovides` does not match a full NEVRA, fall back
+        # to a plain `rpm -q` to detect installed `name-version-release.arch`.
         return ShellScript(
             '\n'.join(
-                f'rpm -q --whatprovides {escaped} >&2 || echo {escaped}'
+                f'rpm -q --whatprovides {escaped} >&2 || rpm -q {escaped} >&2 || echo {escaped}'
                 for escaped in escape_installables(*installables)
             )
         )

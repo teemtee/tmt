@@ -12,7 +12,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
-from tmt.guest import Guest
+from tmt.guest import Guest, RebootMode
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
@@ -89,6 +89,17 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         help='Check whether packages are already installed before attempting to install them.',
     )
 
+    reboot: Literal['never', 'if-installed'] = field(
+        default='never',
+        option='--reboot',
+        metavar='WHEN',
+        choices=['never', 'if-installed'],
+        help="""
+             When to reboot the guest after package installation, never (default),
+             or if-installed when at least one package was installed.
+             """,
+    )
+
 
 @tmt.steps.provides_method('install')
 class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
@@ -152,6 +163,40 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             copr: psss/tmt
             package: tmt-all
             missing: skip
+
+    .. code-block:: yaml
+
+        # Install a specific kernel build and reboot the guest
+        prepare:
+            how: install
+            package: kernel-6.12.0-1.fc41.x86_64
+            reboot: if-installed
+
+    Use ``reboot`` (or ``--reboot WHEN`` on the command line) to decide
+    whether the guest should be rebooted after the installation, e.g.
+    to boot a newly installed kernel. By default, it is set to
+    ``never``. With ``if-installed``, the guest is rebooted only when
+    the phase installed a package: at least one requested package which
+    was not present on the guest before the installation is present
+    after it. Local rpm files (paths or ``directory``) and remote
+    package URLs cannot be checked by name, therefore requesting any of
+    them always counts as an installation once the installation
+    finishes. The reboot is skipped when:
+
+    * all requested packages were already present on the guest. This
+      applies with ``check-first: false`` as well, even if the package
+      manager upgraded an already present package. Request the exact
+      ``name-version-release.arch`` to install and boot a different
+      build of an already present package such as ``kernel``.
+    * none of the missing packages could be installed with
+      ``missing: skip``.
+    * the guest uses the ``bootc`` package manager, which reboots the
+      guest into the newly built image on its own.
+
+    The reboot is not supported on local, container and mock guests,
+    the phase fails there before installing any packages. tmt does not
+    change the boot loader configuration, the guest boots its default
+    boot entry.
 
     .. note::
 
@@ -254,6 +299,31 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         yield from installables
 
+    def _resolve_packages(self, guest: 'Guest') -> list[Union[Package, FileSystemPath]]:
+        """
+        Return repository packages to install on the given guest.
+
+        :param guest: guest the packages would be installed on.
+        :returns: requested repository packages, with packages replaced
+            by their verified artifact counterparts when the ``artifact``
+            prepare plugin requested an override for the guest.
+        """
+
+        if artifact_override := self.artifact_override.get(guest):
+            return [artifact_override.get(pkg, pkg) for pkg in self.packages]
+
+        return self.packages
+
+    def _debuginfo_presence_packages(self) -> list[Package]:
+        """
+        Return package names to check the presence of requested debuginfo packages.
+
+        :returns: a ``<name>-debuginfo`` package for each requested
+            debuginfo package.
+        """
+
+        return [Package(f"{name}-debuginfo") for name in self.debuginfo_packages]
+
     def _install(
         self,
         guest: 'Guest',
@@ -288,15 +358,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             )
 
         if self.packages:
-            if artifact_override := self.artifact_override.get(guest):
-                actual_install_packages = [
-                    artifact_override.get(pkg, pkg) for pkg in self.packages
-                ]
-            else:
-                actual_install_packages = self.packages
             install_outputs.append(
                 guest.package_manager.install(
-                    *self._list_installables('package', *actual_install_packages),
+                    *self._list_installables('package', *self._resolve_packages(guest)),
                     options=options,
                 )
             )
@@ -321,7 +385,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             # So we're checking for presence on the system.
             if self.debuginfo_packages:
                 presence = guest.package_manager.check_presence(
-                    *(Package(f"{name}-debuginfo") for name in self.debuginfo_packages)
+                    *self._debuginfo_presence_packages()
                 )
 
                 failed_packages.update(
@@ -411,6 +475,153 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             for pkg in sorted(failed_unattributed_packages):
                 self.info(pkg, color='red', shift=2)
 
+    def _validate_reboot(self, guest: 'Guest') -> None:
+        """
+        Validate that reboot after package installation is supported on the guest.
+
+        :param guest: guest to reboot after package installation.
+        :raises PrepareError: when the guest cannot be rebooted: a local
+            guest, a container, or a mock chroot.
+        """
+
+        # Imported here to keep this prepare plugin from loading the mock
+        # provision plugin module on import.
+        from tmt.steps.provision.mock import GuestMock
+
+        if guest.localhost:
+            raise tmt.utils.PrepareError(
+                "Reboot after package installation is not supported on local guest."
+            )
+
+        if guest.facts.is_container:
+            raise tmt.utils.PrepareError(
+                "Reboot after package installation is not supported on container guests."
+            )
+
+        if isinstance(guest, GuestMock):
+            raise tmt.utils.PrepareError(
+                "Reboot after package installation is not supported on mock guests."
+            )
+
+    def _has_unverifiable_installables(self) -> bool:
+        """
+        Check whether local rpm files or remote package URLs were requested.
+
+        tmt knows only a path or a URL of these packages, not the names
+        of packages they contain, and therefore cannot check their
+        presence on the guest. Their installation always counts as
+        a change of the guest.
+
+        :returns: ``True`` if any local or remote package was requested.
+        """
+
+        return bool(self.local_packages or self.remote_packages)
+
+    def _find_missing_installables(self, guest: 'Guest') -> list[Installable]:
+        """
+        Find requested packages which are not present on the guest.
+
+        Repository packages and filesystem paths are checked, as well as
+        debuginfo packages. Local rpm files and remote package URLs are
+        not checked, see :py:meth:`_has_unverifiable_installables`.
+
+        :param guest: guest to check.
+        :returns: requested packages missing on the guest. Empty when
+            local or remote packages were requested, because their
+            installation counts as a change of the guest anyway.
+        """
+
+        if self._has_unverifiable_installables():
+            return []
+
+        installables: list[Installable] = [
+            *self._resolve_packages(guest),
+            *self._debuginfo_presence_packages(),
+        ]
+
+        if not installables:
+            return []
+
+        presence = guest.package_manager.check_presence(*installables)
+
+        return [installable for installable, present in presence.items() if not present]
+
+    def _were_packages_installed(
+        self, guest: 'Guest', missing_installables: list[Installable]
+    ) -> bool:
+        """
+        Decide whether the installation added any package to the guest.
+
+        :param guest: guest the packages were installed on.
+        :param missing_installables: requested packages which were not
+            present on the guest before the installation, as reported by
+            :py:meth:`_find_missing_installables`.
+        :returns: ``True`` if local or remote packages were requested, or
+            if any of ``missing_installables`` is now present on the
+            guest. ``False`` otherwise.
+        """
+
+        if self._has_unverifiable_installables():
+            self.debug('Local or remote packages requested, assuming they were installed.')
+            return True
+
+        if not missing_installables:
+            return False
+
+        presence = guest.package_manager.check_presence(*missing_installables)
+        installed = sorted(
+            str(installable) for installable, present in presence.items() if present
+        )
+
+        if not installed:
+            return False
+
+        self.debug(f"Packages installed: {fmf.utils.listed(installed)}.")
+        return True
+
+    def _reboot(self, guest: 'Guest', *, installed: bool) -> None:
+        """
+        Reboot the guest after package installation if needed.
+
+        :param guest: guest to reboot.
+        :param installed: whether the installation added any package to
+            the guest. The reboot is skipped when not set.
+        :raises PrepareError: when the reboot fails.
+        """
+
+        if not installed:
+            self.debug("Skipping reboot as no packages were installed.")
+            return
+
+        # The `bootc` package manager switches the guest to a new image and
+        # reboots it on its own, see `Bootc.build_container()`.
+        if guest.facts.package_manager == 'bootc':
+            self.debug("Reboot already handled by the 'bootc' package manager.")
+            return
+
+        self.info('reboot', 'Rebooting guest after package installation', color='green')
+
+        try:
+            rebooted = guest.reboot(mode=RebootMode.SOFT)
+
+        # `RebootModeNotSupportedError` and provision plugin specific errors
+        # are subclasses of `ProvisionError`, `RunError` is raised when the
+        # reboot command fails. A timeout of the wait for the guest to come
+        # back is reported via the return value.
+        except (tmt.utils.ProvisionError, tmt.utils.RunError) as error:
+            raise tmt.utils.PrepareError(
+                f"Failed to reboot guest '{guest.multihost_name}' after package installation."
+            ) from error
+
+        if not rebooted:
+            raise tmt.utils.PrepareError(
+                f"Failed to reboot guest '{guest.multihost_name}' after package installation."
+            )
+
+        guest.facts.sync(guest, 'kernel_release')
+        if guest.facts.kernel_release:
+            self.verbose('kernel', guest.facts.kernel_release, color='green')
+
     def go(
         self,
         *,
@@ -431,6 +642,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         if guest.facts.package_manager is None:
             raise tmt.utils.PrepareError('Unrecognized package manager.')
 
+        if self.data.reboot != 'never':
+            self._validate_reboot(guest)
+
         options = Options(
             excluded_packages=[Package(p) for p in self.data.exclude],
             skip_missing=self.data.missing == 'skip',
@@ -445,6 +659,13 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         if not self.data.package and not self.data.directory:
             self.debug("No packages for installation found.", level=3)
             return outcome
+
+        # Packages missing before the first installation attempt. Collected
+        # once, so that packages installed by a failed first attempt are
+        # still recognized as installed after the retry below.
+        missing_installables = (
+            self._find_missing_installables(guest) if self.data.reboot == 'if-installed' else []
+        )
 
         # ... and install packages.
         try:
@@ -468,5 +689,11 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                     if failed_packages:
                         self._show_failed_packages_with_tests(failed_packages)
                 raise exc2 from exc1
+
+        if self.data.reboot == 'if-installed':
+            self._reboot(
+                guest,
+                installed=self._were_packages_installed(guest, missing_installables),
+            )
 
         return outcome
