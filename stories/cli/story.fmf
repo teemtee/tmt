@@ -6,14 +6,14 @@ story: 'As a developer I want to comfortably work with stories'
     link:
       - implemented-by: /tmt/cli
       - verified-by: /tests/core/ls
-      - documented-by: /docs/examples.rst#explore-stories
+
 
 /show:
     story: 'Show story details'
     example: tmt story show
     link:
       - implemented-by: /tmt/cli
-      - documented-by: /docs/examples.rst#explore-stories
+
 
 /filter:
     story: 'Search available stories'
@@ -34,7 +34,7 @@ story: 'As a developer I want to comfortably work with stories'
         - tmt story ls --undocumented
     link:
       - implemented-by: /tmt/cli
-      - documented-by: /docs/examples.rst#filter-stories
+
 
 /create:
     story: 'As a developer I want to easily create new story.'
@@ -47,7 +47,7 @@ story: 'As a developer I want to comfortably work with stories'
         - tmt story create /stories/area/story --template mini --force
     link:
       - implemented-by: /tmt/cli
-      - documented-by: /docs/examples.rst#create-stories
+
 
 /coverage:
     summary: 'Show story coverage'
@@ -57,7 +57,7 @@ story: 'As a developer I want to comfortably work with stories'
         documented and which still need work to be done.
     link:
       - implemented-by: /tmt/cli
-      - documented-by: /docs/examples.rst#story-coverage
+
 
     /overview:
         summary: 'General coverage overview'
