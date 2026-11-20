@@ -1327,8 +1327,8 @@ class CreateJobParameters:
 
             if 'metadata' in kickstart:
                 data['beaker']['ks_meta'] = kickstart.pop('metadata')
-            data['beaker']['kernel_options'] = self.kickstart.get('kernel_options')
-            data['beaker']['kernel_options_post'] = self.kickstart.get('kernel_options_post')
+            data['beaker']['kernel_options'] = kickstart.pop('kernel-options', None)
+            data['beaker']['kernel_options_post'] = kickstart.pop('kernel-options-post', None)
 
             # Mrack does not handle metadata-only kickstart nicely, ends
             # up with just an empty string. Don't tempt it, don't let it
