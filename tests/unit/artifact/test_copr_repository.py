@@ -76,7 +76,7 @@ def test_enumerate_artifacts(
 
     provider.enumerate_artifacts(mock_guest)
 
-    assert len(provider.artifacts) == 2
+    assert len(list(provider.artifacts)) == 2
     assert provider.artifacts[0].version.name == 'tmt'
     assert provider.artifacts[0].version.version == '1.69.0'
     assert provider.artifacts[1].version.name == 'tmt-all'

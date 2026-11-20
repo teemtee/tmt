@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
+from tmt import Guest
 from tmt.container import container, simple_field
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
@@ -89,6 +90,8 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             self.chroot = chroot
         except (ValueError, IndexError) as error:
             raise ValueError(f"Invalid provider id '{self.id}'.") from error
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
 
     @cached_property
     def build_info(self) -> Optional["Munch"]:
@@ -97,7 +100,16 @@ class CoprBuildArtifactProvider(ArtifactProvider):
 
         :returns: the build metadata, or ``None`` if not found.
         """
+        # TODO: Check that this is not-None early on
         return self._session.build_proxy.get(self.build_id)
+
+    @property
+    def copr_repo(self) -> str:
+        """
+        Associated copr repo
+        """
+        assert self.build_info is not None
+        return f"{self.build_info['ownername']}/{self.build_info['projectname']}"
 
     @cached_property
     def is_pulp(self) -> bool:
@@ -170,7 +182,6 @@ class CoprBuildArtifactProvider(ArtifactProvider):
         :returns: list of package dictionaries containing NEVRA info.
         """
         results_url = urljoin(self.result_url + "/", "results.json")
-        self.logger.debug(f"Fetching results.json from '{results_url}'.")
         try:
             with tmt.utils.retry_session(logger=self.logger) as session:
                 response = session.get(results_url)
@@ -188,6 +199,15 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             )
             return []
         return packages
+
+    def fetch_contents(
+        self,
+        guest: Guest,
+        download_path: tmt.utils.Path,
+    ) -> list[tmt.utils.Path]:
+        # TODO: Find a better place to put this interface
+        guest.package_manager.enable_copr(self.copr_repo)
+        return super().fetch_contents(guest, download_path)
 
     def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> ArtifactInfo:
         version_info = RpmVersion.from_rpm_meta(rpm_meta)
@@ -208,9 +228,7 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             repo_id=self.parent.data.repository_name,
         )
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
-        self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
+    def _populate_artifacts(self) -> None:
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 
-        return [self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas]
+        self._artifacts.extend([self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas])
