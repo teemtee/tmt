@@ -72,6 +72,131 @@ See :ref:`check-report` for more options including ``html``
 reports.
 
 
+.. _/plugins/execute/script:
+.. _/plugins/execute/script/simple:
+.. _inline-shell-tests:
+
+Inline Shell Tests
+------------------------------------------------------------------
+
+For simple test cases, the default ``tmt`` executor can run shell commands
+defined directly in a plan with the ``script`` key. The ``how`` key can be
+omitted because ``tmt`` is the default executor. Do not combine ``script``
+with a :tmt:story:`/spec/plans/discover` step; use Discover for more complex
+test scenarios.
+
+.. code-block:: yaml
+
+    # Run a simple smoke test
+    execute:
+        script: tmt --help
+
+The default test duration is one hour. Use ``duration`` to change it:
+
+.. code-block:: yaml
+
+    execute:
+        script: a-long-test-suite
+        duration: 3h
+
+A script file can be used as well, but it must be executable:
+
+.. code-block:: yaml
+
+    execute:
+        script: ./run_tests.sh
+
+.. _/plugins/execute/script/several:
+
+Several commands can be provided as a list. The executor runs them one by
+one and checks the exit code of each command:
+
+.. code-block:: yaml
+
+    execute:
+        script:
+          - dnf -y install httpd curl
+          - systemctl start httpd
+          - echo foo > /var/www/html/index.html
+          - curl http://localhost/ | grep foo
+
+.. _/plugins/execute/script/multi:
+
+Multi-line scripts are also supported. The first command with a non-zero
+exit code stops the script. See the :tmt:story:`/spec/tests/test` key for
+details about the default shell options.
+
+.. code-block:: yaml
+
+    execute:
+        script: |
+            dnf -y install httpd curl
+            systemctl start httpd
+            echo foo > /var/www/html/index.html
+            curl http://localhost/ | grep foo
+
+Test Path
+------------------------------------------------------------------
+
+Before executing each individual :tmt:story:`/spec/tests/test`
+script tmt changes directory to the :term:`test path`. When not
+defined, the directory where the test metadata is stored is used.
+So for the frequent use case when both test metadata and test
+script are stored in the same directory, for example:
+
+.. code-block::
+
+    tmt
+    ├── .fmf    <--- fmf tree root
+    └── tests
+        └── feature     <--- default path
+            ├── main.fmf
+            └── test.sh
+
+... the default path is evaluated to ``/tests/feature`` and
+does not need to be explicitly specified in test metadata:
+
+.. code-block:: yaml
+
+    summary: Test the feature
+    test: ./test.sh
+
+On the other hand, when several tests share the same test
+script stored in a different directory, for example like this:
+
+.. code-block::
+
+    tmt
+    ├── .fmf    <--- fmf tree root
+    └── tests
+        ├── area
+        │   └── feature
+        │       ├── one     <--- default path
+        │       │   └── main.fmf
+        │       └── two     <--- default path
+        │           └── main.fmf
+        └── common
+            └── lint.sh     <--- shared test script
+
+... you might rather want to provide path to the directory with
+the shared scripts instead of using possibly long relative paths
+in the :tmt:story:`/spec/tests/test` key when the test metadata
+are buried deeper in the directory structure. Instead of:
+
+.. code-block:: yaml
+
+    summary: Lint the feature
+    test: ../../../common/lint.sh some-argument
+
+You can use:
+
+.. code-block:: yaml
+
+    summary: Lint the feature
+    path: /tests/common
+    test: ./lint.sh some-argument
+
+
 Select Plans
 ------------------------------------------------------------------
 

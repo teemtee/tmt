@@ -1087,6 +1087,10 @@ copied to the guest.
     ``finish`` steps yet.
 
 
+.. _/plugins/discover/when:
+.. _/plugins/finish/when:
+.. _/plugins/prepare/when:
+.. _/plugins/report/when:
 .. _when-config:
 
 Conditional step configuration
@@ -1102,6 +1106,7 @@ in this way, it soon becomes difficult to read.
 Using the ``when`` key makes it easier to restrict a step configuration
 to run only if any of the specified rules matches.
 The syntax is the same as in ``adjust`` and :tmt:story:`/spec/context`.
+Its value can be either a single rule or a list of rules.
 
 .. code-block:: yaml
 
@@ -1135,17 +1140,107 @@ Multihost Testing
 
 Support for basic server/client scenarios is now available.
 
-The ``prepare``, ``execute``, and ``finish`` steps are able to run a
-given task (test, preparation script, ansible playbook, etc.) on
-several guests at once. Tasks are assigned to provisioned guests by
-matching the ``where`` key from
-:tmt:story:`discover</spec/plans/discover/where>`,
-:tmt:story:`prepare</spec/plans/prepare/where>` and
-:tmt:story:`finish</spec/plans/finish/where>`
-phases with corresponding guests by their
-:tmt:story:`key and role keys</spec/plans/provision/multihost>`.
-Essentially, plan author tells tmt on which guest(s) a test or
-script should run by listing guest name(s) or guest role(s).
+The :tmt:story:`/spec/plans/provision` step can request multiple guests.
+Every guest has a unique ``name`` and may also have an optional ``role``.
+Unlike names, roles may be shared by multiple guests and may use any
+identifier suitable for the plan. The first example requests two guests
+and identifies each guest by name:
+
+.. code-block:: yaml
+
+    provision:
+      - name: server
+        how: virtual
+      - name: client
+        how: virtual
+
+The second example describes a separate scenario in which roles group
+related guests:
+
+.. code-block:: yaml
+
+    provision:
+      - name: main-server
+        role: primary
+      - name: backup-one
+        role: replica
+      - name: backup-two
+        role: replica
+      - name: tester-one
+        role: client
+      - name: tester-two
+        role: client
+
+.. note::
+
+    Use multihost testing when the provisioned guests need to
+    **communicate with each other**, for example in a server/client
+    setup.
+
+    To run the same tests on several environments or architectures,
+    keep a single-guest plan and **run it once per environment**.
+    Give each run its own :tmt:story:`/spec/context`, for example
+    ``tmt --context arch=aarch64 run``, and use :ref:`adjust-metadata`
+    to disable or modify tests which do not fit the given environment.
+    Testing Farm does this for you: request several architectures and
+    it runs the plan on each of them separately, see the `Testing Farm
+    FAQ`__.
+
+    __ https://docs.testing-farm.io/Testing%20Farm/0.1/faq.html#multihost-or-multiple-environments
+
+.. _guest-selection:
+
+Guest selection
+------------------------------------------------------------------
+
+The ``where`` key selects provisioned guests by their
+:ref:`name or role </plugins/provision/common-keys>`. It accepts a
+single name or role, or a list of them. When ``where`` is not set,
+discovered tests or phase tasks apply to all provisioned guests.
+
+.. _/plugins/discover/where:
+.. _guest-selection-tests:
+
+.. rubric:: Assigning tests to guests
+
+For the :tmt:story:`/spec/plans/discover` step, ``where`` assigns
+discovered tests to selected guests. The :tmt:story:`/spec/plans/execute`
+step then runs those tests on the assigned guests. This makes it possible
+to execute different test code on individual guests.
+
+A name in ``where`` selects the individual guest with that name, while a
+role selects every guest assigned to that role. In the following examples,
+``server`` and ``client`` select guests from the first provisioning example
+by name. In the second example, ``client``, ``replica`` and ``primary``
+select guests by role.
+
+.. code-block:: yaml
+
+    # Run a different script for each named guest
+    discover:
+      - how: shell
+        where: client
+        tests:
+          - name: run-the-client-code
+            test: client.py
+      - how: shell
+        where: server
+        tests:
+          - name: run-the-server-code
+            test: server.py
+
+.. code-block:: yaml
+
+    # Filter different sets of tests for each guest or role
+    discover:
+      - how: fmf
+        filter: tag:client-tests
+        where: client
+      - how: fmf
+        filter: tag:server-tests
+        where:
+          - replica
+          - primary
 
 The granularity of the multihost scenario is on the step phase
 level. The user may define multiple ``discover``, ``prepare`` and
@@ -1181,6 +1276,37 @@ same time, more or less, but tmt will not even try to synchronize
 the execution of each test from this phase. ``/tests/B`` may still
 be running on ``server`` when ``/tests/C`` is already completed on
 ``client``.
+
+.. _/plugins/finish/where:
+.. _/plugins/prepare/where:
+.. _guest-selection-tasks:
+
+.. rubric:: Selecting guests for tasks
+
+For the :tmt:story:`/spec/plans/prepare` and
+:tmt:story:`/spec/plans/finish` steps, ``where`` selects guests on which
+the corresponding preparation or finishing task should run. The examples
+below use the guest names and roles from the provisioning examples above.
+
+.. code-block:: yaml
+
+    # Start Apache on the server
+    prepare:
+      - how: shell
+        script: systemctl start httpd
+        where: server
+
+    # Apply common setup on the primary server and all replicas
+    prepare:
+      - how: ansible
+        playbook: common.yaml
+        where: [primary, replica]
+
+    # Stop Apache on the server
+    finish:
+      - how: shell
+        script: systemctl stop httpd
+        where: server
 
 tmt exposes information about guests and roles to all three steps in
 the form of files tests and scripts can parse or import.

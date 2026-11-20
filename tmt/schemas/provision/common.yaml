@@ -1,0 +1,14 @@
+---
+
+#
+# JSON Schema definition for common provision keys
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#hardware
+#
+
+$id: /schemas/provision/common
+$schema: http://json-schema.org/draft-07/schema
+
+definitions:
+  log-update-tick:
+    type: integer

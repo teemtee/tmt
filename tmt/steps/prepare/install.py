@@ -153,17 +153,6 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             package: tmt-all
             missing: skip
 
-    Use ``directory`` to install all packages from given folder and
-    ``exclude`` to skip selected packages (globbing characters are supported as
-    well).
-
-    .. code-block:: yaml
-
-        prepare:
-            how: install
-            directory: tmp/RPMS/noarch
-            exclude: tmt+provision-virtual
-
     .. note::
 
         When testing ostree booted deployments tmt will use

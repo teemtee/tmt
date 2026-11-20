@@ -30,7 +30,7 @@ rlJournalStart
             elif [ "$step" = "prepare" ]; then
                 rlRun "grep '^    $step$' -A18 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "execute" ]; then
-                rlRun "grep '^    $step$' -A10 '$rlRun_LOG' | grep -i interactive"
+                rlRun "grep '^    $step$' -A34 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "discover" ]; then
                 rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'Login not possible in discover step'"
             else

@@ -337,7 +337,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             self.warn("The 'connect' provision plugin does not support hardware requirements.")
 
         # And finally create the guest
-        self._guest = GuestConnect(
+        self._guest = self._guest_class(
             logger=self._logger, data=data, name=self.name, parent=self.step
         )
         self._guest.start()

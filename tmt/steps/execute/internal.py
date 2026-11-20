@@ -167,6 +167,8 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
             :tmt:story:`/spec/tests/duration` for tests defined directly
             under the execute step is ``1h``. Use the ``duration``
             attribute to modify the default limit.
+
+            See :ref:`inline-shell-tests` for examples.
             """,
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
@@ -653,7 +655,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Pull artifacts created in the plan data directory
         self.debug("Pull the plan data directory.", level=2)
-        guest.pull(source=self.step.plan.data_directory)
+        self.step.plan.pull_data_directory(self.step, guests=[guest])
+
+        # Fetch also guest-specific data.
+        self.step.plan.pull_guest_data_directory(self.step, guests=[guest])
 
         if abort_execute_exception:
             raise abort_execute_exception

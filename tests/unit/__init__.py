@@ -209,9 +209,14 @@ CONTAINER_CENTOS_STREAM_10 = Container(
 CONTAINER_CENTOS_STREAM_9 = Container(
     url='containers-storage:localhost/tmt/container/test/centos/stream9/upstream:latest'
 )
-# CentOS 7 is not available for aarch64 architecture.
+# CentOS 6 and 7 are not available for aarch64 architecture.
 CONTAINER_CENTOS_7 = (
     Container(url='containers-storage:localhost/tmt/container/test/centos/7/upstream:latest')
+    if platform.machine() != 'aarch64'
+    else None
+)
+CONTAINER_CENTOS_6 = (
+    Container(url='containers-storage:localhost/tmt/container/test/centos/6/upstream:latest')
     if platform.machine() != 'aarch64'
     else None
 )
