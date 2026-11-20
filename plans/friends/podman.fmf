@@ -6,15 +6,13 @@ description:
     is supposed to be run for podman, crun, container-selinux and
     friends pull requests to prevent introducing breaking changes.
 
-discover:
-    how: fmf
-    url: https://github.com/teemtee/tmt
+discover+:
     filter: "tag:podman"
     adjust-tests:
       - check: avc
 
-prepare:
-    name: enable-epel
+prepare+:
+  - name: enable-epel
     how: feature
     epel: enabled
     order: 20
