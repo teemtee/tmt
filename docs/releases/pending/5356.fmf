@@ -1,0 +1,6 @@
+description: |
+  The :ref:`/plugins/prepare/ansible` and :ref:`/plugins/prepare/feature`
+  prepare plugins now recommend ``/usr/bin/python3`` instead of requiring
+  it. tmt still installs it when a package provides it, but no longer
+  fails on guests without such package, e.g. RHEL 6, where playbooks may
+  set ``ansible_python_interpreter`` to a custom interpreter.
