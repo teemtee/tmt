@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
+from tmt import Guest
 from tmt.container import container, simple_field
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
@@ -99,7 +100,16 @@ class CoprBuildArtifactProvider(ArtifactProvider):
 
         :returns: the build metadata, or ``None`` if not found.
         """
+        # TODO: Check that this is not-None early on
         return self._session.build_proxy.get(self.build_id)
+
+    @property
+    def copr_repo(self) -> str:
+        """
+        Associated copr repo
+        """
+        assert self.build_info is not None
+        return f"{self.build_info['ownername']}/{self.build_info['projectname']}"
 
     @cached_property
     def is_pulp(self) -> bool:
@@ -189,6 +199,15 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             )
             return []
         return packages
+
+    def fetch_contents(
+        self,
+        guest: Guest,
+        download_path: tmt.utils.Path,
+    ) -> list[tmt.utils.Path]:
+        # TODO: Find a better place to put this interface
+        guest.package_manager.enable_copr(self.copr_repo)
+        return super().fetch_contents(guest, download_path)
 
     def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> ArtifactInfo:
         version_info = RpmVersion.from_rpm_meta(rpm_meta)
