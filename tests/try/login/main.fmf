@@ -1,0 +1,8 @@
+summary: Login in to the virtual guest
+description:
+    Check that ``tmt try`` can log into a virtual guest.
+test: ./test.sh
+require+: [expect]
+tag+:
+  - provision-only
+  - provision-virtual
