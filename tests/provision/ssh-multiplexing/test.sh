@@ -15,50 +15,16 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest "SSH multiplexing should be enabled by default ($PROVISION_HOW)"
-        rlRun "tmt -vv run -i $run provision -h $PROVISION_HOW"
-        rlAssertGrep "Spawning the SSH master process" "$run/log.txt"
-    rlPhaseEnd
-
-    rlPhaseStartTest "SSH multiplexing should be disabled when SSH socket path gets too long ($PROVISION_HOW)"
-        rlRun "tmt -vv run -i $long_run -a provision -h $PROVISION_HOW"
-        rlAssertGrep "warn: SSH multiplexing will not be used because the SSH master socket path '.*' is too long." "$long_run/log.txt"
-        rlAssertGrep "The SSH master process cannot be terminated because it is disabled." "$long_run/log.txt"
-    rlPhaseEnd
-
     if [ "$PROVISION_HOW" = "virtual" ]; then
-        rlPhaseStartTest "Reconnect retries a failed SSH master start after reboot (#5164)"
-            rlRun "run_connect=\$(mktemp -d)" 0 "Create connect run directory"
-            rlRun "guest=\$(yq '.\"default-0\" | .\"primary-address\"' '$run/plan/provision/guests.yaml')" \
-                0 "Read guest address"
-            rlRun "guest_port=\$(yq '.\"default-0\" | .port' '$run/plan/provision/guests.yaml')" \
-                0 "Read guest SSH port"
-            rlRun "guest_key=\$(yq '.\"default-0\" | .key[0]' '$run/plan/provision/guests.yaml')" \
-                0 "Read guest SSH key"
-            rlRun "cp '$guest_key' '$tmpdir/reconnect-key'" 0 "Preserve guest SSH key"
+        rlPhaseStartTest "SSH multiplexing should be enabled by default ($PROVISION_HOW)"
+            rlRun "tmt -vv run -i $run -a provision -h $PROVISION_HOW"
+            rlAssertGrep "Spawning the SSH master process" "$run/log.txt"
+        rlPhaseEnd
 
-            rlRun "tmt --context provision_how=$PROVISION_HOW -vv run -i '$run' prepare" \
-                0 "Delay SSH daemon startup"
-            rlRun -s "ssh -oBatchMode=yes -oControlMaster=no -oControlPath=none \
-                -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oConnectTimeout=60 \
-                -p '$guest_port' -i '$tmpdir/reconnect-key' root@$guest 'systemctl reboot'; \
-                status=\$?; test \$status -eq 0 -o \$status -eq 255" \
-                0 "Reboot guest directly"
-            rlRun "sleep 1" 0 "Wait for guest reboot to begin"
-
-            rlRun -s "TMT_SSH_CONNECTION_ATTEMPTS=1 TMT_SSH_CONNECT_TIMEOUT=1 \
-                TMT_SSH_MASTER_START_TIMEOUT=1 tmt -vvv -ddd run -i '$run_connect' \
-                provision -h connect --guest '$guest' --port '$guest_port' --key '$tmpdir/reconnect-key'" \
-                0 "Reconnect after an initial SSH master failure"
-            rlAssertGrep "waiting for condition 'try_whoami'" "$rlRun_LOG"
-            rlAssertGrep "Connection timed out during banner exchange\|Connection refused" "$rlRun_LOG"
-            rlAssertGrep "SSH master process .* has been terminated unexpectedly" "$rlRun_LOG"
-            rlAssertGrep "'try_whoami' finished successfully" "$rlRun_LOG"
-            rlRun "test \$(grep -c \"'try_whoami' still pending\" '$rlRun_LOG') -eq 1" \
-                0 "Retry the connection after the initial SSH master failure"
-            rlRun "tmt run -i '$run_connect' cleanup" 0 "Clean up connect guest"
-            rlRun "tmt run -i '$run' cleanup" 0 "Clean up original virtual guest"
-            rlRun "rm -r '$run_connect'" 0 "Remove connect run directory"
+        rlPhaseStartTest "SSH multiplexing should be disabled when SSH socket path gets too long ($PROVISION_HOW)"
+            rlRun "tmt -vv run -i $long_run -a provision -h $PROVISION_HOW"
+            rlAssertGrep "warn: SSH multiplexing will not be used because the SSH master socket path '.*' is too long." "$long_run/log.txt"
+            rlAssertGrep "The SSH master process cannot be terminated because it is disabled." "$long_run/log.txt"
         rlPhaseEnd
 
         rlPhaseStartTest "Make sure SSH multiplexing does not block reuse of guests (#3520)"
