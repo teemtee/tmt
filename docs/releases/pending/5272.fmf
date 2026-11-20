@@ -1,0 +1,5 @@
+description: |
+  A new :ref:`/plugins/report/allure` plugin allows test results to be
+  reported in the format consumed by Allure 3. Allure 3 no longer reads
+  the JUnit XML format, the plugin writes one ``*-result.json`` file per
+  result and per subresult into a results directory instead.

@@ -7,7 +7,7 @@
             {% for result in RESULTS %}
                 {% set test_duration = result.duration | duration_to_seconds | float %}
 
-                <testcase name="{{ result.name | e }}" {% if test_duration %}time="{{ test_duration }}"{% endif %}>
+                <testcase name="{{ result.name | e }}" {% if result.duration is not none %}time="{{ test_duration }}"{% endif %}>
                     {% if result.result.value == 'error' or result.result.value == 'warn' or result.result.value == 'pending' %}
                         <error type="error" message="{{ result.result.value | e }}">{{ result.failure_logs | failures | join("\n") | e }}</error>
                     {% elif result.result.value == 'fail' %}
