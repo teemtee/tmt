@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Union
 from unittest.mock import MagicMock
 
@@ -1132,3 +1133,116 @@ def test_result_web_link_missing_in_serialized() -> None:
 
     restored = Result.from_serialized(serialized)
     assert restored.web_link is None
+
+
+def test_result_times_round_trip_as_spec_strings() -> None:
+    """A result keeps real time values but stores the strings the spec requires."""
+
+    started = datetime(2024, 8, 15, 13, 15, 6, 556611, tzinfo=UTC)
+    finished = started + timedelta(seconds=1, microseconds=200000)
+
+    result = Result(
+        name='/test/one',
+        start_time=started,
+        end_time=finished,
+        duration=finished - started,
+    )
+
+    stored = result.to_serialized()
+
+    assert stored['start-time'] == '2024-08-15T13:15:06.556611+00:00'
+    assert stored['end-time'] == '2024-08-15T13:15:07.756611+00:00'
+    assert stored['duration'] == '00:00:01'
+
+    restored = Result.from_serialized(stored)
+
+    assert restored.start_time == started
+    assert restored.end_time == finished
+    assert restored.duration == timedelta(seconds=1)
+
+
+@pytest.mark.parametrize(
+    ('field', 'key', 'value', 'stored'),
+    [
+        pytest.param(
+            'start_time',
+            'start-time',
+            datetime(2024, 8, 15, 13, 15, 6, tzinfo=UTC),
+            '2024-08-15T13:15:06+00:00',
+            id='whole second',
+        ),
+        pytest.param(
+            'end_time',
+            'end-time',
+            # The same wall clock read five hours behind UTC, so a different instant.
+            datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone(timedelta(hours=-5))),
+            '2024-08-15T13:15:06-05:00',
+            id='five hours behind UTC',
+        ),
+        pytest.param(
+            'start_time',
+            'start-time',
+            # A tenth of a second, so the fraction is real and must survive.
+            datetime(2024, 8, 15, 13, 15, 6, 100000, tzinfo=UTC),
+            '2024-08-15T13:15:06.100000+00:00',
+            id='microseconds',
+        ),
+    ],
+)
+def test_timestamp_keeps_only_the_precision_it_was_given(
+    field: str, key: str, value: datetime, stored: str
+) -> None:
+    """A whole second omits the fraction; a value with microseconds keeps it."""
+
+    result = Result(name='/test/one')
+    setattr(result, field, value)
+
+    assert result.to_serialized()[key] == stored
+
+
+@pytest.mark.parametrize(
+    ('key', 'value'),
+    [
+        # A time of day carries no date, so it cannot be placed on a timeline.
+        pytest.param('start-time', '131506', id='start-time without date'),
+        pytest.param('start-time', '13:15:06', id='start-time without date, with colons'),
+        # A minute field out of range.
+        pytest.param('duration', '00:99:00', id='duration with minute out of range'),
+        # Neither a timestamp nor a duration.
+        pytest.param('start-time', 'not-a-time', id='start-time that is not a time'),
+    ],
+)
+def test_results_time_invalid(key: str, value: str) -> None:
+    """A stored time that breaks the result spec is refused, not guessed."""
+
+    stored = {
+        'name': '/test/one',
+        'result': 'pass',
+        'start-time': '2024-08-15T13:15:06+00:00',
+        'duration': '00:00:01',
+    }
+    stored[key] = value
+
+    with pytest.raises(tmt.utils.SpecificationError):
+        Result.from_serialized(stored)
+
+
+@pytest.mark.parametrize(
+    'raw',
+    [
+        # The shape the specification documents, with and without a `Z` suffix.
+        pytest.param('2024-08-15T13:15:06+00:00', id='offset'),
+        pytest.param('2024-08-15T13:15:06Z', id='zulu'),
+        # No offset, read as UTC.
+        pytest.param('2024-08-15T13:15:06', id='no offset'),
+        # The space separator and the compact form, both ISO 8601.
+        pytest.param('2024-08-15 13:15:06', id='space separator'),
+        pytest.param('20240815T131506', id='compact'),
+    ],
+)
+def test_result_timestamp_accepts_isoformat_variants(raw: str) -> None:
+    """A timestamp is read in any ISO 8601 form the specification allows."""
+
+    restored = Result.from_serialized({'name': '/test/one', 'start-time': raw})
+
+    assert restored.start_time == datetime(2024, 8, 15, 13, 15, 6, tzinfo=UTC)
