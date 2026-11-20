@@ -4,7 +4,7 @@ provision:
 execute:
     script: 'true'
 context:
-    plan-var: foo
+    plan-var: [foo, fee]
 
 # Default layout test - single guest
 /default-layout:

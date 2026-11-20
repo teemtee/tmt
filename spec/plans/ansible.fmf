@@ -23,7 +23,15 @@ description: |
 
     .. versionadded:: 1.82
 
-        The plan's context is exposed under the ``tmt.context`` variable.
+        The plan's context is exposed under the ``tmt.context`` variable. Note
+        that context values are lists
+
+        .. code-block:: yaml
+
+            - name: Do something for centos
+              ansible.builtin.debug: "Hi from centos?"
+              when:
+                - {{ tmt.context["distro"] | map("regex_search", "^centos") is any }}
 
     .. versionadded:: 1.60
 
