@@ -3,12 +3,14 @@ import re
 from collections.abc import Iterator
 from inspect import isclass
 from typing import Optional, Union
+from unittest.mock import MagicMock
 
 import _pytest.logging
 import pytest
 from pytest_container import Container
 from pytest_container.container import ContainerData
 
+import tmt.guest
 import tmt.log
 import tmt.package_managers
 import tmt.package_managers.apk
@@ -29,7 +31,7 @@ from tmt.package_managers import (
     PrepareError,
 )
 from tmt.steps.provision.podman import GuestContainer
-from tmt.utils import ShellScript
+from tmt.utils import Command, ShellScript
 
 from . import MATCH, SEARCH, assert_log
 
@@ -66,6 +68,32 @@ PACKAGE_MANAGER_RPMOSTREE = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTR
     'rpm-ostree'
 )
 PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apk')
+
+
+@pytest.mark.parametrize(
+    'engine_class',
+    [
+        tmt.package_managers.dnf.DnfEngine,
+        tmt.package_managers.dnf.Dnf5Engine,
+        tmt.package_managers.dnf.YumEngine,
+    ],
+)
+def test_dnf_base_command_is_not_mutated(
+    engine_class: type[tmt.package_managers.dnf.DnfEngine],
+    root_logger: tmt.log.Logger,
+) -> None:
+    """Modifying a prepared command cannot corrupt later command instances."""
+
+    guest = MagicMock(spec=tmt.guest.Guest)
+    guest.facts.sudo_prefix = ''
+
+    engine = engine_class(guest=guest, logger=root_logger)
+    command, _ = engine.prepare_command()
+    command += Command('builddep', '-y', 'foo.src.rpm')
+
+    assert 'builddep' not in str(
+        engine_class(guest=guest, logger=root_logger).install(Package('jq'))
+    )
 
 
 def has_legacy_dnf(container: ContainerData) -> bool:

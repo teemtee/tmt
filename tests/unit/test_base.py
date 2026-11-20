@@ -3,16 +3,18 @@ import os
 import pickle
 import shutil
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import jsonschema
 import pytest
 
 import tmt
+import tmt.log
 import tmt.result
 import tmt.utils
 from tmt.base.core import FmfId, expand_node_data
 from tmt.base.links import Link, LinkNeedle, Links
+from tmt.lint import LinterOutcome
 from tmt.utils import Environment, Path, SpecificationError
 
 if TYPE_CHECKING:
@@ -53,6 +55,30 @@ def test_test_defaults(root_logger):
     assert test.enabled is True
     assert test.result == tmt.result.ResultInterpret.RESPECT
     assert test.tag == []
+
+
+def test_lint_schema_unknown_key_without_id(
+    root_logger: tmt.log.Logger, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report unknown keys even when a validation schema has no identifier."""
+
+    test = tmt.Test.from_dict(
+        logger=root_logger,
+        mapping={'test': 'true', 'unknown': 'value'},
+        name='/smoke',
+        skip_validation=True,
+    )
+    schema: dict[str, Any] = {
+        'type': 'object',
+        'properties': {'test': {'type': 'string'}},
+        'additionalProperties': False,
+    }
+
+    monkeypatch.setattr(tmt.utils, 'load_schema', lambda _: schema)
+    assert list(test.lint_validate()) == [
+        (LinterOutcome.WARN, 'key "unknown" not recognized by schema'),
+        (LinterOutcome.WARN, 'fmf node failed schema validation'),
+    ]
 
 
 def test_test_invalid(root_logger):

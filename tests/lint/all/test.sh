@@ -84,6 +84,9 @@ rlJournalStart
         rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/tests/duplicateid\"" "$rlRun_LOG"
         rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/tests/duplicateid\"" "$rlRun_LOG"
         rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/tests/duplicateid\"" "$rlRun_LOG"
+
+        rlRun -s "$lint_cmd --disable-check G001 /duplicates" 0
+        rlAssertNotGrep "G001" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup
