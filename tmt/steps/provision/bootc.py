@@ -52,16 +52,17 @@ EOF
 
 @container
 class BootcGuestData(tmt.steps.provision.testcloud.TestcloudGuestData):
-    # The container image used to build the bootc disk. Stored as guest data
-    # so that it can be removed when the guest is torn down, including after a
-    # wake up in a separate tmt invocation.
+    #: The container image used to build the bootc disk. Stored as guest
+    #: data so that it can be removed when the guest is torn down,
+    #: including after a wake up in a separate tmt invocation.
     containerimage: Optional[str] = field(
         default=None,
         internal=True,
     )
 
-    # Whether the podman connection used to build the disk is rootless. Stored
-    # as guest data so that the correct environment is used during cleanup.
+    #: Whether the podman connection used to build the disk is rootless.
+    #: Stored as guest data so that the correct environment is used
+    #: during cleanup.
     rootless: bool = field(
         default=True,
         internal=True,
