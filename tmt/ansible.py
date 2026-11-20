@@ -311,8 +311,7 @@ class AnsibleInventory:
         inventory_context = (
             inventory["all"].setdefault("vars", {}).setdefault("tmt", {}).setdefault("context", {})
         )
-        for key, value in plan.fmf_context.items():
-            inventory_context[key] = value
+        inventory_context.update(plan.fmf_context)
 
     @classmethod
     def generate(
@@ -322,6 +321,7 @@ class AnsibleInventory:
         Generate Ansible inventory from guests and layout.
 
         :param guests: list of provisioned guests to include in the inventory.
+        :param plan: the plan where ansible will run from
         :param layout_path: optional full path to a custom layout template.
         :returns: complete Ansible inventory dictionary.
         """
