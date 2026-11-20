@@ -3,3 +3,10 @@ duration: 5m
 tag+:
   - provision-only
   - provision-virtual
+
+adjust+:
+  - duration: 10m
+    # TODO(tmt#5360)
+    because: >
+      The 5s timeout is not respected, it still waits for about 5m
+      (even more than the sleep 60)

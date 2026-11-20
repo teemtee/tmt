@@ -65,6 +65,9 @@ adjust+:
 
   - discover+:
         filter: 'tag:provision-virtual & tag:image-mode'
+        adjust-tests:
+          # TODO(tmt#5252): image mode tests are just way slower
+          - duration+: " * 2"
     environment+:
         IMAGE_MODE: "yes"
     when: image_mode == yes
