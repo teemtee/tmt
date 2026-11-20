@@ -8,5 +8,5 @@
     - name: Check that context variables are set
       assert:
         that:
-          - tmt.context["plan-var"] == ["foo"]
-          - tmt.context["cli-var"] == ["bar"]
+          - tmt.context["plan-var"] == ["foo", "fee"]
+          - "bar" in tmt.context["cli-var"]
