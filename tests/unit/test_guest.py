@@ -16,6 +16,7 @@ from tmt.guest import (
     GuestSsh,
     GuestSshData,
     TransferOptions,
+    configure_ssh_options,
 )
 from tmt.log import Logger, VerboseLoggingFunction
 from tmt.steps.provision import Provision
@@ -387,3 +388,14 @@ def test_unsafe_ssh_option_case_and_separator(
 
     with pytest.raises(GeneralError, match='--feeling-safe'):
         _ = guest._ssh_options
+
+
+def test_configure_ssh_options_ignores_tmt_constants(
+    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
+) -> None:
+    """TMT_SSH_* variables which are not ssh options must not be passed to ssh."""
+    monkeypatch.setenv('TMT_SSH_MASTER_START_TIMEOUT', '10')
+    monkeypatch.setenv('TMT_SSH_MASTER_STOP_TIMEOUT', '1')
+    monkeypatch.setenv('TMT_SSH_CONNECTION_ATTEMPTS', '7')
+
+    assert configure_ssh_options() == ['-oConnectionAttempts=7']
