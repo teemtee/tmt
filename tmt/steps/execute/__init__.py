@@ -974,6 +974,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         test = invocation.test
 
+        # Resolving fmf id involves git commands, do it once for all results
+        fmf_id = test.fmf_id
+        web_link = test.web_link()
+
         custom_results = []
         for partial_result_data in results:
             partial_result = tmt.Result.from_serialized(partial_result_data)
@@ -1017,6 +1021,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
             # Enforce the correct guest info
             partial_result.guest = ResultGuestData.from_test_invocation(invocation=invocation)
+
+            # Enforce the test source and data location, all results belong
+            # to the same test
+            partial_result.fmf_id = fmf_id
+            partial_result.web_link = web_link
+            partial_result.data_path = invocation.relative_test_data_path
 
             # For the result representing the test itself, set the important
             # attributes to reflect the reality.
