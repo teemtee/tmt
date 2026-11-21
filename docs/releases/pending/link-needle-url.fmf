@@ -1,0 +1,6 @@
+description: |
+    The ``--link`` option of ``tmt tests ls`` and similar commands, and
+    the ``link`` key of the :ref:`/plugins/discover/fmf` plugin, now
+    accept a bare URL such as ``https://issues.redhat.com/browse/RHEL-1``
+    as a target with the relation omitted. Previously the URL scheme was
+    taken as the relation and no tests were selected.
