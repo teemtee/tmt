@@ -260,6 +260,20 @@ To run only tests defined in the current working directory:
 
     $ tmt run test --name .
 
+Filter tests by link target using the ``--link`` option:
+
+.. code-block:: shell
+
+    $ tmt tests ls --link verifies:issues/423$
+    /tests/prepare/shell
+
+Exclude specific tests from the list using ``--exclude``:
+
+.. code-block:: shell
+
+    $ tmt tests ls unit --exclude junit
+    /tests/unit
+
 Select Steps
 ------------------------------------------------------------------
 
