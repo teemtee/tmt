@@ -1,0 +1,16 @@
+- name: Verify that Ansible reached the requested guest
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Read the guest identity marker
+      ansible.builtin.command: cat /tmp/tmt-ansible-guest
+      register: guest_marker
+      changed_when: false
+
+    - name: Fail when the SSH connection reached another guest
+      ansible.builtin.assert:
+        that:
+          - guest_marker.stdout | trim == inventory_hostname
+        fail_msg: >-
+          Ansible targeted {{ guest_marker.stdout | trim }} instead of
+          {{ inventory_hostname }}.

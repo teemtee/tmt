@@ -40,3 +40,11 @@
 
     execute:
         how: tmt
+
+    adjust:
+      - when: provision_how == virtual
+        prepare+:
+          - how: shell
+            script: source "$TMT_TOPOLOGY_BASH"; printf '%s\n' "${TMT_GUEST[name]}" > /tmp/tmt-ansible-guest
+          - how: ansible
+            playbook: playbook.yml

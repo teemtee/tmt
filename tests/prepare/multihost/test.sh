@@ -13,7 +13,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test with $PROVISION_HOW provisioning"
-        rlRun "tmt -vv run --id $run --all provision --update --how $PROVISION_HOW"
+        rlRun "tmt --context provision_how=$PROVISION_HOW -vv run --id $run --all provision --update --how $PROVISION_HOW"
         rlFileSubmit "$run/log.txt"
     rlPhaseEnd
 
