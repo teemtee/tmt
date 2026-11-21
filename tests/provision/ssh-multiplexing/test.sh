@@ -15,18 +15,18 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
+    rlPhaseStartTest "SSH multiplexing should be enabled by default ($PROVISION_HOW)"
+        rlRun "tmt -vv run -i $run -a provision -h $PROVISION_HOW"
+        rlAssertGrep "Spawning the SSH master process" "$run/log.txt"
+    rlPhaseEnd
+
+    rlPhaseStartTest "SSH multiplexing should be disabled when SSH socket path gets too long ($PROVISION_HOW)"
+        rlRun "tmt -vv run -i $long_run -a provision -h $PROVISION_HOW"
+        rlAssertGrep "warn: SSH multiplexing will not be used because the SSH master socket path '.*' is too long." "$long_run/log.txt"
+        rlAssertGrep "The SSH master process cannot be terminated because it is disabled." "$long_run/log.txt"
+    rlPhaseEnd
+
     if [ "$PROVISION_HOW" = "virtual" ]; then
-        rlPhaseStartTest "SSH multiplexing should be enabled by default ($PROVISION_HOW)"
-            rlRun "tmt -vv run -i $run -a provision -h $PROVISION_HOW"
-            rlAssertGrep "Spawning the SSH master process" "$run/log.txt"
-        rlPhaseEnd
-
-        rlPhaseStartTest "SSH multiplexing should be disabled when SSH socket path gets too long ($PROVISION_HOW)"
-            rlRun "tmt -vv run -i $long_run -a provision -h $PROVISION_HOW"
-            rlAssertGrep "warn: SSH multiplexing will not be used because the SSH master socket path '.*' is too long." "$long_run/log.txt"
-            rlAssertGrep "The SSH master process cannot be terminated because it is disabled." "$long_run/log.txt"
-        rlPhaseEnd
-
         rlPhaseStartTest "Make sure SSH multiplexing does not block reuse of guests (#3520)"
             rlRun "tmt -vv run -i $run --scratch provision -h $PROVISION_HOW"
 
