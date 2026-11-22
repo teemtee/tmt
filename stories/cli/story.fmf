@@ -7,13 +7,11 @@ story: 'As a developer I want to comfortably work with stories'
       - implemented-by: /tmt/cli
       - verified-by: /tests/core/ls
 
-
 /show:
     story: 'Show story details'
     example: tmt story show
     link:
       - implemented-by: /tmt/cli
-
 
 /filter:
     story: 'Search available stories'
@@ -35,7 +33,6 @@ story: 'As a developer I want to comfortably work with stories'
     link:
       - implemented-by: /tmt/cli
 
-
 /create:
     story: 'As a developer I want to easily create new story.'
     description:
@@ -48,7 +45,6 @@ story: 'As a developer I want to comfortably work with stories'
     link:
       - implemented-by: /tmt/cli
 
-
 /coverage:
     summary: 'Show story coverage'
     story:
@@ -57,7 +53,6 @@ story: 'As a developer I want to comfortably work with stories'
         documented and which still need work to be done.
     link:
       - implemented-by: /tmt/cli
-
 
     /overview:
         summary: 'General coverage overview'

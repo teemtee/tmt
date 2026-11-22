@@ -29,13 +29,11 @@
         link:
           - implemented-by: /tmt/steps/provision
 
-
     /local:
         story: 'Use localhost for testing'
         example: tmt run provision --how=local
         link:
           - implemented-by: /tmt/steps/provision/local.py
-
           - verified-by: /tests/init/base
 
     /virtual:
@@ -44,13 +42,11 @@
         link:
           - implemented-by: /tmt/steps/provision/testcloud.py
 
-
     /container:
         story: 'Provision a container'
         example: tmt run provision --how=container --image=fedora:latest
         link:
           - implemented-by: /tmt/steps/provision/podman.py
-
 
     /connect:
         story: 'Connect to a provisioned box'
@@ -59,7 +55,6 @@
             authentication data to connect to a running machine.
         link:
           - implemented-by: /tmt/steps/provision/connect.py
-
         example:
             - tmt run provision --how=connect --guest=name-or-ip --user=login --password=secret
             - tmt run provision --how=connect --guest=name-or-ip --key=private-key-path
@@ -122,7 +117,6 @@
           - tmt run --all execute --how tmt --interactive
         link:
           - implemented-by: /tmt/steps/execute/internal.py
-
 
     /exit-first:
         summary: Stop execution after a test fails

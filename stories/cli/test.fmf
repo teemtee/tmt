@@ -7,13 +7,11 @@ story: 'As a user I want to comfortably work with tests'
       - implemented-by: /tmt/cli
       - verified-by: /tests/core/ls
 
-
 /show:
     story: 'Show test metadata'
     example: tmt test show
     link:
       - implemented-by: /tmt/cli
-
 
 /lint:
     story: 'Check test against the L1 metadata specification'
