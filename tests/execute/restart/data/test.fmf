@@ -12,6 +12,7 @@ restart-max-count: 5
     restart-with-reboot: true
 
 /out-of-band-reboot:
+    restart-on-exit-code: [79, 255]
     restart-with-reboot: false
     environment+:
         OUT_OF_BAND_REBOOT: "yes"

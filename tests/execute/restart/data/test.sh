@@ -21,10 +21,17 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Run a dummy test"
+        # Reboot the guest behind tmt's back and let the reboot kill the
+        # test session. tmt sees exit code 255 only after the guest went
+        # down, therefore the reconnect always has to wait for the guest
+        # to come back. Stopping sshd first makes sure a new SSH master
+        # cannot connect to the guest while it is shutting down.
         if [ "${OUT_OF_BAND_REBOOT:-no}" = "yes" ] && [ "$TMT_TEST_RESTART_COUNT" == "0" ]; then
-            test_pid=$$
-            rlRun "systemd-run --unit=tmt-out-of-band-reboot --collect /bin/sh -c 'while kill -0 $test_pid 2>/dev/null; do sleep 0.1; done; systemctl reboot'"
-            exit 79
+            rlRun "systemctl stop sshd"
+            rlRun "systemctl reboot"
+            sleep 120
+            rlFail "The guest did not reboot"
+            exit 1
         fi
 
         rlRun "sync"

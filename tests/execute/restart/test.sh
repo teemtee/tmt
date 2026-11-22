@@ -18,7 +18,7 @@ rlJournalStart
         elif [ "$OUT_OF_BAND_REBOOT" = "yes" ]; then
             rlRun -s "tmt -vvv -ddd run --scratch -i $run -a provision -h $PROVISION_HOW test -n /out-of-band-reboot"
             rlAssertGrep "SSH master process .* has been terminated unexpectedly" "$rlRun_LOG"
-            rlAssertGrep "waiting for condition 'try_whoami'" "$rlRun_LOG"
+            rlAssertGrep "'try_whoami' still pending" "$rlRun_LOG"
             rlAssertGrep "'try_whoami' finished successfully" "$rlRun_LOG"
             rlRun "inner_test=$run/plan/execute/data/guest/default-0/test/out-of-band-reboot-1/output.txt"
         else
