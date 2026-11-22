@@ -52,4 +52,5 @@ story: 'As a user I want to comfortably work with plans'
         - tmt plan create /plans/features --template=full
     link:
       - implemented-by: /tmt/cli
+      - documented-by: /docs/guide.rst#create
       - verified-by: /tests/plan/create

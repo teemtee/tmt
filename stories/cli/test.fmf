@@ -22,6 +22,7 @@ story: 'As a user I want to comfortably work with tests'
     example: tmt test lint
     link:
       - implemented-by: /tmt/cli
+      - documented-by: /docs/guide.rst#lint
 
 /create:
     story: 'Create a new test skeleton'
@@ -38,6 +39,7 @@ story: 'As a user I want to comfortably work with tests'
         - tmt test create /tests/area/feature --duration=1h
     link:
       - implemented-by: /tmt/cli
+      - documented-by: /docs/guide.rst#create
 
 /import:
     story: 'As a tester I want to import test metadata.'
@@ -45,6 +47,7 @@ story: 'As a user I want to comfortably work with tests'
     link:
       - implemented-by: /tmt/convert.py
       - verified-by: /tests/unit/.*/basic
+      - documented-by: /docs/guide.rst#import-tests
 
 /export:
     story: 'As a tester I want to export test metadata.'
