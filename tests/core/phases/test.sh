@@ -43,6 +43,13 @@ rlJournalStart
 default-1:html:50"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test whether --insert ignores options not given on command line"
+        rlRun -s "$run plan -n /default-plan \
+            discover --insert -h fmf"
+
+        rlAssertNotGrep "warn: Field '.*' is deprecated" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartTest "Test /with-report alone"
         rlRun -s "$run plan -n /with-report"
 

@@ -1,0 +1,7 @@
+description: |
+  The ``--insert`` option no longer copies unused command-line
+  defaults into the new phase, only options really given on the
+  command line or by environment variables are used. Inserted
+  phases now respect defaults of their plugins, and commands like
+  ``discover --insert --how fmf --url ...`` no longer report false
+  deprecation warnings for the ``repository`` and ``revision`` keys.
