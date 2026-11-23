@@ -11,7 +11,6 @@ from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
     Action,
-    Method,
     PluginOutcome,
     PluginTask,
 )
@@ -39,7 +38,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, PluginOutcome]):
     _data_class = FinishStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[Method] = PluginRegistry('step.finish')
+    _supported_methods = PluginRegistry('step.finish')
 
     def go(
         self,

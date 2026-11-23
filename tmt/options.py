@@ -7,7 +7,7 @@ import pathlib
 import re
 import textwrap
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Protocol, Union
 
 import click
 
@@ -16,6 +16,7 @@ import tmt.log
 import tmt.utils
 import tmt.utils.feeling_safe
 from tmt.container import container
+from tmt.plugins import Method
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
 # we need to define FC on our own.
@@ -109,8 +110,6 @@ class Path(click.ParamType):  # type: ignore[type-arg]
             ctx=ctx,
         )
 
-
-MethodDictType = dict[str, click.core.Command]
 
 # Originating in click.decorators, an opaque type describing "decorator" functions
 # produced by click.option() calls: not options, but decorators, functions that attach
@@ -685,56 +684,78 @@ RECIPE_OPTIONS: list[ClickOptionDecoratorType] = [
 ]
 
 
+def add_options_to_command(command: FC, options: Iterable[ClickOptionDecoratorType]) -> FC:
+    """
+    Attach the given options to the given command.
+
+    :param command: command to update.
+    :param options: options to attach. They are applied in the order.
+    :returns: the given command.
+    """
+
+    for option in options:
+        command = option(command)
+
+    return command
+
+
 def create_options_decorator(options: list[ClickOptionDecoratorType]) -> Callable[[FC], FC]:
     def common_decorator(fn: FC) -> FC:
-        for option in reversed(options):
-            fn = option(fn)
-
-        return fn
+        return add_options_to_command(fn, reversed(options))
 
     return common_decorator
 
 
-def create_method_class(methods: MethodDictType) -> type[click.Command]:
+class OnInvokeCallback(Protocol):
     """
-    Create special class to handle different options for each method
-
-    Accepts dictionary with method names and corresponding commands:
-    For example: {'fmf', <click.core.Command object at 0x7f3fe04fded0>}
-    Methods should be already sorted according to their priority.
+    A callback to invoke when the method dispatcher command runs.
     """
 
-    def is_likely_subcommand(arg: str, subcommands: list[str]) -> bool:
-        """
-        Return true if arg is the beginning characters of a subcommand
-        """
+    def __call__(self, context: 'tmt.cli.Context', **kwargs: Any) -> None:
+        pass
 
-        return any(subcommand.startswith(arg) for subcommand in subcommands)
 
-    class MethodCommand(click.Command):
+def create_method_dispatcher_class(
+    method_map: dict[str, click.core.Command],
+    likely_subcommands: Optional[Sequence[str]] = None,
+) -> type[click.Command]:
+    """
+    Create special command to dispatch different commands based on an option.
+
+    Based on the value of the ``--how`` option, a command is selected,
+    and the follow-up command-line interaction happens against the
+    selected command.
+
+    :param method_map: a mapping between a value of the ``--how`` option,
+        and a command it maps to.
+    :returns: command class that can invoke command based on the value
+        of the ``--how`` option.
+    """
+
+    if likely_subcommands:
+
+        def is_likely_subcommand(arg: str) -> bool:
+            if not likely_subcommands:
+                return False
+
+            return any(subcommand.startswith(arg) for subcommand in likely_subcommands)
+
+    else:
+
+        def is_likely_subcommand(arg: str) -> bool:
+            return False
+
+    class HowableCommand(click.Command):
         _method: Optional[click.Command] = None
 
         def _check_method(self, context: 'tmt.cli.Context', args: list[str]) -> None:
-            """
-            Manually parse the --how option
-            """
-
-            # Avoiding circular imports
-            import tmt.steps
-
-            # TODO: this one is weird: `tmt.utils` is already imported on module
-            # level, yet pyright believes `"utils" is not a known member of module
-            # "tmt"`. Maybe there's some circular import, but I've been unable to
-            # find it.
-            import tmt.utils
-
-            how = None
-            subcommands = tmt.steps.STEPS + tmt.steps.ACTIONS + ['tests', 'plans']
+            how: Optional[str] = None
 
             def _find_option_by_arg(arg: str) -> Optional[click.Parameter]:
                 for option in self.params:
                     if arg in option.opts or arg in option.secondary_opts:
                         return option
+
                 return None
 
             def _find_how(args: list[str]) -> Optional[str]:
@@ -799,7 +820,7 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
 
                         continue
 
-                    if is_likely_subcommand(arg, subcommands):
+                    if is_likely_subcommand(arg):
                         # Found a subcommand
                         return None
 
@@ -807,7 +828,7 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
                     # been claimed by an option. It is highly likely this is a misspelled
                     # subcommand name.
                     raise tmt.utils.SpecificationError(
-                        f"Invalid subcommand of 'run' found: '{arg}'."
+                        f"Unable to parse command line, left with unexpected argument '{arg}'."
                     )
 
                 return None
@@ -817,9 +838,9 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
 
             # Find method with the first matching prefix
             if how is not None:
-                for method in methods:
-                    if method.startswith(how):
-                        self._method = methods[method]
+                for method_name, command in method_map.items():
+                    if method_name.startswith(how):
+                        self._method = command
                         break
 
             if how and self._method is None:
@@ -840,18 +861,163 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
             self, context: 'tmt.cli.Context', args: list[str]
         ) -> list[str]:
             self._check_method(context, args)
+
             if self._method is not None:
                 return self._method.parse_args(context, args)
+
             return super().parse_args(context, args)
 
         def get_help(self, context: 'tmt.cli.Context') -> str:  # type: ignore[override]
             if self._method is not None:
                 return self._method.get_help(context)
+
             return super().get_help(context)
 
         def invoke(self, context: 'tmt.cli.Context') -> Any:  # type: ignore[override]
             if self._method:
                 return self._method.invoke(context)
+
             return super().invoke(context)
 
-    return MethodCommand
+    return HowableCommand
+
+
+def _create_base_command(
+    name: str,
+    owner: str,
+    usage: str,
+    methods: Sequence[Method[Any]],
+    options: Sequence[ClickOptionDecoratorType],
+    command_class: Optional[type[click.Command]] = None,
+    on_invoke: Optional[OnInvokeCallback] = None,
+) -> click.Command:
+    """
+    Create a base command for both method and dispatcher commands.
+
+    :param name: name of the command.
+    :param owner: label of the "owner" of the command - a step,
+        individual plugin, etc. Used for nicer help messages.
+    :param usage: the text to print out as command's "help text".
+    :param methods: methods to allow as ``--how`` values.
+    :param options: options to attach to the created command.
+    :param command_class: if set, use this class instead of the default
+        one when constructing the command.
+    :param on_invoke: if set, call this callable when command gets
+        invoked.
+    """
+
+    # First, the actual command code.
+    def command(context: 'tmt.cli.Context', **kwargs: Any) -> None:
+        if on_invoke is not None:
+            on_invoke(context, **kwargs)
+
+    # Then apply the options by invoking them as if they were decorators.
+    command = add_options_to_command(command, options)
+
+    # And then the rest, `@option(...)` for `--how`, context, and
+    # finally `@click.command(...)`.
+    command = option(
+        '-h',
+        '--how',
+        # Cannot use `choices=...` because we want to allow values
+        # that are not on the list *as long as they are clearly
+        # matching values on the list*. For example, `virtual` is
+        # absolutely acceptable as long as some `virtual.*` plugin
+        # is available.
+        metavar='|'.join(sorted(method.name for method in methods)),
+        help=f'Use specified method for {owner}.',
+    )(command)
+
+    # ignore[arg-type]: `pass_context` annotations add `Context`
+    # parameter, but we already have that one, because we use it
+    # in the command code. This is probably much less visible when
+    # `pass_context` is used as a decorator.
+    command = click.pass_context(command)  # type: ignore[arg-type]
+
+    return click.command(cls=command_class, help=usage, name=name)(command)
+
+
+def create_method_dispatcher_command(
+    methods: list[Method[Any]],
+    owner: str,
+    dispatcher_usage: str,
+    base_options: Optional[Sequence[ClickOptionDecoratorType]] = None,
+    likely_subcommands: Optional[Sequence[str]] = None,
+    on_invoke: Optional[OnInvokeCallback] = None,
+) -> click.Command:
+    base_options = base_options or []
+    likely_subcommands = likely_subcommands or ()
+
+    # Build one command for each of the methods.
+    method_map: dict[str, click.Command] = {}
+    method_offerings: list[str] = []
+
+    for method in methods:
+        # Include the plugin in our "available methods" list
+        method_offerings.append(method.describe)
+
+        # Begin with the base command shared by plugins of this set.
+        command = _create_base_command(
+            method.name, owner, method.usage, methods, base_options, on_invoke=on_invoke
+        )
+
+        # Then, add plugin-specific options.
+        command = add_options_to_command(command, method.plugin_class.options())
+
+        method_map[method.name] = command
+
+        for param in command.params:
+            if param.name == 'how':
+                continue
+
+            if not isinstance(param, click.Option):
+                continue
+
+            assert command.name is not None  # narrow type
+            assert param.name is not None  # narrow type
+
+            command_name, method_name, param_name = (
+                command.name.upper(),
+                method.name.upper(),
+                param.name.upper(),
+            )
+
+            envvar = f'TMT_PLUGIN_{command_name}_{method_name}_{param_name}'
+
+            # We do not want to overwrite existing envvar setup of the parameter,
+            # we want to *add* our variable. The `envvar` attribute can be of
+            # different types, carefully modify each variant:
+
+            # Unset...
+            if param.envvar is None:
+                param.envvar = [envvar]
+
+            # ..., a string, i.e. a single pre-set envvar, ...
+            elif isinstance(param.envvar, str):
+                param.envvar = [param.envvar, envvar]
+
+            # ..., a list of strings, i.e. several pre-set envvars, or...
+            elif isinstance(param.envvar, list):
+                param.envvar.append(envvar)
+
+            # ... or an unexpected type we don't know how to handle.
+            else:
+                raise tmt.utils.GeneralError(
+                    f"Envvar property of '{param.name}' option "
+                    f"set to unexpected type '{type(param.envvar)}'."
+                )
+
+    # Now when we have all commands, we can create the dispatcher command.
+    dispatcher_command_class = create_method_dispatcher_class(
+        method_map, likely_subcommands=likely_subcommands
+    )
+
+    return _create_base_command(
+        owner,
+        owner,
+        dispatcher_usage,
+        methods,
+        base_options,
+        command_class=dispatcher_command_class,
+        on_invoke=on_invoke,
+    )

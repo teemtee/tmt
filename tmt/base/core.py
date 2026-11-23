@@ -45,6 +45,7 @@ import tmt.hardware
 import tmt.identifier
 import tmt.lint
 import tmt.log
+import tmt.plugins
 import tmt.result
 import tmt.steps
 import tmt.steps.provision
@@ -3075,7 +3076,13 @@ class Clean(tmt.utils.Common):
         """
         self.info('images', color='blue')
         successful = True
-        for method in tmt.steps.provision.ProvisionPlugin.methods():
+
+        # ignore[assignment]: annotation is needed, but there is something
+        # fishy about what mypy can infer. Hopefully it will resolve later,
+        # the type is correct.
+        method: tmt.plugins.Method[tmt.steps.provision.ProvisionPlugin[Any]]
+
+        for method in tmt.steps.provision.ProvisionPlugin.methods():  # type: ignore[assignment]
             if not method.class_.clean_images(  # type: ignore[attr-defined]
                 self, self.is_dry_run, self.workdir_root
             ):

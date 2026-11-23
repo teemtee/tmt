@@ -106,7 +106,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     how = 'virtual'
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.provision')
+    _supported_methods = PluginRegistry('step.provision')
 
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
     _guest: Optional[tmt.guest.Guest] = None

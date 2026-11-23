@@ -2,10 +2,14 @@
 Handle Plugins
 """
 
+import abc
+import functools
 import importlib
 import os
 import pkgutil
+import re
 import sys
+import textwrap
 from collections.abc import Iterator
 from importlib.metadata import entry_points
 from types import ModuleType
@@ -522,3 +526,150 @@ class ModuleImporter(Generic[ModuleT]):
 
         assert self._module  # narrow type
         return self._module
+
+
+# TODO: way too close to "plugin" concept - starting by making it
+# separated from steps and reusable by other plugins that can be
+# selected by ``--how``. Once cleared, we can get rid of it & maybe
+# merge it into plugin classes as a trait/base class.
+
+
+class Method(abc.ABC, Generic[RegisterableT]):
+    """
+    Offers a selectable "method" of functionality - usually via ``how`` key/option.
+    """
+
+    name: str
+    plugin_class: RegisterableT
+
+    order: int
+
+    doc: str
+    summary: str
+    description: str
+
+    def __init__(
+        self,
+        name: str,
+        plugin_class: RegisterableT,
+        doc: Optional[str] = None,
+        order: int = 50,
+        installation_hint: Optional[str] = None,
+    ) -> None:
+        """
+        :param name: name of the method, the value one can pass to the
+            ``how`` key/option.
+        :param plugin_class: the actual plugin class implementing the
+            method.
+        :param doc: if set, this is the method documentation to display.
+            Otherwise, ``plugin_class`` docstring is used.
+        :param order: the default order of this method in the context
+            of its parent object, like step.
+        :param installation_hint: if set, it would be included in the
+            documentation to help user with the possibly missing
+            requirements.
+        :raises GeneralError: when the documentation is missing: ``doc``
+            is unset and ``plugins_class`` lacks docstring.
+        """
+
+        doc = textwrap.dedent(doc or plugin_class.__doc__ or '').strip()
+
+        if not doc:
+            if plugin_class:
+                raise tmt.utils.GeneralError(
+                    f"Plugin class '{plugin_class}' provides no docstring."
+                )
+
+            raise tmt.utils.GeneralError(f"Plugin method '{name}' provides no docstring.")
+
+        if installation_hint is not None:
+            doc = (
+                doc
+                + '\n\n.. note::\n\n'
+                + textwrap.indent(textwrap.dedent(installation_hint), '   ')
+            )
+
+        self.name = name
+        self.plugin_class = plugin_class
+        self.doc = (
+            tmt.utils.rest.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
+            if tmt.utils.rest.REST_RENDERING_ALLOWED
+            else doc
+        )
+        self.order = order
+
+        # Parse summary and description from provided doc string
+        lines = self.doc.splitlines()
+
+        self.summary = lines[0].strip()
+        self.description = '\n'.join(lines[1:]).strip()
+
+    def __repr__(self) -> str:
+        return f'<{self.name} from {self.plugin_class.__module__}>'
+
+    @functools.cached_property
+    def describe(self) -> str:
+        """
+        Format name and summary for a nice method overview.
+        """
+
+        return f'{self.name} '.ljust(22, '.') + f' {self.summary}'
+
+    @functools.cached_property
+    def usage(self) -> str:
+        """
+        Prepare a detailed usage from summary and description.
+        """
+
+        if self.description:
+            usage: str = self.summary + '\n\n' + self.description
+
+        else:
+            usage = self.summary
+
+        # Disable wrapping for all paragraphs
+        return re.sub('\n\n', '\n\n\b\n', usage)
+
+
+def provides_method(
+    name: str,
+    registration_callback: Callable[[str, RegisterableT, Method[RegisterableT]], None],
+    doc: Optional[str] = None,
+    order: int = 50,
+    installation_hint: Optional[str] = None,
+) -> Callable[[RegisterableT], RegisterableT]:
+    """
+    A plugin class decorator to register plugin's method.
+
+    In the following example, developer marks ``SomePlugin`` as providing
+    two discover methods, ``foo`` and ``bar``, with ``bar`` being sorted
+    to later position among methods:
+
+    .. code-block:: python
+
+       @tmt.steps.provides_method('foo')
+       @tmt.steps.provides_method('bar', order=80)
+       class SomePlugin(tmt.steps.discover.DicoverPlugin):
+         ...
+
+    :param name: name of the method, the value one can pass to the
+        ``how`` key/option.
+    :param doc: if set, this is the method documentation to display.
+        Otherwise, ``plugin_class`` docstring is used.
+    :param order: the default order of this method in the context
+        of its parent object, like step.
+    :param installation_hint: if set, it would be included in the
+        documentation to help user with the possibly missing
+        requirements.
+    """
+
+    def provides_method(cls: RegisterableT) -> RegisterableT:
+        plugin_method = Method(
+            name, cls, doc=doc, order=order, installation_hint=installation_hint
+        )
+
+        registration_callback(name, cls, plugin_method)
+
+        return cls
+
+    return provides_method

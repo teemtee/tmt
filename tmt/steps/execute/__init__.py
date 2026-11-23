@@ -798,7 +798,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     _data_class = ExecuteStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.execute')
+    _supported_methods = PluginRegistry('step.execute')
 
     # No additional options, `execute` does not support modifications of
     # phases.

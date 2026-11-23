@@ -40,7 +40,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, PluginOutcome]):
     _data_class = PrepareStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.prepare')
+    _supported_methods = PluginRegistry('step.prepare')
 
     def go(
         self,

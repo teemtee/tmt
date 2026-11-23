@@ -10,7 +10,6 @@ from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
-    Method,
     PluginOutcome,
     PluginTask,
 )
@@ -35,7 +34,7 @@ class CleanupPlugin(tmt.steps.Plugin[CleanupStepDataT, PluginOutcome]):
     _data_class = CleanupStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[Method] = PluginRegistry('step.cleanup')
+    _supported_methods = PluginRegistry('step.cleanup')
 
     # Internal cleanup plugin is the default implementation
     how = 'tmt'
