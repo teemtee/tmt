@@ -1,6 +1,12 @@
 The :tmt:story:`/spec/plans/discover` step plugins gather tests
 and their metadata for execution.
 
+Use the :ref:`/plugins/discover/fmf` plugin to select tests from fmf
+metadata, or the :ref:`/plugins/discover/shell` plugin to define tests
+directly in a plan.
+
+The default method is :ref:`shell </plugins/discover/shell>`.
+
 .. _/plugins/discover/dist-git-source:
 
 dist-git-source

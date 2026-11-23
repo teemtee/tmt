@@ -1,6 +1,27 @@
 The :tmt:story:`/spec/plans/provision` step describes what environment is
 needed for testing and how it should be provisioned.
 
+Use the :ref:`virtual </plugins/provision/virtual.testcloud>` plugin to
+create a local virtual machine, or the :ref:`/plugins/provision/bootc`
+plugin to create one from a bootc container image. The
+:ref:`/plugins/provision/container` plugin runs tests in a Podman
+container, while :ref:`/plugins/provision/mock` uses a mock buildroot.
+Use :ref:`/plugins/provision/beaker` to reserve a machine from Beaker,
+or :ref:`/plugins/provision/artemis` to request guests from Artemis.
+The :ref:`/plugins/provision/connect` plugin connects to an existing
+host over SSH, and :ref:`/plugins/provision/local` runs tests directly
+on the runner.
+
+The default method is :ref:`virtual </plugins/provision/virtual.testcloud>`.
+
+.. note::
+
+    The ``artemis`` plugin is primarily used by Testing Farm and requires
+    access to an Artemis provisioning service. Setting ``how: artemis``
+    does not submit a test job to Testing Farm or create a local virtual
+    machine. For local runs, use ``virtual`` or ``container``, or leave
+    ``how`` unset. Testing Farm manages its own provisioning configuration.
+
 As part of the provision step it is also possible to specify
 detailed hardware requirements for the testing environment. See
 the :tmt:story:`/spec/hardware` specification section for details.
