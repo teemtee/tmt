@@ -57,8 +57,10 @@ def test_test_defaults(root_logger):
     assert test.tag == []
 
 
-def test_lint_schema_unknown_key_without_id(
-    root_logger: tmt.log.Logger, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize('with_pattern', [False, True], ids=['additional', 'pattern'])
+@pytest.mark.parametrize('with_id', [False, True], ids=['without-id', 'with-id'])
+def test_lint_schema_unknown_key(
+    root_logger: tmt.log.Logger, monkeypatch: pytest.MonkeyPatch, with_pattern: bool, with_id: bool
 ) -> None:
     """Report unknown keys even when a validation schema has no identifier."""
 
@@ -73,10 +75,19 @@ def test_lint_schema_unknown_key_without_id(
         'properties': {'test': {'type': 'string'}},
         'additionalProperties': False,
     }
+    if with_id:
+        schema['$id'] = 'https://example.org/test'
+    if with_pattern:
+        schema['patternProperties'] = {'^extra-': {}}
 
     monkeypatch.setattr(tmt.utils, 'load_schema', lambda _: schema)
+    identifier = ' https://example.org/test' if with_id else ''
+    pattern_suffix = ', and does not match "^extra-" pattern' if with_pattern else ''
     assert list(test.lint_validate()) == [
-        (LinterOutcome.WARN, 'key "unknown" not recognized by schema'),
+        (
+            LinterOutcome.WARN,
+            f'key "unknown" not recognized by schema{identifier}{pattern_suffix}',
+        ),
         (LinterOutcome.WARN, 'fmf node failed schema validation'),
     ]
 
