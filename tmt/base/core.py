@@ -3083,9 +3083,7 @@ class Clean(tmt.utils.Common):
         method: tmt.plugins.Method[tmt.steps.provision.ProvisionPlugin[Any]]
 
         for method in tmt.steps.provision.ProvisionPlugin.methods():  # type: ignore[assignment]
-            if not method.class_.clean_images(  # type: ignore[attr-defined]
-                self, self.is_dry_run, self.workdir_root
-            ):
+            if not method.plugin_class.clean_images(self, self.is_dry_run, self.workdir_root):
                 successful = False
         return successful
 
