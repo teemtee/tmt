@@ -4,7 +4,6 @@ Brew Artifact Provider
 
 from functools import cached_property
 from typing import Optional
-from urllib.parse import urljoin
 
 from tmt.steps.prepare.artifact.providers import provides_artifact_provider
 from tmt.steps.prepare.artifact.providers.koji import (
@@ -36,24 +35,6 @@ class BrewArtifactProvider(KojiArtifactProvider):
     @cached_property
     def build_provider(self) -> Optional['BrewBuild']:
         return self._make_build_provider(BrewBuild, "brew.build")
-
-    def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
-        """Construct Brew RPM URL."""
-        name = rpm_meta["name"]
-        version = rpm_meta["version"]
-        release = rpm_meta["release"]
-        arch = rpm_meta["arch"]
-        assert self.build_info is not None
-        volume = self.build_info["volume_name"]
-        draft_suffix = f",draft_{self.build_id}" if self.build_info["draft"] else ""
-
-        path = (
-            f"vol/{volume}/packages/{name}/{version}/"
-            f"{release}{draft_suffix}/{arch}/"
-            f"{name}-{version}-{release}.{arch}.rpm"
-        )
-
-        return urljoin(self._top_url, path)
 
 
 @provides_artifact_provider("brew.build")
