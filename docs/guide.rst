@@ -248,6 +248,8 @@ This will also allow you to use :ref:`inheritance` to prevent
 unnecessary data duplication.
 
 
+.. _story-metadata:
+
 Stories
 ------------------------------------------------------------------
 
@@ -547,6 +549,73 @@ From time to time you might want to run ``pre-commit autoupdate``
 to refresh config to the latest version.
 
 __ https://pre-commit.com/#install
+
+.. _working-with-stories:
+
+Working with Stories
+------------------------------------------------------------------
+
+The stories introduced in the :ref:`story-metadata` section are
+not just a piece of documentation. Once your project collects a
+couple of them, tmt can help you to navigate the whole set and
+watch how the implementation progresses.
+
+New stories are created just like tests and plans, see
+:ref:`create` for the available templates. Use ``tmt story ls``
+to list the story names and ``tmt story show`` to inspect the
+details:
+
+.. code-block:: shell
+
+    tmt story ls
+    tmt story show
+
+Both commands accept a regular expression to narrow down the
+selection. Use the single dot notation to pick only the stories
+under the current working directory:
+
+.. code-block:: shell
+
+    tmt story ls cli
+    tmt story show .
+
+Every story can track whether it has been implemented, verified
+by tests and documented. This allows you to select stories by the
+state they are in, which is handy when looking for the work which
+still needs to be done:
+
+.. code-block:: shell
+
+    # Stories not covered by tests yet
+    tmt story ls --unverified
+
+    # Stories still waiting for documentation
+    tmt story ls --undocumented
+
+To see the whole picture at once, the ``tmt story coverage``
+command summarizes the implementation, test and documentation
+status across all stories, optionally narrowed down by a regular
+expression:
+
+.. code-block:: shell
+
+    $ tmt story coverage cli/story
+    code test docs story
+    done todo done /stories/cli/story/coverage/code
+    done todo done /stories/cli/story/coverage/docs
+    done todo done /stories/cli/story/coverage/overview
+    done todo done /stories/cli/story/coverage/test
+    done todo done /stories/cli/story/create
+    todo todo todo /stories/cli/story/export/html
+    done todo todo /stories/cli/story/export/rst
+    done todo done /stories/cli/story/filter
+    done done done /stories/cli/story/ls
+    done todo done /stories/cli/story/show
+     90%  10%  80% from 10 stories
+
+See the :tmt:story:`story command reference </stories/cli/story>`
+for the full set of coverage filters and the rest of the available
+options.
 
 .. _inheritance:
 
