@@ -6,7 +6,7 @@ import types
 from abc import abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, TypeVar
+from typing import Any, ClassVar, Optional, TypeVar
 from urllib.parse import urljoin
 
 import tmt.log
@@ -80,6 +80,10 @@ class KojiArtifactProvider(ArtifactProvider):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
+    # TODO: Expose the koji profile to be used better
+    #: Koji profile that defines how to connect to the koji instance
+    profile: ClassVar[str] = "koji"
+
     _session: "ClientSession" = simple_field(init=False)
 
     def __post_init__(self) -> None:
@@ -122,7 +126,7 @@ class KojiArtifactProvider(ArtifactProvider):
         Also :py:attr:`_top_url` and :py:attr:`_api_url` being the base URL for the Koji instance.
         """
         import_koji(self.logger)
-        config = koji.read_config("koji")  # type: ignore[union-attr]
+        config = koji.read_config(self.profile)  # type: ignore[union-attr]
         self._api_url = api_url or config.get("server")
         self._top_url = top_url or config.get("topurl")
 

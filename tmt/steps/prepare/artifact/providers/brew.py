@@ -31,12 +31,7 @@ class BrewArtifactProvider(KojiArtifactProvider):
         artifacts = provider.fetch_contents(guest, Path("/tmp"))
     """
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self._session = self._initialize_session(
-            api_url="https://brewhub.engineering.redhat.com/brewhub",
-            top_url="https://download.eng.bos.redhat.com/brew",
-        )
+    profile = "brew"
 
     @cached_property
     def build_provider(self) -> Optional['BrewBuild']:
