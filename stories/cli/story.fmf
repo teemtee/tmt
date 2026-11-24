@@ -30,6 +30,8 @@ story: 'As a developer I want to comfortably work with stories'
         - tmt story ls --unverified
         - tmt story ls --documented
         - tmt story ls --undocumented
+        - tmt story ls --covered
+        - tmt story ls --uncovered
     link:
       - implemented-by: /tmt/cli
 
