@@ -414,10 +414,11 @@ class BeakerLibFromUrl(BeakerLib):
             raise
 
         # Log what HEAD really is
-        self.parent.verbose(
+        self.parent.info(
             'commit-hash',
             tmt.utils.git.git_hash(directory=clone_dir, logger=self._logger),
             color='green',
+            level=1,
         )
 
         # Copy only the required library
@@ -429,7 +430,7 @@ class BeakerLibFromUrl(BeakerLib):
         self.parent.debug(f"Library {self} is copied into {directory}")
         tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
 
-        self.parent.verbose(
+        self.parent.info(
             'using remote git library',
             cast(dict[str, str], self.identifier.to_minimal_dict()),
             color='green',

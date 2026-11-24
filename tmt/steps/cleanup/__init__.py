@@ -214,7 +214,7 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
         if self.is_dry_run:
             self.debug("Nothing to prune in dry mode.", level=3)
         elif self.plan.my_run.opt('keep'):
-            self.verbose("Skipping workdir prune as requested.", level=2)
+            self.info("Skipping workdir prune as requested.", level=2)
         else:
             self.plan.prune()
 

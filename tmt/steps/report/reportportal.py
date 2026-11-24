@@ -633,7 +633,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 f"Defect type '{defect_type}' "
                 "is not be defined in the project {self.data.project}"
             )
-        self.verbose("defect_type", defect_type, color="cyan", shift=1)
+        self.info("defect_type", defect_type, color="cyan", shift=1, level=1)
         return str(dt_locator)
 
     def rp_api_get(self, session: requests.Session, path: str) -> requests.Response:
@@ -865,11 +865,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             # Print the launch info
             if not create_launch:
                 launch_name = yaml_to_dict(response.text).get("name") or ""
-                self.verbose("launch", launch_name, color="green")
-                self.verbose("id", launch_id, color="yellow", shift=1)
+                self.info("launch", launch_name, color="green", level=1)
+                self.info("id", launch_id, color="yellow", shift=1, level=1)
 
             assert launch_uuid is not None
-            self.verbose("uuid", launch_uuid, color="yellow", shift=1)
+            self.info("uuid", launch_uuid, color="yellow", shift=1, level=1)
             self.data.launch_uuid = launch_uuid
 
             launch_url = f"{self.data.url}/ui/#{self.data.project}/launches/all/{launch_id}"
@@ -895,10 +895,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
             elif suite_name:
                 self.info("suite", suite_name, color="green")
-                self.verbose("id", suite_id, color="yellow", shift=1)
+                self.info("id", suite_id, color="yellow", shift=1, level=1)
 
             if suite_uuid:
-                self.verbose("uuid", suite_uuid, color="yellow", shift=1)
+                self.info("uuid", suite_uuid, color="yellow", shift=1, level=1)
                 self.data.suite_uuid = suite_uuid
 
             # The first test starts with the launch (at the worst case)
@@ -975,7 +975,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                     item_uuid = yaml_to_dict(response.text).get("id")
                     assert item_uuid is not None
-                    self.verbose("uuid", item_uuid, color="yellow", shift=1)
+                    self.info("uuid", item_uuid, color="yellow", shift=1, level=1)
                     self.data.test_uuids.setdefault(serial_number, {})[guest_name] = item_uuid
                 else:
                     item_uuid = self.data.test_uuids[serial_number][guest_name]
@@ -1050,7 +1050,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 },
                             )
 
-                            self.verbose("uuid", child_item_uuid, color="yellow", shift=2)
+                            self.info("uuid", child_item_uuid, color="yellow", shift=2, level=1)
 
                 # Finish the parent test item
                 response = self.rp_api_put(

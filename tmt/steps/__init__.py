@@ -2560,7 +2560,7 @@ class BasePlugin(
         if not self.name.startswith(tmt.utils.DEFAULT_NAME):
             logger.info('name', self.name, color='magenta')
         # Include order in verbose mode
-        logger.verbose('order', self.order, color='magenta', level=3)
+        logger.info('order', self.order, color='magenta', level=3)
 
     def essential_requires(self) -> list['tmt.base.core.Dependency']:
         """

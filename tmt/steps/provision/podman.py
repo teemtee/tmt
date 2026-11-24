@@ -297,14 +297,14 @@ class GuestContainer(tmt.Guest):
         if self.container:
             self.primary_address = self.topology_address = self.container
 
-            self.verbose('primary address', self.primary_address, color='green')
-            self.verbose('topology address', self.topology_address, color='green')
+            self.info('primary address', self.primary_address, color='green', level=1)
+            self.info('topology address', self.topology_address, color='green', level=1)
 
             return
 
         self.container = self.primary_address = self.topology_address = self._tmt_name()
-        self.verbose('primary address', self.primary_address, color='green')
-        self.verbose('topology address', self.topology_address, color='green')
+        self.info('primary address', self.primary_address, color='green', level=1)
+        self.info('topology address', self.topology_address, color='green', level=1)
 
         # Check if the image is available
         assert self.image is not None
@@ -329,7 +329,7 @@ class GuestContainer(tmt.Guest):
                 self._logger,
             )
 
-        self.verbose('name', self.container, color='green')
+        self.info('name', self.container, color='green', level=1)
 
         additional_args = []
 

@@ -503,7 +503,7 @@ class Provision(tmt.steps.Step):
         # Guest list in verbose mode
         for guest in self.ready_guests:
             if not guest.name.startswith(tmt.utils.DEFAULT_NAME):
-                self.verbose(guest.name, color='red', shift=2)
+                self.info(guest.name, color='red', shift=2, level=1)
 
     def go(self, force: bool = False) -> None:
         """

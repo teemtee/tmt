@@ -318,7 +318,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         Custom logger for test output with shift 2 and level 3 defaults
         """
 
-        self.verbose(key=key, value=value, color=color, shift=shift, level=level)
+        self.info(key=key, value=value, color=color, shift=shift, level=level)
 
     def execute(
         self,
@@ -390,7 +390,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             topic: Optional[tmt.log.Topic] = None,
             stacklevel: int = 1,
         ) -> None:
-            logger.verbose(
+            logger.info(
                 key=key,
                 value=value,
                 color=color,
@@ -424,7 +424,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
             if logger.verbosity_level >= 1:
                 with deadline:
-                    logger.verbose(
+                    logger.info(
                         'duration deadline',
                         f'{deadline.time_left.total_seconds():.0f} seconds,'
                         f' at {deadline.due_at.strftime("%H:%M:%S %Y-%m-%d %Z")}',
@@ -560,7 +560,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 progress = f"{index + 1}/{len(test_invocations)}"
                 progress_bar.update(progress, test.name)
-                logger.verbose('test', test.summary or test.name, color='cyan', shift=1, level=2)
+                logger.info('test', test.summary or test.name, color='cyan', shift=1, level=2)
 
                 self.execute(invocation=invocation, logger=logger)
 
@@ -570,7 +570,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 # Handle test restart. May include guest reboot too.
                 if invocation.restart.requested:
                     # Output before the restart
-                    logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
+                    logger.info(f"{duration} {test.name} [{progress}]", shift=shift, level=1)
 
                     try:
                         if invocation.restart.handle_restart(reboot=invocation.reboot):
@@ -588,7 +588,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 # Handle reboot
                 if invocation.reboot.requested:
                     # Output before the reboot
-                    logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
+                    logger.info(f"{duration} {test.name} [{progress}]", shift=shift, level=1)
                     try:
                         if invocation.reboot.handle_reboot(restart=invocation.restart):
                             continue

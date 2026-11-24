@@ -1328,7 +1328,7 @@ class Plan(
         self.info('')
         self.info(self.name, color='red')
         if self.summary:
-            self.verbose('summary', self.summary, color='green')
+            self.info('summary', self.summary, color='green', level=1)
 
     def go(self) -> None:
         """
@@ -1759,7 +1759,7 @@ class Plan(
 
         logger = self._logger.descend(extra_shift=1)
 
-        logger.verbose(
+        logger.info(
             f"Prune '{self.name}' plan workdir '{self.plan_workdir}'.", color="magenta", level=3
         )
 

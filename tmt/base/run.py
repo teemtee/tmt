@@ -767,7 +767,7 @@ class Run(HasRunWorkdir, HasUserAnchorPath, HasEnvironment, tmt.utils.Common):
         # Show summary, store run data
         if not self.plans:
             raise tmt.utils.GeneralError("No plans found.")
-        self.verbose(f"Found {fmf.utils.listed(self.plans, 'plan')}.")
+        self.info(f"Found {fmf.utils.listed(self.plans, 'plan')}.", level=1)
         self.save()
 
         # Iterate over plans

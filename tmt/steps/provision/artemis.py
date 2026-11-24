@@ -662,8 +662,8 @@ class GuestArtemis(tmt.GuestSsh):
         if self.guestname is None or self.primary_address is None:
             self._create()
 
-        self.verbose('primary address', self.primary_address, color='green')
-        self.verbose('topology address', self.topology_address, color='green')
+        self.info('primary address', self.primary_address, color='green', level=1)
+        self.info('topology address', self.topology_address, color='green', level=1)
 
         self.assert_reachable()
 

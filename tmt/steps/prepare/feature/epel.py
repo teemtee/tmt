@@ -101,7 +101,7 @@ class Epel(ToggleableFeature):
             if version == 9:
                 guest.package_manager.install(Package("epel-next-release"))
 
-        logger.verbose('Enable EPEL')
+        logger.info('Enable EPEL', level=1)
         guest.package_manager.enable_repository('epel', 'epel-debuginfo', 'epel-source')
 
         # EPEL Next is only available for CentOS Stream 9
@@ -125,7 +125,7 @@ class Epel(ToggleableFeature):
 
         distro, version = cls._assert_distro_facts(guest)
 
-        logger.verbose('Disable EPEL')
+        logger.info('Disable EPEL', level=1)
         epel_package = Package("epel-release")
         if guest.package_manager.check_presence(epel_package).get(epel_package):
             guest.package_manager.disable_repository('epel', 'epel-debuginfo', 'epel-source')

@@ -318,7 +318,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                 # Note the missing Optional for values - to_minimal_dict() would
                 # not include unset keys, therefore all values should be valid.
                 for key, value in cast(dict[str, str], remote_plan_id.to_minimal_spec()).items():
-                    self.verbose(f'import {key}', value, color='green')
+                    self.info(f'import {key}', value, color='green', level=1)
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """
@@ -409,10 +409,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         # Show current commit hash if inside a git repository
         if self.test_dir.is_dir():
             with contextlib.suppress(tmt.utils.RunError, AttributeError):
-                self.verbose(
+                self.info(
                     'commit-hash',
                     tmt.utils.git.git_hash(directory=self.test_dir, logger=self._logger),
                     color='green',
+                    level=1,
                 )
 
     def prune_tree(
@@ -945,7 +946,7 @@ class Discover(tmt.steps.Step):
         self.info('summary', text, color='green', shift=1)
         # Test list in verbose mode
         for test_origin in self.tests(enabled=True):
-            self.verbose(test_origin.test.name, color='red', shift=2)
+            self.info(test_origin.test.name, color='red', shift=2, level=1)
 
     def go(self, force: bool = False) -> None:
         """

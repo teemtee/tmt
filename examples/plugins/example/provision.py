@@ -212,7 +212,7 @@ class GuestExample(tmt.Guest):
         if self.is_dry_run:
             return
 
-        self.verbose('what', self.what, color='green')
+        self.info('what', self.what, color='green', level=1)
 
         if self._some_your_internal_stuff():
             return

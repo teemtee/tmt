@@ -174,13 +174,13 @@ class MockShell:
 
     def exit_shell(self) -> None:
         if self.mock_shell is not None:
-            self.parent.verbose('mock', 'Exiting shell...', color='blue', level=2)
+            self.parent.info('mock', 'Exiting shell...', color='blue', level=2)
             if self.epoll is not None:
                 self.epoll.close()
                 self.epoll = None
             self.mock_shell.communicate()
             self.mock_shell = None
-            self.parent.verbose('mock', 'Exited shell.', color='blue', level=2)
+            self.parent.info('mock', 'Exited shell.', color='blue', level=2)
 
     def _simple_execute(self, *commands: str) -> None:
         """
@@ -240,7 +240,7 @@ class MockShell:
 
         command.append('--shell')
 
-        self.parent.verbose('mock', 'Entering shell.', color='blue', level=2)
+        self.parent.info('mock', 'Entering shell.', color='blue', level=2)
         self.parent.debug('mock', f'Command line arguments: {command}.', color='blue')
         self.mock_shell = subprocess.Popen(
             command,
@@ -306,7 +306,7 @@ class MockShell:
             f'chmod -R a+rw {MOCK_PIPE}',
         )
 
-        self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
+        self.parent.info('mock', 'Shell is ready.', color='blue', level=3)
 
     def _managed_epoll_io(self, path: Path) -> _ManagedEpollIo:
         assert self.epoll is not None
@@ -348,7 +348,7 @@ class MockShell:
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
         if not silent and friendly_command:
-            (log or logger.verbose)('cmd', friendly_command, color='yellow', level=2)
+            (log or logger.info)('cmd', friendly_command, color='yellow', level=2)
 
         # Fail nicely if the working directory does not exist.
         if cwd:
@@ -411,7 +411,7 @@ class MockShell:
             # use the given logger & emit to verbose log.
             # NOTE Command.run uses debug, not verbose.
             output_logger: tmt.log.VerboseLoggingFunction = (
-                (log or logger.verbose) if not silent else logger.verbose
+                (log or logger.info) if not silent else logger.info
             )
 
             stream_out = _DecodingStream(

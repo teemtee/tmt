@@ -1,0 +1,4 @@
+description: |
+    The ``verbose()`` logging method is now deprecated. Plugin and
+    library authors should use ``info()`` with the ``level`` parameter
+    instead, for example ``self.info('key', 'value', level=1)``.

@@ -75,6 +75,7 @@ import tmt.log
 from tmt._compat.annotationlib import Format, get_annotations
 from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
+from tmt._compat.warnings import deprecated
 from tmt.container import container
 from tmt.log import DebugLevel, LoggableValue, VerbosityLevel
 from tmt.utils.environment import Environment
@@ -768,7 +769,7 @@ class Command:
 
         # First, if we were given a message, emit it.
         if message:
-            logger.verbose(message, level=2, stacklevel=2)
+            logger.info(message, level=2, stacklevel=2)
 
         # For debugging, we want to save somewhere the actual command rather
         # than the provided "friendly". Emit the actual command to the debug
@@ -778,7 +779,7 @@ class Command:
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
         if not silent and friendly_command:
-            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2, stacklevel=2)
+            (log or logger.info)("cmd", friendly_command, color="yellow", level=2, stacklevel=2)
 
         # Nothing more to do in dry mode
         if dry:
@@ -1210,7 +1211,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     Common shared stuff
 
     Takes care of command line context, options and workdir handling.
-    Provides logging functions info(), verbose() and debug().
+    Provides logging functions info() and debug().
     Implements read() and write() for comfortable file access.
     Provides the run() method for easy command execution.
     """
@@ -1708,6 +1709,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
+        level: 'VerbosityLevel' = 0,
         topic: Optional[tmt.log.Topic] = None,
         stacklevel: int = 1,
     ) -> None:
@@ -1720,10 +1722,12 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             value=value,
             color=color,
             shift=shift,
+            level=level,
             topic=topic,
             stacklevel=stacklevel + 1,
         )
 
+    @deprecated("Use Common.info with the 'level' argument")
     def verbose(
         self,
         key: str,
@@ -1741,7 +1745,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         In quiet mode verbose messages are not displayed.
         """
 
-        self._logger.verbose(
+        self._logger.info(
             key,
             value=value,
             color=color,
@@ -1806,11 +1810,11 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
         Reports the executed command in verbose mode.
 
-        This is a tailored verbose() function used for command logging where
+        This is a tailored info() function used for command logging where
         default parameters are adjusted (to preserve the function type).
         """
 
-        self.verbose(
+        self.info(
             key=key,
             value=value,
             color=color,

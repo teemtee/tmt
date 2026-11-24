@@ -364,7 +364,7 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
 
     def callback(node: fmf.Tree, rule: _RawAdjustRule, applied: Optional[bool]) -> None:
         if applied is None:
-            logger.verbose(
+            logger.info(
                 f"Adjust rule skipped on '{node.name}'",
                 tmt.utils.format_value(rule, key_color='cyan'),
                 color='blue',
@@ -373,7 +373,7 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
             )
 
         elif applied is False:
-            logger.verbose(
+            logger.info(
                 f"Adjust rule not applied to '{node.name}'",
                 tmt.utils.format_value(rule, key_color='cyan'),
                 color='red',
@@ -382,7 +382,7 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
             )
 
         else:
-            logger.verbose(
+            logger.info(
                 f"Adjust rule applied to '{node.name}'",
                 tmt.utils.format_value(rule, key_color='cyan'),
                 color='green',
@@ -3111,13 +3111,16 @@ class Clean(tmt.utils.Common):
                 if not self._matches_how(plan):
                     continue
                 if self.is_dry_run:
-                    self.verbose(
+                    self.info(
                         f"Would stop guests in run '{run.run_workdir}' plan '{plan.name}'.",
                         shift=1,
+                        level=1,
                     )
                 else:
-                    self.verbose(
-                        f"Stopping guests in run '{run.run_workdir}' plan '{plan.name}'.", shift=1
+                    self.info(
+                        f"Stopping guests in run '{run.run_workdir}' plan '{plan.name}'.",
+                        shift=1,
+                        level=1,
                     )
                     # Set --quiet to avoid finish logging to terminal
 
@@ -3141,7 +3144,7 @@ class Clean(tmt.utils.Common):
         Clean guests of runs
         """
         self.info('guests', color='blue')
-        self.verbose('workdir root', self.workdir_root)
+        self.info('workdir root', self.workdir_root, level=1)
         if self.opt('last'):
             # TODO: avoid circular import - hopefully this would disappear
             # once we split `Clean` into plugins
@@ -3189,9 +3192,9 @@ class Clean(tmt.utils.Common):
         size = _dir_size(path)
         formatted_size = tmt.hardware.format_compact(size)
         if self.is_dry_run:
-            self.verbose(f"Would remove workdir '{path}' ({formatted_size}).", shift=1)
+            self.info(f"Would remove workdir '{path}' ({formatted_size}).", shift=1, level=1)
         else:
-            self.verbose(f"Removing workdir '{path}' ({formatted_size}).", shift=1)
+            self.info(f"Removing workdir '{path}' ({formatted_size}).", shift=1, level=1)
             try:
                 shutil.rmtree(path)
             except OSError as error:
@@ -3204,7 +3207,7 @@ class Clean(tmt.utils.Common):
         Clean workdirs of runs
         """
         self.info('runs', color='blue')
-        self.verbose('workdir root', self.workdir_root)
+        self.info('workdir root', self.workdir_root, level=1)
         if self.opt('last'):
             # TODO: avoid circular import - hopefully this would disappear
             # once we split `Clean` into plugins

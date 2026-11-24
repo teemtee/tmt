@@ -40,7 +40,6 @@ def _exercise_logger(
 
     logger.print('this is printed')
     logger.debug('this is a debug message')
-    logger.verbose('this is a verbose message')
     logger.info('this is just an info')
     logger.warning('this is a warning')
     logger.fail('this is a failure')
@@ -66,13 +65,6 @@ def _exercise_logger(
         details_key='this is a debug message',
         details_logger_labels=labels,
         levelno=logging.DEBUG,
-    )
-    assert_log(
-        caplog,
-        message=f'{prefix}this is a verbose message',
-        details_key='this is a verbose message',
-        details_logger_labels=labels,
-        levelno=logging.INFO,
     )
     assert_log(
         caplog,

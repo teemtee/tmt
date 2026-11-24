@@ -24,7 +24,7 @@ logger, which may have its own specific settings, and, in the future, possibly a
 special output channels.
 
 While tmt recognizes several levels of verbosity (``-v``) and debugging (``-d``), all messages
-emitted by :py:meth:`Logger.verbose` and :py:meth:`Logger.debug` use a single logging level,
+emitted by :py:meth:`Logger.info` and :py:meth:`Logger.debug` use a single logging level,
 ``INFO`` or ``DEBUG``, respectively. The level of verbosity and debugging is then handled by a
 special :py:class:`logging.Filter`` classes. This allows different levels when logging to console
 but all-capturing log files while keeping implementation simple - the other option would be
@@ -1148,23 +1148,7 @@ class Logger:
         *,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
-        topic: Optional[Topic] = None,
-        stacklevel: int = 1,
-    ) -> None:
-        self._log(
-            logging.INFO,
-            LogRecordDetails(key=key, value=value, color=color, shift=shift, message_topic=topic),
-            stacklevel=stacklevel,
-        )
-
-    def verbose(
-        self,
-        key: str,
-        value: Optional[LoggableValue] = None,
-        *,
-        color: 'tmt.utils.themes.Style' = None,
-        shift: int = 0,
-        level: VerbosityLevel = 1,
+        level: VerbosityLevel = 0,
         topic: Optional[Topic] = None,
         stacklevel: int = 1,
     ) -> None:
@@ -1179,6 +1163,28 @@ class Logger:
                 message_topic=topic,
             ),
             stacklevel=stacklevel,
+        )
+
+    @deprecated("Use Logger.info with the 'level' argument")
+    def verbose(
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        *,
+        color: 'tmt.utils.themes.Style' = None,
+        shift: int = 0,
+        level: VerbosityLevel = 1,
+        topic: Optional[Topic] = None,
+        stacklevel: int = 1,
+    ) -> None:
+        self.info(
+            key,
+            value=value,
+            color=color,
+            shift=shift,
+            level=level,
+            topic=topic,
+            stacklevel=stacklevel + 1,
         )
 
     def debug(
