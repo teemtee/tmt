@@ -607,7 +607,7 @@ TMT_SSH_MASTER_STOP_TIMEOUT
     How many seconds will tmt wait for a ``ssh`` master process to
     terminate after being signaled.
 
-    .. versionadded:: 1.81
+    .. versionadded:: 1.82
 
 TMT_SSH_*
     Every environment variable in this format would be treated as an SSH
