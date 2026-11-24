@@ -2322,7 +2322,10 @@ class Guest(
         """
         Get host variables for Ansible inventory.
         """
-        return self.ansible.vars if self.ansible else {}
+        return {
+            **(self.ansible.vars if self.ansible else {}),
+            'tmt_env': self._prepare_ansible_command_environment().to_environ(),
+        }
 
     @functools.cached_property
     def ansible_host_groups(self) -> list[str]:
