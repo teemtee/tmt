@@ -478,7 +478,6 @@ class GuestContainer(tmt.Guest):
             return self._run_guest_command(
                 podman_command,
                 cwd=self.parent.plan.worktree,
-                environment=self._prepare_ansible_command_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
