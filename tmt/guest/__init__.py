@@ -2322,10 +2322,7 @@ class Guest(
         """
         Get host variables for Ansible inventory.
         """
-        return {
-            'ansible_host': self.primary_address,
-            **(self.ansible.vars if self.ansible else {}),
-        }
+        return self.ansible.vars if self.ansible else {}
 
     @functools.cached_property
     def ansible_host_groups(self) -> list[str]:
@@ -3961,6 +3958,7 @@ class GuestSsh(Guest, CommandCollector):
         """
         return {
             **super().ansible_host_vars,
+            'ansible_host': self.primary_address,
             'ansible_connection': 'ssh',
             'ansible_user': self.user,
             'ansible_port': self.port,
