@@ -1172,14 +1172,6 @@ def test_result_times_round_trip_as_spec_strings() -> None:
             id='whole second',
         ),
         pytest.param(
-            'end_time',
-            'end-time',
-            # The same wall clock read five hours behind UTC, so a different instant.
-            datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone(timedelta(hours=-5))),
-            '2024-08-15T13:15:06-05:00',
-            id='five hours behind UTC',
-        ),
-        pytest.param(
             'start_time',
             'start-time',
             # A tenth of a second, so the fraction is real and must survive.
@@ -1198,6 +1190,15 @@ def test_timestamp_keeps_only_the_precision_it_was_given(
     setattr(result, field, value)
 
     assert result.to_serialized()[key] == stored
+
+
+def test_timestamp_serialization_preserves_negative_utc_offset() -> None:
+    """Serialize the original wall time and offset without normalizing to UTC."""
+
+    finished = datetime(2024, 8, 15, 13, 15, 6, tzinfo=timezone(timedelta(hours=-5)))
+    result = Result(name='/test/one', end_time=finished)
+
+    assert result.to_serialized()['end-time'] == '2024-08-15T13:15:06-05:00'
 
 
 @pytest.mark.parametrize(
