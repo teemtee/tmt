@@ -36,8 +36,8 @@ rlJournalStart
                 # Expected failure because we are explicitly installing a broken package
                 if is_centos_6 "$image" || is_centos_7 "$image"; then
                     xfail=(
-                        'stderr:\s+Error:.*Package:.*\(tmt-artifact-shared\)'
-                        'stderr:\s+Requires: some-non-existent-package'
+                        '(stdout|stderr):\s+Error:.*Package:.*\(tmt-artifact-shared\)'
+                        '(stdout|stderr):\s+Requires: some-non-existent-package'
                         'fail: Command .* install -y .* returned 1.'
                     )
                 else
@@ -72,7 +72,7 @@ rlJournalStart
                             # in the `/broken` test. `/available-artifacts/obsoletes/pre-installed/downgrade/with-devel`
                             # is excluded later on
                             xfail=(
-                                'stderr:\s+Requires: some-non-existent-package'
+                                '(stdout|stderr):\s+Requires: some-non-existent-package'
                                 'fail: Command .* install -y .* returned 1.'
                             )
                         else
@@ -115,11 +115,13 @@ rlJournalStart
                     # Same as the yum cannot downgrade issue above, but here yum install does not actually fail
                     "^/broken/verified-artifacts/pre-installed/downgrade/only-foo$"
                 )
-                # el6 yum promotes local foo-1.4 install to foo-ng via Obsoletes (el7 skips
-                # that for YumLocalPackage), so the expected pre-installed foo-1.4 is never present.
                 complicated_centos6=(
+                    # el6 yum promotes local foo-1.4 install to foo-ng via Obsoletes (el7 skips
+                    # that for YumLocalPackage), so the expected pre-installed foo-1.4 is never present.
                     "^/no-artifacts/obsoletes/pre-installed/only-foo$"
                     "^/broken/no-artifacts/obsoletes/pre-installed/only-foo$"
+                    # Fails at the setup step, before even doing the install
+                    "^/broken/no-artifacts/obsoletes/pre-installed/with-devel$"
                 )
                 # Skip too complicated situations altogether
                 unset complicated
