@@ -206,9 +206,6 @@ def tests_export(
         )
 
 
-# tests.add_command(tmt.export.ExportPlugin.export_command(tmt.base.plan.Plan))
-
-
 _plan_export_formats = list(tmt.Plan.get_export_plugin_registry().iter_plugin_ids())
 _plan_export_default = 'yaml'
 
