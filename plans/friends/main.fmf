@@ -16,7 +16,7 @@ adjust:
         how: artifact
         provide: copr.repository:@teemtee/latest
         # Higher priority value than the default 50 from the testing-farm artifacts
-        default_repository_priority: 75
+        default-repository-priority: 75
       - name: enable-epel
         how: feature
         epel: enabled
