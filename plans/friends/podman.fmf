@@ -11,12 +11,6 @@ discover+:
     adjust-tests:
       - check: avc
 
-prepare+:
-  - name: enable-epel
-    how: feature
-    epel: enabled
-    order: 20
-
 link:
   - relates: https://github.com/containers/container-selinux
   - relates: https://github.com/containers/podman
