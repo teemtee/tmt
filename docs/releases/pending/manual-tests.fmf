@@ -1,0 +1,14 @@
+description: |
+    Manual tests are no longer filtered out by the
+    :ref:`/plugins/discover/fmf` and :ref:`/plugins/discover/shell`
+    plugins. They are now discovered as any other test, and the
+    :ref:`/plugins/execute/tmt` executor reports them with the
+    ``skip`` result instead of them being silently dropped during
+    discovery. Deciding which tests can be executed is left to the
+    execute step, which paves the way for executors able to guide a
+    human through a manual test.
+
+    Note that a plan containing manual tests only now finishes with
+    the "all tests skipped" exit code ``4`` instead of "no test
+    results found" ``3``. Use ``--condition 'manual is False'`` to
+    restore the previous test selection.

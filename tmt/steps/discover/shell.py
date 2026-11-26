@@ -422,9 +422,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             tests.child(data.name, test_fmf_keys)
 
         # Use a tmt.Tree to apply possible command line filters
-        self._tests = tmt.Tree(logger=self._logger, tree=tests).tests(
-            conditions=["manual is False"], sort=False
-        )
+        self._tests = tmt.Tree(logger=self._logger, tree=tests).tests(sort=False)
 
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None

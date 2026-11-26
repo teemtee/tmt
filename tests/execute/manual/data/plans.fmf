@@ -1,0 +1,35 @@
+provision:
+    how: local
+execute:
+    how: tmt
+
+/mixed:
+    summary: Manual and automated tests selected together
+    discover:
+        how: fmf
+
+/manual-only:
+    summary: Only a manual test is selected
+    discover:
+        how: fmf
+        test:
+          - /tests/manual
+
+/shell:
+    summary: Manual test defined by the shell discover plugin
+    discover:
+        how: shell
+        tests:
+          - name: /manual
+            summary: Manual test which tmt must not execute
+            manual: true
+            test: test.md
+
+/required:
+    summary: Manual test requested as a required test
+    discover:
+        how: fmf
+        test:
+          - /tests/manual
+        require-test:
+          - /tests/manual

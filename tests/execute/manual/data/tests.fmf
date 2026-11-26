@@ -1,0 +1,8 @@
+/manual:
+    summary: Manual test which tmt must not execute
+    manual: true
+    test: test.md
+
+/automated:
+    summary: Regular test running next to the manual one
+    test: echo "automated test is running"
