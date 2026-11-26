@@ -11,4 +11,5 @@ class InternalCheck(Check):
 
     @classmethod
     def create_internal(cls, logger: tmt.log.Logger) -> Check:
-        return cls.from_spec(_RawCheck(how=cls.how, enabled=True, result='respect'), logger)
+        # TODO(tmt#5394): Genuine error that mypy is detecting here
+        return cls.from_spec(_RawCheck(how=cls.how, enabled=True, result='respect'), logger)  # type: ignore[misc]

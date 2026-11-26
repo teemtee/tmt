@@ -801,8 +801,8 @@ class GuestTestcloud(tmt.GuestSsh):
     # FIXME: ignore[name-defined]: https://github.com/teemtee/tmt/issues/1616
     _image: Optional['testcloud.image.Image'] = None  # type: ignore[name-defined]
     _instance: Optional['testcloud.instance.Instance'] = None  # type: ignore[name-defined]
-    _domain: Optional[  # type: ignore[name-defined]
-        'testcloud.domain_configuration.DomainConfiguration'
+    _domain: Optional[
+        'testcloud.domain_configuration.DomainConfiguration'  # type: ignore[name-defined]
     ] = None
 
     #: The lock protects calls into the testcloud library. We suspect it might

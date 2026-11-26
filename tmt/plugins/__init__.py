@@ -210,14 +210,14 @@ def explore(logger: Logger, again: bool = False) -> None:
     ALREADY_EXPLORED = True
 
 
-# ignore[type-var,misc]: the actual type is provided by caller - the
+# ignore[type-var]: the actual type is provided by caller - the
 # return value would be assigned a name, with a narrower module type.
 # This type would be propagated into this type var.
 def _import(
     *,
     module: str,
     logger: Logger,
-) -> ModuleT:  # type: ignore[type-var,misc]
+) -> ModuleT:  # type: ignore[type-var]
     """
     Import a module.
 
@@ -246,7 +246,7 @@ def _import(
     return imported
 
 
-# ignore[type-var,misc]: the actual type is provided by caller - the
+# ignore[type-var]: the actual type is provided by caller - the
 # return value would be assigned a name, with a narrower module type.
 # This type would be propagated into this type var.
 def _import_or_raise(
@@ -256,7 +256,7 @@ def _import_or_raise(
     exc_message: Optional[str] = None,
     hint_id: Optional[str] = None,
     logger: Logger,
-) -> ModuleT:  # type: ignore[type-var,misc]
+) -> ModuleT:  # type: ignore[type-var]
     """
     Import a module, or raise an exception.
 
@@ -282,7 +282,7 @@ def _import_or_raise(
         raise exc_class(f"Failed to import the '{module}' module.") from exc
 
 
-# ignore[type-var,misc]: the actual type is provided by caller - the
+# ignore[type-var]: the actual type is provided by caller - the
 # return value would be assigned a name, with a narrower module type.
 # This type would be propagated into this type var.
 def import_module(
@@ -290,7 +290,7 @@ def import_module(
     module: str,
     path: Optional[Path] = None,
     logger: Logger,
-) -> ModuleT:  # type: ignore[type-var,misc]
+) -> ModuleT:  # type: ignore[type-var]
     """
     Import a module.
 
