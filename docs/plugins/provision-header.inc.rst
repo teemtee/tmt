@@ -14,14 +14,6 @@ on the runner.
 
 The default method is :ref:`virtual </plugins/provision/virtual.testcloud>`.
 
-.. note::
-
-    The ``artemis`` plugin is primarily used by Testing Farm and requires
-    access to an Artemis provisioning service. Setting ``how: artemis``
-    does not submit a test job to Testing Farm or create a local virtual
-    machine. For local runs, use ``virtual`` or ``container``, or leave
-    ``how`` unset. Testing Farm manages its own provisioning configuration.
-
 As part of the provision step it is also possible to specify
 detailed hardware requirements for the testing environment. See
 the :tmt:story:`/spec/hardware` specification section for details.
