@@ -475,6 +475,9 @@ convention = "pep257"
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 
+[tool.ruff.lint.flake8-import-conventions]
+aliases = {}  # We don't care about the default aliases
+
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "typing.TypeIs".msg = "Not present in centos-stream-10"
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
