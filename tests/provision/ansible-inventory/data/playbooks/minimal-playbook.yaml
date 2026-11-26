@@ -12,4 +12,4 @@
       assert:
         that:
           - tmt.context["plan-var"] == ["foo", "fee"]
-          - "bar" in tmt.context["cli-var"]
+          - '"bar" in tmt.context["cli-var"]'
