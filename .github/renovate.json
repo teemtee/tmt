@@ -41,16 +41,11 @@
       "description": "Group Pre-commit dependencies together",
       "groupName": "Pre-commit Dependencies",
       "matchManagers": ["pre-commit"]
-    },
-    {
-      "description": "Python dependencies with lockfile",
-      "groupName": "Locked dependencies",
-      "matchManagers": ["pep621"]
     }
   ],
   "lockFileMaintenance": {
     "enabled": true,
-    "groupName": "Locked dependencies"
+    "schedule": ["at any time"]
   },
   "vulnerabilityAlerts": {
     "groupName": "Security updates"
