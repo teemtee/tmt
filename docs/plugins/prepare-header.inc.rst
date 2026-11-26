@@ -3,7 +3,7 @@ environment should be prepared so that the tests can be
 successfully executed.
 
 The :ref:`/plugins/prepare/install` plugin installs packages from enabled
-repositories, local RPM files or remote RPM URLs. Use the
+repositories, copr repositories, local RPM files or remote RPM URLs. Use the
 :ref:`/plugins/prepare/ansible` plugin for applying custom
 playbooks or execute :ref:`/plugins/prepare/shell` scripts
 to perform arbitrary preparation tasks.
