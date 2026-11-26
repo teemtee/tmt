@@ -50,6 +50,15 @@ rlJournalStart
         rlAssertGrep "package manager: $package_manager" $rlRun_LOG
         rlAssertGrep "selinux: $selinux" $rlRun_LOG
         rlAssertGrep "is superuser: $is_superuser" $rlRun_LOG
+
+        # Make sure the runner also gets the general CLI options, e.g. `--dry`
+        rlRun -s "tmt run -i $run --scratch --dry -ddd report plan -n /plans/features/core" 0
+
+        # There should not be any guests in this run, so this should show the runner facts only.
+        # Dry run should skip runner fact probes.
+        rlAssertGrep "arch: unknown" $rlRun_LOG
+        rlAssertGrep "distro: unknown" $rlRun_LOG
+        rlAssertGrep "kernel: unknown" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
