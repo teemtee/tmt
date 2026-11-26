@@ -1,5 +1,5 @@
-The :tmt:story:`/spec/plans/provision` step describes what environment is
-needed for testing and how it should be provisioned.
+The :tmt:story:`/spec/plans/provision` step plugins describe what
+environment is needed for testing and how it should be provisioned.
 
 Use the :ref:`virtual </plugins/provision/virtual.testcloud>` plugin to
 create a local virtual machine, or the :ref:`/plugins/provision/bootc`

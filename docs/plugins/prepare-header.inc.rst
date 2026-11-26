@@ -1,5 +1,5 @@
-The :tmt:story:`/spec/plans/prepare` step is used to define how the guest
-environment should be prepared so that the tests can be
+The :tmt:story:`/spec/plans/prepare` step plugins are used to define how
+the guest environment should be prepared so that the tests can be
 successfully executed.
 
 The :ref:`/plugins/prepare/install` plugin installs packages from enabled
@@ -11,7 +11,7 @@ to perform arbitrary preparation tasks.
 The :ref:`/plugins/prepare/artifact` plugin makes specific build artifacts
 available on the guest for installation. Use the
 :ref:`/plugins/prepare/feature` plugin to enable or disable common
-features such as EPEL repositories or FIPS mode. The
+features such as EPEL or CRB repositories. The
 :ref:`/plugins/prepare/verify-installation` plugin checks that installed
 packages came from the expected repositories.
 
