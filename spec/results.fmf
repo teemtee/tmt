@@ -229,8 +229,13 @@ description: |
 
     The ``serial-number``, ``guest``, ``fmf-id``, ``web-link`` and
     ``data-path`` keys, if present in the custom results file, will be
-    overwritten by tmt during their import after test completes. This happens on purpose, to assure this vital
-    information is correct.
+    overwritten by tmt during their import after test completes. This
+    happens on purpose, to assure this vital information is correct.
+
+    The ``ids`` key of each custom result will be extended with the IDs
+    of the original test, its :tmt:story:`/spec/core/id` and the
+    ``extra-nitrate`` and ``extra-task`` keys. IDs provided by the custom
+    results file take precedence.
 
     Similarly, the ``duration``, ``start-time`` and ``end-time`` keys, if
     present in the special custom result, representing the original test

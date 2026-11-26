@@ -2,6 +2,7 @@ result: custom
 
 /custom-results:
     summary: Test provides custom results.yaml
+    id: e2bafa18-6924-40a8-b185-ab43c9ac309a
     test: cp results.yaml ${TMT_TEST_DATA}; touch ${TMT_TEST_DATA}/{pass,pass_subresult,fail,another,slash}_log
 /custom-json-results:
     summary: Test provides custom results.json

@@ -974,9 +974,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         test = invocation.test
 
-        # Resolving fmf id involves git commands, do it once for all results
-        fmf_id = test.fmf_id
-        web_link = test.web_link()
+        # Fields owned by the test, shared by all its results. Resolving
+        # them involves git commands, do it once for all results.
+        test_fields = tmt.Result.test_invocation_fields(invocation)
 
         custom_results = []
         for partial_result_data in results:
@@ -1017,16 +1017,14 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # data directories, they are all confined into its parent test's
             # directory. And the serial number correspondence in results.yaml
             # can be useful, for grouping results that belong to the same tests.
-            partial_result.serial_number = test.serial_number
+            #
+            # Enforce the serial number, guest info, test source and data
+            # location, all results belong to the same test.
+            for field_name, value in test_fields.items():
+                setattr(partial_result, field_name, value)
 
-            # Enforce the correct guest info
-            partial_result.guest = ResultGuestData.from_test_invocation(invocation=invocation)
-
-            # Enforce the test source and data location, all results belong
-            # to the same test
-            partial_result.fmf_id = fmf_id
-            partial_result.web_link = web_link
-            partial_result.data_path = invocation.relative_test_data_path
+            # Test IDs apply to all results, custom results may add their own
+            partial_result.ids = {**test.ids, **partial_result.ids}
 
             # For the result representing the test itself, set the important
             # attributes to reflect the reality.
