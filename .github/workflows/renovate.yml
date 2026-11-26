@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - containers/Containerfile.renovate
       - .github/workflows/renovate.yml
-      - .github/workflows/build-and-publish-renovate.yml
+      - .github/renovate.json
+      - .github/renovate-config.json
+      - .github/renovate-entrypoint.sh
   schedule:
     # Weekly on Friday
     - cron: 0 0 * * 5
@@ -33,8 +34,8 @@ jobs:
       - uses: renovatebot/github-action@266fef21329c44765ad42f9dea1f01f5d2d91084 # v46.3.13
         with:
           configurationFile: .github/renovate-config.json
+          docker-cmd-file: .github/renovate-entrypoint.sh
+          docker-user: root
           token: '${{ steps.token.outputs.token }}'
-          renovate-image: ghcr.io/teemtee/renovate-tmt
-          renovate-version: latest
         env:
           LOG_LEVEL: ${{ runner.debug == '1' && 'debug' || 'info' }}
