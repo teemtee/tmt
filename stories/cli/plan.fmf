@@ -6,14 +6,12 @@ story: 'As a user I want to comfortably work with plans'
     link:
       - implemented-by: /tmt/cli
       - verified-by: /tests/core/ls
-      - documented-by: /docs/examples.rst#explore-plans
 
 /show:
     story: 'Show plan configuration'
     example: tmt plan show
     link:
       - implemented-by: /tmt/cli
-      - documented-by: /docs/examples.rst#explore-plans
       - verified-by: /tests/plan/select
 
 /filter:
@@ -30,7 +28,6 @@ story: 'As a user I want to comfortably work with plans'
         - tmt plan show --filter artifact:build
     link:
       - implemented-by: /tmt/base/core.py
-      - documented-by: /docs/examples.rst#explore-plans
       - verified-by: /tests/plan/select
 
 /lint:
@@ -55,5 +52,5 @@ story: 'As a user I want to comfortably work with plans'
         - tmt plan create /plans/features --template=full
     link:
       - implemented-by: /tmt/cli
-      - documented-by: /docs/examples.rst#create-plans
+      - documented-by: /docs/guide.rst#create
       - verified-by: /tests/plan/create
