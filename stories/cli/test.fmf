@@ -131,6 +131,68 @@ story: 'As a user I want to comfortably work with tests'
           - implemented-by: /tmt/export/polarion.py
           - verified-by: /plans/remote/polarion
 
+    /jira:
+        story: 'I want to export test metadata into Jira.'
+        example:
+            - tmt test export --how jira --create --link-jira --jira-url https://issues.redhat.com --jira-user me@example.com --jira-token <token> --project-id RHELTEST
+        description: |
+            Export resolved local test metadata to a Jira project as
+            ``Test Case`` work items. Authentication uses a Jira API
+            token with HTTP Basic Auth. Provide credentials and target
+            project via the ``--jira-url``, ``--jira-user``,
+            ``--jira-token``, and ``--project-id`` options.
+
+            The following ``fmf`` attributes are exported to the
+            corresponding Jira ``Test Case`` fields:
+
+            +-------------------------------------------+-------------------------------------------------+
+            | fmf attribute                             | Jira field                                      |
+            +===========================================+=================================================+
+            | ``summary``                               | summary                                         |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``description``                           | description                                     |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``id``                                    | ``ID`` custom field used for future lookup      |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``component``                             | components                                      |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``tag``                                   | labels                                          |
+            +-------------------------------------------+-------------------------------------------------+
+            | ``contact``                               | assignee (resolved to a Jira Cloud              |
+            |                                           | ``accountId`` via user search API)              |
+            +-------------------------------------------+-------------------------------------------------+
+
+            Status is always ``Active``; ``enabled`` does not select the
+            Jira status. The web link to the test file in the git repository
+            is stored in the ``URL`` custom field.
+
+            Existing UUIDs are preserved and searched independently of
+            components. Ambiguous matches and collection identity collisions
+            fail explicitly. Resolve identities, fields, relationships and
+            transitions for the entire collection before starting writes.
+            Dry run displays this prepared plan. ``--create`` permits new
+            issues. ``--link-jira`` optionally writes metadata backlinks and
+            is disabled by default. Git validation covers the collection
+            before exporter writes. ``--ignore-git-validation`` still
+            constructs automation URLs.
+
+            The first ``contact`` entry is resolved by display name or email.
+            An unresolved or ambiguous nonempty contact preserves the existing
+            assignee with a warning.
+
+            ``verifies`` links to issues on the same Jira instance become
+            ``pair`` issue links. When ``--bugzilla`` is enabled, Bugzilla
+            links become remote links. With ``--polarion``, the Polarion test
+            case URL is stored in the ``External issue URL`` custom field.
+
+            Public payload enrichment and post-export hooks allow external
+            integrations to reuse discovery, UUID identity and CRUD without
+            replacing them. The default path communicates only with Jira and
+            uses local metadata.
+        link:
+          - implemented-by: /tmt/export/jira.py
+          - documented-by: /docs/examples.rst#jira-project-configuration
+
 /filter:
     story: 'Filter available tests'
     description: |
