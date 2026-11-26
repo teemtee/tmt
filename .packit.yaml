@@ -32,7 +32,7 @@ update_release: false
 
 targets: &all-targets
   - fedora-all
-  - epel-10
+  - epel-10-all
 
 # Uncomment below line if OpenScanHub scans are failing
 # osh_diff_scan_after_copr_build: false
@@ -237,7 +237,7 @@ jobs:
       rawhide:
         fast_forward_merge_into:
           - fedora-branched
-          - epel-10
+          - epel-10-all
 
   # Create koji builds
   - job: koji_build
@@ -250,4 +250,4 @@ jobs:
     trigger: commit
     dist_git_branches:
       - fedora-branched
-      - epel-10
+      - epel-10-all
