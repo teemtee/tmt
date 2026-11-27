@@ -15,6 +15,7 @@ from tmt.result import Result, ResultOutcome
 from tmt.steps.context.abort import AbortStep
 from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.execute import (
+    TEST_DATA,
     TEST_OUTPUT_FILENAME,
     TestInvocation,
 )
@@ -540,7 +541,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 invocation.environment.update(extra_environment)
 
         # Push workdir to guest and execute tests
-        guest.push()
+        # TODO: Better handle this push? We need to make sure that it does not
+        #  accidentally override the data from other steps. But why are the guest
+        #  test data outside of phase's workdir? Those are defined in the TestInvocations.
+        guest.push(source=self.workdir)
+        guest.push(source=self.step_workdir / TEST_DATA)
         # We cannot use enumerate here due to continue in the code
         index = 0
 
