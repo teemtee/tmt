@@ -308,20 +308,24 @@ class ExecuteUpgrade(ExecuteInternal):
             return
 
         if self.data.skip_tests_before:
-            self.verbose('upgrade', 'skipping tests on the old system', color='blue', shift=1)
+            self.info(
+                'upgrade', 'skipping tests on the old system', color='blue', shift=1, level=1
+            )
 
         else:
-            self.verbose('upgrade', 'run tests on the old system', color='blue', shift=1)
+            self.info('upgrade', 'run tests on the old system', color='blue', shift=1, level=1)
             self._run_test_phase(guest, BEFORE_UPGRADE_PREFIX, logger)
 
-        self.verbose('upgrade', 'perform the system upgrade', color='blue', shift=1)
+        self.info('upgrade', 'perform the system upgrade', color='blue', shift=1, level=1)
         self._perform_upgrade(guest, logger)
 
         if self.data.skip_tests_after:
-            self.verbose('upgrade', 'skipping tests on the new system', color='blue', shift=1)
+            self.info(
+                'upgrade', 'skipping tests on the new system', color='blue', shift=1, level=1
+            )
 
         else:
-            self.verbose('upgrade', 'run tests on the new system', color='blue', shift=1)
+            self.info('upgrade', 'run tests on the new system', color='blue', shift=1, level=1)
             self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
 
     def _get_plan(self, upgrades_repo: Path) -> tmt.base.plan.Plan:

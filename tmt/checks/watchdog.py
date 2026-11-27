@@ -221,7 +221,7 @@ class WatchdogCheck(Check):
             Handle successful response
             """
 
-            logger.verbose('Received successful response to ping.', level=2)
+            logger.info('Received successful response to ping.', level=2)
 
             report = ['# successful response']
 
@@ -342,7 +342,7 @@ class WatchdogCheck(Check):
             Handle successful response
             """
 
-            logger.verbose('Received successful response to SSH ping.', level=2)
+            logger.info('Received successful response to SSH ping.', level=2)
 
             report = ['# successful response']
 

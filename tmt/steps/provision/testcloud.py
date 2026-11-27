@@ -960,7 +960,7 @@ class GuestTestcloud(tmt.GuestSsh):
             if key_type is not None:
                 command += Command("-t", key_type)
             self._run_guest_command(command, silent=True)
-            self.verbose('key', self.key[0], color='green')
+            self.info('key', self.key[0], color='green', level=1)
             public_key = (self.guest_workdir / f'{key_name}.pub').read_text()
 
         return public_key
@@ -1188,7 +1188,7 @@ class GuestTestcloud(tmt.GuestSsh):
         # error later. Validate the image after download and retry if needed.
         def prepare_image() -> None:
             self._image = testcloud.image.Image(self.image_url)
-            self.verbose('qcow', self._image.name, color='green')
+            self.info('qcow', self._image.name, color='green', level=1)
             if not Path(self._image.local_path).exists():
                 self.info('progress', 'downloading...', color='cyan')
             try:
@@ -1253,7 +1253,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self._combine_hw_disk_size()
 
         if self.hardware:
-            self.verbose('effective hardware', self.hardware.to_spec(), color='green')
+            self.info('effective hardware', self.hardware.to_spec(), color='green', level=1)
 
             for line in self.hardware.format_variants():
                 self._logger.debug('effective hardware', line, level=3)
@@ -1316,7 +1316,7 @@ class GuestTestcloud(tmt.GuestSsh):
             workarounds=self._workarounds,
         )
 
-        self.verbose('name', self.instance_name, color='green')
+        self.info('name', self.instance_name, color='green', level=1)
 
         # Decide if we want to multiply timeouts when emulating an architecture
         time_coeff = NON_KVM_TIMEOUT_COEF if not self.is_kvm else 1
@@ -1338,7 +1338,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Boot the virtual machine
         self.info('progress', 'booting...', color='cyan')
-        self.verbose("console log", self.logdir / CONSOLE_LOG_FILE, level=2, color="cyan")
+        self.info("console log", self.logdir / CONSOLE_LOG_FILE, level=2, color="cyan")
         assert libvirt is not None
 
         try:
@@ -1349,9 +1349,9 @@ class GuestTestcloud(tmt.GuestSsh):
             raise ProvisionError("Failed to boot testcloud instance.") from error
         self.primary_address = self.topology_address = self._instance.get_ip()
         self.port = int(self._instance.get_instance_port())
-        self.verbose('primary address', self.primary_address, color='green')
-        self.verbose('topology address', self.topology_address, color='green')
-        self.verbose('port', self.port, color='green')
+        self.info('primary address', self.primary_address, color='green', level=1)
+        self.info('topology address', self.topology_address, color='green', level=1)
+        self.info('port', self.port, color='green', level=1)
         self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
@@ -1639,10 +1639,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             size = tmt.hardware.UNITS(f'{image.stat().st_size} bytes')
             formatted_size = tmt.hardware.format_compact(size)
             if dry:
-                clean.verbose(f"Would remove '{image}' ({formatted_size}).", shift=2)
+                clean.info(f"Would remove '{image}' ({formatted_size}).", shift=2, level=1)
                 total_size += size
             else:
-                clean.verbose(f"Removing '{image}' ({formatted_size}).", shift=2)
+                clean.info(f"Removing '{image}' ({formatted_size}).", shift=2, level=1)
                 try:
                     image.unlink()
                 except OSError:

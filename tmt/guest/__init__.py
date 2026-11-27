@@ -2364,7 +2364,7 @@ class Guest(
                 self.info(key_formatted, value_formatted, color='green')
 
             elif key in GUEST_FACTS_VERBOSE_FIELDS:
-                self.verbose(key_formatted, value_formatted, color='green')
+                self.info(key_formatted, value_formatted, color='green', level=1)
 
     def _ansible_verbosity(self) -> list[str]:
         """
@@ -2403,7 +2403,7 @@ class Guest(
             matched = re.search(rf'^.*\s:\s.*{key}=(\d+).*$', output, re.MULTILINE)
             if matched and int(matched.group(1)) > 0:
                 tasks = fmf.utils.listed(matched.group(1), 'task')
-                self.verbose(key, tasks, color='green')
+                self.info(key, tasks, color='green', level=1)
 
     def _sanitize_ansible_playbook_path(
         self, playbook: AnsibleApplicable, playbook_root: Optional[Path]

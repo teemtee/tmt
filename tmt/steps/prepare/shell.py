@@ -256,7 +256,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             script_index = script_count - len(script_queue)
             script = original_script = script_queue.pop(0)
 
-            logger.verbose('script', script, color='green')
+            logger.info('script', script, color='green', level=1)
 
             script_name = f'{self.name} / script #{script_index}'
 

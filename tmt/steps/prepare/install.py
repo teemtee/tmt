@@ -227,7 +227,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         self.package_directory.mkdir(parents=True, exist_ok=True)
 
         for package in self.local_packages:
-            self.verbose(package.name, shift=1)
+            self.info(package.name, shift=1, level=1)
             self.debug(f"Copy '{package}' to '{self.package_directory}'.", level=3)
             shutil.copy(package, self.package_directory)
         guest.push()
@@ -250,7 +250,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             summary = fmf.utils.listed(installables, 'package')
             self.info(title, summary + ' requested', color='green')
             for package in sorted(installables):
-                self.verbose(str(package), shift=1)
+                self.info(str(package), shift=1, level=1)
 
         yield from installables
 

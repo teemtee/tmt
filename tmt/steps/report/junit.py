@@ -425,7 +425,7 @@ def make_junit_xml(
         try:
             tree_root = etree.fromstring(xml_data, xml_parser)
         except etree.XMLSyntaxError as error:
-            phase.verbose('rendered XML', xml_data, color='red')
+            phase.info('rendered XML', xml_data, color='red', level=1)
             raise tmt.utils.ReportError(
                 'The generated XML output is not a valid XML file. Use `--verbose` argument '
                 'to show the output.'

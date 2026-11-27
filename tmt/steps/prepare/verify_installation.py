@@ -84,7 +84,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         if not self.data.verify:
-            self.verbose('No packages to verify.')
+            self.info('No packages to verify.', level=1)
             return outcome
 
         self.info(

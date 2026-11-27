@@ -302,7 +302,7 @@ class ResultRenderer:
         """
 
         for line in self.render_result(result):
-            self.logger.verbose(line, shift=self.shift)
+            self.logger.info(line, shift=self.shift, level=1)
 
     def print_results(self, results: Iterable[RenderableResult]) -> None:
         """
@@ -310,7 +310,7 @@ class ResultRenderer:
         """
 
         for line in self.render_results(results):
-            self.logger.verbose(line, shift=self.shift)
+            self.logger.info(line, shift=self.shift, level=1)
 
 
 @tmt.steps.provides_method('display')

@@ -698,12 +698,6 @@ All logging methods send their output to ``stderr``:
     Communicate progress and status to the user. Supports
     verbosity levels via the ``level`` parameter (see below).
 
-    .. note::
-
-        Using the ``level`` parameter with ``info()`` is a planned
-        target state. Currently, use the ``verbose()`` method for
-        logging with specific verbosity levels.
-
 ``debug()``
     Provide diagnostics for tmt developers. Supports debug
     levels via the ``level`` parameter (see below).
@@ -717,7 +711,7 @@ All logging methods send their output to ``stderr``:
     Report an error that caused a test, step or operation to
     fail.
 
-The ``info()``, ``verbose()`` and ``debug()`` methods accept a
+The ``info()`` and ``debug()`` methods accept a
 ``key`` and an optional ``value`` parameter. The ``key`` is a
 short label (e.g. step name, action) and ``value`` provides the
 detail, optional ``color`` parameter can be used for choosing the

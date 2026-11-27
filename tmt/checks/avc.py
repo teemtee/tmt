@@ -146,7 +146,7 @@ def _run_script(
         topic: Optional[tmt.log.Topic] = None,
         stacklevel: int = 1,
     ) -> None:
-        logger.verbose(
+        logger.info(
             key=key,
             value=value,
             color=color,

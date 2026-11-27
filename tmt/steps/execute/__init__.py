@@ -833,8 +833,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         logger: tmt.log.Logger,
     ) -> None:
         self.go_prolog(logger)
-        logger.verbose('ignore-duration', self.data.ignore_duration, color='green', level=2)
-        logger.verbose('exit-first', self.data.exit_first, color='green', level=2)
+        logger.info('ignore-duration', self.data.ignore_duration, color='green', level=2)
+        logger.info('exit-first', self.data.exit_first, color='green', level=2)
 
     @property
     def discover(self) -> Union[Discover, 'DiscoverFmf']:

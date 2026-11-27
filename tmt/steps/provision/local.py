@@ -208,8 +208,8 @@ class GuestLocal(tmt.Guest):
 
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
-        self.verbose('primary address', self.primary_address, color='green')
-        self.verbose('topology address', self.topology_address, color='green')
+        self.info('primary address', self.primary_address, color='green', level=1)
+        self.info('topology address', self.topology_address, color='green', level=1)
 
         self.assert_reachable()
 

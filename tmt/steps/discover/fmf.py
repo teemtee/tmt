@@ -735,7 +735,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 cwd=self.test_dir,
             )
             assert ref_commit.stdout is not None
-            self.verbose('modified-ref hash', ref_commit.stdout.strip(), color='green')
+            self.info('modified-ref hash', ref_commit.stdout.strip(), color='green', level=1)
             output = self.run(
                 Command(
                     'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
