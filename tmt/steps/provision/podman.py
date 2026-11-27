@@ -1,3 +1,4 @@
+import functools
 import os
 from shlex import quote
 from typing import Any, ClassVar, Optional, Union, cast
@@ -411,6 +412,14 @@ class GuestContainer(tmt.Guest):
             mode=mode,
         )
 
+    @functools.cached_property
+    def ansible_host_vars(self) -> dict[str, Any]:
+        return {
+            **super().ansible_host_vars,
+            'ansible_host': self.container,
+            'ansible_connection': 'podman',
+        }
+
     def _run_ansible(
         self,
         playbook: tmt.guest.AnsibleApplicable,
@@ -447,6 +456,9 @@ class GuestContainer(tmt.Guest):
         if os.geteuid() != 0:
             podman_command += ['podman', 'unshare']
 
+        inventory_path = cast('Provision', self.parent).plan.provision.ansible_inventory_path
+        self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
+
         # TODO: add ansible inventory support
         podman_command += cast(
             tmt.utils.RawCommand,
@@ -454,10 +466,10 @@ class GuestContainer(tmt.Guest):
                 'ansible-playbook',
                 *self._ansible_verbosity(),
                 *self._ansible_extra_args(extra_args),
-                '-c',
-                'podman',
                 '-i',
-                f'{self.container},',
+                inventory_path,
+                '--limit',
+                self.name,
                 playbook,
             ],
         )

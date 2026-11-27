@@ -1,6 +1,7 @@
+import functools
 import shlex
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import tmt
 import tmt.guest
@@ -23,6 +24,9 @@ from tmt.utils.environment import Environment
 from tmt.utils.feeling_safe import UB_PROVISION_LOCAL_PLUGIN
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
+
+if TYPE_CHECKING:
+    from tmt.steps.provision import Provision
 
 
 @container
@@ -83,6 +87,14 @@ class GuestLocal(tmt.Guest):
 
         return super()._prepare_command_environment(environment=environment)
 
+    @functools.cached_property
+    def ansible_host_vars(self) -> dict[str, Any]:
+        return {
+            **super().ansible_host_vars,
+            'ansible_host': 'localhost',
+            'ansible_connection': 'local',
+        }
+
     def _run_ansible(
         self,
         playbook: tmt.guest.AnsibleApplicable,
@@ -113,18 +125,21 @@ class GuestLocal(tmt.Guest):
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
+        inventory_path = cast('Provision', self.parent).plan.provision.ansible_inventory_path
+        self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
+
         try:
-            # NOTE: Inventory generation is not applicable for local provisioning
-            # Local always uses 'localhost,' with 'local' connection for simplicity and security.
-            # fmt: off
             return self._run_guest_command(
                 Command(
-                    'sudo', '-E',
+                    'sudo',
+                    '-E',
                     'ansible-playbook',
                     *self._ansible_verbosity(),
                     *self._ansible_extra_args(extra_args),
-                    '-c', 'local',
-                    '-i', 'localhost,',
+                    '-i',
+                    inventory_path,
+                    '--limit',
+                    self.name,
                     playbook,
                 ),
                 environment=self._prepare_ansible_command_environment(),
@@ -132,7 +147,6 @@ class GuestLocal(tmt.Guest):
                 log=log,
                 silent=silent,
             )
-            # fmt: on
         except tmt.utils.RunError as exc:
             hint = get_hint('ansible-not-available', ignore_missing=False)
 
