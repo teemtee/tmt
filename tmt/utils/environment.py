@@ -23,11 +23,11 @@ the intrinsic ones must come after all user-provided ones.
 import abc
 import contextlib
 import enum
+import functools
 import inspect
 import os
 import re
 import shlex
-import types
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
@@ -43,6 +43,7 @@ import requests
 
 import tmt.log
 from tmt._compat.pathlib import Path
+from tmt.utils.secret import Secret
 
 if TYPE_CHECKING:
     from typing import TypeAlias
@@ -59,6 +60,9 @@ if TYPE_CHECKING:
 #: A type of environment variable name.
 EnvVarName: 'TypeAlias' = str
 
+#: A type of environment variable value.
+EnvVarValue: TypeAlias = Union['OpenEnvVarValue', 'SecretEnvVarValue']
+
 _IncomingEnvVarName: 'TypeAlias' = Union[type['EnvVar'], 'EnvVarName']
 _IncomingEnvVarDefault: 'TypeAlias' = Optional[Union[str, 'EnvVarValue', Path]]
 _IncomingEnvVarDefaultKnown: 'TypeAlias' = Union[str, 'EnvVarValue', Path]
@@ -67,25 +71,123 @@ _IncomingEnvVarDefaultKnown: 'TypeAlias' = Union[str, 'EnvVarValue', Path]
 # This one is not an alias: a full-fledged class makes type linters
 # enforce strict instantiation of objects rather than accepting
 # strings where `EnvVarValue` is expected.
-
-
-class EnvVarValue(str):
+class _BaseEnvVarValue(abc.ABC):
     """
-    A type of environment variable value
+    A base type of environment variable values.
     """
 
-    def __new__(cls, raw_value: Any) -> Self:
+    @functools.cached_property
+    @abc.abstractmethod
+    def is_secret(self) -> bool:
+        """
+        Whether this environment variable value is secret or not.
+        """
+
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def dangerous_as_open(self) -> 'OpenEnvVarValue':
+        """
+        Returns the actual value of the environment value.
+
+        .. important::
+
+            Be aware that, in the case of :py:class:`SecretEnvVarValue`
+            instances, the returned value was supposed to be hidden, be
+            careful about next actions.
+        """
+
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def as_secret(self) -> 'SecretEnvVarValue':
+        """
+        Return this variable converted into the secret one.
+        """
+
+        raise NotImplementedError
+
+
+class OpenEnvVarValue(str, _BaseEnvVarValue):
+    """
+    Environment variable value.
+
+    This is the common, free-to-read value, nothing-to-hide environment
+    variable value. For environment variables carrying tokens, passwords,
+    credentials, anything that shall not be revealed, see
+    :py:class:`SecretEnvVarValue`.
+    """
+
+    def __new__(cls, raw_value: Union[str, Path, 'EnvVarValue']) -> Self:
+        if isinstance(raw_value, Secret):
+            raise ValueError("Secret variables cannot be turned into open variables.")
+
+        if isinstance(raw_value, OpenEnvVarValue):
+            return cls.__new__(cls, str(raw_value))
+
         if isinstance(raw_value, str):
             return str.__new__(cls, raw_value)
 
-        if isinstance(raw_value, Path):
+        if isinstance(raw_value, Path):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
             return str.__new__(cls, str(raw_value))
 
-        from tmt.utils import GeneralError
-
-        raise GeneralError(
+        raise ValueError(
             f"Only strings and paths can be environment variables, '{type(raw_value)}' found."
         )
+
+    @functools.cached_property
+    def is_secret(self) -> bool:
+        return False
+
+    @property
+    def dangerous_as_open(self) -> 'OpenEnvVarValue':
+        return self
+
+    @property
+    def as_secret(self) -> 'SecretEnvVarValue':
+        return SecretEnvVarValue(self)
+
+
+class SecretEnvVarValue(Secret, _BaseEnvVarValue):
+    """
+    Secret environment variable value.
+
+    This is the protected, burn-before-reading environment variable
+    value. It should be used to protect tokens, passwords, credentials,
+    anything that shall not be revealed. For the nothing-to-hide kind
+    of values, see :py:class:`SecretEnvVarValue`.
+    """
+
+    def __new__(cls, raw_value: Union[str, Path, 'EnvVarValue']) -> Self:
+        if isinstance(raw_value, Secret):
+            return cls.__new__(cls, raw_value.dangerous_as_open)
+
+        if isinstance(raw_value, OpenEnvVarValue):
+            return cls.__new__(cls, str(raw_value))
+
+        if isinstance(raw_value, str):
+            return str.__new__(cls, raw_value)
+
+        if isinstance(raw_value, Path):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
+            return str.__new__(cls, str(raw_value))
+
+        raise ValueError(
+            f"Only strings and paths can be environment variables, '{type(raw_value)}' found."
+        )
+
+    @functools.cached_property
+    def is_secret(self) -> bool:
+        return True
+
+    @property
+    def dangerous_as_open(self) -> 'OpenEnvVarValue':
+        return OpenEnvVarValue(super().dangerous_as_open)
+
+    @property
+    def as_secret(self) -> 'SecretEnvVarValue':
+        return self
 
 
 class EnvVar:
@@ -195,9 +297,16 @@ class Environment(dict[EnvVarName, EnvVarValue]):
 
     @staticmethod
     def _normalize_default(default: _IncomingEnvVarDefault) -> Optional[EnvVarValue]:
-        return (
-            default if isinstance(default, (EnvVarValue, types.NoneType)) else EnvVarValue(default)
-        )
+        if default is None:
+            return None
+
+        if isinstance(default, Path):
+            return OpenEnvVarValue(default)
+
+        if isinstance(default, (OpenEnvVarValue, SecretEnvVarValue)):
+            return default
+
+        return OpenEnvVarValue(default)
 
     def __init__(self, data: Optional[dict[_IncomingEnvVarName, EnvVarValue]] = None) -> None:
         super().__init__({self._normalize_key(key): value for key, value in (data or {}).items()})
@@ -261,7 +370,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
             for line in shlex.split(content, comments=True):
                 key, value = line.split("=", maxsplit=1)
 
-                environment[key] = EnvVarValue(value)
+                environment[key] = OpenEnvVarValue(value)
 
         except Exception as exc:
             from tmt.utils import GeneralError
@@ -291,7 +400,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
                 'only primitive types are accepted as values.'
             )
 
-        return Environment({key: EnvVarValue(str(value)) for key, value in data.items()})
+        return Environment({key: OpenEnvVarValue(str(value)) for key, value in data.items()})
 
     @classmethod
     def from_yaml_file(
@@ -386,7 +495,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
 
                         raise GeneralError(f"Invalid variable specification '{var}'.")
                     name, value = matched.groups()
-                    result[name] = EnvVarValue(value)
+                    result[name] = OpenEnvVarValue(value)
 
         return result
 
@@ -623,7 +732,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
         if not data:
             return Environment()
 
-        return Environment({str(key): EnvVarValue(str(value)) for key, value in data.items()})
+        return Environment({str(key): OpenEnvVarValue(str(value)) for key, value in data.items()})
 
     @classmethod
     def from_environ(cls) -> 'Environment':
@@ -632,7 +741,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
         """
 
         return Environment(
-            {key: EnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
+            {key: OpenEnvVarValue(value) for key, value in os.environ.items()}  # noqa: TID251
         )
 
     @classmethod
@@ -642,7 +751,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
         """
 
         return Environment(
-            {key: EnvVarValue(','.join(value)) for key, value in fmf_context.items()}
+            {key: OpenEnvVarValue(','.join(value)) for key, value in fmf_context.items()}
         )
 
     @classmethod
@@ -654,7 +763,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
         if not data:
             return Environment()
 
-        return Environment({key: EnvVarValue(str(value)) for key, value in data.items()})
+        return Environment({key: OpenEnvVarValue(str(value)) for key, value in data.items()})
 
     def to_fmf_spec(self) -> dict[str, str]:
         """
@@ -683,8 +792,8 @@ class Environment(dict[EnvVarName, EnvVarValue]):
 
         .. code-block:: python
 
-            >>> Environment({'FOO': EnvVarValue('bar'), 'BAZ': EnvVarValue('qu ux')}).to_shell()
-            ['FOO=bar', "BAZ='qu ux'"]
+            >>> Environment({'FOO': OpenEnvVarValue('qu ux')}).to_shell()
+            ["FOO='qu ux'"]
         """
 
         return [f"{key}={shlex.quote(str(value))}" for key, value in self.items()]
@@ -695,9 +804,9 @@ class Environment(dict[EnvVarName, EnvVarValue]):
 
         .. code-block:: python
 
-            >>> Environment({'FOO': EnvVarValue('bar'), 'BAZ': EnvVarValue('qu ux')}).to_shell_exports()
-            [ShellScript("export FOO=bar"), ShellScript("export BAZ='qu ux'")]
-        """  # noqa: E501
+            >>> Environment({'FOO': OpenEnvVarValue('qu ux')}).to_shell_exports()
+            [ShellScript("export FOO='qu ux'")]
+        """
 
         from tmt.utils import ShellScript
 
@@ -741,7 +850,7 @@ class Environment(dict[EnvVarName, EnvVarValue]):
             # about types of keys or values.
             return cls(
                 {
-                    k: EnvVarValue(str(v))
+                    k: OpenEnvVarValue(str(v))
                     for k, v in cast(dict[Any, Any], value).items()  # type: ignore[redundant-cast]
                 }
             )

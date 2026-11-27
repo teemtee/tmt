@@ -77,7 +77,7 @@ from tmt.utils import (
     effective_workdir_root,
 )
 from tmt.utils._threading import Lock
-from tmt.utils.environment import Environment, EnvVarValue
+from tmt.utils.environment import Environment, OpenEnvVarValue
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError
 
@@ -2141,12 +2141,14 @@ class Guest(
         if self.plan_environment_path is not None:
             from tmt.steps.execute import ENV_TMT_PLAN_ENVIRONMENT_FILE
 
-            environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(self.plan_environment_path)
+            environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = OpenEnvVarValue(
+                self.plan_environment_path
+            )
 
         if self.plan_source_script_path:
             from tmt.steps.execute import ENV_TMT_PLAN_SOURCE_SCRIPT
 
-            environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = EnvVarValue(self.plan_source_script_path)
+            environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = OpenEnvVarValue(self.plan_source_script_path)
 
         return environment
 
@@ -2483,14 +2485,16 @@ class Guest(
             if self.plan_environment_path:
                 from tmt.steps.execute import ENV_TMT_PLAN_ENVIRONMENT_FILE
 
-                environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = EnvVarValue(
+                environment[ENV_TMT_PLAN_ENVIRONMENT_FILE] = OpenEnvVarValue(
                     self.plan_environment_path
                 )
 
             if self.plan_source_script_path:
                 from tmt.steps.execute import ENV_TMT_PLAN_SOURCE_SCRIPT
 
-                environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = EnvVarValue(self.plan_source_script_path)
+                environment[ENV_TMT_PLAN_SOURCE_SCRIPT] = OpenEnvVarValue(
+                    self.plan_source_script_path
+                )
 
         else:
             # Create a copy of given environment - this prevents any
