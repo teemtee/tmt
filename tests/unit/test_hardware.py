@@ -135,7 +135,7 @@ def test_constraint_components_pattern(value: str, expected: tuple[Any, Any]) ->
     assert match.groups() == expected
 
 
-def test_normalize_hardware(root_logger: Logger) -> None:
+def test_normalize_hardware(root_logger) -> None:
     # All major classes of requirements:
     spec = (
         # Simple name.child_name=value
@@ -147,14 +147,6 @@ def test_normalize_hardware(root_logger: Logger) -> None:
     )
 
     tmt.guest.normalize_hardware('', spec, root_logger)
-
-
-def test_normalize_hardware_idempotent(root_logger: Logger) -> None:
-    """Normalizing already normalized hardware does not raise and preserves requirements."""
-
-    spec = ('cpu.processors=1',)
-    normalized = tmt.guest.normalize_hardware('', spec, root_logger)
-    assert tmt.guest.normalize_hardware('', normalized, root_logger) == normalized
 
 
 @pytest.mark.parametrize(

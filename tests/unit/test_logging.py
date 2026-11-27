@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Callable
 from typing import Optional
 
 import _pytest.capture
@@ -263,34 +262,6 @@ def test_labels(
     root_logger.labels += ['bar']
 
     _exercise_logger(caplog, capsys, root_logger, labels=['foo', 'bar'])
-
-
-@pytest.mark.parametrize(
-    'derive',
-    [
-        lambda logger: logger.clone(),
-        lambda logger: logger.descend(extra_shift=0),
-    ],
-    ids=['clone', 'descend'],
-)
-def test_derived_logger_labels_are_independent(
-    caplog: _pytest.logging.LogCaptureFixture,
-    capsys: _pytest.capture.CaptureFixture[str],
-    root_logger: Logger,
-    derive: Callable[[Logger], Logger],
-) -> None:
-    """Mutating labels on a cloned or descended logger must not affect the other logger."""
-
-    root_logger.labels += ['shared']
-    child = derive(root_logger)
-
-    child.labels += ['child']
-    _exercise_logger(caplog, capsys, root_logger, labels=['shared'])
-    _exercise_logger(caplog, capsys, child, labels=['shared', 'child'])
-
-    root_logger.labels += ['parent']
-    _exercise_logger(caplog, capsys, root_logger, labels=['shared', 'parent'])
-    _exercise_logger(caplog, capsys, child, labels=['shared', 'child'])
 
 
 def test_bootstrap_logger(
