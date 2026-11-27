@@ -225,3 +225,8 @@ tmt heavily uses the Flexible Metadata Format (fmf) for:
 
 If the task involves generating release notes, load and follow the instructions in
 agents/release-notes.md.
+
+## Quarter News Generation
+
+If the task involves generating a quarterly news overview for `docs/news/`, load and
+follow the instructions in the `quarter-news` skill at agents/quarter-news/SKILL.md.
