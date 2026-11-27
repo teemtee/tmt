@@ -183,7 +183,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     _data_class = DiscoverStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.discover')
+    _supported_methods = PluginRegistry('step.discover')
 
     @property
     def defer_library_install(self) -> bool:

@@ -4,9 +4,13 @@ import tmt.steps.prepare.ansible
 from tmt.steps.prepare.ansible import PrepareAnsible
 
 
+# ignore[misc]: definition of `_supported_methods` is different between
+# prepare and finish plugins, and we mix both. Expected, sad, but not
+# harmful.
 @tmt.steps.provides_method('ansible')
-class FinishAnsible(
-    tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareAnsible
+class FinishAnsible(  # type: ignore[misc]
+    tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData],
+    PrepareAnsible,
 ):
     """
     Perform finishing tasks using ansible.
@@ -60,8 +64,6 @@ class FinishAnsible(
     # and they both have different expectations
     # FIXME: ignore[assignment]: https://github.com/teemtee/tmt/issues/1540
     _data_class = tmt.steps.prepare.ansible.PrepareAnsibleData  # type: ignore[assignment]
-
-    base_command = tmt.steps.finish.FinishPlugin.base_command
 
     # `FinishPlugin` plugin would win the inheritance battle and provide
     # its no-op `go()`. Force the one from `PrepareAnsible`.

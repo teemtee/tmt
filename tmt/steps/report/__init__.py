@@ -30,7 +30,7 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
     how = 'display'
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.report')
+    _supported_methods = PluginRegistry('step.report')
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """

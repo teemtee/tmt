@@ -1076,7 +1076,9 @@ class Plan(
 
         return cast(list[dict[str, Any]], _phases)
 
-    def _lint_step_methods(self, step: str, plugin_class: tmt.steps.PluginClass) -> LinterReturn:  # pyright: ignore[reportUnknownVariableType, reportUnknownParameterType]
+    def _lint_step_methods(
+        self, step: str, plugin_class: type[tmt.steps.BasePlugin[Any, Any]]
+    ) -> LinterReturn:  # pyright: ignore[reportUnknownVariableType, reportUnknownParameterType]
         """
         P003: execute step methods must be known
         """

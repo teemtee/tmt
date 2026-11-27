@@ -3,8 +3,14 @@ import tmt.steps.finish
 from tmt.steps.prepare.shell import PrepareShell, PrepareShellData
 
 
+# ignore[misc]: definition of `_supported_methods` is different between
+# prepare and finish plugins, and we mix both. Expected, sad, but not
+# harmful.
 @tmt.steps.provides_method('shell')
-class FinishShell(tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareShell):
+class FinishShell(  # type: ignore[misc]
+    tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData],
+    PrepareShell,
+):
     """
     Perform finishing tasks using shell (bash) scripts.
 

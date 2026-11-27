@@ -45,7 +45,6 @@ import tmt.queue
 import tmt.result
 import tmt.steps.context
 import tmt.utils
-import tmt.utils.rest
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
@@ -58,6 +57,8 @@ from tmt.container import (
     simple_field,
 )
 from tmt.options import ClickOptionDecoratorType, option
+from tmt.plugins import Method
+from tmt.plugins import provides_method as _orig_provides_method
 from tmt.result import ResultOutcome
 from tmt.utils import (
     DEFAULT_NAME,
@@ -540,7 +541,7 @@ class PluginEnvVar:
     # plugin class, then its command, and then its parameters.
 
     @functools.cached_property
-    def plugin_class(self) -> Optional['Method']:
+    def plugin_class(self) -> Optional['Method[PluginClass]']:
         """
         Plugin class according to :py:attr:`how`, or ``None``.
         """
@@ -555,7 +556,7 @@ class PluginEnvVar:
 
         assert self.plugin_class is not None  # narrow type
 
-        return self.plugin_class.class_.command()
+        return self.plugin_class.plugin_class.command()
 
     @functools.cached_property
     def plugin_command_params(self) -> dict[str, click.Parameter]:
@@ -1809,124 +1810,36 @@ class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
                 )
 
 
-class Method:
-    """
-    Step implementation method
-    """
-
-    def __init__(
-        self,
-        name: str,
-        class_: PluginClass,
-        doc: Optional[str] = None,
-        order: int = PHASE_ORDER_DEFAULT,
-        installation_hint: Optional[str] = None,
-    ) -> None:
-        """
-        Store method data
-        """
-
-        doc = textwrap.dedent(doc or class_.__doc__ or '').strip()
-
-        if not doc:
-            if class_:
-                raise tmt.utils.GeneralError(f"Plugin class '{class_}' provides no docstring.")
-
-            raise tmt.utils.GeneralError(f"Plugin method '{name}' provides no docstring.")
-
-        if installation_hint is not None:
-            doc = (
-                doc
-                + '\n\n.. note::\n\n'
-                + textwrap.indent(textwrap.dedent(installation_hint), '   ')
-            )
-
-        self.name = name
-        self.class_ = class_
-        self.doc = (
-            tmt.utils.rest.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
-            if tmt.utils.rest.REST_RENDERING_ALLOWED
-            else doc
-        )
-        self.order = order
-
-        # Parse summary and description from provided doc string
-        lines = self.doc.splitlines()
-
-        self.summary: str = lines[0].strip()
-        self.description: str = '\n'.join(lines[1:]).strip()
-
-    def __repr__(self) -> str:
-        return f'<{self.name} from {self.class_.__module__}>'
-
-    def describe(self) -> str:
-        """
-        Format name and summary for a nice method overview
-        """
-
-        return f'{self.name} '.ljust(22, '.') + f' {self.summary}'
-
-    def usage(self) -> str:
-        """
-        Prepare a detailed usage from summary and description
-        """
-
-        if self.description:
-            usage: str = self.summary + '\n\n' + self.description
-        else:
-            usage = self.summary
-        # Disable wrapping for all paragraphs
-        return re.sub('\n\n', '\n\n\b\n', usage)
-
-
 def provides_method(
     name: str,
     doc: Optional[str] = None,
     order: int = PHASE_ORDER_DEFAULT,
     installation_hint: Optional[str] = None,
 ) -> Callable[[PluginClass], PluginClass]:
-    """
-    A plugin class decorator to register plugin's method with tmt steps.
-
-    In the following example, developer marks ``SomePlugin`` as providing two discover methods,
-    ``foo`` and ``bar``, with ``bar`` being sorted to later position among methods:
-
-    .. code-block:: python
-
-       @tmt.steps.provides_method('foo')
-       @tmt.steps.provides_method('bar', order=80)
-       class SomePlugin(tmt.steps.discover.DicoverPlugin):
-         ...
-
-    :param name: name of the method.
-    :param doc: method documentation. If not specified, docstring of the decorated class is used.
-    :param order: order of the method among other step methods.
-    """
-
-    def _method(cls: PluginClass) -> PluginClass:
-        plugin_method = Method(
-            name, cls, doc=doc, order=order, installation_hint=installation_hint
-        )
-
+    def registration_callback(
+        name: str,
+        plugin_class: PluginClass,
+        method: Method[PluginClass],
+    ) -> None:
         # FIXME: make sure cls.__bases__[0] is really BasePlugin class
         # TODO: BasePlugin[Any]: it's tempting to use StepDataT, but I was
         # unable to introduce the type var into annotations. Apparently, `cls`
         # is a more complete type, e.g. `type[ReportJUnit]`, which does not show
         # space for type var. But it's still something to fix later.
-        base_class = cast('BasePlugin[Any, Any]', cls.__bases__[0])
+        base_class = cast('BasePlugin[Any, Any]', plugin_class.__bases__[0])
 
         base_class._supported_methods.register_plugin(
-            plugin_id=name, plugin=plugin_method, logger=tmt.log.Logger.get_bootstrap_logger()
+            plugin_id=name, plugin=method, logger=tmt.log.Logger.get_bootstrap_logger()
         )
 
         if installation_hint is not None:
             from tmt.utils.hints import register_hint
 
-            register_hint(f'{base_class.get_step_name()}/{name}', installation_hint)
+            register_hint(f'{base_class._step_class.__name__.lower()}/{name}', installation_hint)
 
-        return cls
-
-    return _method
+    return _orig_provides_method(
+        name, registration_callback, doc=doc, order=order, installation_hint=installation_hint
+    )
 
 
 @container
@@ -1956,7 +1869,7 @@ class BasePlugin(
 
     # Deprecated, use @provides_method(...) instead. left for backward
     # compatibility with out-of-tree plugins.
-    _methods: list[Method] = []
+    _methods: list[Method[type[Self]]] = []
 
     # Default implementation for all steps is shell
     # except for provision (virtual) and report (display)
@@ -1969,7 +1882,7 @@ class BasePlugin(
     # attribute. This guarantees steps would not share a registry instance while
     # the declaration below make the name and type visible across all
     # subclasses.
-    _supported_methods: 'tmt.plugins.PluginRegistry[Method]'
+    _supported_methods: 'tmt.plugins.PluginRegistry[Method[type[Self]]]'
 
     #: A sequence of :py:func:`click.option`-like decorators that should
     #: be added to the step base command created by :py:meth:`base_command`.
@@ -2087,63 +2000,6 @@ class BasePlugin(
         return self.pathless_safe_name
 
     @classmethod
-    def base_command(
-        cls,
-        usage: str,
-        method_class: Optional[type[click.Command]] = None,
-    ) -> click.Command:
-        """
-        Create base :py:mod:`click` command for plugins of the step.
-        """
-
-        step_name = cls._step_class.__name__.lower()
-
-        # Prepare general usage message for the step
-        if method_class:
-            usage = cls._step_class.usage(method_overview=usage)
-
-        # Instead of the well-known way `@option(...)` decorators are
-        # used, we get rid of the syntax sugar they add, and apply them
-        # in a way they are actually applied. We want to include the
-        # extra decorators, and we can't simply `@cls._base_command_extra_options`.
-        # Note that the order is opposite to what one would expect when
-        # looking at decorators, which is correct, they are indeed applied
-        # from bottom to top.
-
-        # First, the actual command code.
-        def base_command(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            context.obj.steps.add(step_name)
-            cls._step_class.store_cli_invocation(context)
-
-        # Then apply the custom options by invoking them as if they were
-        # decorators.
-        for options_decorator in cls._base_command_options:
-            base_command = options_decorator(base_command)
-
-        # And then the rest, `@option(...)` for `--how`, context, and
-        # finally `@click.command(...)`.
-        base_command = option(
-            '-h',
-            '--how',
-            # Cannot use `choices=...` because we want to allow values
-            # that are not on the list *as long as they are clearly
-            # matching values on the list*. For example, `virtual` is
-            # absolutely acceptable as long as some `virtual.*` plugin
-            # is available.
-            metavar='|'.join(
-                sorted([method.name for method in cls._supported_methods.iter_plugins()])
-            ),
-            help=f'Use specified method for {step_name} phase.',
-        )(base_command)
-
-        # ignore[arg-type]: `pass_context` annotations add `Context`
-        # parameter, but we already have that one, because we use it
-        # in the command code. This is probably much less visible when
-        # `pass_context` is used as a decorator.
-        base_command = click.pass_context(base_command)  # type: ignore[arg-type]
-        return click.command(cls=method_class, help=usage, name=step_name)(base_command)
-
-    @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """
         Prepare command line options for given method
@@ -2170,69 +2026,31 @@ class BasePlugin(
         Prepare click command for all supported methods
         """
 
-        # Create one command for each supported method
-        commands: dict[str, click.Command] = {}
-        method_overview: str = f'Supported methods ({cls.how} by default):\n\n\b'
-        for method in cls.methods():
-            assert method.class_ is not None
-            method_overview += f'\n{method.describe()}'
-            command: click.Command = cls.base_command(usage=method.usage())
-            # Apply plugin specific options
-            for method_option in method.class_.options(method.name):
-                command = method_option(command)
-            commands[method.name] = command
+        from tmt.options import add_options_to_command, create_method_dispatcher_command
 
-            for param in command.params:
-                if param.name == 'how':
-                    continue
+        step_name = cls._step_class.__name__.lower()
 
-                if not isinstance(param, click.Option):
-                    continue
+        def on_invoke(context: 'tmt.cli.Context', **kwargs: Any) -> None:
+            context.obj.steps.add(step_name)
 
-                assert command.name is not None  # narrow type
-                assert param.name is not None  # narrow type
+            cls._step_class.store_cli_invocation(context)
 
-                command_name, method_name, param_name = (
-                    command.name.upper(),
-                    method.name.upper(),
-                    param.name.upper(),
-                )
+        command = create_method_dispatcher_command(
+            cls.methods(),
+            step_name,
+            cls._step_class.usage(
+                method_overview=f'Supported methods ({cls.how} by default):\n\n\b'
+                + '\n'.join(method.describe for method in cls.methods())
+            ),
+            cls._base_command_options,
+            likely_subcommands=tmt.steps.STEPS + tmt.steps.ACTIONS + ['tests', 'plans'],
+            on_invoke=on_invoke,
+        )
 
-                envvar = f'TMT_PLUGIN_{command_name}_{method_name}_{param_name}'
-
-                # We do not want to overwrite existing envvar setup of the parameter,
-                # we want to *add* our variable. The `envvar` attribute can be of
-                # different types, carefully modify each variant:
-
-                # Unset...
-                if param.envvar is None:
-                    param.envvar = [envvar]
-
-                # ..., a string, i.e. a single pre-set envvar, ...
-                elif isinstance(param.envvar, str):
-                    param.envvar = [param.envvar, envvar]
-
-                # ..., a list of strings, i.e. several pre-set envvars, or...
-                elif isinstance(param.envvar, list):
-                    param.envvar.append(envvar)
-
-                # ... or an unexpected type we don't know how to handle.
-                else:
-                    raise tmt.utils.GeneralError(
-                        f"Envvar property of '{param.name}' option "
-                        f"set to unexpected type '{type(param.envvar)}'."
-                    )
-
-        # Create base command with common options using method class
-        method_class = tmt.options.create_method_class(commands)
-        command = cls.base_command(usage=method_overview, method_class=method_class)
-        # Apply common options
-        for common_option in cls.options():
-            command = common_option(command)
-        return command
+        return add_options_to_command(command, cls.options())
 
     @classmethod
-    def methods(cls) -> list[Method]:
+    def methods(cls) -> list[Method[type[Self]]]:
         """
         Return all supported methods ordered by priority
         """
@@ -2240,7 +2058,7 @@ class BasePlugin(
         return sorted(cls._supported_methods.iter_plugins(), key=lambda method: method.order)
 
     @classmethod
-    def allowed_methods(cls, step: Step) -> list[Method]:
+    def allowed_methods(cls, step: Step) -> list[Method[type[Self]]]:
         """
         Return all allowed methods
         """
@@ -2256,8 +2074,6 @@ class BasePlugin(
         allowed_methods = cls.allowed_methods(step)
 
         for method in cls.methods():
-            assert method.class_ is not None
-
             if not method.name.startswith(how):
                 continue
 
@@ -2268,7 +2084,7 @@ class BasePlugin(
 
                 continue
 
-            return method.class_
+            return method.plugin_class
 
         return None
 
@@ -3193,7 +3009,7 @@ class Reboot(Action):
     @classmethod
     def command(
         cls,
-        method_class: Optional[Method] = None,
+        method_class: Optional[Method[Any]] = None,
         usage: Optional[str] = None,
     ) -> click.Command:
         """
@@ -3330,7 +3146,7 @@ class Login(Action):
     @classmethod
     def command(
         cls,
-        method_class: Optional[Method] = None,
+        method_class: Optional[Method[Any]] = None,
         usage: Optional[str] = None,
     ) -> click.Command:
         """
