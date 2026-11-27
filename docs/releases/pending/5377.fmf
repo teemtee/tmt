@@ -1,0 +1,3 @@
+description: |
+  The :term:`runner`'s environment variables are no longer exposed to the
+  ansible playbook. Please use ``tmt_env`` variable instead.
