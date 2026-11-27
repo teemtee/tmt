@@ -1,0 +1,5 @@
+description: |
+    The ``kernel-options`` and ``kernel-options-post`` keys of the
+    :tmt:story:`/spec/plans/provision/kickstart` are passed to Beaker again
+    when provisioning with the :ref:`/plugins/provision/beaker` plugin.
+    They were silently dropped from the Beaker job.
