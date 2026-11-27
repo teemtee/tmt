@@ -3934,7 +3934,6 @@ class GuestSsh(Guest, CommandCollector):
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
-                environment=self._prepare_ansible_command_environment(),
                 log=log,
             )
         except tmt.utils.RunError as exc:

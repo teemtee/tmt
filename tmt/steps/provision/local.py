@@ -142,7 +142,6 @@ class GuestLocal(tmt.Guest):
                     self.name,
                     playbook,
                 ),
-                environment=self._prepare_ansible_command_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
