@@ -15,12 +15,6 @@ description: |
     Ansible groups accordingly. If no layout is provided, a simple
     default basic layout is used.
 
-    .. note::
-
-        Ansible execution with ansible inventory is only supported for SSH-based
-        provisioning plugins (e.g. :ref:`/plugins/provision/virtual.testcloud`).
-        It is not implemented (yet) for :ref:`/plugins/provision/container` and :ref:`/plugins/provision/local` provisioning plugins.
-
     .. versionadded:: 1.60
 
 example:
