@@ -35,6 +35,14 @@ rlJournalStart
         rlAssertGrep "/test/custom-results/test/failing 1 fail default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results 1 pass default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results/without-leading-slash 1 pass default-0" $rlRun_LOG
+
+        # All results carry the fmf id, web link, data path and ids of the test which produced them
+        results="$run/default/plan/execute/results.yaml"
+        rlRun "yq -e 'all_c(.fmf-id.name == \"/test/custom-results\")' $results" 0 "Results have fmf id name"
+        rlRun "yq -e 'all_c(.data-path == \"data/guest/default-0/test/custom-results-1/data\")' $results" 0 "Results have data path"
+        rlRun "yq -e 'all_c(.web-link != \"https://example.com/custom-web-link\")' $results" 0 "Custom web link is overwritten"
+        rlRun "yq -e 'all_c(.ids.id == \"e2bafa18-6924-40a8-b185-ab43c9ac309a\")' $results" 0 "Results have test id"
+        rlRun "yq -e '.[] | select(.name == \"/test/custom-results/test/passing\") | .ids.some-id == \"foo1\"' $results" 0 "Custom ids are kept"
     rlPhaseEnd
 
     testName="/test/custom-json-results"

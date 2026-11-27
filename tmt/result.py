@@ -349,6 +349,7 @@ class Result(BaseResult):
         ids: Optional[ResultIds] = None,
         log: Optional[list[Path]] = None,
         subresult: Optional[list[SubResult]] = None,
+        interpret: bool = True,
     ) -> 'Result':
         """
         Create a result from a test invocation.
@@ -366,6 +367,11 @@ class Result(BaseResult):
         :param ids: additional test IDs. They will be added to IDs extracted
             from the test.
         :param log: optional list of test logs.
+        :param subresult: optional list of test subresults.
+        :param interpret: if set, ``result`` is interpreted according to
+            :py:attr:`Test.result`. Unset it to get a result carrying just
+            the data of the invocation, e.g. as a base for custom results
+            which are not subject to the interpretation.
         """
 
         _result = Result(
@@ -386,6 +392,9 @@ class Result(BaseResult):
             subresult=subresult or [],
             check=invocation.check_results or [],
         )
+
+        if not interpret:
+            return _result
 
         interpret_checks = {check.how: check.result for check in invocation.test.check}
 
