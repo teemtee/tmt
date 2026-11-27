@@ -43,6 +43,27 @@ rlJournalStart
         rlAssertGrep "Invalid unit: expected a data size unit" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Check various input methods for hardware key"
+        # Just the fmf input that's already in the plan
+        rlRun -s "tmt -vv run --id $run --dry provision plan --name '^/plan/$PROVISION_HOW\$'"
+        rlAssertGrep "method: bios" $rlRun_LOG
+
+        # Invalid input, key=val no longer supported
+        rlRun -s "tmt -vv run --id $run --dry provision --how $PROVISION_HOW --hardware hostname=bar.redhat.com plan --name '^/plan/$PROVISION_HOW\$'" 2
+
+        # JSON blob via command line
+        rlRun -s "tmt -vv run --id $run --dry provision --how $PROVISION_HOW --hardware '{\"hostname\": \"bar.redhat.com\"}' plan --name '^/plan/$PROVISION_HOW\$'"
+        rlAssertGrep "hostname: bar.redhat.com" $rlRun_LOG
+
+        # JSON blob from a file
+        rlRun -s "tmt -vv run --id $run --dry provision --how $PROVISION_HOW --hardware @$(pwd)/hardware.json plan --name '^/plan/$PROVISION_HOW\$'"
+        rlAssertGrep "hostname: baz.redhat.com" $rlRun_LOG
+
+        # YAML blob from a file
+        rlRun -s "tmt -vv run --id $run --dry provision --how $PROVISION_HOW --hardware @$(pwd)/hardware.yaml plan --name '^/plan/$PROVISION_HOW\$'"
+        rlAssertGrep "hostname: quux.redhat.com" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"

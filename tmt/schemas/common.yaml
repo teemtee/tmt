@@ -456,6 +456,11 @@ definitions:
     type: string
     pattern: "^https?://"
 
+  # A filepath reference.
+  filepath_reference:
+    type: string
+    pattern: "^@.+"
+
   # a url, path or fmf_id
   url_path_or_fmf_id:
     oneOf:
