@@ -1,7 +1,5 @@
 import glob
 import urllib.parse
-from collections.abc import Sequence
-from functools import cached_property
 from typing import ClassVar
 
 import tmt.utils
@@ -55,6 +53,8 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
         parsed = urllib.parse.urlparse(source)
         self._source = source
         self._is_url = parsed.scheme in ("http", "https")
+        # TODO: Find a better home for this action
+        self._populate_artifacts()
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
@@ -70,38 +70,27 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             repo_id=self.parent.data.repository_name,
         )
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
+    def _populate_artifacts(self) -> None:
         artifacts: list[ArtifactInfo] = []
-        seen_ids: set[str] = set()
-
-        def add(info: ArtifactInfo) -> None:
-            if info.id not in seen_ids:
-                artifacts.append(info)
-                seen_ids.add(info.id)
-            else:
-                self.logger.warning(
-                    f"Duplicate artifact '{info.id}' found; ignoring duplicate entry."
-                )
-
         if self._is_url:
-            add(self.make_rpm_artifact(self._source))
+            artifacts.append(self.make_rpm_artifact(self._source))
         # Everything else is treated as a glob pattern
         elif matched_files := glob.glob(self._source):
-            for matched_file in sorted(matched_files):
+            for matched_file in matched_files:
                 f = tmt.utils.Path(matched_file)
                 if f.is_dir():  # find all .rpm files within it
-                    for rpm_file in sorted(f.glob("*.rpm")):
-                        add(self.make_rpm_artifact(str(rpm_file)))
+                    artifacts.extend(
+                        self.make_rpm_artifact(str(rpm_file)) for rpm_file in f.glob("*.rpm")
+                    )
                 elif f.is_file():
-                    add(self.make_rpm_artifact(str(f)))
+                    artifacts.append(self.make_rpm_artifact(str(f)))
         else:
             self.logger.warning(f"No files matched pattern: '{self._source}'.")
 
         if not artifacts:
             self.logger.warning(f"No artifacts found for source: '{self._source}'.")
 
-        return artifacts
+        self._artifacts.extend(artifacts)
 
     def _download_artifact(
         self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
@@ -122,6 +111,5 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
                         compress=True,
                     ),
                 )
-            self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error

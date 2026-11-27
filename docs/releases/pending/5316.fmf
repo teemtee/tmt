@@ -1,0 +1,3 @@
+description: |
+  Fixed an issue in ``copr.build`` artifacts where the copr repo itself was not
+  enabled along with the build artifacts.
