@@ -1,5 +1,6 @@
 import abc
 import copy
+import dataclasses
 import functools
 import itertools
 import signal as _signal
@@ -974,9 +975,16 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         test = invocation.test
 
-        # Fields owned by the test, shared by all its results. Resolving
-        # them involves git commands, do it once for all results.
-        test_fields = tmt.Result.test_invocation_fields(invocation)
+        # All results start as the result of the test itself, and then get
+        # updated with data provided by the partial result. Creating the
+        # base result involves git commands, do it once for all results.
+        # The custom results are not subject to the test result
+        # interpretation.
+        base_result = tmt.Result.from_test_invocation(
+            invocation=invocation,
+            result=ResultOutcome.PASS,
+            interpret=False,
+        )
 
         custom_results = []
         for partial_result_data in results:
@@ -1018,23 +1026,41 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # directory. And the serial number correspondence in results.yaml
             # can be useful, for grouping results that belong to the same tests.
             #
-            # Enforce the serial number, guest info, test source and data
-            # location, all results belong to the same test.
-            for field_name, value in test_fields.items():
-                setattr(partial_result, field_name, value)
+            # The serial number, guest info, test source and data location
+            # are therefore kept from the base result, while the fields below
+            # are taken from the partial result. Test IDs apply to all
+            # results, custom results may add their own.
+            #
+            # TODO: the partial result should get its own class, with just
+            # the fields a test may provide, and a way to tell which of them
+            # were not provided at all.
+            custom_result = dataclasses.replace(
+                base_result,
+                name=partial_result.name,
+                result=partial_result.result,
+                note=partial_result.note,
+                log=partial_result.log,
+                start_time=partial_result.start_time,
+                end_time=partial_result.end_time,
+                duration=partial_result.duration,
+                context=partial_result.context,
+                ids={**base_result.ids, **partial_result.ids},
+                subresult=partial_result.subresult,
+                check=partial_result.check,
+            )
 
-            # Test IDs apply to all results, custom results may add their own
-            partial_result.ids = {**test.ids, **partial_result.ids}
+            # `replace()` runs `__post_init__()` which resets the original result
+            custom_result.original_result = partial_result.original_result
 
             # For the result representing the test itself, set the important
             # attributes to reflect the reality.
-            if partial_result.name == test.name:
-                partial_result.start_time = invocation.stopwatch.start_time_formatted
-                partial_result.end_time = invocation.stopwatch.end_time_formatted
-                partial_result.duration = invocation.stopwatch.duration_formatted
-                partial_result.context = self.step.plan.fmf_context
+            if custom_result.name == test.name:
+                custom_result.start_time = base_result.start_time
+                custom_result.end_time = base_result.end_time
+                custom_result.duration = base_result.duration
+                custom_result.context = base_result.context
 
-            custom_results.append(partial_result)
+            custom_results.append(custom_result)
 
         return custom_results
 

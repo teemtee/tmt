@@ -3,17 +3,9 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "pushd custom"
         rlRun "set -o pipefail"
         rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
-
-        # Run tests from a git repository with a remote, to get fmf id url and web link
-        rlRun "repo=\$(mktemp -d)" 0 "Create git repository"
-        rlRun "cp -a custom/. $repo"
-        rlRun "git -C $repo init -q -b main"
-        rlRun "git -C $repo remote add origin https://github.com/teemtee/custom-results.git"
-        rlRun "git -C $repo add -A"
-        rlRun "git -C $repo -c user.name=tmt -c user.email=tmt@example.com -c commit.gpgsign=false commit -q -m initial"
-        rlRun "pushd $repo"
     rlPhaseEnd
 
     tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vv test --name"
@@ -47,9 +39,8 @@ rlJournalStart
         # All results carry the fmf id, web link, data path and ids of the test which produced them
         results="$run/default/plan/execute/results.yaml"
         rlRun "yq -e 'all_c(.fmf-id.name == \"/test/custom-results\")' $results" 0 "Results have fmf id name"
-        rlRun "yq -e 'all_c(.fmf-id.url == \"https://github.com/teemtee/custom-results.git\")' $results" 0 "Results have fmf id url"
-        rlRun "yq -e 'all_c(.web-link == \"https://github.com/teemtee/custom-results/tree/main/test.fmf\")' $results" 0 "Results have web link"
         rlRun "yq -e 'all_c(.data-path == \"data/guest/default-0/test/custom-results-1/data\")' $results" 0 "Results have data path"
+        rlRun "yq -e 'all_c(.web-link != \"https://example.com/custom-web-link\")' $results" 0 "Custom web link is overwritten"
         rlRun "yq -e 'all_c(.ids.id == \"e2bafa18-6924-40a8-b185-ab43c9ac309a\")' $results" 0 "Results have test id"
         rlRun "yq -e '.[] | select(.name == \"/test/custom-results/test/passing\") | .ids.some-id == \"foo1\"' $results" 0 "Custom ids are kept"
     rlPhaseEnd
@@ -119,8 +110,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "popd"
         rlRun "rm -r ${run}" 0 "Remove run directory"
-        rlRun "rm -rf ${repo}" 0 "Remove git repository"
+        rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

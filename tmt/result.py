@@ -339,33 +339,6 @@ class Result(BaseResult):
         unserialize=lambda value: None if value is None else Path(value),
     )
 
-    @staticmethod
-    def test_invocation_fields(
-        invocation: 'tmt.steps.execute.TestInvocation',
-    ) -> dict[str, Any]:
-        """
-        Collect result fields owned by the test of a given invocation.
-
-        All results produced by a test invocation, including custom
-        results reported by the test itself, share these fields, and
-        tmt does not let the test change them.
-
-        Resolving the fmf id and web link of a test runs several git
-        commands, callers producing multiple results should therefore
-        call this method once per invocation.
-
-        :param invocation: a test invocation capturing the test run and results.
-        :returns: a mapping of :py:class:`Result` field names and their values.
-        """
-
-        return {
-            'serial_number': invocation.test.serial_number,
-            'web_link': invocation.test.web_link(),
-            'fmf_id': invocation.test.fmf_id,
-            'guest': ResultGuestData.from_test_invocation(invocation=invocation),
-            'data_path': invocation.relative_test_data_path,
-        }
-
     @classmethod
     def from_test_invocation(
         cls,
@@ -376,6 +349,7 @@ class Result(BaseResult):
         ids: Optional[ResultIds] = None,
         log: Optional[list[Path]] = None,
         subresult: Optional[list[SubResult]] = None,
+        interpret: bool = True,
     ) -> 'Result':
         """
         Create a result from a test invocation.
@@ -393,10 +367,18 @@ class Result(BaseResult):
         :param ids: additional test IDs. They will be added to IDs extracted
             from the test.
         :param log: optional list of test logs.
+        :param subresult: optional list of test subresults.
+        :param interpret: if set, ``result`` is interpreted according to
+            :py:attr:`Test.result`. Unset it to get a result carrying just
+            the data of the invocation, e.g. as a base for custom results
+            which are not subject to the interpretation.
         """
 
         _result = Result(
             name=invocation.test.name,
+            serial_number=invocation.test.serial_number,
+            web_link=invocation.test.web_link(),
+            fmf_id=invocation.test.fmf_id,
             context=invocation.phase.step.plan.fmf_context,
             result=result,
             note=note or [],
@@ -405,10 +387,14 @@ class Result(BaseResult):
             duration=invocation.stopwatch.duration_formatted,
             ids={**invocation.test.ids, **(ids or {})},
             log=log or [],
+            guest=ResultGuestData.from_test_invocation(invocation=invocation),
+            data_path=invocation.relative_test_data_path,
             subresult=subresult or [],
             check=invocation.check_results or [],
-            **Result.test_invocation_fields(invocation),
         )
+
+        if not interpret:
+            return _result
 
         interpret_checks = {check.how: check.result for check in invocation.test.check}
 

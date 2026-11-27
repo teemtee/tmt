@@ -3,6 +3,5 @@ description: |
     file, or reported by ``tmt-report-result`` in the restraint
     compatibility mode, now carry the ``fmf-id``, ``web-link`` and
     ``data-path`` keys of the test that produced them, and their ``ids``
-    include the IDs of the test. Previously these keys were left empty,
-    and reports such as :ref:`/plugins/report/junit` were missing a link
-    to the test source.
+    include the IDs of the test. Previously tmt left these keys empty in
+    the ``results.yaml`` file of the execute step.
