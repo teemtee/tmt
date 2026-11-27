@@ -234,6 +234,7 @@ files = [
     "tmt/",
     "tests/core/about/",
 ]
+enable_error_code = "deprecated"
 
 [[tool.mypy.overrides]]
 module = [
@@ -297,6 +298,7 @@ reportMissingTypeStubs = false  # Stub file not found for "foo.bar"
 reportPrivateUsage = false
 reportUnknownMemberType = false
 reportUnnecessaryCast = false  # Unnecessary "cast" call; type is already...
+reportDeprecated = true
 
 [tool.ty]
 environment.root = ["./tmt"]
@@ -321,7 +323,7 @@ invalid-method-override = "ignore"
 unsupported-base = "ignore"
 invalid-key = "ignore"
 redundant-cast = "ignore"
-deprecated = "ignore"
+deprecated = "error"
 missing-argument = "ignore"
 too-many-positional-arguments = "ignore"
 invalid-yield = "ignore"
