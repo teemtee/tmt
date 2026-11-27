@@ -646,7 +646,7 @@ class SerializableContainer(DataContainer):
 
         return cls
 
-    # ignore[misc,type-var]: mypy is correct here, method does return a
+    # ignore[type-var]: mypy is correct here, method does return a
     # TypeVar, but there is no way to deduce the actual type, because
     # the method is static. That's on purpose, method tries to find the
     # class to unserialize, therefore it's simply unknown. Returning Any
@@ -656,7 +656,7 @@ class SerializableContainer(DataContainer):
     @staticmethod
     def unserialize(
         serialized: dict[str, Any], logger: 'tmt.log.Logger'
-    ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
+    ) -> SerializableContainerDerivedType:  # type: ignore[type-var]
         """
         Convert from a serialized form loaded from a file.
 

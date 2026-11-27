@@ -53,8 +53,7 @@ class MultiplexedPath(_MultiplexedPath):
     def joinpath(
         self, *descendants: typing.Union[str, os.PathLike[str]]
     ) -> typing.Union[Path, "MultiplexedPath"]:
-        # TODO: arg-type failure is bogus, maybe it's an issue with mypy?
-        new_path = super().joinpath(*descendants)  # type: ignore[arg-type]
+        new_path = super().joinpath(*descendants)
         assert isinstance(new_path, (Path, MultiplexedPath))
         return new_path
 

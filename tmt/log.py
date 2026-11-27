@@ -52,7 +52,6 @@ from typing import (
     TypeAlias,
     TypeGuard,
     Union,
-    cast,
     override,
 )
 
@@ -384,7 +383,7 @@ def normalize_verbosity_level(raw_value: Any) -> Optional[VerbosityLevel]:
             _raise(exc=exc)
 
     if isinstance(raw_value, int) and raw_value in VERBOSITY_LEVELS:
-        return cast(VerbosityLevel, raw_value)
+        return raw_value
 
     return _raise()
 
@@ -427,7 +426,7 @@ def normalize_debug_level(raw_value: Any) -> Optional[DebugLevel]:
             _raise(exc)
 
     if isinstance(raw_value, int) and raw_value in DEBUG_LEVELS:
-        return cast(DebugLevel, raw_value)
+        return raw_value
 
     return _raise()
 
