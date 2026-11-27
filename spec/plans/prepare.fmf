@@ -6,6 +6,10 @@ description: |
     playbooks. See the :ref:`/plugins/prepare` documentation for
     available methods and supported options.
 
+        Do **not** store persistent data in ``${TMT_TREE}``. There is no
+        guarantee that data written to this directory will persist between
+        steps. See :ref:`step-variables` for more details.
+
 example: |
     prepare:
         how: install
