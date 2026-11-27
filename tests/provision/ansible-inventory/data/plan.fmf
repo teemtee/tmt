@@ -17,6 +17,8 @@ execute:
     ansible:
         inventory:
             layout: layout-comprehensive.yaml
+    environment:
+        COMMON_VAR: value1
     provision+:
       - name: frontend-1
         role: webserver
@@ -25,6 +27,8 @@ execute:
             group: frontend  # Precedence over role
             vars:
                 custom_var: value1
+        environment:
+            CUSTOM_VAR: value2
       - name: backend-1
         role: backend
         how: container
