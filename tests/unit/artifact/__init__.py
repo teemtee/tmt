@@ -51,6 +51,7 @@ def mock_koji_brew_build_api_responses(mock_call_api, mock_rpms=None):
     mock_call_api.side_effect = mock_api
 
 
+# TODO(tmt#5299,tmt#5302): Better mocking of this
 def mock_copr_build_api_responses(mock_session, mock_rpms=None, storage="copr"):
     if mock_rpms is None:
         mock_rpms = MOCK_RPMS_COPR

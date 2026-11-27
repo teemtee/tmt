@@ -22,10 +22,14 @@ rlJournalStart
         phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Test artifact installation"
-            rlRun "tmt run -i $run --scratch -vvv --all \
+            rlRun -s "tmt run -i $run --scratch -vvv --all \
                 provision -h $PROVISION_HOW --image $image" \
                 0 "Run tmt with artifact providers"
-            rlAssertGrep "Successfully created repository 'custom-artifact-repo'" "${run}/log.txt"
+            rlAssertGrep "cmd: createrepo" $rlRun_LOG
+            rlAssertGrep "stdout: [custom-artifact-repo]" $rlRun_LOG
+            rlAssertGrep "cmd: createrepo" $rlRun_LOG
+            rlAssertGrep "stdout: package bar is not installed" $rlRun_LOG
+            rlAssertGrep "stdout: bar-1.0-1.noarch" $rlRun_LOG
         rlPhaseEnd
     done <<< "$IMAGES"
 
