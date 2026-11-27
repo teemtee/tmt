@@ -1,0 +1,37 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+/test:
+    # Long enough to tell a quick finish from waiting for the
+    # leftovers, short enough not to block the run for long.
+    duration: 5m
+
+    /pass:
+        summary: Leave a process behind, then pass
+        test: echo start; sleep 4001 & echo end
+
+    /fail:
+        summary: Leave a process behind, then fail
+        test: echo start; sleep 4002 & echo end; exit 1
+
+    /stderr:
+        summary: Leave a process holding stderr only behind
+        test: sleep 4003 >/dev/null & echo done
+
+    /clean:
+        summary: Leave nothing behind
+        test: echo clean
+
+    /daemon:
+        summary: Leave a process with redirected output behind
+        test: nohup sleep 4004 >/dev/null 2>&1 </dev/null & echo daemon
+
+    /tty:
+        summary: Leave a process behind in a test with tty
+        tty: true
+        test: sleep 4006 & echo tty

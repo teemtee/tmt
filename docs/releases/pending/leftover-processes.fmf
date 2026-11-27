@@ -1,0 +1,7 @@
+description: |
+  A test which leaves background processes holding its output open,
+  e.g. ``perf record ... &`` which was never stopped, no longer blocks
+  tmt until the test ``duration`` runs out. tmt now waits for the test
+  script only and prints a warning about the leftover processes in the
+  test output. The same applies to ``prepare/shell`` scripts. See
+  :tmt:story:`/spec/tests/test` for details.
