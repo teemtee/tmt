@@ -7,6 +7,7 @@ import pytest
 import tmt.guest
 import tmt.queue
 import tmt.steps
+import tmt.steps.cleanup
 from tmt.log import Logger
 from tmt.utils.environment import Environment
 
@@ -70,3 +71,54 @@ def test_add_phase_added_to_queue(
     cast(MagicMock, queue.enqueue_plugin).assert_called_once_with(
         phase=plugin, guests=step._steppified_guests
     )
+
+
+@pytest.fixture(name='ready_guest')
+def fixture_ready_guest() -> MagicMock:
+    return MagicMock(name='<mock>ready_guest', is_ready=True)
+
+
+@pytest.fixture(name='not_ready_guest')
+def fixture_not_ready_guest() -> MagicMock:
+    return MagicMock(name='<mock>not_ready_guest', is_ready=False)
+
+
+@pytest.fixture(name='mock_plan_with_guests')
+def fixture_mock_plan_with_guests(
+    ready_guest: MagicMock,
+    not_ready_guest: MagicMock,
+) -> MagicMock:
+    mock_plan = MagicMock(name='<mock>plan')
+    mock_plan.provision.guests = [ready_guest, not_ready_guest]
+    mock_plan.provision.ready_guests = [ready_guest]
+    mock_plan.my_run.read_state.return_value = {'status': 'todo'}
+    return mock_plan
+
+
+def test_cleanup_includes_non_ready_guests(
+    root_logger: Logger,
+    mock_plan_with_guests: MagicMock,
+    ready_guest: MagicMock,
+    not_ready_guest: MagicMock,
+    monkeypatch: _pytest.monkeypatch.MonkeyPatch,
+) -> None:
+    """
+    Verify cleanup step includes non-ready guests for cleanup execution.
+    """
+    cleanup_step = tmt.steps.cleanup.Cleanup(plan=mock_plan_with_guests, logger=root_logger)
+    assert cleanup_step._steppified_guests == [ready_guest, not_ready_guest]
+
+    mock_enqueue = MagicMock()
+    monkeypatch.setattr(cleanup_step._queue, 'enqueue_plugin', mock_enqueue)
+
+    mock_phase = MagicMock(spec=tmt.steps.cleanup.CleanupPlugin)
+    mock_phase.order = 50
+    mock_phase.enabled_by_when = True
+    mock_phase.enabled_on_guest.return_value = True
+    cleanup_step._phases = [mock_phase]
+
+    cleanup_step.go()
+
+    mock_enqueue.assert_called_once()
+    _, kwargs = mock_enqueue.call_args
+    assert kwargs['guests'] == [ready_guest, not_ready_guest]
