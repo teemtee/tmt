@@ -6,10 +6,17 @@ story:
 
 description: |
     Attribute marks whether this test needs human interaction
-    during its execution.  Such tests are not likely to be
-    executed in automation pipelines. In the future they can be
+    during its execution. Such tests are discovered as any other
+    test, but the internal executor cannot run them and reports
+    them with the ``skip`` result. In the future they can be
     executed in a semi-automated way, waiting on human
     interaction.
+
+    .. versionchanged:: 1.82.0
+        Manual tests are no longer filtered out by the
+        :ref:`/plugins/discover/fmf` and
+        :ref:`/plugins/discover/shell` plugins. Deciding which
+        tests can be executed is left to the execute step.
 
     It's value must be a ``boolean``. The default value is
     ``false``. When set to ``true``, the :tmt:story:`/spec/tests/test`
@@ -78,3 +85,6 @@ example: |
 
 link:
   - implemented-by: /tmt/base/core.py
+  - implemented-by: /tmt/steps/execute/internal.py
+  - verified-by: /tests/discover/manual
+  - verified-by: /tests/execute/manual

@@ -776,7 +776,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             tests += tree.tests(
                 filters=filters,
                 names=[test.name for test in self.data.test],
-                conditions=["manual is False"],
                 unique=False,
                 links=link_needles,
                 includes=includes,
@@ -801,7 +800,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 tests += adjusted_tree.tests(
                     filters=filters,
                     names=[test.name],
-                    conditions=["manual is False"],
                     unique=False,
                     links=link_needles,
                     includes=includes,

@@ -6,9 +6,9 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest
-        rlRun -s "tmt run --remove discover finish"
-        rlAssertGrep "0 tests selected" $rlRun_LOG
+    rlPhaseStartTest "Manual tests are selected by the fmf plugin"
+        rlRun -s "tmt run --remove discover -v finish"
+        rlAssertGrep "1 test selected" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

@@ -334,6 +334,27 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
 
+        # Manual tests need human interaction, the internal executor
+        # cannot run them. Report them as skipped.
+        if test.manual:
+            logger.warning(f"Manual test '{test.name}' cannot be executed by tmt.")
+
+            # The stopwatch is normally started by `invocation.invoke_test()`.
+            # Enter it here as well, the result and the progress bar expect
+            # the timestamps to be set.
+            with invocation.stopwatch:
+                pass
+
+            invocation.results = [
+                Result.from_test_invocation(
+                    invocation=invocation,
+                    result=ResultOutcome.SKIP,
+                    note=['manual test, not executed by tmt'],
+                )
+            ]
+
+            return invocation.results
+
         # Test will be executed in it's own directory, relative to the workdir
         assert test.path is not None  # narrow type
 
