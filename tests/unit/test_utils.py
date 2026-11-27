@@ -1044,9 +1044,13 @@ def test_wait_deadline_already_passed(root_logger):
     """
 
     ticks = []
+    deadline = Deadline.from_seconds(-86400)
+
+    # The overrun is expressed in seconds, not days.
+    assert deadline.time_over == timedelta(seconds=86400)
 
     with pytest.raises(WaitingTimedOutError):
-        Waiting(Deadline.from_seconds(-86400)).wait(lambda: ticks.append(1), root_logger)
+        Waiting(deadline).wait(lambda: ticks.append(1), root_logger)
 
     # our callback should not have been called at all
     assert not ticks
