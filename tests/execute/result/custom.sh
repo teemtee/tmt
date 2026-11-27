@@ -35,6 +35,13 @@ rlJournalStart
         rlAssertGrep "/test/custom-results/test/failing 1 fail default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results 1 pass default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results/without-leading-slash 1 pass default-0" $rlRun_LOG
+
+        # tmt replaces the root result's timestamps with its own measurements.
+        rlRun -s "yq -e '.[] | \"\\(.name) \\(.\"start-time\") \\(.\"end-time\")\"' \"$run/default/plan/execute/results.yaml\""
+        rlAssertGrep "/test/custom-results/test/passing 2024-08-15T13:15:06.123456+00:00 2024-08-15T13:15:17.123456+00:00" "$rlRun_LOG" "-Fqx"
+        rlAssertGrep "/test/custom-results/test/failing 2024-08-15T13:15:06+02:00 2024-08-15T13:15:29+02:00" "$rlRun_LOG" "-Fqx"
+        rlAssertGrep "/test/custom-results/without-leading-slash 2024-08-15T13:15:06+00:00 2024-08-15T13:15:40+00:00" "$rlRun_LOG" "-Fqx"
+        rlAssertGrep "/test/custom-results/test/skipped 2024-08-15T13:15:06+00:00 2024-08-15T13:15:06+00:00" "$rlRun_LOG" "-Fqx"
     rlPhaseEnd
 
     testName="/test/custom-json-results"

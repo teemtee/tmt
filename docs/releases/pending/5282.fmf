@@ -1,0 +1,12 @@
+description: |
+  The ``junit`` report now writes the ``time`` attribute for a result
+  whose duration was measured as zero. The attribute used to be left out
+  whenever the whole seconds came out as zero, so a quick test showed the
+  attribute or not depending on whether it happened to cross the one
+  second mark.
+
+  A ``start-time`` or ``end-time`` written without a timezone is read as
+  UTC and written back with the ``+00:00`` offset. The format was always
+  documented as a full ISO 8601 date and time, so a value that followed
+  the documentation is unchanged; a value that left the offset out now
+  gains it.
