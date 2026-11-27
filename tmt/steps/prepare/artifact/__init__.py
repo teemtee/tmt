@@ -360,23 +360,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
            specific package ``NEVRA``.
         4. Inject or update the ``prepare/verify-installation`` phase.
         """
-        # Collect packages from the install phases injected by tmt on behalf of
-        # test/essential requirements. User-defined prepare/install phases are
-        # intentionally excluded.
-        #
-        # Phase name sources:
-        #   'essential-requires'    — Prepare._go() in tmt/steps/prepare/__init__.py
-        #   'requires'              — Prepare._go() in tmt/steps/prepare/__init__.py
-        #   'recommends'            — Prepare._go() in tmt/steps/prepare/__init__.py
-        #   'requires (dist-git)'   — tmt/steps/prepare/distgit.py
-        #   'recommends (dist-git)' — tmt/steps/prepare/distgit.py
-        _tmt_install_phase_names = {
-            'essential-requires',
-            'requires',
-            'recommends',
-            'requires (dist-git)',
-            'recommends (dist-git)',
-        }
         provider_repo_ids = {self.data.repository_name} | {
             repo_id
             for provider in providers
@@ -396,7 +379,11 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         for phase in self.step.phases(PrepareInstall):  # pyright: ignore[reportUnknownVariableType,reportUnknownArgumentType]
             assert isinstance(phase, PrepareInstall)  # narrow type
             assert isinstance(phase.data, PrepareInstallData)  # narrow type
-            if phase.data.name not in _tmt_install_phase_names:
+            # The artifacts were not provided so these would not be influenced
+            if phase.data.order < self.data.order:
+                continue
+            # Nothing to verify if the package is installed after the verify would run
+            if phase.data.order >= tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION:
                 continue
             if not phase.enabled_on_guest(guest):
                 continue
