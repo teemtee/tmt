@@ -63,6 +63,7 @@ _IncomingEnvVarName: 'TypeAlias' = Union[type['EnvVar'], 'EnvVarName']
 _IncomingEnvVarDefault: 'TypeAlias' = Optional[Union[str, 'EnvVarValue', Path]]
 _IncomingEnvVarDefaultKnown: 'TypeAlias' = Union[str, 'EnvVarValue', Path]
 
+_VARIABLE_PATTERN = re.compile(r'\$(\w+|\{[^}]*\}?)', re.ASCII)
 
 # This one is not an alias: a full-fledged class makes type linters
 # enforce strict instantiation of objects rather than accepting
@@ -245,6 +246,20 @@ class Environment(dict[EnvVarName, EnvVarValue]):
             return super().pop(normalized_key)
 
         return super().pop(normalized_key, self._normalize_default(default))
+
+    def expandvars(self, value: str) -> str:
+        """Expand shell-style variables using this environment."""
+
+        def replace(match: re.Match[str]) -> str:
+            variable = match.group(1)
+            if variable.startswith('{'):
+                if not variable.endswith('}'):
+                    return match.group(0)
+                variable = variable[1:-1]
+
+            return self.get(variable, match.group(0))
+
+        return _VARIABLE_PATTERN.sub(replace, value)
 
     @classmethod
     def from_dotenv(cls, content: str) -> 'Environment':
