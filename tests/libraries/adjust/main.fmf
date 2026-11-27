@@ -1,0 +1,5 @@
+summary: Context adjust is applied to libraries
+description:
+    Verify that ``adjust`` rules in remote library are evaluated
+    against the current fmf context when resolving library
+    require.

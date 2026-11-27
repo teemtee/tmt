@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING, ClassVar, Literal, Optional, cast
 
 import fmf
+import fmf.context
 
 import tmt.base.core
 import tmt.log
@@ -14,7 +15,7 @@ from tmt.base.core import Dependency, DependencyFmfId, DependencySimple
 from tmt.container import container, simple_field
 from tmt.convert import write
 from tmt.steps.discover import Discover
-from tmt.utils import Command, Path
+from tmt.utils import Command, FmfContext, Path
 
 from . import Library, LibraryError
 
@@ -193,6 +194,20 @@ class BeakerLib(Library):
             return self.path / self.name.strip('/')
         return super().fmf_node_path
 
+    def _get_fmf_context(self) -> FmfContext:
+        """
+        Fmf context used when adjusting library metadata.
+
+        Prefer the plan context when the library was requested by a discover
+        plugin. Fall back to the parent object's context otherwise.
+        """
+        from tmt.steps.discover import DiscoverPlugin
+
+        if isinstance(self.parent, DiscoverPlugin):
+            return self.parent.step.plan.fmf_context
+
+        return self.parent.fmf_context
+
     def _merge_metadata(self, library_path: Path, local_library_path: Path) -> None:
         """
         Merge all inherited metadata into one metadata file
@@ -261,6 +276,13 @@ class BeakerLib(Library):
             else str(local_repo_path)
         )
         self.tree = fmf.Tree(tree_path)
+
+        # Apply context adjust rules before reading library dependencies
+        self.tree.adjust(
+            fmf.context.Context(**self._get_fmf_context()),
+            case_sensitive=False,
+            decision_callback=tmt.base.core.create_adjust_callback(self._logger),
+        )
 
         # Get the library node, check require and recommend
         library_node = cast(Optional[fmf.Tree], self.tree.find(self.name))
