@@ -14,7 +14,8 @@
     {
       "description": "Group all GitHub Actions updates into a single PR",
       "groupName": "GitHub Actions",
-      "matchManagers": ["github-actions"]
+      "matchManagers": ["github-actions"],
+      "matchFileNames": ["!.github/workflows/renovate.yml"]
     },
     {
       "description": "Python upgrade is a false-positive. We have to pull in both 3.x and 3.12 for pre-commit.",
@@ -24,32 +25,29 @@
       "enabled": false
     },
     {
-      "description": "Disabled because it breaks folder structure, and need to be more selective.",
+      "description": "No other container updates because it breaks folder structure",
       "groupName": "Container Images",
-      "matchDatasources": ["docker"],
+      "matchManagers": ["dockerfile"],
       "enabled": false
+    },
+    {
+      "description": "Update renovate action itself",
+      "groupName": "Renovate",
+      "matchManagers": ["github-actions"],
+      "matchFileNames": [".github/workflows/renovate.yml"],
+      "enabled": true
     },
     {
       "description": "Group Pre-commit dependencies together",
       "groupName": "Pre-commit Dependencies",
       "matchManagers": ["pre-commit"]
-    },
-    {
-      "description": "Python dependencies with lockfile",
-      "groupName": "Locked dependencies",
-      "matchManagers": ["pep621"]
-    },
-    {
-      "description": "Group documentation dependencies together",
-      "groupName": "Documentation Dependencies",
-      "matchManagers": ["pep621"],
-      "matchDepTypes": ["project.optional-dependencies"],
-      "enabled": true,
-      "matchJsonata": ["managerData.depGroup = 'docs'"]
     }
   ],
   "lockFileMaintenance": {
     "enabled": true,
-    "groupName": "Locked dependencies"
+    "schedule": ["at any time"]
+  },
+  "vulnerabilityAlerts": {
+    "groupName": "Security updates"
   }
 }
