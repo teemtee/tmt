@@ -1,13 +1,21 @@
-The :tmt:story:`/spec/plans/prepare` step is used to define how the guest
-environment should be prepared so that the tests can be
+The :tmt:story:`/spec/plans/prepare` step plugins are used to define how
+the guest environment should be prepared so that the tests can be
 successfully executed.
 
-The :ref:`/plugins/prepare/install` plugin provides an easy
-way to install required or recommended packages from disk and
-from the official distribution or copr repositories. Use the
+The :ref:`/plugins/prepare/install` plugin installs packages from enabled
+repositories, copr repositories, local RPM files or remote RPM URLs. Use the
 :ref:`/plugins/prepare/ansible` plugin for applying custom
 playbooks or execute :ref:`/plugins/prepare/shell` scripts
 to perform arbitrary preparation tasks.
+
+The :ref:`/plugins/prepare/artifact` plugin makes specific build artifacts
+available on the guest for installation. Use the
+:ref:`/plugins/prepare/feature` plugin to enable or disable common
+features such as EPEL or CRB repositories. The
+:ref:`/plugins/prepare/verify-installation` plugin checks that installed
+packages came from the expected repositories.
+
+The default method is :ref:`shell </plugins/prepare/shell>`.
 
 .. _/plugins/prepare/order:
 

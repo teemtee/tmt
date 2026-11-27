@@ -753,6 +753,15 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
 
     .. note::
 
+        The ``artemis`` plugin is primarily used by :ref:`testing-farm`
+        and requires access to an Artemis provisioning service. Setting
+        ``how: artemis`` does not submit a test job to Testing Farm or
+        create a local virtual machine. For local runs, use ``virtual``
+        or ``container``, or leave ``how`` unset. Testing Farm manages
+        its own provisioning configuration.
+
+    .. note::
+
         When used together with the :ref:`testing-farm` infrastructure
         some of the options from the first example below will be filled
         for you by the Testing Farm service.
