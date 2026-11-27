@@ -87,7 +87,7 @@ SUBMITTED_FILES_FILENAME = "submitted-files.log"
 #
 
 
-class ENV_TMT_TEST_NAME(EnvVar):  # noqa: N801
+class ENV_TMT_TEST_NAME(EnvVar):
     """
     The test name, as a resolved FMF object name starting with
     ``/`` from the root of the hierarchy.
@@ -97,7 +97,7 @@ class ENV_TMT_TEST_NAME(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.TEST
 
 
-class ENV_TMT_TEST_INVOCATION_PATH(EnvVar):  # noqa: N801
+class ENV_TMT_TEST_INVOCATION_PATH(EnvVar):
     """
     Path to the directory where tmt stores information about the
     current test invocation.
@@ -107,7 +107,7 @@ class ENV_TMT_TEST_INVOCATION_PATH(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.TEST
 
 
-class ENV_TMT_TEST_DATA(EnvVar):  # noqa: N801
+class ENV_TMT_TEST_DATA(EnvVar):
     """
     Path to the directory where test can store logs and other
     artifacts generated during its execution. These will be pulled
@@ -119,7 +119,7 @@ class ENV_TMT_TEST_DATA(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.TEST
 
 
-class ENV_TMT_TEST_SUBMITTED_FILES(EnvVar):  # noqa: N801
+class ENV_TMT_TEST_SUBMITTED_FILES(EnvVar):
     """
     Path to the file that collects paths to files submitted via
     ``tmt-file-submit`` script, as part of the test results.
@@ -129,7 +129,7 @@ class ENV_TMT_TEST_SUBMITTED_FILES(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.TEST
 
 
-class ENV_TMT_TEST_SERIAL_NUMBER(EnvVar):  # noqa: N801
+class ENV_TMT_TEST_SERIAL_NUMBER(EnvVar):
     """
     The serial number of running test in the whole plan. Each test
     is assigned its own serial number.
@@ -139,7 +139,7 @@ class ENV_TMT_TEST_SERIAL_NUMBER(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.TEST
 
 
-class ENV_TMT_TEST_METADATA(EnvVar):  # noqa: N801
+class ENV_TMT_TEST_METADATA(EnvVar):
     """
     Path to a YAML-formatted file with test metadata collected
     during the ``discover`` step.
@@ -149,7 +149,7 @@ class ENV_TMT_TEST_METADATA(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.TEST
 
 
-class ENV_TMT_TEST_ITERATION_ID(EnvVar):  # noqa: N801
+class ENV_TMT_TEST_ITERATION_ID(EnvVar):
     """
     The iteration ID is a combination of a unique run ID and the
     test serial number. The value is different for each new test
@@ -161,7 +161,7 @@ class ENV_TMT_TEST_ITERATION_ID(EnvVar):  # noqa: N801
     version_added = '1.32'
 
 
-class ENV_TMT_SOURCE_DIR(EnvVar):  # noqa: N801
+class ENV_TMT_SOURCE_DIR(EnvVar):
     """
     Path to directory with downloaded and extracted sources if the
     ``dist-git-source`` option was used in the ``discover`` step.
@@ -171,7 +171,7 @@ class ENV_TMT_SOURCE_DIR(EnvVar):  # noqa: N801
     scope = EnvVar.Scope.TEST
 
 
-class ENV_TMT_PLAN_ENVIRONMENT_FILE(EnvVar):  # noqa: N801
+class ENV_TMT_PLAN_ENVIRONMENT_FILE(EnvVar):
     """
     Path to the file containing environment variables that should
     be sourced after prepare and execute steps. These variables will
@@ -198,7 +198,7 @@ class ENV_TMT_PLAN_ENVIRONMENT_FILE(EnvVar):  # noqa: N801
     version_added = '1.29'
 
 
-class ENV_TMT_PLAN_SOURCE_SCRIPT(EnvVar):  # noqa: N801
+class ENV_TMT_PLAN_SOURCE_SCRIPT(EnvVar):
     """
     Path to the file that will be sourced in all tests and prepare/shell
     phases. Unlike ``TMT_PLAN_ENVIRONMENT_FILE``, this file can be an

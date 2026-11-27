@@ -96,7 +96,7 @@ class EnvVar:
 
     .. code-block:: python
 
-        class ENV_TMT_TEST_NAME(EnvVar):  # noqa: N801
+        class ENV_TMT_TEST_NAME(EnvVar):
             '''
             User-facing documentation of the variable.
             '''
