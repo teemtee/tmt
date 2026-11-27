@@ -1,6 +1,5 @@
 provision:
     how: virtual
-    image: fedora
 execute:
     script: 'true'
 
@@ -21,13 +20,16 @@ execute:
     provision+:
       - name: frontend-1
         role: webserver
+        how: virtual
         ansible:
             group: frontend  # Precedence over role
             vars:
                 custom_var: value1
       - name: backend-1
         role: backend
+        how: container
       - name: orphan-host  # No group -> should go to ungrouped
+        how: local
       - name: auto-group-host
         ansible:
             group: auto-created  # Group doesn't exist in layout -> auto-creation
