@@ -1033,7 +1033,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             #
             # TODO: the partial result should get its own class, with just
             # the fields a test may provide, and a way to tell which of them
-            # were not provided at all.
+            # were not provided at all (#5402).
             custom_result = dataclasses.replace(
                 base_result,
                 name=partial_result.name,
