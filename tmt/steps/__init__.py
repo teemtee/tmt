@@ -1139,17 +1139,27 @@ class Step(
 
         debug1(f'Update {self.__class__.__name__.lower()} phases by CLI invocations')
 
-        def _to_raw_step_datum(options: dict[str, Any]) -> _RawStepData:
+        def _to_raw_step_datum(invocation: 'tmt.cli.CliInvocation') -> _RawStepData:
             """
             Convert CLI options to fmf-like raw step data dictionary.
 
-            This means dropping all keys that cannot come from an fmf node, like
-            keys representing CLI options.
+            Only options really given by user, on the command line or by
+            an environment variable, are included: Click reports **all**
+            options, filling the unused ones with their default values,
+            and those must not leak into phases. Keys that cannot come
+            from an fmf node, like those representing CLI actions, are
+            dropped as well.
             """
 
             def _iter_options() -> Iterator[tuple[str, Any]]:
-                for name, value in options.items():
-                    if name in ('update', 'update_missing', 'insert', 'allowed-how'):
+                for name, value in invocation.options.items():
+                    if name in ('update', 'update_missing', 'insert', 'allowed_how'):
+                        continue
+
+                    if invocation.option_sources.get(name) not in (
+                        ParameterSource.COMMANDLINE,
+                        ParameterSource.ENVIRONMENT,
+                    ):
                         continue
 
                     yield key_to_option(name), value
@@ -1195,14 +1205,8 @@ class Step(
             Copy options from one phase specification onto another.
 
             Serves as a helper for "patching" a phase with options coming from
-            a command line. It must avoid copying options that were not really
-            given by user - because of how options are handled, simple
-            ``dict.update()`` would not do as ``incoming_raw_datum`` would
-            contain **all** options as long as they have a default value.
-
-            Click is therefore consulted for each key/option, whether it was
-            really specified on the command line (or by an environment
-            variable).
+            a command line. ``incoming_raw_datum`` is expected to contain only
+            options really given by user, see :py:func:`_to_raw_step_datum`.
             """
 
             debug3('raw step datum', str(raw_datum))
@@ -1213,15 +1217,7 @@ class Step(
                 if opt == 'name':
                     continue
 
-                key = option_to_key(opt)
-                value_source = invocation.option_sources.get(key)
-
-                debug3(f'{opt=} {key=} {value=} {value_source=}')
-
-                # Ignore CLI input if it's been provided by option's default
-                if value_source not in (ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
-                    debug4('value not really given via CLI/env, no effect')
-                    continue
+                debug3(f'{opt=} {value=}')
 
                 # Ignore CLI input if `--missing-only` has been set and datum already has the key.
                 if missing_only and opt in raw_datum:
@@ -1253,7 +1249,7 @@ class Step(
 
             how = raw_datum.get('how')
 
-            incoming_raw_datum = _to_raw_step_datum(invocation.options)
+            incoming_raw_datum = _to_raw_step_datum(invocation)
 
             # In the 'tmt try image' command user can specify their
             # preferred image name without specifying the provision
@@ -1539,7 +1535,7 @@ class Step(
             elif invocation.options.get('insert'):
                 debug3('inserting new phase')
 
-                raw_datum = _to_raw_step_datum(invocation.options)
+                raw_datum = _to_raw_step_datum(invocation)
                 raw_datum = _ensure_name(raw_datum)
 
                 raw_data.append(raw_datum)
