@@ -47,28 +47,47 @@ rlJournalStart
             # Check host variables
             # virtual provision
             rlRun -s "yq -e '.all.hosts.\"frontend-1\"' $inventory_file" 0 "Get virtual guest"
+            rlAssertGrep "tmt_env:" $rlRun_LOG
             rlAssertGrep "ansible_connection: ssh" $rlRun_LOG
             rlAssertGrep "ansible_host:" $rlRun_LOG
             rlAssertGrep "ansible_port:" $rlRun_LOG
             rlAssertGrep "ansible_user:" $rlRun_LOG
             # Custom var is inserted in this one
             rlAssertGrep "custom_var: value1" $rlRun_LOG
+            rlRun -s "yq -e '.all.hosts.\"frontend-1\".tmt_env' $inventory_file" 0 "Get virtual guest"
+            rlAssertGrep "COMMON_VAR: value1" $rlRun_LOG
+            rlAssertGrep "CUSTOM_VAR: value2" $rlRun_LOG
+            # Check other common environment variables
+            rlAssertGrep "TMT_VERSION:" $rlRun_LOG
+            rlAssertGrep "TMT_PLAN_DATA:" $rlRun_LOG
+            # Should not have the host's environment variables
+            rlAssertNotGrep "PWD:" $rlRun_LOG
+            rlAssertNotGrep "SHELL:" $rlRun_LOG
+            rlAssertNotGrep "USER:" $rlRun_LOG
 
             # container provision
             rlRun -s "yq -e '.all.hosts.\"backend-1\"' $inventory_file" 0 "Get container guest"
+            rlAssertGrep "tmt_env:" $rlRun_LOG
             rlAssertGrep "ansible_connection: podman" $rlRun_LOG
             rlAssertGrep "ansible_host:" $rlRun_LOG
             rlAssertNotGrep "ansible_port:" $rlRun_LOG
             rlAssertNotGrep "ansible_user:" $rlRun_LOG
             rlAssertNotGrep "custom_var:" $rlRun_LOG
+            rlRun -s "yq -e '.all.hosts.\"backend-1\".tmt_env' $inventory_file" 0 "Get container guest"
+            rlAssertGrep "COMMON_VAR: value1" $rlRun_LOG
+            rlAssertNotGrep "CUSTOM_VAR:" $rlRun_LOG
 
             # local provision
             rlRun -s "yq -e '.all.hosts.\"backend-1\"' $inventory_file" 0 "Get container guest"
+            rlAssertGrep "tmt_env:" $rlRun_LOG
             rlAssertGrep "ansible_connection: local" $rlRun_LOG
             rlAssertGrep "ansible_host: localhost" $rlRun_LOG
             rlAssertNotGrep "ansible_port:" $rlRun_LOG
             rlAssertNotGrep "ansible_user:" $rlRun_LOG
             rlAssertNotGrep "custom_var:" $rlRun_LOG
+            rlRun -s "yq -e '.all.hosts.\"backend-1\".tmt_env' $inventory_file" 0 "Get container guest"
+            rlAssertGrep "COMMON_VAR: value1" $rlRun_LOG
+            rlAssertNotGrep "CUSTOM_VAR:" $rlRun_LOG
 
             # 'role' works to specify group when ansible.group is not provided
             rlRun "yq -e '.all.children.webservers.children.backend.hosts.\"backend-1\"' $inventory_file" 0 "Host in role group (backend)"
