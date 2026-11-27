@@ -1,7 +1,7 @@
 import shutil
-from unittest.mock import MagicMock
 
 import pytest
+import pytest_mock
 
 import tmt.base.core
 import tmt.libraries.beakerlib
@@ -118,7 +118,7 @@ def test_dependencies(root_logger, tmppath):
 
 
 @pytest.mark.web
-def test_mark_nonexistent_url(root_logger, monkeypatch, tmppath):
+def test_mark_nonexistent_url(root_logger, mocker: pytest_mock.MockerFixture, tmppath):
     """
     Check url existence just one time
     """
@@ -136,8 +136,9 @@ def test_mark_nonexistent_url(root_logger, monkeypatch, tmppath):
     # Second time there shouldn't be an attempt to clone...
     assert non_existent_url in tmt.utils.git.NON_EXISTING_GIT_URL
     # TODO: Try to narrow to check for the git clone specifically
-    monkeypatch.setattr(
-        "tmt.utils.Command.run", MagicMock(side_effect=RuntimeError('Should not be called'))
+    mocker.patch(
+        "tmt.utils.Command.run",
+        side_effect=RuntimeError('Should not be called'),
     )
     with pytest.raises(tmt.utils.GeneralError):
         tmt.libraries.beakerlib.BeakerLibFromUrl.from_identifier(

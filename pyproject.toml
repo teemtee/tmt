@@ -117,6 +117,7 @@ docs = [
     ]
 tests = [
     "pytest",
+    "pytest-mock",
     "pytest-container",
     "pytest-xdist",
     "requre",
