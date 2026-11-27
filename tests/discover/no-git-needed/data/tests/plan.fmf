@@ -4,3 +4,8 @@ provision:
     how: local
 execute:
     how: tmt
+
+/sync-repo:
+    summary: Copy repository from plan sync-repo setting
+    discover+:
+        sync-repo: true
