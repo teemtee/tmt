@@ -97,6 +97,10 @@ DEFAULT_ORDER = 50
 DEFAULT_TEST_RESTART_LIMIT = 1
 TEST_RESTART_MAX = 10
 
+#: Maximum nesting depth allowed when resolving remote plan imports.
+#: Guards against infinite loops caused by circular plan imports.
+MAX_PLAN_IMPORT_DEPTH = 50
+
 # Obsoleted test keys
 OBSOLETED_TEST_KEYS = [
     "relevancy",
@@ -2631,17 +2635,33 @@ class Tree(tmt.utils.Common):
             resolve_enabled_only = True
 
         if not Plan._opt('shallow'):
+            # Resolve imports iteratively: an imported plan may itself be a
+            # remote plan reference (nested import), so keep resolving until
+            # the queue contains only fully-resolved, non-reference plans.
             unresolved_plans = plans
             plans = []
-            for plan in unresolved_plans:
+            while unresolved_plans:
+                plan = unresolved_plans.pop(0)
                 # Do not resolve disabled plans unless forced to
                 if resolve_enabled_only and not plan.enabled:
                     plan.debug(
                         f"Plan '{plan.name}' is not enabled, skipping imports resolution.",
                     )
                     continue
+                # A plan that is not a remote reference is fully resolved
+                if not plan.is_remote_plan_reference:
+                    plans.append(plan)
+                    continue
+                # Guard against import cycles by limiting the nesting depth
+                if plan.import_depth > MAX_PLAN_IMPORT_DEPTH:
+                    raise tmt.utils.GeneralError(
+                        f"Plan import nesting too deep (over {MAX_PLAN_IMPORT_DEPTH} levels) "
+                        f"while resolving '{plan.name}', possible import cycle."
+                    )
                 try:
-                    plans += plan.resolve_imports()
+                    # Resolve the reference and re-queue the imported plans so
+                    # that any nested references are resolved as well.
+                    unresolved_plans = plan.resolve_imports() + unresolved_plans
                 except Exception as error:
                     if self.import_before_name_filter:
                         # If we filter later, we can skip some resolve failures
