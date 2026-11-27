@@ -22,8 +22,7 @@ from typing import (
 )
 
 import fmf
-
-from tmt._compat.pydantic import PYDANTIC_V1, BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 if TYPE_CHECKING:
     from typing import TypeAlias
@@ -963,22 +962,12 @@ class MetadataContainer(BaseModel):
     A base class of containers backed by fmf nodes.
     """
 
-    if PYDANTIC_V1:
-
-        class Config:
-            # Accept only keys with dashes instead of underscores
-            alias_generator = key_to_option
-            extra = "forbid"
-            validate_all = True
-            validate_assignment = True
-
-    else:
-        model_config = ConfigDict(
-            alias_generator=key_to_option,
-            extra="forbid",
-            validate_default=True,
-            validate_assignment=True,
-        )
+    model_config = ConfigDict(
+        alias_generator=key_to_option,
+        extra="forbid",
+        validate_default=True,
+        validate_assignment=True,
+    )
 
     @classmethod
     def from_fmf(cls, tree: fmf.Tree) -> Self:
