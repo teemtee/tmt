@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+
+spawn tmt try -l fedora@virtual
+expect "login: Starting interactive shell"
+send -- "exit\r"
+expect "What do we do next?"
+send -- "q\r"
+expect eof

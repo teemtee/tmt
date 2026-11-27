@@ -603,6 +603,12 @@ __ https://tmt.readthedocs.io/en/stable/plugins/execute.html#tmt
 TMT_SSH_MASTER_START_TIMEOUT
     How many seconds will tmt wait for a ``ssh`` master process to start.
 
+TMT_SSH_MASTER_STOP_TIMEOUT
+    How many seconds will tmt wait for a ``ssh`` master process to
+    terminate after being signaled.
+
+    .. versionadded:: 1.82
+
 TMT_SSH_*
     Every environment variable in this format would be treated as an SSH
     option, and passed to the ``-o`` option of ``ssh`` command. See
