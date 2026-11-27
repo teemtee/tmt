@@ -109,6 +109,8 @@ _PLUGIN_CLASS_NAME_TO_STEP_PATTERN = re.compile(r'tmt.steps.([a-z]+)')
 PHASE_ORDER_DEFAULT = 50
 #: Installation of essential plugin and check requirements.
 PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
+#: Installation of essential plugin recommendations.
+PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_RECOMMENDS = 35
 #: Installation of packages :tmt:story:`required</spec/tests/require>` by tests.
 PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 #: Installation of packages :tmt:story:`recommended</spec/tests/recommend>` by tests.
@@ -2570,6 +2572,20 @@ class BasePlugin(
         perform its basic functionality.
 
         :returns: a list of requirements.
+        """
+
+        return []
+
+    def essential_recommends(self) -> list['tmt.base.core.Dependency']:
+        """
+        Collect all essential recommendations of the plugin.
+
+        Essential recommendations of a plugin are installed if available,
+        but their absence does not prevent the plugin from running. They
+        are useful when the plugin can usually work with them, but users
+        may provide an alternative the plugin cannot detect.
+
+        :returns: a list of recommendations.
         """
 
         return []

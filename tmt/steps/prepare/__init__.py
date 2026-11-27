@@ -225,6 +225,11 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             guest: DependencyCollection(guests=[guest]) for guest in guests
         }
 
+        # Collecting all essential recommendations, per guest.
+        collected_essential_recommends = {
+            guest: DependencyCollection(guests=[guest]) for guest in guests
+        }
+
         # Collecting all required packages, per guest.
         collected_requires = {guest: DependencyCollection(guests=[guest]) for guest in guests}
 
@@ -249,6 +254,14 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                     # ignore[attr-defined]: mypy thinks that phase is Phase type, while its
                     # actually PluginClass
                     phase.essential_requires(),  # type: ignore[attr-defined]
+                    'After beakerlib processing, tests may have only simple requirements',
+                    self._logger,
+                )
+
+                collected_essential_recommends[
+                    guest
+                ].dependencies += tmt.base.core.assert_simple_dependencies(
+                    phase.essential_recommends(),  # type: ignore[attr-defined]
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger,
                 )
@@ -329,6 +342,7 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             return list(pruned.values())
 
         pruned_essential_requires = _prune_collections(collected_essential_requires)
+        pruned_essential_recommends = _prune_collections(collected_essential_recommends)
         pruned_requires = _prune_collections(collected_requires)
         pruned_recommends = _prune_collections(collected_recommends)
 
@@ -365,6 +379,14 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             'essential-requires',
             'Install essential required packages',
             tmt.steps.PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES,
+        )
+
+        _emit_phase(
+            pruned_essential_recommends,
+            'essential-recommends',
+            'Install essential recommended packages',
+            tmt.steps.PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_RECOMMENDS,
+            missing='skip',
         )
 
         _emit_phase(
