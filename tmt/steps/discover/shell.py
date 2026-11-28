@@ -4,6 +4,7 @@ from typing import Any, Callable, Optional, Self, TypeVar, cast
 
 import click
 import fmf
+import fmf.context
 
 import tmt
 import tmt.base.core
