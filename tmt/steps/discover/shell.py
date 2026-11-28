@@ -421,6 +421,15 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             }
             tests.child(data.name, test_fmf_keys)
 
+        # Tests defined here never pass through `tmt.Tree.tree`, which is where
+        # adjust rules are applied for tests discovered from fmf metadata, so
+        # apply them against the plan's context here.
+        tests.adjust(
+            fmf.context.Context(**self.step.plan.fmf_context),
+            case_sensitive=False,
+            decision_callback=tmt.base.core.create_adjust_callback(self._logger),
+        )
+
         # Use a tmt.Tree to apply possible command line filters
         self._tests = tmt.Tree(logger=self._logger, tree=tests).tests(
             conditions=["manual is False"], sort=False

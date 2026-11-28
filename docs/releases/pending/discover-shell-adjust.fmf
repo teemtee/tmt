@@ -1,0 +1,6 @@
+description: |
+  The ``adjust`` attribute of tests defined directly in the
+  :ref:`/plugins/discover/shell` plugin is now applied, the same way
+  it is for tests discovered from fmf metadata. Previously such rules
+  were silently ignored, so for example a test disabled for a given
+  context would still run.
