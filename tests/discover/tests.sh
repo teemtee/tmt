@@ -20,7 +20,13 @@ rlJournalStart
         rlAssertGrep '00:00:00 pass /second (on default-0) [2/2]' "$rlRun_LOG" -F
     rlPhaseEnd
 
-    # Attribute 'adjust' is not applied
+    rlPhaseStartTest "Attribute 'adjust' is applied"
+        rlRun -s "tmt -c some_dimension=1 run --scratch --id $workdir -vvv $plan"
+        rlAssertGrep "summary: 1 test selected" "$rlRun_LOG" -F
+        rlAssertNotGrep "/first (on default-0)" "$rlRun_LOG" -F
+        rlAssertGrep '00:00:00 pass /second (on default-0) [1/1]' "$rlRun_LOG" -F
+    rlPhaseEnd
+
     # Attributes 'tier', 'link', 'tag', 'component' are not usable for filtering
     # 'require' and 'recommend' doesn't accept fmf-id dictionary
 
